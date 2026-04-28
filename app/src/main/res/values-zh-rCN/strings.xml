@@ -242,4 +242,18 @@
     <string name="wizard_service_required">至少选择一项服务</string>
     <string name="wizard_done_caption">「%1$s」已配置就绪。</string>
     <string name="account_s3_region_optional">区域（可选）</string>
+
+    <string name="server_label_ipv4">公共 IPv4</string>
+    <string name="server_label_ipv6">公共 IPv6</string>
+    <string name="server_label_location">数据中心</string>
+    <string name="server_status_running">运行中</string>
+    <string name="server_status_off">已关闭</string>
+    <string name="server_status_starting">启动中</string>
+    <string name="server_status_stopping">停止中</string>
+    <string name="server_status_initializing">初始化中</string>
+    <string name="server_status_rebuilding">重建中</string>
+    <string name="server_status_migrating">迁移中</string>
+    <string name="server_status_deleting">删除中</string>
+    <string name="server_unit_core_singular">核</string>
+    <string name="server_unit_core_plural">核</string>
 </resources>

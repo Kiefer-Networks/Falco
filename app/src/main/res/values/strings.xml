@@ -257,4 +257,18 @@
     <string name="wizard_service_required">Pick at least one service</string>
     <string name="wizard_done_caption">"%1$s" is ready to use.</string>
     <string name="account_s3_region_optional">Region (optional)</string>
+
+    <string name="server_label_ipv4">Public IPv4</string>
+    <string name="server_label_ipv6">Public IPv6</string>
+    <string name="server_label_location">Datacenter</string>
+    <string name="server_status_running">Running</string>
+    <string name="server_status_off">Off</string>
+    <string name="server_status_starting">Starting</string>
+    <string name="server_status_stopping">Stopping</string>
+    <string name="server_status_initializing">Initializing</string>
+    <string name="server_status_rebuilding">Rebuilding</string>
+    <string name="server_status_migrating">Migrating</string>
+    <string name="server_status_deleting">Deleting</string>
+    <string name="server_unit_core_singular">core</string>
+    <string name="server_unit_core_plural">cores</string>
 </resources>

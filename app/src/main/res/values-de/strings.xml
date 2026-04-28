@@ -246,4 +246,18 @@
     <string name="wizard_service_required">Mindestens einen Dienst auswählen</string>
     <string name="wizard_done_caption">„%1$s" ist eingerichtet.</string>
     <string name="account_s3_region_optional">Region (optional)</string>
+
+    <string name="server_label_ipv4">Öffentliches IPv4</string>
+    <string name="server_label_ipv6">Öffentliches IPv6</string>
+    <string name="server_label_location">Rechenzentrum</string>
+    <string name="server_status_running">Läuft</string>
+    <string name="server_status_off">Aus</string>
+    <string name="server_status_starting">Startet</string>
+    <string name="server_status_stopping">Wird beendet</string>
+    <string name="server_status_initializing">Initialisiert</string>
+    <string name="server_status_rebuilding">Wird neu erstellt</string>
+    <string name="server_status_migrating">Migriert</string>
+    <string name="server_status_deleting">Wird gelöscht</string>
+    <string name="server_unit_core_singular">Kern</string>
+    <string name="server_unit_core_plural">Kerne</string>
 </resources>

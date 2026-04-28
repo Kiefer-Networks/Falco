@@ -250,4 +250,18 @@
     <string name="wizard_service_required">Sélectionnez au moins un service</string>
     <string name="wizard_done_caption">« %1$s » est prêt.</string>
     <string name="account_s3_region_optional">Région (optionnel)</string>
+
+    <string name="server_label_ipv4">IPv4 publique</string>
+    <string name="server_label_ipv6">IPv6 publique</string>
+    <string name="server_label_location">Datacenter</string>
+    <string name="server_status_running">En cours</string>
+    <string name="server_status_off">Éteint</string>
+    <string name="server_status_starting">Démarrage</string>
+    <string name="server_status_stopping">Arrêt</string>
+    <string name="server_status_initializing">Initialisation</string>
+    <string name="server_status_rebuilding">Reconstruction</string>
+    <string name="server_status_migrating">Migration</string>
+    <string name="server_status_deleting">Suppression</string>
+    <string name="server_unit_core_singular">cœur</string>
+    <string name="server_unit_core_plural">cœurs</string>
 </resources>

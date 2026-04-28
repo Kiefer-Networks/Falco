@@ -9,7 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryTabRow
@@ -79,17 +85,36 @@ fun RobotScreen(
     onStorageBoxClick: (Long) -> Unit = {},
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    val titles = listOf(
-        R.string.robot_tab_dedis,
-        R.string.robot_tab_storageboxes,
-        R.string.robot_tab_failover,
-        R.string.robot_tab_vswitch,
-    )
     Column(Modifier.fillMaxSize()) {
         SecondaryTabRow(selectedTabIndex = tab) {
-            titles.forEachIndexed { i, label ->
-                Tab(selected = tab == i, onClick = { tab = i }, text = { Text(stringResource(label)) })
-            }
+            Tab(
+                selected = tab == 0,
+                onClick = { tab = 0 },
+                icon = {
+                    Icon(Icons.Filled.Computer, contentDescription = stringResource(R.string.robot_tab_dedis))
+                },
+            )
+            Tab(
+                selected = tab == 1,
+                onClick = { tab = 1 },
+                icon = {
+                    Icon(Icons.Filled.Storage, contentDescription = stringResource(R.string.robot_tab_storageboxes))
+                },
+            )
+            Tab(
+                selected = tab == 2,
+                onClick = { tab = 2 },
+                icon = {
+                    Icon(Icons.Filled.SwapHoriz, contentDescription = stringResource(R.string.robot_tab_failover))
+                },
+            )
+            Tab(
+                selected = tab == 3,
+                onClick = { tab = 3 },
+                icon = {
+                    Icon(Icons.Filled.Hub, contentDescription = stringResource(R.string.robot_tab_vswitch))
+                },
+            )
         }
         when (tab) {
             0 -> ServersList(viewModel, onServerClick)
