@@ -3,6 +3,7 @@ package de.kiefer_networks.falco.data.auth
 
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -26,7 +27,7 @@ class BiometricGate(private val activity: FragmentActivity) {
 
     suspend fun authenticate(title: String, subtitle: String, negative: String): Result =
         suspendCancellableCoroutine { cont ->
-            val executor = activity.mainExecutor
+            val executor = ContextCompat.getMainExecutor(activity)
             val callback = object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     if (cont.isActive) cont.resume(Result.Succeeded)

@@ -30,7 +30,6 @@ class CredentialStore @Inject constructor(@ApplicationContext context: Context) 
         val ctx = context.applicationContext
         val builder = MasterKey.Builder(ctx)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .setUserAuthenticationRequired(false, 0)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             // Best-effort StrongBox; will throw on devices without HAL — caught below.
             runCatching { builder.setRequestStrongBoxBacked(true) }
