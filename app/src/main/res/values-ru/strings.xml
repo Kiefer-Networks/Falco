@@ -44,6 +44,9 @@
     <string name="account_s3_secret_key">Секретный ключ S3</string>
     <string name="account_remove">Удалить учётную запись</string>
     <string name="account_remove_confirm">Удалить эту учётную запись и все сохранённые данные?</string>
+    <string name="account_remove_button">Удалить</string>
+    <string name="account_active_label">Активная</string>
+    <string name="account_switch">Переключиться на эту учётную запись</string>
     <string name="accounts_empty">Учётных записей нет. Добавьте первую, чтобы начать.</string>
 
     <string name="cloud_servers">Серверы</string>
@@ -52,6 +55,37 @@
     <string name="cloud_firewalls">Файрволы</string>
     <string name="cloud_floating_ips">Плавающие IP</string>
     <string name="cloud_load_balancers">Балансировщики</string>
+    <string name="cloud_volume_size_gb">%1$d ГБ</string>
+    <string name="cloud_status_label">Статус: %1$s</string>
+    <string name="cloud_attached_server">Сервер: %1$d</string>
+    <string name="cloud_location_label">Расположение: %1$s</string>
+    <string name="cloud_network_ip_range">Диапазон IP: %1$s</string>
+    <plurals name="cloud_network_subnet_count">
+        <item quantity="one">%1$d подсеть</item>
+        <item quantity="few">%1$d подсети</item>
+        <item quantity="many">%1$d подсетей</item>
+        <item quantity="other">%1$d подсети</item>
+    </plurals>
+    <plurals name="cloud_network_server_count">
+        <item quantity="one">%1$d сервер</item>
+        <item quantity="few">%1$d сервера</item>
+        <item quantity="many">%1$d серверов</item>
+        <item quantity="other">%1$d сервера</item>
+    </plurals>
+    <plurals name="cloud_firewall_rule_count">
+        <item quantity="one">%1$d правило</item>
+        <item quantity="few">%1$d правила</item>
+        <item quantity="many">%1$d правил</item>
+        <item quantity="other">%1$d правила</item>
+    </plurals>
+    <plurals name="cloud_firewall_applied_count">
+        <item quantity="one">Применено к %1$d ресурсу</item>
+        <item quantity="few">Применено к %1$d ресурсам</item>
+        <item quantity="many">Применено к %1$d ресурсам</item>
+        <item quantity="other">Применено к %1$d ресурса</item>
+    </plurals>
+    <string name="cloud_floating_ip_type">Тип: %1$s</string>
+    <string name="cloud_home_location">Домашнее расположение: %1$s</string>
     <string name="action_power_on">Включить</string>
     <string name="action_power_off">Выключить</string>
     <string name="action_reboot">Перезагрузка</string>
@@ -151,4 +185,24 @@
 
     <string name="confirm_destructive_title">Подтвердите действие</string>
     <string name="confirm_destructive_msg">Это действие нельзя отменить. Продолжить?</string>
+
+    <string name="robot_tab_dedis">Выделенные</string>
+    <string name="robot_tab_storageboxes">Storage Box</string>
+    <string name="robot_tab_failover">Failover</string>
+    <string name="robot_tab_vswitch">vSwitch</string>
+    <string name="robot_failover_active_on">Активна на %1$s</string>
+    <string name="robot_vswitch_meta">VLAN %1$d • #%2$d</string>
+    <string name="robot_vswitch_cancelled">Отменено</string>
+    <string name="settings_section_account">Учётная запись</string>
+    <string name="settings_section_security">Безопасность</string>
+    <string name="settings_section_appearance">Внешний вид</string>
+    <string name="settings_section_language">Язык</string>
+    <string name="settings_active_account">Активная учётная запись</string>
+    <string name="settings_lock_immediately">Сразу</string>
+    <string name="settings_lock_30s">Через 30 секунд</string>
+    <string name="settings_lock_60s">Через 1 минуту</string>
+    <string name="settings_lock_5min">Через 5 минут</string>
+    <string name="settings_lock_never">Никогда</string>
+    <string name="settings_pinning_info">Certificate pinning включён для всех эндпоинтов Hetzner. Пины обновляются на каждый релиз через scripts/fetch_pins.sh.</string>
+    <string name="settings_language_info">Falco следует языку устройства. Измените его в настройках Android → Система → Языки. Поддерживаются: English, Deutsch, Español, Français, Italiano, 简体中文, Русский.</string>
 </resources>

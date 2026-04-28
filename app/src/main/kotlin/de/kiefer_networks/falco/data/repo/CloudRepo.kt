@@ -4,6 +4,9 @@ package de.kiefer_networks.falco.data.repo
 import de.kiefer_networks.falco.data.api.CloudApi
 import de.kiefer_networks.falco.data.api.HttpClientFactory
 import de.kiefer_networks.falco.data.auth.AccountManager
+import de.kiefer_networks.falco.data.dto.CloudFirewall
+import de.kiefer_networks.falco.data.dto.CloudFloatingIp
+import de.kiefer_networks.falco.data.dto.CloudNetwork
 import de.kiefer_networks.falco.data.dto.CloudServer
 import de.kiefer_networks.falco.data.dto.CloudVolume
 import javax.inject.Inject
@@ -21,6 +24,9 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
 
     suspend fun listServers(): List<CloudServer> = api().listServers().servers
     suspend fun listVolumes(): List<CloudVolume> = api().listVolumes().volumes
+    suspend fun listFirewalls(): List<CloudFirewall> = api().listFirewalls().firewalls
+    suspend fun listFloatingIps(): List<CloudFloatingIp> = api().listFloatingIps().floatingIps
+    suspend fun listNetworks(): List<CloudNetwork> = api().listNetworks().networks
 
     suspend fun powerOn(id: Long) = api().powerOn(id)
     suspend fun powerOff(id: Long) = api().powerOff(id)

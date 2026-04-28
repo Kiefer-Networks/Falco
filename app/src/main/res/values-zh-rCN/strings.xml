@@ -44,6 +44,9 @@
     <string name="account_s3_secret_key">S3 私有密钥</string>
     <string name="account_remove">移除账户</string>
     <string name="account_remove_confirm">移除此账户及所有保存的凭据？</string>
+    <string name="account_remove_button">移除</string>
+    <string name="account_active_label">活动</string>
+    <string name="account_switch">切换到此账户</string>
     <string name="accounts_empty">尚无账户。添加第一个开始使用。</string>
 
     <string name="cloud_servers">服务器</string>
@@ -52,6 +55,25 @@
     <string name="cloud_firewalls">防火墙</string>
     <string name="cloud_floating_ips">浮动 IP</string>
     <string name="cloud_load_balancers">负载均衡器</string>
+    <string name="cloud_volume_size_gb">%1$d GB</string>
+    <string name="cloud_status_label">状态：%1$s</string>
+    <string name="cloud_attached_server">服务器：%1$d</string>
+    <string name="cloud_location_label">位置：%1$s</string>
+    <string name="cloud_network_ip_range">IP 范围：%1$s</string>
+    <plurals name="cloud_network_subnet_count">
+        <item quantity="other">%1$d 个子网</item>
+    </plurals>
+    <plurals name="cloud_network_server_count">
+        <item quantity="other">%1$d 台服务器</item>
+    </plurals>
+    <plurals name="cloud_firewall_rule_count">
+        <item quantity="other">%1$d 条规则</item>
+    </plurals>
+    <plurals name="cloud_firewall_applied_count">
+        <item quantity="other">已应用于 %1$d 个资源</item>
+    </plurals>
+    <string name="cloud_floating_ip_type">类型：%1$s</string>
+    <string name="cloud_home_location">归属位置：%1$s</string>
     <string name="action_power_on">开机</string>
     <string name="action_power_off">关机</string>
     <string name="action_reboot">重启</string>
@@ -151,4 +173,24 @@
 
     <string name="confirm_destructive_title">确认操作</string>
     <string name="confirm_destructive_msg">此操作无法撤销。继续？</string>
+
+    <string name="robot_tab_dedis">独立</string>
+    <string name="robot_tab_storageboxes">Storage Box</string>
+    <string name="robot_tab_failover">故障转移</string>
+    <string name="robot_tab_vswitch">vSwitch</string>
+    <string name="robot_failover_active_on">活动于 %1$s</string>
+    <string name="robot_vswitch_meta">VLAN %1$d • #%2$d</string>
+    <string name="robot_vswitch_cancelled">已取消</string>
+    <string name="settings_section_account">账户</string>
+    <string name="settings_section_security">安全</string>
+    <string name="settings_section_appearance">外观</string>
+    <string name="settings_section_language">语言</string>
+    <string name="settings_active_account">活动账户</string>
+    <string name="settings_lock_immediately">立即</string>
+    <string name="settings_lock_30s">30 秒后</string>
+    <string name="settings_lock_60s">1 分钟后</string>
+    <string name="settings_lock_5min">5 分钟后</string>
+    <string name="settings_lock_never">从不</string>
+    <string name="settings_pinning_info">所有 Hetzner 端点均强制证书 pinning。每次发布通过 scripts/fetch_pins.sh 更新 pin。</string>
+    <string name="settings_language_info">Falco 跟随设备语言。在 Android 设置 → 系统 → 语言中更改。支持：English、Deutsch、Español、Français、Italiano、简体中文、Русский。</string>
 </resources>

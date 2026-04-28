@@ -4,8 +4,10 @@ package de.kiefer_networks.falco.data.repo
 import de.kiefer_networks.falco.data.api.HttpClientFactory
 import de.kiefer_networks.falco.data.api.RobotApi
 import de.kiefer_networks.falco.data.auth.AccountManager
+import de.kiefer_networks.falco.data.dto.RobotFailover
 import de.kiefer_networks.falco.data.dto.RobotServer
 import de.kiefer_networks.falco.data.dto.RobotStorageBox
+import de.kiefer_networks.falco.data.dto.RobotVSwitch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,4 +30,7 @@ class RobotRepo @Inject constructor(private val accounts: AccountManager) {
     suspend fun snapshots(boxId: Long) = api().listSnapshots(boxId).map { it.snapshot }
     suspend fun createSnapshot(boxId: Long) = api().createSnapshot(boxId).snapshot
     suspend fun subaccounts(boxId: Long) = api().listSubaccounts(boxId).map { it.subaccount }
+
+    suspend fun listFailoverIps(): List<RobotFailover> = api().listFailoverIps().map { it.failover }
+    suspend fun listVSwitches(): List<RobotVSwitch> = api().listVSwitches().map { it.vswitch }
 }

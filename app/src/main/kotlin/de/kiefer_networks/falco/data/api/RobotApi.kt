@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.data.api
 
+import de.kiefer_networks.falco.data.dto.RobotFailoverEnvelope
 import de.kiefer_networks.falco.data.dto.RobotResetEnvelope
 import de.kiefer_networks.falco.data.dto.RobotServerEnvelope
 import de.kiefer_networks.falco.data.dto.RobotSnapshotEnvelope
 import de.kiefer_networks.falco.data.dto.RobotStorageBoxEnvelope
 import de.kiefer_networks.falco.data.dto.RobotSubaccountEnvelope
+import de.kiefer_networks.falco.data.dto.RobotVSwitchEnvelope
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
@@ -49,4 +51,10 @@ interface RobotApi {
 
     @POST("storagebox/{id}/password")
     suspend fun resetStorageBoxPassword(@Path("id") id: Long): retrofit2.Response<Unit>
+
+    @GET("failover")
+    suspend fun listFailoverIps(): List<RobotFailoverEnvelope>
+
+    @GET("vswitch")
+    suspend fun listVSwitches(): List<RobotVSwitchEnvelope>
 }

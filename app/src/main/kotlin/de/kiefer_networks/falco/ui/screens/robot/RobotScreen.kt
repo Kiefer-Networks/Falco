@@ -12,10 +12,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -64,12 +71,37 @@ class RobotViewModel @Inject constructor(private val repo: RobotRepo) : ViewMode
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RobotScreen(
     viewModel: RobotViewModel = hiltViewModel(),
     onServerClick: (Long) -> Unit = {},
     onStorageBoxClick: (Long) -> Unit = {},
 ) {
+    var tab by rememberSaveable { mutableIntStateOf(0) }
+    val titles = listOf(
+        R.string.robot_tab_dedis,
+        R.string.robot_tab_storageboxes,
+        R.string.robot_tab_failover,
+        R.string.robot_tab_vswitch,
+    )
+    Column(Modifier.fillMaxSize()) {
+        SecondaryTabRow(selectedTabIndex = tab) {
+            titles.forEachIndexed { i, label ->
+                Tab(selected = tab == i, onClick = { tab = i }, text = { Text(stringResource(label)) })
+            }
+        }
+        when (tab) {
+            0 -> ServersList(viewModel, onServerClick)
+            1 -> StorageBoxesList(viewModel, onStorageBoxClick)
+            2 -> FailoverTab()
+            else -> VSwitchTab()
+        }
+    }
+}
+
+@Composable
+private fun ServersList(viewModel: RobotViewModel, onClick: (Long) -> Unit) {
     val s by viewModel.state.collectAsState()
     if (s.loading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -79,35 +111,29 @@ fun RobotScreen(
         Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) { Text(s.error!!) }
         return
     }
+    if (s.servers.isEmpty()) {
+        Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+            Text(stringResource(R.string.empty_list))
+        }
+        return
+    }
     LazyColumn(Modifier.fillMaxSize().padding(12.dp)) {
-        item { Section(stringResource(R.string.robot_dedis)) }
         items(s.servers, key = { it.serverNumber }) { server ->
             Card(
                 Modifier
                     .fillMaxWidth()
                     .padding(vertical = 6.dp)
-                    .clickable { onServerClick(server.serverNumber) },
+                    .clickable { onClick(server.serverNumber) },
             ) {
                 Column(Modifier.padding(12.dp)) {
-                    Text(server.serverName ?: server.serverIp ?: "#${server.serverNumber}",
-                        style = MaterialTheme.typography.titleMedium)
-                    Text("${server.product ?: ""} • ${server.dc ?: ""}",
-                        style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-        }
-        item { Section(stringResource(R.string.robot_storageboxes)) }
-        items(s.boxes, key = { it.id }) { box ->
-            Card(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp)
-                    .clickable { onStorageBoxClick(box.id) },
-            ) {
-                Column(Modifier.padding(12.dp)) {
-                    Text(box.name ?: box.login, style = MaterialTheme.typography.titleMedium)
-                    Text("${box.product ?: ""} • ${box.location ?: ""}",
-                        style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        server.serverName ?: server.serverIp ?: "#${server.serverNumber}",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        "${server.product ?: ""} • ${server.dc ?: ""}",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
         }
@@ -115,10 +141,38 @@ fun RobotScreen(
 }
 
 @Composable
-private fun Section(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
-    )
+private fun StorageBoxesList(viewModel: RobotViewModel, onClick: (Long) -> Unit) {
+    val s by viewModel.state.collectAsState()
+    if (s.loading) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        return
+    }
+    if (s.error != null) {
+        Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) { Text(s.error!!) }
+        return
+    }
+    if (s.boxes.isEmpty()) {
+        Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+            Text(stringResource(R.string.empty_list))
+        }
+        return
+    }
+    LazyColumn(Modifier.fillMaxSize().padding(12.dp)) {
+        items(s.boxes, key = { it.id }) { box ->
+            Card(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .clickable { onClick(box.id) },
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    Text(box.name ?: box.login, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "${box.product ?: ""} • ${box.location ?: ""}",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
+    }
 }

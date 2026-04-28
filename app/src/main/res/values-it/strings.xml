@@ -44,6 +44,9 @@
     <string name="account_s3_secret_key">Secret key S3</string>
     <string name="account_remove">Rimuovi account</string>
     <string name="account_remove_confirm">Rimuovere questo account e tutte le credenziali memorizzate?</string>
+    <string name="account_remove_button">Rimuovi</string>
+    <string name="account_active_label">Attivo</string>
+    <string name="account_switch">Passa a questo account</string>
     <string name="accounts_empty">Ancora nessun account. Aggiungi il primo per iniziare.</string>
 
     <string name="cloud_servers">Server</string>
@@ -52,6 +55,33 @@
     <string name="cloud_firewalls">Firewall</string>
     <string name="cloud_floating_ips">IP fluttuanti</string>
     <string name="cloud_load_balancers">Bilanciatori di carico</string>
+    <string name="cloud_volume_size_gb">%1$d GB</string>
+    <string name="cloud_status_label">Stato: %1$s</string>
+    <string name="cloud_attached_server">Server: %1$d</string>
+    <string name="cloud_location_label">Posizione: %1$s</string>
+    <string name="cloud_network_ip_range">Intervallo IP: %1$s</string>
+    <plurals name="cloud_network_subnet_count">
+        <item quantity="one">%1$d sottorete</item>
+        <item quantity="many">%1$d sottoreti</item>
+        <item quantity="other">%1$d sottoreti</item>
+    </plurals>
+    <plurals name="cloud_network_server_count">
+        <item quantity="one">%1$d server</item>
+        <item quantity="many">%1$d server</item>
+        <item quantity="other">%1$d server</item>
+    </plurals>
+    <plurals name="cloud_firewall_rule_count">
+        <item quantity="one">%1$d regola</item>
+        <item quantity="many">%1$d regole</item>
+        <item quantity="other">%1$d regole</item>
+    </plurals>
+    <plurals name="cloud_firewall_applied_count">
+        <item quantity="one">Applicato a %1$d risorsa</item>
+        <item quantity="many">Applicato a %1$d risorse</item>
+        <item quantity="other">Applicato a %1$d risorse</item>
+    </plurals>
+    <string name="cloud_floating_ip_type">Tipo: %1$s</string>
+    <string name="cloud_home_location">Posizione principale: %1$s</string>
     <string name="action_power_on">Accendi</string>
     <string name="action_power_off">Spegni</string>
     <string name="action_reboot">Riavvia</string>
@@ -151,4 +181,24 @@
 
     <string name="confirm_destructive_title">Conferma azione</string>
     <string name="confirm_destructive_msg">Questa azione non può essere annullata. Continuare?</string>
+
+    <string name="robot_tab_dedis">Dedicati</string>
+    <string name="robot_tab_storageboxes">Storage Box</string>
+    <string name="robot_tab_failover">Failover</string>
+    <string name="robot_tab_vswitch">vSwitch</string>
+    <string name="robot_failover_active_on">Attiva su %1$s</string>
+    <string name="robot_vswitch_meta">VLAN %1$d • #%2$d</string>
+    <string name="robot_vswitch_cancelled">Annullato</string>
+    <string name="settings_section_account">Account</string>
+    <string name="settings_section_security">Sicurezza</string>
+    <string name="settings_section_appearance">Aspetto</string>
+    <string name="settings_section_language">Lingua</string>
+    <string name="settings_active_account">Account attivo</string>
+    <string name="settings_lock_immediately">Immediatamente</string>
+    <string name="settings_lock_30s">Dopo 30 secondi</string>
+    <string name="settings_lock_60s">Dopo 1 minuto</string>
+    <string name="settings_lock_5min">Dopo 5 minuti</string>
+    <string name="settings_lock_never">Mai</string>
+    <string name="settings_pinning_info">Il certificate pinning è applicato a tutti gli endpoint Hetzner. I pin vengono aggiornati per release tramite scripts/fetch_pins.sh.</string>
+    <string name="settings_language_info">Falco segue la lingua del dispositivo. Cambiala in Impostazioni Android → Sistema → Lingue. Supportate: English, Deutsch, Español, Français, Italiano, 简体中文, Русский.</string>
 </resources>

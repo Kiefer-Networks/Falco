@@ -31,7 +31,7 @@ import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.ui.nav.Routes
 import de.kiefer_networks.falco.ui.screens.accounts.AccountFormScreen
 import de.kiefer_networks.falco.ui.screens.accounts.AccountsScreen
-import de.kiefer_networks.falco.ui.screens.cloud.CloudScreen
+import de.kiefer_networks.falco.ui.screens.cloud.CloudHubScreen
 import de.kiefer_networks.falco.ui.screens.dns.DnsScreen
 import de.kiefer_networks.falco.ui.screens.dns.ZoneDetailScreen
 import de.kiefer_networks.falco.ui.screens.robot.RobotScreen
@@ -79,7 +79,7 @@ fun FalcoRoot(viewModel: FalcoRootViewModel) {
             composable(Routes.WELCOME) { WelcomeScreen(onContinue = { nav.navigate(Routes.ACCOUNT_NEW) }) }
             composable(Routes.ACCOUNTS) { AccountsScreen(onAdd = { nav.navigate(Routes.ACCOUNT_NEW) }) }
             composable(Routes.ACCOUNT_NEW) { AccountFormScreen(onDone = { nav.popBackStack() }) }
-            composable(Routes.CLOUD) { CloudScreen() }
+            composable(Routes.CLOUD) { CloudHubScreen() }
             composable(Routes.ROBOT) {
                 RobotScreen(
                     onServerClick = { number -> nav.navigate(Routes.robotServerDetail(number)) },

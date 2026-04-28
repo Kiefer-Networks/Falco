@@ -70,3 +70,20 @@ import kotlinx.serialization.Serializable
     val type: List<String> = emptyList(),
     @SerialName("operating_status") val operatingStatus: String? = null,
 )
+
+@Serializable data class RobotFailoverEnvelope(val failover: RobotFailover)
+@Serializable data class RobotFailover(
+    val ip: String,
+    @SerialName("server_ip") val serverIp: String,
+    @SerialName("server_number") val serverNumber: Long,
+    @SerialName("active_server_ip") val activeServerIp: String,
+    val netmask: String? = null,
+)
+
+@Serializable data class RobotVSwitchEnvelope(val vswitch: RobotVSwitch)
+@Serializable data class RobotVSwitch(
+    val id: Long,
+    val name: String,
+    val vlan: Int,
+    val cancelled: Boolean = false,
+)
