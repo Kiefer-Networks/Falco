@@ -51,6 +51,16 @@ object HttpClientFactory {
         client = baseClient(listOf(BearerInterceptor(token), UserAgentInterceptor)),
     )
 
+    /**
+     * Hetzner moved the Storage Box endpoints to a separate base URL on
+     * 2025-06-25 (api.hetzner.com instead of api.hetzner.cloud). Same Bearer
+     * token, different host, so it gets its own Retrofit / OkHttp pin set.
+     */
+    fun storageBoxRetrofit(token: String): Retrofit = retrofit(
+        baseUrl = "https://api.hetzner.com/v1/",
+        client = baseClient(listOf(BearerInterceptor(token), UserAgentInterceptor)),
+    )
+
     fun robotRetrofit(user: String, pass: String): Retrofit = retrofit(
         baseUrl = "https://robot-ws.your-server.de/",
         client = baseClient(

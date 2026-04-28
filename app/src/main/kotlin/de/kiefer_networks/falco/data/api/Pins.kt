@@ -15,12 +15,14 @@ internal object Pins {
     // Fill via scripts/fetch_pins.sh, then re-build. The strings below are
     // intentional placeholders that won't validate any real connection.
     val cloud: List<String> = emptyList()       // api.hetzner.cloud
+    val hetznerApi: List<String> = emptyList()  // api.hetzner.com  (storage boxes)
     val robot: List<String> = emptyList()       // robot-ws.your-server.de
     val dns: List<String> = emptyList()         // dns.hetzner.com
     val objectStorage: List<String> = emptyList() // *.your-objectstorage.com
 
     fun all(): Map<String, List<String>> = mapOf(
         "api.hetzner.cloud" to cloud,
+        "api.hetzner.com" to hetznerApi,
         "robot-ws.your-server.de" to robot,
         "dns.hetzner.com" to dns,
         "fsn1.your-objectstorage.com" to objectStorage,

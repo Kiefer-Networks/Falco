@@ -48,7 +48,15 @@ interface CloudApi {
 
     @GET("networks")
     suspend fun listNetworks(): CloudNetworkList
+}
 
+/**
+ * Storage Box endpoints. Hetzner moved Storage Boxes to a separate base URL
+ * (`api.hetzner.com`) on 2025-06-25 — same Bearer token, different host.
+ * Kept as its own Retrofit interface so [HttpClientFactory] routes it through
+ * a dedicated client.
+ */
+interface StorageBoxApi {
     @GET("storage_boxes")
     suspend fun listStorageBoxes(): de.kiefer_networks.falco.data.dto.CloudStorageBoxList
 }

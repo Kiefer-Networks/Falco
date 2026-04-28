@@ -3,6 +3,7 @@ package de.kiefer_networks.falco.data.repo
 
 import de.kiefer_networks.falco.data.api.CloudApi
 import de.kiefer_networks.falco.data.api.HttpClientFactory
+import de.kiefer_networks.falco.data.api.StorageBoxApi
 import de.kiefer_networks.falco.data.auth.AccountManager
 import de.kiefer_networks.falco.data.dto.CloudFirewall
 import de.kiefer_networks.falco.data.dto.CloudFloatingIp
@@ -23,12 +24,18 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
         return HttpClientFactory.cloudRetrofit(project.cloudToken).create(CloudApi::class.java)
     }
 
+    private suspend fun storageBoxApi(): StorageBoxApi {
+        val project = accounts.activeCloudProject.first()
+            ?: error("No active Cloud project for the current account")
+        return HttpClientFactory.storageBoxRetrofit(project.cloudToken).create(StorageBoxApi::class.java)
+    }
+
     suspend fun listServers(): List<CloudServer> = api().listServers().servers
     suspend fun listVolumes(): List<CloudVolume> = api().listVolumes().volumes
     suspend fun listFirewalls(): List<CloudFirewall> = api().listFirewalls().firewalls
     suspend fun listFloatingIps(): List<CloudFloatingIp> = api().listFloatingIps().floatingIps
     suspend fun listNetworks(): List<CloudNetwork> = api().listNetworks().networks
-    suspend fun listStorageBoxes(): List<CloudStorageBox> = api().listStorageBoxes().storageBoxes
+    suspend fun listStorageBoxes(): List<CloudStorageBox> = storageBoxApi().listStorageBoxes().storageBoxes
 
     suspend fun powerOn(id: Long) = api().powerOn(id)
     suspend fun powerOff(id: Long) = api().powerOff(id)
