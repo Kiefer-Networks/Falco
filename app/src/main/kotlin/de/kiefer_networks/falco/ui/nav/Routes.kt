@@ -24,9 +24,15 @@ object Routes {
         return "s3/browser?bucket=$encodedBucket&prefix=$encodedPrefix"
     }
 
+    const val PROJECTS = "cloud/projects"
+    const val PROJECT_NEW = "cloud/projects/new"
+    const val PROJECT_EDIT = "cloud/projects/edit/{projectId}"
+    fun projectEdit(projectId: String) = "cloud/projects/edit/$projectId"
+
     const val ARG_SERVER_NUMBER = "number"
     const val ARG_STORAGE_BOX_ID = "id"
     const val ARG_ZONE_ID = "id"
     const val ARG_BUCKET = "bucket"
     const val ARG_PREFIX = "prefix"
+    const val ARG_PROJECT_ID = "projectId"
 }

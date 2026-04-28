@@ -94,3 +94,35 @@ import kotlinx.serialization.Serializable
     val servers: List<Long> = emptyList(),
 )
 @Serializable data class NetworkSubnet(val type: String, @SerialName("ip_range") val ipRange: String, @SerialName("network_zone") val networkZone: String)
+
+@Serializable data class CloudStorageBoxList(@SerialName("storage_boxes") val storageBoxes: List<CloudStorageBox>)
+
+@Serializable data class CloudStorageBox(
+    val id: Long,
+    val name: String,
+    val username: String? = null,
+    val status: String? = null,
+    val created: String? = null,
+    @SerialName("storage_box_type") val storageBoxType: CloudStorageBoxType? = null,
+    val location: Location? = null,
+    val accessible: Boolean = true,
+    val protection: CloudStorageBoxProtection? = null,
+    @SerialName("linked_resources") val linkedResources: List<CloudLinkedResource> = emptyList(),
+    val labels: Map<String, String> = emptyMap(),
+)
+
+@Serializable data class CloudStorageBoxType(
+    val name: String,
+    val description: String? = null,
+    val size: Long? = null,
+    @SerialName("snapshot_limit") val snapshotLimit: Int? = null,
+    @SerialName("automatic_snapshot_limit") val automaticSnapshotLimit: Int? = null,
+    @SerialName("subaccounts_limit") val subaccountsLimit: Int? = null,
+)
+
+@Serializable data class CloudStorageBoxProtection(val delete: Boolean = false)
+
+@Serializable data class CloudLinkedResource(
+    val type: String,
+    val id: Long? = null,
+)

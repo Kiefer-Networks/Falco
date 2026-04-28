@@ -271,4 +271,33 @@
     <string name="server_status_deleting">Deleting</string>
     <string name="server_unit_core_singular">core</string>
     <string name="server_unit_core_plural">cores</string>
+
+    <string name="wizard_help_cloud_projects">Hetzner Cloud tokens are project-scoped. Add one entry per project you want to manage. S3 Object Storage credentials live with their project.</string>
+    <string name="wizard_add_cloud_project">Add another project</string>
+    <string name="wizard_project_index">Project %1$d</string>
+    <string name="wizard_review_project_title">Project %1$d · %2$s</string>
+    <string name="project_form_name">Project name</string>
+    <string name="project_form_token">Cloud API token</string>
+    <string name="project_form_s3_toggle">Object Storage (S3) for this project</string>
+    <string name="project_form_save">Save project</string>
+    <string name="project_form_remove">Remove project</string>
+    <string name="project_form_delete_confirm">Remove project and its S3 credentials?</string>
+    <string name="project_picker_title">Switch project</string>
+    <string name="project_picker_add">New project</string>
+    <string name="project_picker_manage">Manage projects</string>
+    <string name="project_no_active">No project selected</string>
+    <string name="project_default_name">Default</string>
+    <string name="project_count_one">%1$d project</string>
+    <string name="project_count_other">%1$d projects</string>
+    <string name="project_manage_title">Cloud projects</string>
+    <string name="s3_no_creds_for_project">This project has no S3 credentials. Add them in project settings.</string>
+    <string name="cloud_storage_boxes">Storage Boxes</string>
+    <string name="cloud_tab_storage_boxes">Storage Boxes</string>
+    <string name="cloud_storage_box_status_active">Active</string>
+    <string name="cloud_storage_box_status_inactive">Inactive</string>
+    <string name="cloud_storage_box_protected">Protected</string>
+    <string name="cloud_storage_box_linked_resources">Linked: %1$d</string>
+    <string name="cloud_storage_box_unlinked">Unlinked</string>
+    <string name="cloud_storage_box_size_label">Size</string>
+    <string name="cloud_storage_box_type_label">Type</string>
 </resources>

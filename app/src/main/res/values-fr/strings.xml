@@ -264,4 +264,33 @@
     <string name="server_status_deleting">Suppression</string>
     <string name="server_unit_core_singular">cœur</string>
     <string name="server_unit_core_plural">cœurs</string>
+
+    <string name="wizard_help_cloud_projects">Les jetons Hetzner Cloud sont limités à un projet. Ajoutez une entrée par projet. Les identifiants S3 vivent avec leur projet.</string>
+    <string name="wizard_add_cloud_project">Ajouter un autre projet</string>
+    <string name="wizard_project_index">Projet %1$d</string>
+    <string name="wizard_review_project_title">Projet %1$d · %2$s</string>
+    <string name="project_form_name">Nom du projet</string>
+    <string name="project_form_token">Jeton API Cloud</string>
+    <string name="project_form_s3_toggle">Object Storage (S3) pour ce projet</string>
+    <string name="project_form_save">Enregistrer le projet</string>
+    <string name="project_form_remove">Supprimer le projet</string>
+    <string name="project_form_delete_confirm">Supprimer le projet et ses identifiants S3 ?</string>
+    <string name="project_picker_title">Changer de projet</string>
+    <string name="project_picker_add">Nouveau projet</string>
+    <string name="project_picker_manage">Gérer les projets</string>
+    <string name="project_no_active">Aucun projet sélectionné</string>
+    <string name="project_default_name">Par défaut</string>
+    <string name="project_count_one">%1$d projet</string>
+    <string name="project_count_other">%1$d projets</string>
+    <string name="project_manage_title">Projets Cloud</string>
+    <string name="s3_no_creds_for_project">Ce projet n\'a pas d\'identifiants S3. Ajoutez-les dans les paramètres du projet.</string>
+    <string name="cloud_storage_boxes">Storage Boxes</string>
+    <string name="cloud_tab_storage_boxes">Storage Boxes</string>
+    <string name="cloud_storage_box_status_active">Actif</string>
+    <string name="cloud_storage_box_status_inactive">Inactif</string>
+    <string name="cloud_storage_box_protected">Protégé</string>
+    <string name="cloud_storage_box_linked_resources">Liés : %1$d</string>
+    <string name="cloud_storage_box_unlinked">Non lié</string>
+    <string name="cloud_storage_box_size_label">Taille</string>
+    <string name="cloud_storage_box_type_label">Type</string>
 </resources>

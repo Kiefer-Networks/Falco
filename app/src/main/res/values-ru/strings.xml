@@ -268,4 +268,33 @@
     <string name="server_status_deleting">Удаление</string>
     <string name="server_unit_core_singular">ядро</string>
     <string name="server_unit_core_plural">ядер</string>
+
+    <string name="wizard_help_cloud_projects">Токены Hetzner Cloud ограничены проектом. Добавьте по одной записи на проект. S3-учётные данные привязаны к своему проекту.</string>
+    <string name="wizard_add_cloud_project">Добавить ещё проект</string>
+    <string name="wizard_project_index">Проект %1$d</string>
+    <string name="wizard_review_project_title">Проект %1$d · %2$s</string>
+    <string name="project_form_name">Имя проекта</string>
+    <string name="project_form_token">Токен Cloud API</string>
+    <string name="project_form_s3_toggle">Object Storage (S3) для этого проекта</string>
+    <string name="project_form_save">Сохранить проект</string>
+    <string name="project_form_remove">Удалить проект</string>
+    <string name="project_form_delete_confirm">Удалить проект и его S3-данные?</string>
+    <string name="project_picker_title">Сменить проект</string>
+    <string name="project_picker_add">Новый проект</string>
+    <string name="project_picker_manage">Управление проектами</string>
+    <string name="project_no_active">Проект не выбран</string>
+    <string name="project_default_name">По умолчанию</string>
+    <string name="project_count_one">%1$d проект</string>
+    <string name="project_count_other">%1$d проектов</string>
+    <string name="project_manage_title">Cloud-проекты</string>
+    <string name="s3_no_creds_for_project">У этого проекта нет S3-данных. Добавьте их в настройках проекта.</string>
+    <string name="cloud_storage_boxes">Storage Box</string>
+    <string name="cloud_tab_storage_boxes">Storage Box</string>
+    <string name="cloud_storage_box_status_active">Активна</string>
+    <string name="cloud_storage_box_status_inactive">Неактивна</string>
+    <string name="cloud_storage_box_protected">Защищена</string>
+    <string name="cloud_storage_box_linked_resources">Связано: %1$d</string>
+    <string name="cloud_storage_box_unlinked">Не связана</string>
+    <string name="cloud_storage_box_size_label">Размер</string>
+    <string name="cloud_storage_box_type_label">Тип</string>
 </resources>

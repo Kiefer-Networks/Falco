@@ -87,7 +87,6 @@ fun FalcoRoot(viewModel: FalcoRootViewModel) {
                         HetznerService.Cloud -> Routes.CLOUD
                         HetznerService.Robot -> Routes.ROBOT
                         HetznerService.Dns -> Routes.DNS
-                        HetznerService.S3 -> Routes.S3
                         null -> null
                     }
                     if (target != null) {
@@ -100,7 +99,34 @@ fun FalcoRoot(viewModel: FalcoRootViewModel) {
                     }
                 })
             }
-            composable(Routes.CLOUD) { CloudHubScreen() }
+            composable(Routes.CLOUD) {
+                CloudHubScreen(
+                    onAddProject = { nav.navigate(Routes.PROJECT_NEW) },
+                    onManageProjects = { nav.navigate(Routes.PROJECTS) },
+                )
+            }
+            composable(Routes.PROJECTS) {
+                de.kiefer_networks.falco.ui.screens.cloud.ProjectManageScreen(
+                    onBack = { nav.popBackStack() },
+                    onAdd = { nav.navigate(Routes.PROJECT_NEW) },
+                    onEdit = { id -> nav.navigate(Routes.projectEdit(id)) },
+                )
+            }
+            composable(Routes.PROJECT_NEW) {
+                de.kiefer_networks.falco.ui.screens.cloud.ProjectFormScreen(
+                    projectId = null,
+                    onClose = { nav.popBackStack() },
+                )
+            }
+            composable(
+                route = Routes.PROJECT_EDIT,
+                arguments = listOf(navArgument(Routes.ARG_PROJECT_ID) { type = NavType.StringType }),
+            ) { entry ->
+                de.kiefer_networks.falco.ui.screens.cloud.ProjectFormScreen(
+                    projectId = entry.arguments?.getString(Routes.ARG_PROJECT_ID),
+                    onClose = { nav.popBackStack() },
+                )
+            }
             composable(Routes.ROBOT) {
                 RobotScreen(
                     onServerClick = { number -> nav.navigate(Routes.robotServerDetail(number)) },

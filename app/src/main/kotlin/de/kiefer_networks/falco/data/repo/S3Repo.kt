@@ -3,18 +3,27 @@ package de.kiefer_networks.falco.data.repo
 
 import de.kiefer_networks.falco.data.api.S3Client
 import de.kiefer_networks.falco.data.auth.AccountManager
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
+
+class S3CredentialsMissingException : RuntimeException(
+    "Active Cloud project has no Object Storage credentials configured.",
+)
 
 @Singleton
 class S3Repo @Inject constructor(private val accounts: AccountManager) {
 
     private suspend fun client(): S3Client {
-        val s = accounts.activeSecrets()
-        val endpoint = requireNotNull(s?.s3Endpoint) { "S3 endpoint missing" }
-        val ak = requireNotNull(s.s3AccessKey) { "S3 access key missing" }
-        val sk = requireNotNull(s.s3SecretKey) { "S3 secret key missing" }
-        return S3Client(endpoint, s.s3Region, ak, sk)
+        val project = accounts.activeCloudProject.first()
+            ?: throw S3CredentialsMissingException()
+        if (!project.hasS3) throw S3CredentialsMissingException()
+        return S3Client(
+            endpoint = project.s3Endpoint!!,
+            region = project.s3Region,
+            accessKey = project.s3AccessKey!!,
+            secretKey = project.s3SecretKey!!,
+        )
     }
 
     suspend fun listBuckets() = client().listBuckets()

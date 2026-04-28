@@ -256,4 +256,33 @@
     <string name="server_status_deleting">删除中</string>
     <string name="server_unit_core_singular">核</string>
     <string name="server_unit_core_plural">核</string>
+
+    <string name="wizard_help_cloud_projects">Hetzner Cloud 令牌按项目作用域。请按项目添加条目。S3 对象存储凭据归属于其项目。</string>
+    <string name="wizard_add_cloud_project">添加另一个项目</string>
+    <string name="wizard_project_index">项目 %1$d</string>
+    <string name="wizard_review_project_title">项目 %1$d · %2$s</string>
+    <string name="project_form_name">项目名称</string>
+    <string name="project_form_token">Cloud API 令牌</string>
+    <string name="project_form_s3_toggle">为此项目启用对象存储 (S3)</string>
+    <string name="project_form_save">保存项目</string>
+    <string name="project_form_remove">移除项目</string>
+    <string name="project_form_delete_confirm">移除该项目及其 S3 凭据？</string>
+    <string name="project_picker_title">切换项目</string>
+    <string name="project_picker_add">新项目</string>
+    <string name="project_picker_manage">管理项目</string>
+    <string name="project_no_active">未选择项目</string>
+    <string name="project_default_name">默认</string>
+    <string name="project_count_one">%1$d 个项目</string>
+    <string name="project_count_other">%1$d 个项目</string>
+    <string name="project_manage_title">Cloud 项目</string>
+    <string name="s3_no_creds_for_project">此项目没有 S3 凭据。请在项目设置中添加。</string>
+    <string name="cloud_storage_boxes">存储盒</string>
+    <string name="cloud_tab_storage_boxes">存储盒</string>
+    <string name="cloud_storage_box_status_active">活动</string>
+    <string name="cloud_storage_box_status_inactive">未激活</string>
+    <string name="cloud_storage_box_protected">受保护</string>
+    <string name="cloud_storage_box_linked_resources">已关联：%1$d</string>
+    <string name="cloud_storage_box_unlinked">未关联</string>
+    <string name="cloud_storage_box_size_label">大小</string>
+    <string name="cloud_storage_box_type_label">类型</string>
 </resources>

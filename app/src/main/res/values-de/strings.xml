@@ -260,4 +260,33 @@
     <string name="server_status_deleting">Wird gelöscht</string>
     <string name="server_unit_core_singular">Kern</string>
     <string name="server_unit_core_plural">Kerne</string>
+
+    <string name="wizard_help_cloud_projects">Hetzner-Cloud-Tokens gelten projekt-skopiert. Lege pro Projekt einen Eintrag an. S3-Object-Storage-Credentials gehören zum jeweiligen Projekt.</string>
+    <string name="wizard_add_cloud_project">Weiteres Projekt hinzufügen</string>
+    <string name="wizard_project_index">Projekt %1$d</string>
+    <string name="wizard_review_project_title">Projekt %1$d · %2$s</string>
+    <string name="project_form_name">Projektname</string>
+    <string name="project_form_token">Cloud-API-Token</string>
+    <string name="project_form_s3_toggle">Object Storage (S3) für dieses Projekt</string>
+    <string name="project_form_save">Projekt speichern</string>
+    <string name="project_form_remove">Projekt entfernen</string>
+    <string name="project_form_delete_confirm">Projekt und seine S3-Credentials entfernen?</string>
+    <string name="project_picker_title">Projekt wechseln</string>
+    <string name="project_picker_add">Neues Projekt</string>
+    <string name="project_picker_manage">Projekte verwalten</string>
+    <string name="project_no_active">Kein Projekt ausgewählt</string>
+    <string name="project_default_name">Standard</string>
+    <string name="project_count_one">%1$d Projekt</string>
+    <string name="project_count_other">%1$d Projekte</string>
+    <string name="project_manage_title">Cloud-Projekte</string>
+    <string name="s3_no_creds_for_project">Dieses Projekt hat keine S3-Credentials. Füge sie in den Projekteinstellungen hinzu.</string>
+    <string name="cloud_storage_boxes">Storageboxen</string>
+    <string name="cloud_tab_storage_boxes">Storageboxen</string>
+    <string name="cloud_storage_box_status_active">Aktiv</string>
+    <string name="cloud_storage_box_status_inactive">Inaktiv</string>
+    <string name="cloud_storage_box_protected">Geschützt</string>
+    <string name="cloud_storage_box_linked_resources">Verknüpft: %1$d</string>
+    <string name="cloud_storage_box_unlinked">Nicht verknüpft</string>
+    <string name="cloud_storage_box_size_label">Größe</string>
+    <string name="cloud_storage_box_type_label">Typ</string>
 </resources>

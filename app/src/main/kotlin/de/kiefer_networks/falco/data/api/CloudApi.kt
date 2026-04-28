@@ -48,4 +48,7 @@ interface CloudApi {
 
     @GET("networks")
     suspend fun listNetworks(): CloudNetworkList
+
+    @GET("storage_boxes")
+    suspend fun listStorageBoxes(): de.kiefer_networks.falco.data.dto.CloudStorageBoxList
 }

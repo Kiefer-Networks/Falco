@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+@file:OptIn(
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+)
 package de.kiefer_networks.falco.ui.screens.accounts
 
 import android.content.Intent
@@ -20,8 +24,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Memory
@@ -32,7 +38,6 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -44,7 +49,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,13 +65,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountWizardScreen(
     viewModel: AccountWizardViewModel = hiltViewModel(),
@@ -148,10 +153,9 @@ fun AccountWizardScreen(
                 WizardStep.Name -> StepName(state = state, viewModel = viewModel)
                 WizardStep.ServicePicker -> StepServicePicker(state = state, viewModel = viewModel)
                 is WizardStep.Credentials -> when (current.service) {
-                    HetznerService.Cloud -> StepCloud(state = state, viewModel = viewModel)
+                    HetznerService.Cloud -> StepCloudProjects(state = state, viewModel = viewModel)
                     HetznerService.Robot -> StepRobot(state = state, viewModel = viewModel)
                     HetznerService.Dns -> StepDns(state = state, viewModel = viewModel)
-                    HetznerService.S3 -> StepS3(state = state, viewModel = viewModel)
                 }
                 WizardStep.Review -> StepReview(state = state, viewModel = viewModel)
                 WizardStep.Done -> StepDone(state = state)
@@ -212,7 +216,6 @@ private fun StepName(state: WizardState, viewModel: AccountWizardViewModel) {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun StepServicePicker(state: WizardState, viewModel: AccountWizardViewModel) {
     StepHeader(
@@ -227,7 +230,6 @@ private fun StepServicePicker(state: WizardState, viewModel: AccountWizardViewMo
             HetznerService.Cloud to (Icons.Filled.Cloud to stringResource(R.string.nav_cloud)),
             HetznerService.Robot to (Icons.Filled.Memory to stringResource(R.string.nav_robot)),
             HetznerService.Dns to (Icons.Filled.Dns to stringResource(R.string.nav_dns)),
-            HetznerService.S3 to (Icons.Filled.Storage to stringResource(R.string.nav_storage)),
         )
         items.forEach { (svc, labels) ->
             val selected = svc in state.services
@@ -268,20 +270,113 @@ private fun SecretField(label: String, value: String, onValueChange: (String) ->
 }
 
 @Composable
-private fun StepCloud(state: WizardState, viewModel: AccountWizardViewModel) {
+private fun StepCloudProjects(state: WizardState, viewModel: AccountWizardViewModel) {
     StepHeader(
         title = stringResource(R.string.wizard_step_cloud),
-        body = stringResource(R.string.wizard_help_cloud),
+        body = stringResource(R.string.wizard_help_cloud_projects),
     )
-    SecretField(
-        label = stringResource(R.string.account_cloud_token),
-        value = state.cloud.token,
-        onValueChange = viewModel::setCloudToken,
-    )
+    state.cloudProjects.forEachIndexed { idx, draft ->
+        ProjectDraftCard(
+            index = idx + 1,
+            draft = draft,
+            removable = state.cloudProjects.size > 1,
+            onChange = { transform -> viewModel.updateCloudProject(draft.id, transform) },
+            onRemove = { viewModel.removeCloudProject(draft.id) },
+        )
+    }
+    OutlinedButton(
+        onClick = { viewModel.addCloudProject() },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Icon(Icons.Filled.Add, contentDescription = null)
+        Spacer(Modifier.size(8.dp))
+        Text(stringResource(R.string.wizard_add_cloud_project))
+    }
     ConsoleLink(
         label = stringResource(R.string.wizard_cloud_link),
         url = "https://console.hetzner.cloud/security/tokens",
     )
+}
+
+@Composable
+private fun ProjectDraftCard(
+    index: Int,
+    draft: CloudProjectDraft,
+    removable: Boolean,
+    onChange: ((CloudProjectDraft) -> CloudProjectDraft) -> Unit,
+    onRemove: () -> Unit,
+) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.wizard_project_index, index),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                if (removable) {
+                    IconButton(onClick = onRemove) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.delete),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+            OutlinedTextField(
+                value = draft.name,
+                onValueChange = { v -> onChange { it.copy(name = v) } },
+                label = { Text(stringResource(R.string.project_form_name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            SecretField(
+                label = stringResource(R.string.project_form_token),
+                value = draft.token,
+                onValueChange = { v -> onChange { it.copy(token = v) } },
+            )
+            HorizontalDivider()
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.project_form_s3_toggle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                Switch(
+                    checked = draft.s3Enabled,
+                    onCheckedChange = { v -> onChange { it.copy(s3Enabled = v) } },
+                )
+            }
+            if (draft.s3Enabled) {
+                OutlinedTextField(
+                    value = draft.s3Endpoint,
+                    onValueChange = { v -> onChange { it.copy(s3Endpoint = v) } },
+                    label = { Text(stringResource(R.string.account_s3_endpoint)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = draft.s3Region,
+                    onValueChange = { v -> onChange { it.copy(s3Region = v) } },
+                    label = { Text(stringResource(R.string.account_s3_region_optional)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                SecretField(
+                    label = stringResource(R.string.account_s3_access_key),
+                    value = draft.s3AccessKey,
+                    onValueChange = { v -> onChange { it.copy(s3AccessKey = v) } },
+                )
+                SecretField(
+                    label = stringResource(R.string.account_s3_secret_key),
+                    value = draft.s3SecretKey,
+                    onValueChange = { v -> onChange { it.copy(s3SecretKey = v) } },
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -326,43 +421,6 @@ private fun StepDns(state: WizardState, viewModel: AccountWizardViewModel) {
 }
 
 @Composable
-private fun StepS3(state: WizardState, viewModel: AccountWizardViewModel) {
-    StepHeader(
-        title = stringResource(R.string.wizard_step_s3),
-        body = stringResource(R.string.wizard_help_s3),
-    )
-    OutlinedTextField(
-        value = state.s3.endpoint,
-        onValueChange = viewModel::setS3Endpoint,
-        label = { Text(stringResource(R.string.account_s3_endpoint)) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-        modifier = Modifier.fillMaxWidth(),
-    )
-    OutlinedTextField(
-        value = state.s3.region,
-        onValueChange = viewModel::setS3Region,
-        label = { Text(stringResource(R.string.account_s3_region_optional)) },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-    )
-    SecretField(
-        label = stringResource(R.string.account_s3_access_key),
-        value = state.s3.accessKey,
-        onValueChange = viewModel::setS3AccessKey,
-    )
-    SecretField(
-        label = stringResource(R.string.account_s3_secret_key),
-        value = state.s3.secretKey,
-        onValueChange = viewModel::setS3SecretKey,
-    )
-    ConsoleLink(
-        label = stringResource(R.string.wizard_s3_link),
-        url = "https://console.hetzner.cloud/",
-    )
-}
-
-@Composable
 private fun StepReview(state: WizardState, viewModel: AccountWizardViewModel) {
     var revealed by remember { mutableStateOf(false) }
     StepHeader(
@@ -388,16 +446,36 @@ private fun StepReview(state: WizardState, viewModel: AccountWizardViewModel) {
     HorizontalDivider()
 
     ReviewRow(label = stringResource(R.string.account_name), value = state.name)
-    if (HetznerService.Cloud in state.services) {
-        ReviewSection(
-            icon = Icons.Filled.Cloud,
-            title = stringResource(R.string.nav_cloud),
-            onEdit = { viewModel.goToStep(WizardStep.Credentials(HetznerService.Cloud)) },
-        ) {
-            ReviewRow(
-                label = stringResource(R.string.account_cloud_token),
-                value = mask(state.cloud.token, revealed),
-            )
+
+    if (HetznerService.Cloud in state.services && state.cloudProjects.isNotEmpty()) {
+        state.cloudProjects.forEachIndexed { idx, draft ->
+            ReviewSection(
+                icon = Icons.Filled.Cloud,
+                title = stringResource(R.string.wizard_review_project_title, idx + 1, draft.name),
+                onEdit = { viewModel.goToStep(WizardStep.Credentials(HetznerService.Cloud)) },
+            ) {
+                ReviewRow(
+                    label = stringResource(R.string.project_form_token),
+                    value = mask(draft.token, revealed),
+                )
+                if (draft.s3Enabled) {
+                    ReviewRow(label = stringResource(R.string.account_s3_endpoint), value = draft.s3Endpoint)
+                    if (draft.s3Region.isNotBlank()) {
+                        ReviewRow(
+                            label = stringResource(R.string.account_s3_region_optional),
+                            value = draft.s3Region,
+                        )
+                    }
+                    ReviewRow(
+                        label = stringResource(R.string.account_s3_access_key),
+                        value = mask(draft.s3AccessKey, revealed),
+                    )
+                    ReviewRow(
+                        label = stringResource(R.string.account_s3_secret_key),
+                        value = mask(draft.s3SecretKey, revealed),
+                    )
+                }
+            }
         }
     }
     if (HetznerService.Robot in state.services) {
@@ -422,29 +500,6 @@ private fun StepReview(state: WizardState, viewModel: AccountWizardViewModel) {
             ReviewRow(
                 label = stringResource(R.string.account_dns_token),
                 value = mask(state.dns.token, revealed),
-            )
-        }
-    }
-    if (HetznerService.S3 in state.services) {
-        ReviewSection(
-            icon = Icons.Filled.Storage,
-            title = stringResource(R.string.nav_storage),
-            onEdit = { viewModel.goToStep(WizardStep.Credentials(HetznerService.S3)) },
-        ) {
-            ReviewRow(label = stringResource(R.string.account_s3_endpoint), value = state.s3.endpoint)
-            if (state.s3.region.isNotBlank()) {
-                ReviewRow(
-                    label = stringResource(R.string.account_s3_region_optional),
-                    value = state.s3.region,
-                )
-            }
-            ReviewRow(
-                label = stringResource(R.string.account_s3_access_key),
-                value = mask(state.s3.accessKey, revealed),
-            )
-            ReviewRow(
-                label = stringResource(R.string.account_s3_secret_key),
-                value = mask(state.s3.secretKey, revealed),
             )
         }
     }
@@ -525,3 +580,5 @@ private fun StepDone(state: WizardState) {
         }
     }
 }
+
+@Suppress("unused") private val keepStorageIcon = Icons.Filled.Storage

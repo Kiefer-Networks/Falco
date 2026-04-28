@@ -264,4 +264,33 @@
     <string name="server_status_deleting">Eliminando</string>
     <string name="server_unit_core_singular">núcleo</string>
     <string name="server_unit_core_plural">núcleos</string>
+
+    <string name="wizard_help_cloud_projects">Los tokens de Hetzner Cloud están limitados a un proyecto. Añade una entrada por proyecto. Las credenciales S3 viven con el proyecto correspondiente.</string>
+    <string name="wizard_add_cloud_project">Añadir otro proyecto</string>
+    <string name="wizard_project_index">Proyecto %1$d</string>
+    <string name="wizard_review_project_title">Proyecto %1$d · %2$s</string>
+    <string name="project_form_name">Nombre del proyecto</string>
+    <string name="project_form_token">Token API Cloud</string>
+    <string name="project_form_s3_toggle">Object Storage (S3) para este proyecto</string>
+    <string name="project_form_save">Guardar proyecto</string>
+    <string name="project_form_remove">Eliminar proyecto</string>
+    <string name="project_form_delete_confirm">¿Eliminar el proyecto y sus credenciales S3?</string>
+    <string name="project_picker_title">Cambiar de proyecto</string>
+    <string name="project_picker_add">Nuevo proyecto</string>
+    <string name="project_picker_manage">Gestionar proyectos</string>
+    <string name="project_no_active">Ningún proyecto seleccionado</string>
+    <string name="project_default_name">Predeterminado</string>
+    <string name="project_count_one">%1$d proyecto</string>
+    <string name="project_count_other">%1$d proyectos</string>
+    <string name="project_manage_title">Proyectos Cloud</string>
+    <string name="s3_no_creds_for_project">Este proyecto no tiene credenciales S3. Añádelas en la configuración del proyecto.</string>
+    <string name="cloud_storage_boxes">Storage Boxes</string>
+    <string name="cloud_tab_storage_boxes">Storage Boxes</string>
+    <string name="cloud_storage_box_status_active">Activo</string>
+    <string name="cloud_storage_box_status_inactive">Inactivo</string>
+    <string name="cloud_storage_box_protected">Protegido</string>
+    <string name="cloud_storage_box_linked_resources">Vinculados: %1$d</string>
+    <string name="cloud_storage_box_unlinked">Sin vincular</string>
+    <string name="cloud_storage_box_size_label">Tamaño</string>
+    <string name="cloud_storage_box_type_label">Tipo</string>
 </resources>

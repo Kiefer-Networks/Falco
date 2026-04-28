@@ -5,9 +5,13 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import de.kiefer_networks.falco.data.model.CloudProject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,40 +19,54 @@ import javax.inject.Singleton
 data class HetznerAccount(
     val id: String,
     val displayName: String,
-    val hasCloud: Boolean,
+    val cloudProjectCount: Int,
+    val activeCloudProjectId: String?,
     val hasRobot: Boolean,
     val hasDns: Boolean,
-    val hasS3: Boolean,
 )
 
 data class AccountSecrets(
-    val cloudToken: String? = null,
+    val cloudProjects: List<CloudProject> = emptyList(),
+    val activeCloudProjectId: String? = null,
     val robotUser: String? = null,
     val robotPass: String? = null,
     val dnsToken: String? = null,
-    val s3Endpoint: String? = null,
-    val s3Region: String? = null,
-    val s3AccessKey: String? = null,
-    val s3SecretKey: String? = null,
 )
 
 /**
- * Owns the catalogue of Hetzner accounts and the currently active selection.
- *
- * Plain non-secret metadata (account id list, active id) lives in DataStore;
+ * Owns the catalogue of Hetzner accounts and their cloud projects. Plain
+ * non-secret metadata (account-id list, active-id) lives in DataStore;
  * actual credentials are delegated to [CredentialStore] which encrypts at rest.
+ *
+ * Each account holds a list of [CloudProject]s. Migration from the v0.2
+ * single-`cloudToken` shape happens lazily on first read in [readAccount] and
+ * is idempotent.
  */
 @Singleton
 class AccountManager @Inject constructor(
     private val store: CredentialStore,
     private val dataStore: DataStore<Preferences>,
 ) {
+    private val json = Json { ignoreUnknownKeys = true }
+
     val accounts: Flow<List<HetznerAccount>> = dataStore.data.map { prefs ->
         val ids = prefs[ACCOUNT_IDS]?.split(',')?.filter(String::isNotBlank).orEmpty()
         ids.map { id -> readAccount(id) }
     }
 
     val activeAccountId: Flow<String?> = dataStore.data.map { it[ACTIVE_ID] }
+
+    /** Active project of the active account, or null when no project exists. */
+    val activeCloudProject: Flow<CloudProject?> = combine(
+        activeAccountId,
+        dataStore.data,
+    ) { accountId, _ ->
+        if (accountId.isNullOrBlank()) return@combine null
+        val projects = readCloudProjects(accountId)
+        if (projects.isEmpty()) return@combine null
+        val activeId = store.get(accountId, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID)
+        projects.firstOrNull { it.id == activeId } ?: projects.first()
+    }
 
     suspend fun create(displayName: String, secrets: AccountSecrets): HetznerAccount {
         val id = UUID.randomUUID().toString()
@@ -78,41 +96,118 @@ class AccountManager @Inject constructor(
         }
     }
 
-    suspend fun secretsFor(id: String): AccountSecrets = AccountSecrets(
-        cloudToken = store.get(id, CredentialStore.Field.CLOUD_TOKEN),
-        robotUser = store.get(id, CredentialStore.Field.ROBOT_USER),
-        robotPass = store.get(id, CredentialStore.Field.ROBOT_PASS),
-        dnsToken = store.get(id, CredentialStore.Field.DNS_TOKEN),
-        s3Endpoint = store.get(id, CredentialStore.Field.S3_ENDPOINT),
-        s3Region = store.get(id, CredentialStore.Field.S3_REGION),
-        s3AccessKey = store.get(id, CredentialStore.Field.S3_ACCESS_KEY),
-        s3SecretKey = store.get(id, CredentialStore.Field.S3_SECRET_KEY),
-    )
+    suspend fun cloudProjects(accountId: String): List<CloudProject> = readCloudProjects(accountId)
+
+    suspend fun addCloudProject(accountId: String, project: CloudProject) {
+        val current = readCloudProjects(accountId)
+        val withId = if (project.id.isBlank()) project.copy(id = UUID.randomUUID().toString()) else project
+        writeCloudProjects(accountId, current + withId)
+        // First project becomes active automatically.
+        if (current.isEmpty()) {
+            store.put(accountId, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID, withId.id)
+        }
+    }
+
+    suspend fun updateCloudProject(accountId: String, project: CloudProject) {
+        val current = readCloudProjects(accountId)
+        writeCloudProjects(accountId, current.map { if (it.id == project.id) project else it })
+    }
+
+    suspend fun removeCloudProject(accountId: String, projectId: String) {
+        val current = readCloudProjects(accountId)
+        val remaining = current.filterNot { it.id == projectId }
+        writeCloudProjects(accountId, remaining)
+        val activeId = store.get(accountId, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID)
+        if (activeId == projectId) {
+            val next = remaining.firstOrNull()?.id.orEmpty()
+            store.put(accountId, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID, next)
+        }
+    }
+
+    suspend fun setActiveCloudProject(accountId: String, projectId: String) {
+        store.put(accountId, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID, projectId)
+        // Touch DataStore so the activeCloudProject Flow re-emits.
+        dataStore.edit { /* no-op trigger */ }
+    }
+
+    suspend fun secretsFor(id: String): AccountSecrets {
+        val projects = readCloudProjects(id)
+        val activeId = store.get(id, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID)
+            ?.takeIf { tag -> projects.any { it.id == tag } }
+            ?: projects.firstOrNull()?.id
+        return AccountSecrets(
+            cloudProjects = projects,
+            activeCloudProjectId = activeId,
+            robotUser = store.get(id, CredentialStore.Field.ROBOT_USER),
+            robotPass = store.get(id, CredentialStore.Field.ROBOT_PASS),
+            dnsToken = store.get(id, CredentialStore.Field.DNS_TOKEN),
+        )
+    }
 
     suspend fun activeSecrets(): AccountSecrets? =
         activeAccountId.first()?.takeIf { it.isNotBlank() }?.let { secretsFor(it) }
 
     private fun applySecrets(id: String, s: AccountSecrets) {
-        s.cloudToken?.let { store.put(id, CredentialStore.Field.CLOUD_TOKEN, it) }
+        if (s.cloudProjects.isNotEmpty()) {
+            writeCloudProjects(id, s.cloudProjects)
+            val active = s.activeCloudProjectId
+                ?.takeIf { tag -> s.cloudProjects.any { it.id == tag } }
+                ?: s.cloudProjects.first().id
+            store.put(id, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID, active)
+        }
         s.robotUser?.let { store.put(id, CredentialStore.Field.ROBOT_USER, it) }
         s.robotPass?.let { store.put(id, CredentialStore.Field.ROBOT_PASS, it) }
         s.dnsToken?.let { store.put(id, CredentialStore.Field.DNS_TOKEN, it) }
-        s.s3Endpoint?.let { store.put(id, CredentialStore.Field.S3_ENDPOINT, it) }
-        s.s3Region?.let { store.put(id, CredentialStore.Field.S3_REGION, it) }
-        s.s3AccessKey?.let { store.put(id, CredentialStore.Field.S3_ACCESS_KEY, it) }
-        s.s3SecretKey?.let { store.put(id, CredentialStore.Field.S3_SECRET_KEY, it) }
     }
 
-    private fun readAccount(id: String): HetznerAccount = HetznerAccount(
-        id = id,
-        displayName = store.get(id, CredentialStore.Field.DISPLAY_NAME).orEmpty(),
-        hasCloud = !store.get(id, CredentialStore.Field.CLOUD_TOKEN).isNullOrBlank(),
-        hasRobot = !store.get(id, CredentialStore.Field.ROBOT_USER).isNullOrBlank() &&
-            !store.get(id, CredentialStore.Field.ROBOT_PASS).isNullOrBlank(),
-        hasDns = !store.get(id, CredentialStore.Field.DNS_TOKEN).isNullOrBlank(),
-        hasS3 = !store.get(id, CredentialStore.Field.S3_ACCESS_KEY).isNullOrBlank() &&
-            !store.get(id, CredentialStore.Field.S3_SECRET_KEY).isNullOrBlank(),
-    )
+    /**
+     * Reads + lazily migrates the project list for an account. Migration:
+     * legacy single CLOUD_TOKEN (+ optional S3 fields) folds into a single
+     * `Default` project the first time. Idempotent.
+     */
+    private val projectListSerializer = ListSerializer(CloudProject.serializer())
+
+    private fun readCloudProjects(id: String): List<CloudProject> {
+        val raw = store.get(id, CredentialStore.Field.CLOUD_PROJECTS_JSON)
+        if (!raw.isNullOrBlank()) {
+            return runCatching { json.decodeFromString(projectListSerializer, raw) }.getOrDefault(emptyList())
+        }
+        // Migration path.
+        val legacyToken = store.get(id, CredentialStore.Field.CLOUD_TOKEN)
+        if (legacyToken.isNullOrBlank()) return emptyList()
+        val migrated = CloudProject(
+            id = UUID.randomUUID().toString(),
+            name = "Default",
+            cloudToken = legacyToken,
+            s3Endpoint = store.get(id, CredentialStore.Field.S3_ENDPOINT),
+            s3Region = store.get(id, CredentialStore.Field.S3_REGION),
+            s3AccessKey = store.get(id, CredentialStore.Field.S3_ACCESS_KEY),
+            s3SecretKey = store.get(id, CredentialStore.Field.S3_SECRET_KEY),
+        )
+        writeCloudProjects(id, listOf(migrated))
+        store.put(id, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID, migrated.id)
+        return listOf(migrated)
+    }
+
+    private fun writeCloudProjects(id: String, projects: List<CloudProject>) {
+        store.put(id, CredentialStore.Field.CLOUD_PROJECTS_JSON, json.encodeToString(projectListSerializer, projects))
+    }
+
+    private fun readAccount(id: String): HetznerAccount {
+        val projects = readCloudProjects(id)
+        val activeProj = store.get(id, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID)
+            ?.takeIf { tag -> projects.any { it.id == tag } }
+            ?: projects.firstOrNull()?.id
+        return HetznerAccount(
+            id = id,
+            displayName = store.get(id, CredentialStore.Field.DISPLAY_NAME).orEmpty(),
+            cloudProjectCount = projects.size,
+            activeCloudProjectId = activeProj,
+            hasRobot = !store.get(id, CredentialStore.Field.ROBOT_USER).isNullOrBlank() &&
+                !store.get(id, CredentialStore.Field.ROBOT_PASS).isNullOrBlank(),
+            hasDns = !store.get(id, CredentialStore.Field.DNS_TOKEN).isNullOrBlank(),
+        )
+    }
 
     companion object {
         private val ACCOUNT_IDS = stringPreferencesKey("account_ids")

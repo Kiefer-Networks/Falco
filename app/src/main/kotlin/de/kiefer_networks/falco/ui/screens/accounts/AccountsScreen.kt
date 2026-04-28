@@ -111,10 +111,17 @@ private fun AccountRow(
     onRemove: () -> Unit,
 ) {
     val flags = buildList {
-        if (account.hasCloud) add("Cloud")
+        if (account.cloudProjectCount > 0) {
+            add(
+                if (account.cloudProjectCount == 1) {
+                    "Cloud"
+                } else {
+                    "Cloud (${account.cloudProjectCount})"
+                },
+            )
+        }
         if (account.hasRobot) add("Robot")
         if (account.hasDns) add("DNS")
-        if (account.hasS3) add("S3")
     }.joinToString(" • ")
 
     var menuOpen by remember { mutableStateOf(false) }

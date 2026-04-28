@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -47,12 +48,14 @@ class UploadService : Service() {
 
         scope.launch {
             runCatching {
-                val s = accounts.activeSecrets() ?: error("No active account")
+                val project = accounts.activeCloudProject.first()
+                    ?: error("No active Cloud project")
+                require(project.hasS3) { "Active Cloud project has no S3 credentials" }
                 val client = S3Client(
-                    endpoint = requireNotNull(s.s3Endpoint),
-                    region = s.s3Region,
-                    accessKey = requireNotNull(s.s3AccessKey),
-                    secretKey = requireNotNull(s.s3SecretKey),
+                    endpoint = project.s3Endpoint!!,
+                    region = project.s3Region,
+                    accessKey = project.s3AccessKey!!,
+                    secretKey = project.s3SecretKey!!,
                 )
                 val resolver = applicationContext.contentResolver
                 val size = resolver.openFileDescriptor(source, "r")?.use { it.statSize } ?: -1L

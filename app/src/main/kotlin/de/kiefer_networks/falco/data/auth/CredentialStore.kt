@@ -68,14 +68,20 @@ class CredentialStore @Inject constructor(@ApplicationContext context: Context) 
 
     enum class Field {
         DISPLAY_NAME,
+        // Legacy v0.1/v0.2 fields. Read by the migration in AccountManager and
+        // then folded into CLOUD_PROJECTS_JSON; new writes go through the
+        // project-list field below.
         CLOUD_TOKEN,
-        ROBOT_USER,
-        ROBOT_PASS,
-        DNS_TOKEN,
         S3_ENDPOINT,
         S3_REGION,
         S3_ACCESS_KEY,
         S3_SECRET_KEY,
+        // Current-shape fields (v0.3+).
+        ROBOT_USER,
+        ROBOT_PASS,
+        DNS_TOKEN,
+        CLOUD_PROJECTS_JSON,
+        ACTIVE_CLOUD_PROJECT_ID,
     }
 
     companion object {
