@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Falco</string>
+    <string name="app_tagline">Hetzner 管理器</string>
+
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+    <string name="retry">重试</string>
+    <string name="refresh">刷新</string>
+    <string name="close">关闭</string>
+    <string name="error">错误</string>
+    <string name="loading">加载中…</string>
+    <string name="search">搜索</string>
+    <string name="copy">复制</string>
+    <string name="share">分享</string>
+    <string name="add">添加</string>
+    <string name="edit">编辑</string>
+    <string name="empty_list">这里还没有内容。</string>
+
+    <string name="nav_cloud">云</string>
+    <string name="nav_robot">Robot</string>
+    <string name="nav_dns">DNS</string>
+    <string name="nav_storage">存储</string>
+    <string name="nav_accounts">账户</string>
+    <string name="nav_settings">设置</string>
+
+    <string name="welcome_title">欢迎使用 Falco</string>
+    <string name="welcome_subtitle">在一个安全的应用中管理 Hetzner Cloud、独立服务器、Storage Box、DNS 和对象存储。</string>
+    <string name="bio_prompt_title">解锁 Falco</string>
+    <string name="bio_prompt_subtitle">认证以访问您的 Hetzner 凭据</string>
+    <string name="bio_prompt_negative">取消</string>
+    <string name="bio_unavailable">此设备不支持生物识别认证。请先设置屏幕锁定。</string>
+
+    <string name="account_add">添加账户</string>
+    <string name="account_name">账户名称</string>
+    <string name="account_cloud_token">Cloud API 令牌</string>
+    <string name="account_robot_user">Robot 网络服务用户</string>
+    <string name="account_robot_pass">Robot 密码</string>
+    <string name="account_dns_token">DNS API 令牌</string>
+    <string name="account_s3_endpoint">S3 端点（例如 fsn1.your-objectstorage.com）</string>
+    <string name="account_s3_access_key">S3 访问密钥</string>
+    <string name="account_s3_secret_key">S3 私有密钥</string>
+    <string name="account_remove">移除账户</string>
+    <string name="account_remove_confirm">移除此账户及所有保存的凭据？</string>
+    <string name="accounts_empty">尚无账户。添加第一个开始使用。</string>
+
+    <string name="cloud_servers">服务器</string>
+    <string name="cloud_volumes">卷</string>
+    <string name="cloud_networks">网络</string>
+    <string name="cloud_firewalls">防火墙</string>
+    <string name="cloud_floating_ips">浮动 IP</string>
+    <string name="cloud_load_balancers">负载均衡器</string>
+    <string name="action_power_on">开机</string>
+    <string name="action_power_off">关机</string>
+    <string name="action_reboot">重启</string>
+    <string name="action_shutdown">关闭</string>
+    <string name="action_reset">重置</string>
+    <string name="action_snapshot">快照</string>
+    <string name="action_rescue">救援模式</string>
+
+    <string name="robot_dedis">独立服务器</string>
+    <string name="robot_storageboxes">Storage Box</string>
+    <string name="robot_failover">故障转移 IP</string>
+    <string name="robot_vswitch">vSwitch</string>
+    <string name="storagebox_snapshots">快照</string>
+    <string name="storagebox_subaccounts">子账户</string>
+    <string name="storagebox_password">重置密码</string>
+    <string name="action_wol">网络唤醒</string>
+
+    <string name="dns_zones">区域</string>
+    <string name="dns_records">记录</string>
+    <string name="dns_record_type">类型</string>
+    <string name="dns_record_name">名称</string>
+    <string name="dns_record_value">值</string>
+    <string name="dns_record_ttl">TTL</string>
+    <string name="dns_zone_create">新区域</string>
+    <string name="dns_record_create">新记录</string>
+
+    <string name="s3_buckets">存储桶</string>
+    <string name="s3_objects">对象</string>
+    <string name="s3_upload">上传</string>
+    <string name="s3_download">下载</string>
+    <string name="s3_share_link">创建分享链接</string>
+    <string name="s3_share_link_expires">链接将在 %1$d 小时后过期</string>
+    <string name="s3_link_copied">链接已复制</string>
+    <string name="s3_create_bucket">创建存储桶</string>
+
+    <string name="settings_language">语言</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_lock_timeout">自动锁定</string>
+    <string name="settings_pinning">显示证书 Pin</string>
+    <string name="settings_export_accounts">导出账户（加密）</string>
+    <string name="settings_import_accounts">导入账户</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_license">许可证：GPL-3.0-or-later</string>
+    <string name="settings_source">源代码</string>
+    <string name="settings_version">版本 %1$s</string>
+
+    <string name="error_pinning">证书 Pin 验证失败。为保护您，连接已被阻止。</string>
+    <string name="error_rate_limit">已达到 Hetzner 速率限制。请稍后再试。</string>
+    <string name="error_network">网络错误。请检查您的连接。</string>
+    <string name="error_auth">认证失败。请检查您的凭据。</string>
+
+    <string name="confirm_destructive_title">确认操作</string>
+    <string name="confirm_destructive_msg">此操作无法撤销。继续？</string>
+</resources>

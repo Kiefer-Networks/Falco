@@ -1,0 +1,17 @@
+Falco è un client Android rispettoso della privacy per i servizi Hetzner Online.
+
+Gestisci tutte e quattro le API Hetzner da un'unica app sicura:
+
+• Hetzner Cloud — accendi, spegni, riavvia, resetta, crea snapshot e attiva la modalità rescue; gestisci volumi, reti, firewall, IP fluttuanti e bilanciatori di carico.
+• Hetzner Robot — server dedicati con reset, rescue e Wake-on-LAN; supporto completo per Storage Box con snapshot, sotto-account e reset password; vSwitch e IP di failover.
+• Hetzner DNS Console — elenca le zone, crea e modifica record, importazione di massa.
+• Hetzner Object Storage — naviga bucket e oggetti, carica e scarica file, genera link di condivisione firmati.
+
+Sicurezza
+• Nessun tracciamento, nessuna pubblicità, nessuna dipendenza proprietaria: 100% software libero (GPL-3.0-or-later).
+• Le credenziali sono salvate in EncryptedSharedPreferences. La master key è vincolata all'Android Keystore (StrongBox quando disponibile) e protetta da biometria o credenziale del dispositivo.
+• Solo TLS 1.3 con certificate pinning per ogni endpoint Hetzner.
+• FLAG_SECURE impedisce la fuga dei token tramite screenshot o anteprima delle app recenti.
+• Il backup automatico è disattivato — i segreti non lasciano mai il dispositivo.
+
+Falco è software comunitario e non è affiliato a Hetzner Online GmbH.

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Falco</string>
+    <string name="app_tagline">Gestore Hetzner</string>
+
+    <string name="ok">OK</string>
+    <string name="cancel">Annulla</string>
+    <string name="save">Salva</string>
+    <string name="delete">Elimina</string>
+    <string name="retry">Riprova</string>
+    <string name="refresh">Aggiorna</string>
+    <string name="close">Chiudi</string>
+    <string name="error">Errore</string>
+    <string name="loading">Caricamento…</string>
+    <string name="search">Cerca</string>
+    <string name="copy">Copia</string>
+    <string name="share">Condividi</string>
+    <string name="add">Aggiungi</string>
+    <string name="edit">Modifica</string>
+    <string name="empty_list">Ancora niente qui.</string>
+
+    <string name="nav_cloud">Cloud</string>
+    <string name="nav_robot">Robot</string>
+    <string name="nav_dns">DNS</string>
+    <string name="nav_storage">Storage</string>
+    <string name="nav_accounts">Account</string>
+    <string name="nav_settings">Impostazioni</string>
+
+    <string name="welcome_title">Benvenuto in Falco</string>
+    <string name="welcome_subtitle">Gestisci Hetzner Cloud, server dedicati, storage box, DNS e Object Storage da un\'app sicura.</string>
+    <string name="bio_prompt_title">Sblocca Falco</string>
+    <string name="bio_prompt_subtitle">Autenticati per accedere alle tue credenziali Hetzner</string>
+    <string name="bio_prompt_negative">Annulla</string>
+    <string name="bio_unavailable">L\'autenticazione biometrica non è disponibile su questo dispositivo. Imposta prima un blocco schermo.</string>
+
+    <string name="account_add">Aggiungi account</string>
+    <string name="account_name">Nome account</string>
+    <string name="account_cloud_token">Token API Cloud</string>
+    <string name="account_robot_user">Utente webservice Robot</string>
+    <string name="account_robot_pass">Password Robot</string>
+    <string name="account_dns_token">Token API DNS</string>
+    <string name="account_s3_endpoint">Endpoint S3 (es. fsn1.your-objectstorage.com)</string>
+    <string name="account_s3_access_key">Access key S3</string>
+    <string name="account_s3_secret_key">Secret key S3</string>
+    <string name="account_remove">Rimuovi account</string>
+    <string name="account_remove_confirm">Rimuovere questo account e tutte le credenziali memorizzate?</string>
+    <string name="accounts_empty">Ancora nessun account. Aggiungi il primo per iniziare.</string>
+
+    <string name="cloud_servers">Server</string>
+    <string name="cloud_volumes">Volumi</string>
+    <string name="cloud_networks">Reti</string>
+    <string name="cloud_firewalls">Firewall</string>
+    <string name="cloud_floating_ips">IP fluttuanti</string>
+    <string name="cloud_load_balancers">Bilanciatori di carico</string>
+    <string name="action_power_on">Accendi</string>
+    <string name="action_power_off">Spegni</string>
+    <string name="action_reboot">Riavvia</string>
+    <string name="action_shutdown">Arresto</string>
+    <string name="action_reset">Reset</string>
+    <string name="action_snapshot">Snapshot</string>
+    <string name="action_rescue">Modalità rescue</string>
+
+    <string name="robot_dedis">Server dedicati</string>
+    <string name="robot_storageboxes">Storage Box</string>
+    <string name="robot_failover">IP di failover</string>
+    <string name="robot_vswitch">vSwitch</string>
+    <string name="storagebox_snapshots">Snapshot</string>
+    <string name="storagebox_subaccounts">Sotto-account</string>
+    <string name="storagebox_password">Reimposta password</string>
+    <string name="action_wol">Wake-on-LAN</string>
+
+    <string name="dns_zones">Zone</string>
+    <string name="dns_records">Record</string>
+    <string name="dns_record_type">Tipo</string>
+    <string name="dns_record_name">Nome</string>
+    <string name="dns_record_value">Valore</string>
+    <string name="dns_record_ttl">TTL</string>
+    <string name="dns_zone_create">Nuova zona</string>
+    <string name="dns_record_create">Nuovo record</string>
+
+    <string name="s3_buckets">Bucket</string>
+    <string name="s3_objects">Oggetti</string>
+    <string name="s3_upload">Carica</string>
+    <string name="s3_download">Scarica</string>
+    <string name="s3_share_link">Crea link di condivisione</string>
+    <string name="s3_share_link_expires">Il link scade in %1$d ore</string>
+    <string name="s3_link_copied">Link copiato</string>
+    <string name="s3_create_bucket">Crea bucket</string>
+
+    <string name="settings_language">Lingua</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_system">Segui sistema</string>
+    <string name="settings_theme_light">Chiaro</string>
+    <string name="settings_theme_dark">Scuro</string>
+    <string name="settings_lock_timeout">Blocco automatico</string>
+    <string name="settings_pinning">Mostra pin del certificato</string>
+    <string name="settings_export_accounts">Esporta account (cifrato)</string>
+    <string name="settings_import_accounts">Importa account</string>
+    <string name="settings_about">Info</string>
+    <string name="settings_license">Licenza: GPL-3.0-or-later</string>
+    <string name="settings_source">Codice sorgente</string>
+    <string name="settings_version">Versione %1$s</string>
+
+    <string name="error_pinning">Pinning del certificato fallito. La connessione è stata bloccata per proteggerti.</string>
+    <string name="error_rate_limit">Limite di velocità Hetzner raggiunto. Riprova più tardi.</string>
+    <string name="error_network">Errore di rete. Controlla la connessione.</string>
+    <string name="error_auth">Autenticazione fallita. Controlla le credenziali.</string>
+
+    <string name="confirm_destructive_title">Conferma azione</string>
+    <string name="confirm_destructive_msg">Questa azione non può essere annullata. Continuare?</string>
+</resources>

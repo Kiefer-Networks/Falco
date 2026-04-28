@@ -1,0 +1,7 @@
+Initial public release.
+
+• Cloud, Robot, DNS and Object Storage management
+• Multi-account support
+• Encrypted credential storage with biometric gate
+• TLS 1.3 + certificate pinning
+• Localised in 7 languages

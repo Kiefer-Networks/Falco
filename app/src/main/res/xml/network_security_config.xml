@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext denied globally. Cert pinning is enforced in code (HttpClientFactory)
+  with SHA-256 SPKI pins; we don't pin in this XML to avoid stale-pin lockouts
+  if Hetzner rotates issuers — the OkHttp pinner has up-to-date pin lists and
+  fails closed. The system trust anchors are kept (no custom CA).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Falco</string>
+    <string name="app_tagline">Gestionnaire Hetzner</string>
+
+    <string name="ok">OK</string>
+    <string name="cancel">Annuler</string>
+    <string name="save">Enregistrer</string>
+    <string name="delete">Supprimer</string>
+    <string name="retry">Réessayer</string>
+    <string name="refresh">Actualiser</string>
+    <string name="close">Fermer</string>
+    <string name="error">Erreur</string>
+    <string name="loading">Chargement…</string>
+    <string name="search">Rechercher</string>
+    <string name="copy">Copier</string>
+    <string name="share">Partager</string>
+    <string name="add">Ajouter</string>
+    <string name="edit">Modifier</string>
+    <string name="empty_list">Rien ici pour l\'instant.</string>
+
+    <string name="nav_cloud">Cloud</string>
+    <string name="nav_robot">Robot</string>
+    <string name="nav_dns">DNS</string>
+    <string name="nav_storage">Stockage</string>
+    <string name="nav_accounts">Comptes</string>
+    <string name="nav_settings">Paramètres</string>
+
+    <string name="welcome_title">Bienvenue sur Falco</string>
+    <string name="welcome_subtitle">Gérez Hetzner Cloud, serveurs dédiés, storage boxes, DNS et Object Storage depuis une appli sécurisée.</string>
+    <string name="bio_prompt_title">Déverrouiller Falco</string>
+    <string name="bio_prompt_subtitle">Authentifiez-vous pour accéder à vos identifiants Hetzner</string>
+    <string name="bio_prompt_negative">Annuler</string>
+    <string name="bio_unavailable">L\'authentification biométrique n\'est pas disponible. Configurez d\'abord un verrouillage d\'écran.</string>
+
+    <string name="account_add">Ajouter un compte</string>
+    <string name="account_name">Nom du compte</string>
+    <string name="account_cloud_token">Jeton API Cloud</string>
+    <string name="account_robot_user">Utilisateur webservice Robot</string>
+    <string name="account_robot_pass">Mot de passe Robot</string>
+    <string name="account_dns_token">Jeton API DNS</string>
+    <string name="account_s3_endpoint">Endpoint S3 (ex. fsn1.your-objectstorage.com)</string>
+    <string name="account_s3_access_key">Clé d\'accès S3</string>
+    <string name="account_s3_secret_key">Clé secrète S3</string>
+    <string name="account_remove">Supprimer le compte</string>
+    <string name="account_remove_confirm">Supprimer ce compte et tous les identifiants enregistrés ?</string>
+    <string name="accounts_empty">Aucun compte. Ajoutez le premier pour commencer.</string>
+
+    <string name="cloud_servers">Serveurs</string>
+    <string name="cloud_volumes">Volumes</string>
+    <string name="cloud_networks">Réseaux</string>
+    <string name="cloud_firewalls">Pare-feu</string>
+    <string name="cloud_floating_ips">IP flottantes</string>
+    <string name="cloud_load_balancers">Équilibreurs de charge</string>
+    <string name="action_power_on">Allumer</string>
+    <string name="action_power_off">Éteindre</string>
+    <string name="action_reboot">Redémarrer</string>
+    <string name="action_shutdown">Arrêter</string>
+    <string name="action_reset">Réinitialiser</string>
+    <string name="action_snapshot">Snapshot</string>
+    <string name="action_rescue">Mode secours</string>
+
+    <string name="robot_dedis">Serveurs dédiés</string>
+    <string name="robot_storageboxes">Storage Boxes</string>
+    <string name="robot_failover">IP failover</string>
+    <string name="robot_vswitch">vSwitches</string>
+    <string name="storagebox_snapshots">Snapshots</string>
+    <string name="storagebox_subaccounts">Sous-comptes</string>
+    <string name="storagebox_password">Réinitialiser le mot de passe</string>
+    <string name="action_wol">Wake-on-LAN</string>
+
+    <string name="dns_zones">Zones</string>
+    <string name="dns_records">Enregistrements</string>
+    <string name="dns_record_type">Type</string>
+    <string name="dns_record_name">Nom</string>
+    <string name="dns_record_value">Valeur</string>
+    <string name="dns_record_ttl">TTL</string>
+    <string name="dns_zone_create">Nouvelle zone</string>
+    <string name="dns_record_create">Nouvel enregistrement</string>
+
+    <string name="s3_buckets">Buckets</string>
+    <string name="s3_objects">Objets</string>
+    <string name="s3_upload">Téléverser</string>
+    <string name="s3_download">Télécharger</string>
+    <string name="s3_share_link">Créer un lien de partage</string>
+    <string name="s3_share_link_expires">Le lien expire dans %1$d heures</string>
+    <string name="s3_link_copied">Lien copié</string>
+    <string name="s3_create_bucket">Créer un bucket</string>
+
+    <string name="settings_language">Langue</string>
+    <string name="settings_theme">Thème</string>
+    <string name="settings_theme_system">Suivre le système</string>
+    <string name="settings_theme_light">Clair</string>
+    <string name="settings_theme_dark">Sombre</string>
+    <string name="settings_lock_timeout">Verrouillage automatique</string>
+    <string name="settings_pinning">Afficher les pins de certificat</string>
+    <string name="settings_export_accounts">Exporter les comptes (chiffré)</string>
+    <string name="settings_import_accounts">Importer les comptes</string>
+    <string name="settings_about">À propos</string>
+    <string name="settings_license">Licence : GPL-3.0-or-later</string>
+    <string name="settings_source">Code source</string>
+    <string name="settings_version">Version %1$s</string>
+
+    <string name="error_pinning">Échec du pinning de certificat. La connexion a été bloquée pour vous protéger.</string>
+    <string name="error_rate_limit">Limite de débit Hetzner atteinte. Réessayez plus tard.</string>
+    <string name="error_network">Erreur réseau. Vérifiez votre connexion.</string>
+    <string name="error_auth">Authentification échouée. Vérifiez vos identifiants.</string>
+
+    <string name="confirm_destructive_title">Confirmer l\'action</string>
+    <string name="confirm_destructive_msg">Cette action est irréversible. Continuer ?</string>
+</resources>

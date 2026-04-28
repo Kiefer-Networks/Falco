@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Falco</string>
+    <string name="app_tagline">Hetzner-Manager</string>
+
+    <string name="ok">OK</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="save">Speichern</string>
+    <string name="delete">Löschen</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="refresh">Aktualisieren</string>
+    <string name="close">Schließen</string>
+    <string name="error">Fehler</string>
+    <string name="loading">Laden…</string>
+    <string name="search">Suchen</string>
+    <string name="copy">Kopieren</string>
+    <string name="share">Teilen</string>
+    <string name="add">Hinzufügen</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="empty_list">Hier ist noch nichts.</string>
+
+    <string name="nav_cloud">Cloud</string>
+    <string name="nav_robot">Robot</string>
+    <string name="nav_dns">DNS</string>
+    <string name="nav_storage">Speicher</string>
+    <string name="nav_accounts">Konten</string>
+    <string name="nav_settings">Einstellungen</string>
+
+    <string name="welcome_title">Willkommen bei Falco</string>
+    <string name="welcome_subtitle">Verwalte Hetzner Cloud, dedizierte Server, Storageboxen, DNS und Object Storage in einer sicheren App.</string>
+    <string name="bio_prompt_title">Falco entsperren</string>
+    <string name="bio_prompt_subtitle">Authentifiziere dich, um auf deine Hetzner-Zugangsdaten zuzugreifen</string>
+    <string name="bio_prompt_negative">Abbrechen</string>
+    <string name="bio_unavailable">Biometrische Authentifizierung ist auf diesem Gerät nicht verfügbar. Richte zuerst eine Bildschirmsperre ein.</string>
+
+    <string name="account_add">Konto hinzufügen</string>
+    <string name="account_name">Kontoname</string>
+    <string name="account_cloud_token">Cloud-API-Token</string>
+    <string name="account_robot_user">Robot-Webservice-Benutzer</string>
+    <string name="account_robot_pass">Robot-Passwort</string>
+    <string name="account_dns_token">DNS-API-Token</string>
+    <string name="account_s3_endpoint">S3-Endpoint (z. B. fsn1.your-objectstorage.com)</string>
+    <string name="account_s3_access_key">S3-Access-Key</string>
+    <string name="account_s3_secret_key">S3-Secret-Key</string>
+    <string name="account_remove">Konto entfernen</string>
+    <string name="account_remove_confirm">Dieses Konto und alle gespeicherten Zugangsdaten entfernen?</string>
+    <string name="accounts_empty">Noch keine Konten. Füge dein erstes Konto hinzu, um zu beginnen.</string>
+
+    <string name="cloud_servers">Server</string>
+    <string name="cloud_volumes">Volumes</string>
+    <string name="cloud_networks">Netzwerke</string>
+    <string name="cloud_firewalls">Firewalls</string>
+    <string name="cloud_floating_ips">Floating IPs</string>
+    <string name="cloud_load_balancers">Load Balancer</string>
+    <string name="action_power_on">Einschalten</string>
+    <string name="action_power_off">Ausschalten</string>
+    <string name="action_reboot">Neustart</string>
+    <string name="action_shutdown">Herunterfahren</string>
+    <string name="action_reset">Reset</string>
+    <string name="action_snapshot">Snapshot</string>
+    <string name="action_rescue">Rescue-Modus</string>
+
+    <string name="robot_dedis">Dedizierte Server</string>
+    <string name="robot_storageboxes">Storageboxen</string>
+    <string name="robot_failover">Failover-IPs</string>
+    <string name="robot_vswitch">vSwitches</string>
+    <string name="storagebox_snapshots">Snapshots</string>
+    <string name="storagebox_subaccounts">Unterkonten</string>
+    <string name="storagebox_password">Passwort zurücksetzen</string>
+    <string name="action_wol">Wake-on-LAN</string>
+
+    <string name="dns_zones">Zonen</string>
+    <string name="dns_records">Einträge</string>
+    <string name="dns_record_type">Typ</string>
+    <string name="dns_record_name">Name</string>
+    <string name="dns_record_value">Wert</string>
+    <string name="dns_record_ttl">TTL</string>
+    <string name="dns_zone_create">Neue Zone</string>
+    <string name="dns_record_create">Neuer Eintrag</string>
+
+    <string name="s3_buckets">Buckets</string>
+    <string name="s3_objects">Objekte</string>
+    <string name="s3_upload">Hochladen</string>
+    <string name="s3_download">Herunterladen</string>
+    <string name="s3_share_link">Freigabelink erstellen</string>
+    <string name="s3_share_link_expires">Link läuft in %1$d Stunden ab</string>
+    <string name="s3_link_copied">Freigabelink kopiert</string>
+    <string name="s3_create_bucket">Bucket erstellen</string>
+
+    <string name="settings_language">Sprache</string>
+    <string name="settings_theme">Design</string>
+    <string name="settings_theme_system">System folgen</string>
+    <string name="settings_theme_light">Hell</string>
+    <string name="settings_theme_dark">Dunkel</string>
+    <string name="settings_lock_timeout">Automatische Sperre</string>
+    <string name="settings_pinning">Zertifikats-Pins anzeigen</string>
+    <string name="settings_export_accounts">Konten exportieren (verschlüsselt)</string>
+    <string name="settings_import_accounts">Konten importieren</string>
+    <string name="settings_about">Über</string>
+    <string name="settings_license">Lizenz: GPL-3.0-or-later</string>
+    <string name="settings_source">Quellcode</string>
+    <string name="settings_version">Version %1$s</string>
+
+    <string name="error_pinning">Zertifikats-Pinning fehlgeschlagen. Die Verbindung wurde zu deinem Schutz blockiert.</string>
+    <string name="error_rate_limit">Hetzner-Rate-Limit erreicht. Versuche es später erneut.</string>
+    <string name="error_network">Netzwerkfehler. Prüfe deine Verbindung.</string>
+    <string name="error_auth">Authentifizierung fehlgeschlagen. Prüfe deine Zugangsdaten.</string>
+
+    <string name="confirm_destructive_title">Aktion bestätigen</string>
+    <string name="confirm_destructive_msg">Diese Aktion kann nicht rückgängig gemacht werden. Fortfahren?</string>
+</resources>

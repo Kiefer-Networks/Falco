@@ -1,0 +1,7 @@
+Prima versione pubblica.
+
+• Gestione di Cloud, Robot, DNS e Object Storage
+• Supporto multi-account
+• Archiviazione cifrata delle credenziali con biometria
+• TLS 1.3 + certificate pinning
+• Tradotto in 7 lingue

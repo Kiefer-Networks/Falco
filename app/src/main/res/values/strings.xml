@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Falco</string>
+    <string name="app_tagline">Hetzner Manager</string>
+
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="retry">Retry</string>
+    <string name="refresh">Refresh</string>
+    <string name="close">Close</string>
+    <string name="error">Error</string>
+    <string name="loading">Loading…</string>
+    <string name="search">Search</string>
+    <string name="copy">Copy</string>
+    <string name="share">Share</string>
+    <string name="add">Add</string>
+    <string name="edit">Edit</string>
+    <string name="empty_list">Nothing here yet.</string>
+
+    <!-- Navigation -->
+    <string name="nav_cloud">Cloud</string>
+    <string name="nav_robot">Robot</string>
+    <string name="nav_dns">DNS</string>
+    <string name="nav_storage">Storage</string>
+    <string name="nav_accounts">Accounts</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Onboarding / Biometric -->
+    <string name="welcome_title">Welcome to Falco</string>
+    <string name="welcome_subtitle">Manage Hetzner Cloud, dedicated servers, storage boxes, DNS and Object Storage from one secure app.</string>
+    <string name="bio_prompt_title">Unlock Falco</string>
+    <string name="bio_prompt_subtitle">Authenticate to access your Hetzner credentials</string>
+    <string name="bio_prompt_negative">Cancel</string>
+    <string name="bio_unavailable">Biometric authentication is not available on this device. Set up a screen lock first.</string>
+
+    <!-- Accounts -->
+    <string name="account_add">Add account</string>
+    <string name="account_name">Account name</string>
+    <string name="account_cloud_token">Cloud API token</string>
+    <string name="account_robot_user">Robot webservice user</string>
+    <string name="account_robot_pass">Robot password</string>
+    <string name="account_dns_token">DNS API token</string>
+    <string name="account_s3_endpoint">S3 endpoint (e.g. fsn1.your-objectstorage.com)</string>
+    <string name="account_s3_access_key">S3 access key</string>
+    <string name="account_s3_secret_key">S3 secret key</string>
+    <string name="account_remove">Remove account</string>
+    <string name="account_remove_confirm">Remove this account and all stored credentials?</string>
+    <string name="accounts_empty">No accounts yet. Add your first one to get started.</string>
+
+    <!-- Cloud -->
+    <string name="cloud_servers">Servers</string>
+    <string name="cloud_volumes">Volumes</string>
+    <string name="cloud_networks">Networks</string>
+    <string name="cloud_firewalls">Firewalls</string>
+    <string name="cloud_floating_ips">Floating IPs</string>
+    <string name="cloud_load_balancers">Load Balancers</string>
+    <string name="action_power_on">Power on</string>
+    <string name="action_power_off">Power off</string>
+    <string name="action_reboot">Reboot</string>
+    <string name="action_shutdown">Shutdown</string>
+    <string name="action_reset">Reset</string>
+    <string name="action_snapshot">Snapshot</string>
+    <string name="action_rescue">Rescue mode</string>
+
+    <!-- Robot -->
+    <string name="robot_dedis">Dedicated servers</string>
+    <string name="robot_storageboxes">Storage Boxes</string>
+    <string name="robot_failover">Failover IPs</string>
+    <string name="robot_vswitch">vSwitches</string>
+    <string name="storagebox_snapshots">Snapshots</string>
+    <string name="storagebox_subaccounts">Sub-accounts</string>
+    <string name="storagebox_password">Reset password</string>
+    <string name="action_wol">Wake-on-LAN</string>
+
+    <!-- DNS -->
+    <string name="dns_zones">Zones</string>
+    <string name="dns_records">Records</string>
+    <string name="dns_record_type">Type</string>
+    <string name="dns_record_name">Name</string>
+    <string name="dns_record_value">Value</string>
+    <string name="dns_record_ttl">TTL</string>
+    <string name="dns_zone_create">New zone</string>
+    <string name="dns_record_create">New record</string>
+
+    <!-- Object Storage -->
+    <string name="s3_buckets">Buckets</string>
+    <string name="s3_objects">Objects</string>
+    <string name="s3_upload">Upload</string>
+    <string name="s3_download">Download</string>
+    <string name="s3_share_link">Create share link</string>
+    <string name="s3_share_link_expires">Link expires in %1$d hours</string>
+    <string name="s3_link_copied">Share link copied</string>
+    <string name="s3_create_bucket">Create bucket</string>
+
+    <!-- Settings -->
+    <string name="settings_language">Language</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">Follow system</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_lock_timeout">Auto-lock timeout</string>
+    <string name="settings_pinning">Show certificate pins</string>
+    <string name="settings_export_accounts">Export accounts (encrypted)</string>
+    <string name="settings_import_accounts">Import accounts</string>
+    <string name="settings_about">About</string>
+    <string name="settings_license">License: GPL-3.0-or-later</string>
+    <string name="settings_source">Source code</string>
+    <string name="settings_version">Version %1$s</string>
+
+    <!-- Errors -->
+    <string name="error_pinning">Certificate pinning failed. The connection was blocked to protect you.</string>
+    <string name="error_rate_limit">Hetzner rate limit reached. Try again later.</string>
+    <string name="error_network">Network error. Check your connection.</string>
+    <string name="error_auth">Authentication failed. Check your credentials.</string>
+
+    <!-- Confirmations -->
+    <string name="confirm_destructive_title">Confirm action</string>
+    <string name="confirm_destructive_msg">This action cannot be undone. Continue?</string>
+</resources>

@@ -1,0 +1,7 @@
+Erstes öffentliches Release.
+
+• Verwaltung von Cloud, Robot, DNS und Object Storage
+• Multi-Account-Unterstützung
+• Verschlüsselte Speicherung der Zugangsdaten mit Biometrie-Schutz
+• TLS 1.3 + Certificate Pinning
+• Übersetzungen in 7 Sprachen

@@ -1,0 +1,63 @@
+# Falco ProGuard / R8 rules
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Keep model classes used by Retrofit/kotlinx.serialization
+-keep,includedescriptorclasses class de.kiefer_networks.falco.data.dto.** { *; }
+-keepattributes *Annotation*, InnerClasses, Signature, Exceptions, EnclosingMethod
+-keepclassmembers class **$Companion { *; }
+
+# kotlinx.serialization
+-keepclassmembers class **$$serializer { *; }
+-keepclasseswithmembers class * {
+    @kotlinx.serialization.Serializable <methods>;
+}
+-if @kotlinx.serialization.Serializable class **
+-keepclassmembers class <1> {
+    static <1>$Companion Companion;
+}
+-if @kotlinx.serialization.Serializable class ** { static **$Companion Companion; }
+-keepclassmembers class <2>$Companion {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# Retrofit
+-keepattributes Signature, Exceptions
+-keep,allowobfuscation,allowshrinking interface retrofit2.Call
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+-dontwarn retrofit2.**
+-dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+
+# OkHttp
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**
+
+# MinIO / S3 SDK
+-keep class io.minio.** { *; }
+-keep class org.simpleframework.xml.** { *; }
+-dontwarn io.minio.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.simpleframework.xml.**
+-dontwarn javax.xml.stream.**
+-dontwarn com.fasterxml.jackson.**
+
+# Compose
+-keep class androidx.compose.runtime.** { *; }
+
+# Hilt
+-keep class dagger.hilt.** { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
+
+# Strip log calls in release
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}
+
+# Keep crash-relevant line numbers, hide source filename
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile

@@ -1,0 +1,18 @@
+# Force LF line endings everywhere — F-Droid reproducible builds break if
+# Windows checkouts introduce CRLF in source/resources/manifests.
+* text=auto eol=lf
+
+*.bat text eol=crlf
+
+# Binary types
+*.png binary
+*.webp binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.jar binary
+*.aar binary
+*.jks binary
+*.keystore binary
+*.so binary

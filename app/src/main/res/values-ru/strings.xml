@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Falco</string>
+    <string name="app_tagline">Менеджер Hetzner</string>
+
+    <string name="ok">ОК</string>
+    <string name="cancel">Отмена</string>
+    <string name="save">Сохранить</string>
+    <string name="delete">Удалить</string>
+    <string name="retry">Повторить</string>
+    <string name="refresh">Обновить</string>
+    <string name="close">Закрыть</string>
+    <string name="error">Ошибка</string>
+    <string name="loading">Загрузка…</string>
+    <string name="search">Поиск</string>
+    <string name="copy">Копировать</string>
+    <string name="share">Поделиться</string>
+    <string name="add">Добавить</string>
+    <string name="edit">Изменить</string>
+    <string name="empty_list">Здесь пока ничего нет.</string>
+
+    <string name="nav_cloud">Cloud</string>
+    <string name="nav_robot">Robot</string>
+    <string name="nav_dns">DNS</string>
+    <string name="nav_storage">Хранилище</string>
+    <string name="nav_accounts">Учётные записи</string>
+    <string name="nav_settings">Настройки</string>
+
+    <string name="welcome_title">Добро пожаловать в Falco</string>
+    <string name="welcome_subtitle">Управляйте Hetzner Cloud, выделенными серверами, Storage Box, DNS и Object Storage из одного безопасного приложения.</string>
+    <string name="bio_prompt_title">Разблокировать Falco</string>
+    <string name="bio_prompt_subtitle">Подтвердите личность для доступа к учётным данным Hetzner</string>
+    <string name="bio_prompt_negative">Отмена</string>
+    <string name="bio_unavailable">Биометрическая аутентификация недоступна на этом устройстве. Сначала настройте блокировку экрана.</string>
+
+    <string name="account_add">Добавить учётную запись</string>
+    <string name="account_name">Имя учётной записи</string>
+    <string name="account_cloud_token">Токен Cloud API</string>
+    <string name="account_robot_user">Пользователь Robot</string>
+    <string name="account_robot_pass">Пароль Robot</string>
+    <string name="account_dns_token">Токен DNS API</string>
+    <string name="account_s3_endpoint">Эндпоинт S3 (например, fsn1.your-objectstorage.com)</string>
+    <string name="account_s3_access_key">Ключ доступа S3</string>
+    <string name="account_s3_secret_key">Секретный ключ S3</string>
+    <string name="account_remove">Удалить учётную запись</string>
+    <string name="account_remove_confirm">Удалить эту учётную запись и все сохранённые данные?</string>
+    <string name="accounts_empty">Учётных записей нет. Добавьте первую, чтобы начать.</string>
+
+    <string name="cloud_servers">Серверы</string>
+    <string name="cloud_volumes">Тома</string>
+    <string name="cloud_networks">Сети</string>
+    <string name="cloud_firewalls">Файрволы</string>
+    <string name="cloud_floating_ips">Плавающие IP</string>
+    <string name="cloud_load_balancers">Балансировщики</string>
+    <string name="action_power_on">Включить</string>
+    <string name="action_power_off">Выключить</string>
+    <string name="action_reboot">Перезагрузка</string>
+    <string name="action_shutdown">Остановить</string>
+    <string name="action_reset">Сброс</string>
+    <string name="action_snapshot">Снапшот</string>
+    <string name="action_rescue">Режим восстановления</string>
+
+    <string name="robot_dedis">Выделенные серверы</string>
+    <string name="robot_storageboxes">Storage Box</string>
+    <string name="robot_failover">Failover IP</string>
+    <string name="robot_vswitch">vSwitch</string>
+    <string name="storagebox_snapshots">Снапшоты</string>
+    <string name="storagebox_subaccounts">Субаккаунты</string>
+    <string name="storagebox_password">Сбросить пароль</string>
+    <string name="action_wol">Wake-on-LAN</string>
+
+    <string name="dns_zones">Зоны</string>
+    <string name="dns_records">Записи</string>
+    <string name="dns_record_type">Тип</string>
+    <string name="dns_record_name">Имя</string>
+    <string name="dns_record_value">Значение</string>
+    <string name="dns_record_ttl">TTL</string>
+    <string name="dns_zone_create">Новая зона</string>
+    <string name="dns_record_create">Новая запись</string>
+
+    <string name="s3_buckets">Бакеты</string>
+    <string name="s3_objects">Объекты</string>
+    <string name="s3_upload">Загрузить</string>
+    <string name="s3_download">Скачать</string>
+    <string name="s3_share_link">Создать ссылку</string>
+    <string name="s3_share_link_expires">Ссылка истекает через %1$d ч.</string>
+    <string name="s3_link_copied">Ссылка скопирована</string>
+    <string name="s3_create_bucket">Создать бакет</string>
+
+    <string name="settings_language">Язык</string>
+    <string name="settings_theme">Тема</string>
+    <string name="settings_theme_system">Как в системе</string>
+    <string name="settings_theme_light">Светлая</string>
+    <string name="settings_theme_dark">Тёмная</string>
+    <string name="settings_lock_timeout">Автоблокировка</string>
+    <string name="settings_pinning">Показать пины сертификатов</string>
+    <string name="settings_export_accounts">Экспорт (зашифровано)</string>
+    <string name="settings_import_accounts">Импорт учётных записей</string>
+    <string name="settings_about">О приложении</string>
+    <string name="settings_license">Лицензия: GPL-3.0-or-later</string>
+    <string name="settings_source">Исходный код</string>
+    <string name="settings_version">Версия %1$s</string>
+
+    <string name="error_pinning">Сбой проверки сертификата. Соединение заблокировано для вашей защиты.</string>
+    <string name="error_rate_limit">Достигнут лимит Hetzner. Повторите попытку позже.</string>
+    <string name="error_network">Ошибка сети. Проверьте подключение.</string>
+    <string name="error_auth">Ошибка аутентификации. Проверьте учётные данные.</string>
+
+    <string name="confirm_destructive_title">Подтвердите действие</string>
+    <string name="confirm_destructive_msg">Это действие нельзя отменить. Продолжить?</string>
+</resources>

@@ -1,0 +1,33 @@
+# Build / IDE / OS
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+.DS_Store
+captures/
+.cxx/
+.kotlin/
+
+# Signing / secrets
+*.jks
+*.keystore
+keystore.properties
+release-keystore.properties
+*.env
+secrets/
+
+# Generated / caches
+.kotlin-classes/
+out/
+.externalNativeBuild/
+
+# Coverage
+.coverage/
+**/jacoco/
+
+# Tests
+test-results/
+
+# Hetzner test data (never commit)
+test-tokens.txt
