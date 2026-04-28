@@ -103,6 +103,7 @@ fun FalcoRoot(viewModel: FalcoRootViewModel) {
                 CloudHubScreen(
                     onAddProject = { nav.navigate(Routes.PROJECT_NEW) },
                     onManageProjects = { nav.navigate(Routes.PROJECTS) },
+                    onOpenStorageBox = { id -> nav.navigate(Routes.cloudStorageBoxDetail(id)) },
                 )
             }
             composable(Routes.PROJECTS) {
@@ -110,6 +111,14 @@ fun FalcoRoot(viewModel: FalcoRootViewModel) {
                     onBack = { nav.popBackStack() },
                     onAdd = { nav.navigate(Routes.PROJECT_NEW) },
                     onEdit = { id -> nav.navigate(Routes.projectEdit(id)) },
+                )
+            }
+            composable(
+                route = Routes.CLOUD_STORAGE_BOX_DETAIL,
+                arguments = listOf(navArgument(Routes.ARG_STORAGE_BOX_ID) { type = NavType.LongType }),
+            ) {
+                de.kiefer_networks.falco.ui.screens.cloud.CloudStorageBoxDetailScreen(
+                    onBack = { nav.popBackStack() },
                 )
             }
             composable(Routes.PROJECT_NEW) {

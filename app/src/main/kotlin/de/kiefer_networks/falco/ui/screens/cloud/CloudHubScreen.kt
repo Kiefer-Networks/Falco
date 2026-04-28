@@ -56,6 +56,7 @@ private val CLOUD_TABS = listOf(
 fun CloudHubScreen(
     onAddProject: () -> Unit,
     onManageProjects: () -> Unit,
+    onOpenStorageBox: (Long) -> Unit = {},
     viewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
@@ -123,7 +124,7 @@ fun CloudHubScreen(
                     2 -> CloudNetworksTab()
                     3 -> CloudFirewallsTab()
                     4 -> CloudFloatingIpsTab()
-                    5 -> CloudStorageBoxesTab()
+                    5 -> CloudStorageBoxesTab(onOpen = onOpenStorageBox)
                 }
             }
         }

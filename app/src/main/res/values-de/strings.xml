@@ -289,4 +289,28 @@
     <string name="cloud_storage_box_unlinked">Nicht verknüpft</string>
     <string name="cloud_storage_box_size_label">Größe</string>
     <string name="cloud_storage_box_type_label">Typ</string>
+
+    <string name="storagebox_overview">Übersicht</string>
+    <string name="storagebox_create_snapshot">Snapshot erstellen</string>
+    <string name="storagebox_snapshot_description">Beschreibung (optional)</string>
+    <string name="storagebox_snapshot_rollback">Auf Snapshot zurücksetzen</string>
+    <string name="storagebox_snapshot_rollback_title">Storagebox zurücksetzen</string>
+    <string name="storagebox_snapshot_rollback_confirm">Alle aktuellen Daten werden durch den Snapshot ersetzt. Fortfahren?</string>
+    <string name="storagebox_snapshot_delete_title">Snapshot löschen</string>
+    <string name="storagebox_snapshot_delete_confirm">Snapshot %1$s löschen?</string>
+    <string name="storagebox_snapshot_automatic">automatisch</string>
+    <string name="storagebox_create_subaccount">Neues Unterkonto</string>
+    <string name="storagebox_subaccount_homedir">Home-Verzeichnis</string>
+    <string name="storagebox_subaccount_password_reset">Unterkonto-Passwort zurücksetzen</string>
+    <string name="storagebox_subaccount_password_reset_confirm">Neues Passwort für %1$s setzen?</string>
+    <string name="storagebox_subaccount_delete_title">Unterkonto löschen</string>
+    <string name="storagebox_subaccount_delete_confirm">%1$s endgültig löschen?</string>
+    <string name="storagebox_subaccount_ssh">SSH</string>
+    <string name="storagebox_subaccount_samba">SMB</string>
+    <string name="storagebox_subaccount_webdav">WebDAV</string>
+    <string name="storagebox_subaccount_readonly">schreibgeschützt</string>
+    <string name="storagebox_subaccount_external">externer Zugriff</string>
+    <string name="storagebox_password_reset">Passwort zurücksetzen</string>
+    <string name="storagebox_password_reset_confirm">Neues Storagebox-Passwort setzen? Aktive Verbindungen müssen sich neu authentifizieren.</string>
+    <string name="storagebox_new_password">Neues Passwort</string>
 </resources>

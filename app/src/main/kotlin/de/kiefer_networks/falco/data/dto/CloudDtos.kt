@@ -126,3 +126,59 @@ import kotlinx.serialization.Serializable
     val type: String,
     val id: Long? = null,
 )
+
+// Single-entity envelopes returned by the Hetzner Storage Box API.
+@Serializable data class CloudStorageBoxEnvelope(@SerialName("storage_box") val storageBox: CloudStorageBox)
+@Serializable data class CloudStorageBoxActionResponse(val action: ActionEnvelope)
+
+@Serializable data class CloudStorageBoxSnapshotList(val snapshots: List<CloudStorageBoxSnapshot>, val meta: Meta? = null)
+@Serializable data class CloudStorageBoxSnapshotEnvelope(val snapshot: CloudStorageBoxSnapshot)
+@Serializable data class CloudStorageBoxSnapshot(
+    val id: Long,
+    val name: String? = null,
+    val description: String? = null,
+    val stats: CloudStorageBoxSnapshotStats? = null,
+    val created: String? = null,
+    @SerialName("is_automatic") val isAutomatic: Boolean = false,
+    val labels: Map<String, String> = emptyMap(),
+    @SerialName("storage_box") val storageBox: Long? = null,
+)
+@Serializable data class CloudStorageBoxSnapshotStats(
+    val size: Long? = null,
+    @SerialName("size_filesystem") val sizeFilesystem: Long? = null,
+)
+@Serializable data class CreateStorageBoxSnapshot(val description: String? = null)
+
+@Serializable data class CloudStorageBoxSubaccountList(val subaccounts: List<CloudStorageBoxSubaccount>, val meta: Meta? = null)
+@Serializable data class CloudStorageBoxSubaccountEnvelope(val subaccount: CloudStorageBoxSubaccount)
+@Serializable data class CloudStorageBoxSubaccount(
+    val id: Long,
+    val username: String,
+    val server: String? = null,
+    @SerialName("home_directory") val homeDirectory: String? = null,
+    @SerialName("access_settings") val accessSettings: CloudSubaccountAccessSettings? = null,
+    val description: String? = null,
+    val created: String? = null,
+    val labels: Map<String, String> = emptyMap(),
+    @SerialName("storage_box") val storageBox: Long? = null,
+)
+@Serializable data class CloudSubaccountAccessSettings(
+    @SerialName("samba_enabled") val sambaEnabled: Boolean = false,
+    @SerialName("ssh_enabled") val sshEnabled: Boolean = true,
+    @SerialName("webdav_enabled") val webdavEnabled: Boolean = false,
+    @SerialName("readonly") val readonly: Boolean = false,
+    @SerialName("reachable_externally") val reachableExternally: Boolean = false,
+)
+@Serializable data class CreateStorageBoxSubaccount(
+    val password: String,
+    @SerialName("home_directory") val homeDirectory: String,
+    @SerialName("access_settings") val accessSettings: CloudSubaccountAccessSettings = CloudSubaccountAccessSettings(),
+    val description: String? = null,
+    val labels: Map<String, String> = emptyMap(),
+)
+@Serializable data class UpdateStorageBoxSubaccount(
+    val description: String? = null,
+    val labels: Map<String, String>? = null,
+)
+@Serializable data class ResetSubaccountPasswordRequest(val password: String)
+@Serializable data class ResetStorageBoxPasswordRequest(val password: String)

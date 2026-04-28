@@ -66,7 +66,10 @@ class CloudStorageBoxesViewModel @Inject constructor(private val repo: CloudRepo
 }
 
 @Composable
-fun CloudStorageBoxesTab(viewModel: CloudStorageBoxesViewModel = hiltViewModel()) {
+fun CloudStorageBoxesTab(
+    viewModel: CloudStorageBoxesViewModel = hiltViewModel(),
+    onOpen: (Long) -> Unit = {},
+) {
     val s by viewModel.state.collectAsState()
     when {
         s.loading -> LoadingState()
@@ -80,14 +83,17 @@ fun CloudStorageBoxesTab(viewModel: CloudStorageBoxesViewModel = hiltViewModel()
             modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            items(s.data, key = { it.id }) { box -> StorageBoxCard(box) }
+            items(s.data, key = { it.id }) { box -> StorageBoxCard(box, onClick = { onOpen(box.id) }) }
         }
     }
 }
 
 @Composable
-private fun StorageBoxCard(box: CloudStorageBox) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+private fun StorageBoxCard(box: CloudStorageBox, onClick: () -> Unit) {
+    ElevatedCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),

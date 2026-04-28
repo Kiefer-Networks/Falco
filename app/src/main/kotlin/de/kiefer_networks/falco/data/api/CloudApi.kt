@@ -59,4 +59,63 @@ interface CloudApi {
 interface StorageBoxApi {
     @GET("storage_boxes")
     suspend fun listStorageBoxes(): de.kiefer_networks.falco.data.dto.CloudStorageBoxList
+
+    @GET("storage_boxes/{id}")
+    suspend fun getStorageBox(@Path("id") id: Long): de.kiefer_networks.falco.data.dto.CloudStorageBoxEnvelope
+
+    @retrofit2.http.POST("storage_boxes/{id}/actions/reset_password")
+    suspend fun resetStorageBoxPassword(
+        @Path("id") id: Long,
+        @retrofit2.http.Body body: de.kiefer_networks.falco.data.dto.ResetStorageBoxPasswordRequest,
+    ): de.kiefer_networks.falco.data.dto.CloudStorageBoxActionResponse
+
+    @GET("storage_boxes/{id}/snapshots")
+    suspend fun listStorageBoxSnapshots(@Path("id") id: Long): de.kiefer_networks.falco.data.dto.CloudStorageBoxSnapshotList
+
+    @retrofit2.http.POST("storage_boxes/{id}/snapshots")
+    suspend fun createStorageBoxSnapshot(
+        @Path("id") id: Long,
+        @retrofit2.http.Body body: de.kiefer_networks.falco.data.dto.CreateStorageBoxSnapshot,
+    ): de.kiefer_networks.falco.data.dto.CloudStorageBoxSnapshotEnvelope
+
+    @retrofit2.http.DELETE("storage_boxes/{id}/snapshots/{snap}")
+    suspend fun deleteStorageBoxSnapshot(
+        @Path("id") id: Long,
+        @Path("snap") snapshotId: Long,
+    ): de.kiefer_networks.falco.data.dto.CloudStorageBoxActionResponse
+
+    @retrofit2.http.POST("storage_boxes/{id}/snapshots/{snap}/actions/rollback")
+    suspend fun rollbackStorageBoxSnapshot(
+        @Path("id") id: Long,
+        @Path("snap") snapshotId: Long,
+    ): de.kiefer_networks.falco.data.dto.CloudStorageBoxActionResponse
+
+    @GET("storage_boxes/{id}/subaccounts")
+    suspend fun listStorageBoxSubaccounts(@Path("id") id: Long): de.kiefer_networks.falco.data.dto.CloudStorageBoxSubaccountList
+
+    @retrofit2.http.POST("storage_boxes/{id}/subaccounts")
+    suspend fun createStorageBoxSubaccount(
+        @Path("id") id: Long,
+        @retrofit2.http.Body body: de.kiefer_networks.falco.data.dto.CreateStorageBoxSubaccount,
+    ): de.kiefer_networks.falco.data.dto.CloudStorageBoxSubaccountEnvelope
+
+    @retrofit2.http.DELETE("storage_boxes/{id}/subaccounts/{sub}")
+    suspend fun deleteStorageBoxSubaccount(
+        @Path("id") id: Long,
+        @Path("sub") subaccountId: Long,
+    ): de.kiefer_networks.falco.data.dto.CloudStorageBoxActionResponse
+
+    @retrofit2.http.PUT("storage_boxes/{id}/subaccounts/{sub}")
+    suspend fun updateStorageBoxSubaccount(
+        @Path("id") id: Long,
+        @Path("sub") subaccountId: Long,
+        @retrofit2.http.Body body: de.kiefer_networks.falco.data.dto.UpdateStorageBoxSubaccount,
+    ): de.kiefer_networks.falco.data.dto.CloudStorageBoxSubaccountEnvelope
+
+    @retrofit2.http.POST("storage_boxes/{id}/subaccounts/{sub}/actions/reset_subaccount_password")
+    suspend fun resetSubaccountPassword(
+        @Path("id") id: Long,
+        @Path("sub") subaccountId: Long,
+        @retrofit2.http.Body body: de.kiefer_networks.falco.data.dto.ResetSubaccountPasswordRequest,
+    ): de.kiefer_networks.falco.data.dto.CloudStorageBoxActionResponse
 }

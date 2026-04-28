@@ -285,4 +285,28 @@
     <string name="cloud_storage_box_unlinked">未关联</string>
     <string name="cloud_storage_box_size_label">大小</string>
     <string name="cloud_storage_box_type_label">类型</string>
+
+    <string name="storagebox_overview">概览</string>
+    <string name="storagebox_create_snapshot">创建快照</string>
+    <string name="storagebox_snapshot_description">说明（可选）</string>
+    <string name="storagebox_snapshot_rollback">回滚到该快照</string>
+    <string name="storagebox_snapshot_rollback_title">回滚 Storage Box</string>
+    <string name="storagebox_snapshot_rollback_confirm">当前数据将被该快照替换。继续？</string>
+    <string name="storagebox_snapshot_delete_title">删除快照</string>
+    <string name="storagebox_snapshot_delete_confirm">删除快照 %1$s？</string>
+    <string name="storagebox_snapshot_automatic">自动</string>
+    <string name="storagebox_create_subaccount">新子账户</string>
+    <string name="storagebox_subaccount_homedir">主目录</string>
+    <string name="storagebox_subaccount_password_reset">重置子账户密码</string>
+    <string name="storagebox_subaccount_password_reset_confirm">为 %1$s 设置新密码？</string>
+    <string name="storagebox_subaccount_delete_title">删除子账户</string>
+    <string name="storagebox_subaccount_delete_confirm">永久删除 %1$s？</string>
+    <string name="storagebox_subaccount_ssh">SSH</string>
+    <string name="storagebox_subaccount_samba">SMB</string>
+    <string name="storagebox_subaccount_webdav">WebDAV</string>
+    <string name="storagebox_subaccount_readonly">只读</string>
+    <string name="storagebox_subaccount_external">外部访问</string>
+    <string name="storagebox_password_reset">重置密码</string>
+    <string name="storagebox_password_reset_confirm">为 Storage Box 设置新密码？现有连接需要重新验证。</string>
+    <string name="storagebox_new_password">新密码</string>
 </resources>
