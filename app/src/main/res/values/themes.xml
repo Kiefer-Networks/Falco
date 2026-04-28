@@ -3,4 +3,8 @@
     <style name="Theme.Falco" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@android:color/black</item>
     </style>
+
+    <style name="Theme.Falco.Starting" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/ic_launcher_background</item>
+    </style>
 </resources>

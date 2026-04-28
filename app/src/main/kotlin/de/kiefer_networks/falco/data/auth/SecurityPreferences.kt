@@ -5,7 +5,9 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,6 +42,21 @@ class SecurityPreferences @Inject constructor(
         dataStore.edit { it[KEY_THEME_MODE] = value }
     }
 
+    /**
+     * BCP-47 language tag for the app UI. Empty string means "follow the
+     * system locale". Otherwise one of the seven supported tags
+     * (en, de, es, fr, it, zh-CN, ru).
+     */
+    val appLocale: Flow<String> =
+        dataStore.data.map { it[KEY_APP_LOCALE] ?: "" }
+
+    suspend fun setAppLocale(tag: String) {
+        dataStore.edit { it[KEY_APP_LOCALE] = tag }
+    }
+
+    /** Synchronous accessor for [FalcoApp.onCreate], called once at process start. */
+    suspend fun appLocaleNow(): String = dataStore.data.first()[KEY_APP_LOCALE] ?: ""
+
     companion object {
         const val DEFAULT_LOCK_TIMEOUT = 60
         const val LOCK_IMMEDIATE = 0
@@ -51,5 +68,6 @@ class SecurityPreferences @Inject constructor(
 
         private val KEY_LOCK_TIMEOUT = intPreferencesKey("auto_lock_timeout_seconds")
         private val KEY_THEME_MODE = intPreferencesKey("theme_mode")
+        private val KEY_APP_LOCALE = stringPreferencesKey("app_locale_tag")
     }
 }

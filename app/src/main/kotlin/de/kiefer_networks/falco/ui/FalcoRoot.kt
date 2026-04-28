@@ -29,8 +29,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.ui.nav.Routes
-import de.kiefer_networks.falco.ui.screens.accounts.AccountFormScreen
+import de.kiefer_networks.falco.ui.screens.accounts.AccountWizardScreen
 import de.kiefer_networks.falco.ui.screens.accounts.AccountsScreen
+import de.kiefer_networks.falco.ui.screens.accounts.HetznerService
 import de.kiefer_networks.falco.ui.screens.cloud.CloudHubScreen
 import de.kiefer_networks.falco.ui.screens.dns.DnsScreen
 import de.kiefer_networks.falco.ui.screens.dns.ZoneDetailScreen
@@ -40,7 +41,7 @@ import de.kiefer_networks.falco.ui.screens.robot.StorageBoxDetailScreen
 import de.kiefer_networks.falco.ui.screens.s3.ObjectBrowserScreen
 import de.kiefer_networks.falco.ui.screens.s3.S3Screen
 import de.kiefer_networks.falco.ui.screens.settings.SettingsScreen
-import de.kiefer_networks.falco.ui.screens.welcome.WelcomeScreen
+import de.kiefer_networks.falco.ui.screens.welcome.OnboardingScreen
 
 @Composable
 fun FalcoRoot(viewModel: FalcoRootViewModel) {
@@ -76,9 +77,29 @@ fun FalcoRoot(viewModel: FalcoRootViewModel) {
             startDestination = if (hasAccount) Routes.CLOUD else Routes.WELCOME,
             modifier = Modifier.padding(padding),
         ) {
-            composable(Routes.WELCOME) { WelcomeScreen(onContinue = { nav.navigate(Routes.ACCOUNT_NEW) }) }
+            composable(Routes.WELCOME) {
+                OnboardingScreen(onAddAccount = { nav.navigate(Routes.ACCOUNT_NEW) })
+            }
             composable(Routes.ACCOUNTS) { AccountsScreen(onAdd = { nav.navigate(Routes.ACCOUNT_NEW) }) }
-            composable(Routes.ACCOUNT_NEW) { AccountFormScreen(onDone = { nav.popBackStack() }) }
+            composable(Routes.ACCOUNT_NEW) {
+                AccountWizardScreen(onClose = { firstService ->
+                    val target = when (firstService) {
+                        HetznerService.Cloud -> Routes.CLOUD
+                        HetznerService.Robot -> Routes.ROBOT
+                        HetznerService.Dns -> Routes.DNS
+                        HetznerService.S3 -> Routes.S3
+                        null -> null
+                    }
+                    if (target != null) {
+                        nav.navigate(target) {
+                            popUpTo(Routes.WELCOME) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    } else {
+                        nav.popBackStack()
+                    }
+                })
+            }
             composable(Routes.CLOUD) { CloudHubScreen() }
             composable(Routes.ROBOT) {
                 RobotScreen(

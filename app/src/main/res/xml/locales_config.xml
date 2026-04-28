@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Per-app language list shown by Android 13+ in
+  Settings → Apps → Falco → Language. Order is significant: top of the
+  list is the recommended default.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="de" />
+    <locale android:name="es" />
+    <locale android:name="fr" />
+    <locale android:name="it" />
+    <locale android:name="zh-CN" />
+    <locale android:name="ru" />
+</locale-config>
