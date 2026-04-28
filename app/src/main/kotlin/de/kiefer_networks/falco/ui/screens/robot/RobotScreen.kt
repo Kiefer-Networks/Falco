@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.ui.screens.robot
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -64,7 +65,11 @@ class RobotViewModel @Inject constructor(private val repo: RobotRepo) : ViewMode
 }
 
 @Composable
-fun RobotScreen(viewModel: RobotViewModel = hiltViewModel()) {
+fun RobotScreen(
+    viewModel: RobotViewModel = hiltViewModel(),
+    onServerClick: (Long) -> Unit = {},
+    onStorageBoxClick: (Long) -> Unit = {},
+) {
     val s by viewModel.state.collectAsState()
     if (s.loading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -77,7 +82,12 @@ fun RobotScreen(viewModel: RobotViewModel = hiltViewModel()) {
     LazyColumn(Modifier.fillMaxSize().padding(12.dp)) {
         item { Section(stringResource(R.string.robot_dedis)) }
         items(s.servers, key = { it.serverNumber }) { server ->
-            Card(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+            Card(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .clickable { onServerClick(server.serverNumber) },
+            ) {
                 Column(Modifier.padding(12.dp)) {
                     Text(server.serverName ?: server.serverIp ?: "#${server.serverNumber}",
                         style = MaterialTheme.typography.titleMedium)
@@ -88,7 +98,12 @@ fun RobotScreen(viewModel: RobotViewModel = hiltViewModel()) {
         }
         item { Section(stringResource(R.string.robot_storageboxes)) }
         items(s.boxes, key = { it.id }) { box ->
-            Card(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+            Card(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .clickable { onStorageBoxClick(box.id) },
+            ) {
                 Column(Modifier.padding(12.dp)) {
                     Text(box.name ?: box.login, style = MaterialTheme.typography.titleMedium)
                     Text("${box.product ?: ""} • ${box.location ?: ""}",

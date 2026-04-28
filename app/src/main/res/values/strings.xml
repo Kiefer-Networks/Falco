@@ -74,6 +74,32 @@
     <string name="storagebox_subaccounts">Sub-accounts</string>
     <string name="storagebox_password">Reset password</string>
     <string name="action_wol">Wake-on-LAN</string>
+    <string name="robot_field_number">Number</string>
+    <string name="robot_field_ip">IP</string>
+    <string name="robot_field_ipv6_net">IPv6 net</string>
+    <string name="robot_field_product">Product</string>
+    <string name="robot_field_datacenter">Datacenter</string>
+    <string name="robot_field_paid_until">Paid until</string>
+    <string name="robot_field_traffic">Traffic</string>
+    <string name="robot_field_status">Status</string>
+    <string name="robot_field_login">Login</string>
+    <string name="robot_field_location">Location</string>
+    <string name="robot_field_disk">Disk</string>
+    <string name="robot_field_protocols">Protocols</string>
+    <string name="robot_disk_value">%1$d / %2$d MB</string>
+    <string name="robot_reset_title">Reset server</string>
+    <string name="robot_reset_message">Choose reset type:</string>
+    <string name="robot_reset_type_sw">Software reset (Ctrl+Alt+Del)</string>
+    <string name="robot_reset_type_hw">Hardware reset</string>
+    <string name="robot_reset_type_man">Manual reset by support</string>
+    <string name="robot_reset_type_power">Power cycle</string>
+    <string name="robot_wol_confirm">Send Wake-on-LAN packet to this server?</string>
+    <string name="robot_create_snapshot">Create snapshot</string>
+    <string name="robot_create_snapshot_confirm">Create a new snapshot of this Storage Box?</string>
+    <string name="robot_snapshot_meta">Size: %1$s • FS: %2$s</string>
+    <string name="robot_action_running">Running…</string>
+    <string name="robot_action_done">Action completed</string>
+    <string name="robot_action_failed">Action failed: %1$s</string>
 
     <!-- DNS -->
     <string name="dns_zones">Zones</string>
@@ -84,6 +110,15 @@
     <string name="dns_record_ttl">TTL</string>
     <string name="dns_zone_create">New zone</string>
     <string name="dns_record_create">New record</string>
+    <string name="dns_record_edit">Edit</string>
+    <string name="dns_record_delete">Delete</string>
+    <string name="dns_zone_status">Status</string>
+    <string name="dns_record_create_title">New DNS record</string>
+    <string name="dns_record_edit_title">Edit DNS record</string>
+    <string name="dns_record_saved">Record saved</string>
+    <string name="dns_record_deleted">Record deleted</string>
+    <string name="dns_record_save_error">Could not save record</string>
+    <string name="dns_record_delete_error">Could not delete record</string>
 
     <!-- Object Storage -->
     <string name="s3_buckets">Buckets</string>
@@ -94,6 +129,14 @@
     <string name="s3_share_link_expires">Link expires in %1$d hours</string>
     <string name="s3_link_copied">Share link copied</string>
     <string name="s3_create_bucket">Create bucket</string>
+    <string name="s3_ttl_1h">1 hour</string>
+    <string name="s3_ttl_24h">24 hours</string>
+    <string name="s3_ttl_7d">7 days</string>
+    <string name="s3_ttl_30d">30 days</string>
+    <string name="s3_upload_picker_title">Choose a file to upload</string>
+    <string name="s3_download_saved">Saved to Downloads</string>
+    <string name="s3_delete_confirm_title">Delete object?</string>
+    <string name="s3_delete_confirm_msg">Permanently delete \"%1$s\"? This cannot be undone.</string>
 
     <!-- Settings -->
     <string name="settings_language">Language</string>

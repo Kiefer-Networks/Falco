@@ -21,17 +21,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.ui.nav.Routes
 import de.kiefer_networks.falco.ui.screens.accounts.AccountFormScreen
 import de.kiefer_networks.falco.ui.screens.accounts.AccountsScreen
 import de.kiefer_networks.falco.ui.screens.cloud.CloudScreen
 import de.kiefer_networks.falco.ui.screens.dns.DnsScreen
+import de.kiefer_networks.falco.ui.screens.dns.ZoneDetailScreen
 import de.kiefer_networks.falco.ui.screens.robot.RobotScreen
+import de.kiefer_networks.falco.ui.screens.robot.ServerDetailScreen
+import de.kiefer_networks.falco.ui.screens.robot.StorageBoxDetailScreen
+import de.kiefer_networks.falco.ui.screens.s3.ObjectBrowserScreen
 import de.kiefer_networks.falco.ui.screens.s3.S3Screen
 import de.kiefer_networks.falco.ui.screens.settings.SettingsScreen
 import de.kiefer_networks.falco.ui.screens.welcome.WelcomeScreen
@@ -74,9 +80,47 @@ fun FalcoRoot(viewModel: FalcoRootViewModel) {
             composable(Routes.ACCOUNTS) { AccountsScreen(onAdd = { nav.navigate(Routes.ACCOUNT_NEW) }) }
             composable(Routes.ACCOUNT_NEW) { AccountFormScreen(onDone = { nav.popBackStack() }) }
             composable(Routes.CLOUD) { CloudScreen() }
-            composable(Routes.ROBOT) { RobotScreen() }
-            composable(Routes.DNS) { DnsScreen() }
-            composable(Routes.S3) { S3Screen() }
+            composable(Routes.ROBOT) {
+                RobotScreen(
+                    onServerClick = { number -> nav.navigate(Routes.robotServerDetail(number)) },
+                    onStorageBoxClick = { id -> nav.navigate(Routes.robotStorageBoxDetail(id)) },
+                )
+            }
+            composable(
+                route = Routes.ROBOT_SERVER_DETAIL,
+                arguments = listOf(navArgument(Routes.ARG_SERVER_NUMBER) { type = NavType.LongType }),
+            ) { ServerDetailScreen() }
+            composable(
+                route = Routes.ROBOT_STORAGE_BOX_DETAIL,
+                arguments = listOf(navArgument(Routes.ARG_STORAGE_BOX_ID) { type = NavType.LongType }),
+            ) { StorageBoxDetailScreen() }
+            composable(Routes.DNS) {
+                DnsScreen(onZoneClick = { id -> nav.navigate(Routes.dnsZoneDetail(id)) })
+            }
+            composable(
+                route = Routes.DNS_ZONE_DETAIL,
+                arguments = listOf(navArgument(Routes.ARG_ZONE_ID) { type = NavType.StringType }),
+            ) { ZoneDetailScreen(onBack = { nav.popBackStack() }) }
+            composable(Routes.S3) {
+                S3Screen(onOpenBucket = { bucket -> nav.navigate(Routes.s3Browser(bucket)) })
+            }
+            composable(
+                route = Routes.S3_BROWSER,
+                arguments = listOf(
+                    navArgument(Routes.ARG_BUCKET) { type = NavType.StringType },
+                    navArgument(Routes.ARG_PREFIX) {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    },
+                ),
+            ) {
+                ObjectBrowserScreen(
+                    onBack = { nav.popBackStack() },
+                    onNavigateToPrefix = { bucket, prefix ->
+                        nav.navigate(Routes.s3Browser(bucket, prefix))
+                    },
+                )
+            }
             composable(Routes.SETTINGS) { SettingsScreen() }
         }
     }

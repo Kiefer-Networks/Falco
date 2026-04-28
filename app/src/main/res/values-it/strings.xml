@@ -68,6 +68,32 @@
     <string name="storagebox_subaccounts">Sotto-account</string>
     <string name="storagebox_password">Reimposta password</string>
     <string name="action_wol">Wake-on-LAN</string>
+    <string name="robot_field_number">Numero</string>
+    <string name="robot_field_ip">IP</string>
+    <string name="robot_field_ipv6_net">Rete IPv6</string>
+    <string name="robot_field_product">Prodotto</string>
+    <string name="robot_field_datacenter">Datacenter</string>
+    <string name="robot_field_paid_until">Pagato fino al</string>
+    <string name="robot_field_traffic">Traffico</string>
+    <string name="robot_field_status">Stato</string>
+    <string name="robot_field_login">Login</string>
+    <string name="robot_field_location">Posizione</string>
+    <string name="robot_field_disk">Disco</string>
+    <string name="robot_field_protocols">Protocolli</string>
+    <string name="robot_disk_value">%1$d / %2$d MB</string>
+    <string name="robot_reset_title">Reimposta server</string>
+    <string name="robot_reset_message">Scegli il tipo di reset:</string>
+    <string name="robot_reset_type_sw">Reset software (Ctrl+Alt+Canc)</string>
+    <string name="robot_reset_type_hw">Reset hardware</string>
+    <string name="robot_reset_type_man">Reset manuale dal supporto</string>
+    <string name="robot_reset_type_power">Ciclo di alimentazione</string>
+    <string name="robot_wol_confirm">Inviare il pacchetto Wake-on-LAN a questo server?</string>
+    <string name="robot_create_snapshot">Crea snapshot</string>
+    <string name="robot_create_snapshot_confirm">Creare un nuovo snapshot di questa Storage Box?</string>
+    <string name="robot_snapshot_meta">Dimensione: %1$s • FS: %2$s</string>
+    <string name="robot_action_running">In esecuzione…</string>
+    <string name="robot_action_done">Azione completata</string>
+    <string name="robot_action_failed">Azione fallita: %1$s</string>
 
     <string name="dns_zones">Zone</string>
     <string name="dns_records">Record</string>
@@ -77,6 +103,15 @@
     <string name="dns_record_ttl">TTL</string>
     <string name="dns_zone_create">Nuova zona</string>
     <string name="dns_record_create">Nuovo record</string>
+    <string name="dns_record_edit">Modifica</string>
+    <string name="dns_record_delete">Elimina</string>
+    <string name="dns_zone_status">Stato</string>
+    <string name="dns_record_create_title">Nuovo record DNS</string>
+    <string name="dns_record_edit_title">Modifica record DNS</string>
+    <string name="dns_record_saved">Record salvato</string>
+    <string name="dns_record_deleted">Record eliminato</string>
+    <string name="dns_record_save_error">Impossibile salvare il record</string>
+    <string name="dns_record_delete_error">Impossibile eliminare il record</string>
 
     <string name="s3_buckets">Bucket</string>
     <string name="s3_objects">Oggetti</string>
@@ -86,6 +121,14 @@
     <string name="s3_share_link_expires">Il link scade in %1$d ore</string>
     <string name="s3_link_copied">Link copiato</string>
     <string name="s3_create_bucket">Crea bucket</string>
+    <string name="s3_ttl_1h">1 ora</string>
+    <string name="s3_ttl_24h">24 ore</string>
+    <string name="s3_ttl_7d">7 giorni</string>
+    <string name="s3_ttl_30d">30 giorni</string>
+    <string name="s3_upload_picker_title">Scegli un file da caricare</string>
+    <string name="s3_download_saved">Salvato in Download</string>
+    <string name="s3_delete_confirm_title">Eliminare l\'oggetto?</string>
+    <string name="s3_delete_confirm_msg">Eliminare definitivamente \"%1$s\"? Operazione irreversibile.</string>
 
     <string name="settings_language">Lingua</string>
     <string name="settings_theme">Tema</string>

@@ -68,6 +68,32 @@
     <string name="storagebox_subaccounts">Субаккаунты</string>
     <string name="storagebox_password">Сбросить пароль</string>
     <string name="action_wol">Wake-on-LAN</string>
+    <string name="robot_field_number">Номер</string>
+    <string name="robot_field_ip">IP</string>
+    <string name="robot_field_ipv6_net">Сеть IPv6</string>
+    <string name="robot_field_product">Продукт</string>
+    <string name="robot_field_datacenter">Дата-центр</string>
+    <string name="robot_field_paid_until">Оплачено до</string>
+    <string name="robot_field_traffic">Трафик</string>
+    <string name="robot_field_status">Статус</string>
+    <string name="robot_field_login">Логин</string>
+    <string name="robot_field_location">Расположение</string>
+    <string name="robot_field_disk">Диск</string>
+    <string name="robot_field_protocols">Протоколы</string>
+    <string name="robot_disk_value">%1$d / %2$d МБ</string>
+    <string name="robot_reset_title">Сброс сервера</string>
+    <string name="robot_reset_message">Выберите тип сброса:</string>
+    <string name="robot_reset_type_sw">Программный сброс (Ctrl+Alt+Del)</string>
+    <string name="robot_reset_type_hw">Аппаратный сброс</string>
+    <string name="robot_reset_type_man">Ручной сброс через поддержку</string>
+    <string name="robot_reset_type_power">Перезагрузка питания</string>
+    <string name="robot_wol_confirm">Отправить пакет Wake-on-LAN на этот сервер?</string>
+    <string name="robot_create_snapshot">Создать снапшот</string>
+    <string name="robot_create_snapshot_confirm">Создать новый снапшот этого Storage Box?</string>
+    <string name="robot_snapshot_meta">Размер: %1$s • ФС: %2$s</string>
+    <string name="robot_action_running">Выполняется…</string>
+    <string name="robot_action_done">Действие выполнено</string>
+    <string name="robot_action_failed">Ошибка действия: %1$s</string>
 
     <string name="dns_zones">Зоны</string>
     <string name="dns_records">Записи</string>
@@ -77,6 +103,15 @@
     <string name="dns_record_ttl">TTL</string>
     <string name="dns_zone_create">Новая зона</string>
     <string name="dns_record_create">Новая запись</string>
+    <string name="dns_record_edit">Изменить</string>
+    <string name="dns_record_delete">Удалить</string>
+    <string name="dns_zone_status">Статус</string>
+    <string name="dns_record_create_title">Новая DNS-запись</string>
+    <string name="dns_record_edit_title">Изменить DNS-запись</string>
+    <string name="dns_record_saved">Запись сохранена</string>
+    <string name="dns_record_deleted">Запись удалена</string>
+    <string name="dns_record_save_error">Не удалось сохранить запись</string>
+    <string name="dns_record_delete_error">Не удалось удалить запись</string>
 
     <string name="s3_buckets">Бакеты</string>
     <string name="s3_objects">Объекты</string>
@@ -86,6 +121,14 @@
     <string name="s3_share_link_expires">Ссылка истекает через %1$d ч.</string>
     <string name="s3_link_copied">Ссылка скопирована</string>
     <string name="s3_create_bucket">Создать бакет</string>
+    <string name="s3_ttl_1h">1 час</string>
+    <string name="s3_ttl_24h">24 часа</string>
+    <string name="s3_ttl_7d">7 дней</string>
+    <string name="s3_ttl_30d">30 дней</string>
+    <string name="s3_upload_picker_title">Выберите файл для загрузки</string>
+    <string name="s3_download_saved">Сохранено в «Загрузки»</string>
+    <string name="s3_delete_confirm_title">Удалить объект?</string>
+    <string name="s3_delete_confirm_msg">Удалить «%1$s» без возможности восстановления?</string>
 
     <string name="settings_language">Язык</string>
     <string name="settings_theme">Тема</string>

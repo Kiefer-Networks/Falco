@@ -68,6 +68,32 @@
     <string name="storagebox_subaccounts">子账户</string>
     <string name="storagebox_password">重置密码</string>
     <string name="action_wol">网络唤醒</string>
+    <string name="robot_field_number">编号</string>
+    <string name="robot_field_ip">IP</string>
+    <string name="robot_field_ipv6_net">IPv6 网段</string>
+    <string name="robot_field_product">产品</string>
+    <string name="robot_field_datacenter">数据中心</string>
+    <string name="robot_field_paid_until">付费截止</string>
+    <string name="robot_field_traffic">流量</string>
+    <string name="robot_field_status">状态</string>
+    <string name="robot_field_login">登录名</string>
+    <string name="robot_field_location">位置</string>
+    <string name="robot_field_disk">磁盘</string>
+    <string name="robot_field_protocols">协议</string>
+    <string name="robot_disk_value">%1$d / %2$d MB</string>
+    <string name="robot_reset_title">重置服务器</string>
+    <string name="robot_reset_message">选择重置类型：</string>
+    <string name="robot_reset_type_sw">软件重置（Ctrl+Alt+Del）</string>
+    <string name="robot_reset_type_hw">硬件重置</string>
+    <string name="robot_reset_type_man">人工重置（通过支持）</string>
+    <string name="robot_reset_type_power">电源重启</string>
+    <string name="robot_wol_confirm">向该服务器发送网络唤醒数据包？</string>
+    <string name="robot_create_snapshot">创建快照</string>
+    <string name="robot_create_snapshot_confirm">为此 Storage Box 创建新的快照？</string>
+    <string name="robot_snapshot_meta">大小：%1$s • 文件系统：%2$s</string>
+    <string name="robot_action_running">执行中…</string>
+    <string name="robot_action_done">操作完成</string>
+    <string name="robot_action_failed">操作失败：%1$s</string>
 
     <string name="dns_zones">区域</string>
     <string name="dns_records">记录</string>
@@ -77,6 +103,15 @@
     <string name="dns_record_ttl">TTL</string>
     <string name="dns_zone_create">新区域</string>
     <string name="dns_record_create">新记录</string>
+    <string name="dns_record_edit">编辑</string>
+    <string name="dns_record_delete">删除</string>
+    <string name="dns_zone_status">状态</string>
+    <string name="dns_record_create_title">新建 DNS 记录</string>
+    <string name="dns_record_edit_title">编辑 DNS 记录</string>
+    <string name="dns_record_saved">记录已保存</string>
+    <string name="dns_record_deleted">记录已删除</string>
+    <string name="dns_record_save_error">无法保存记录</string>
+    <string name="dns_record_delete_error">无法删除记录</string>
 
     <string name="s3_buckets">存储桶</string>
     <string name="s3_objects">对象</string>
@@ -86,6 +121,14 @@
     <string name="s3_share_link_expires">链接将在 %1$d 小时后过期</string>
     <string name="s3_link_copied">链接已复制</string>
     <string name="s3_create_bucket">创建存储桶</string>
+    <string name="s3_ttl_1h">1 小时</string>
+    <string name="s3_ttl_24h">24 小时</string>
+    <string name="s3_ttl_7d">7 天</string>
+    <string name="s3_ttl_30d">30 天</string>
+    <string name="s3_upload_picker_title">选择要上传的文件</string>
+    <string name="s3_download_saved">已保存到下载目录</string>
+    <string name="s3_delete_confirm_title">删除对象？</string>
+    <string name="s3_delete_confirm_msg">永久删除 \"%1$s\"？此操作无法撤销。</string>
 
     <string name="settings_language">语言</string>
     <string name="settings_theme">主题</string>

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.ui.screens.dns
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,14 +47,22 @@ class DnsViewModel @Inject constructor(private val repo: DnsRepo) : ViewModel() 
 }
 
 @Composable
-fun DnsScreen(viewModel: DnsViewModel = hiltViewModel()) {
+fun DnsScreen(
+    onZoneClick: (String) -> Unit = {},
+    viewModel: DnsViewModel = hiltViewModel(),
+) {
     val s by viewModel.state.collectAsState()
     when {
         s.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         s.error != null -> Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) { Text(s.error!!) }
         else -> LazyColumn(Modifier.fillMaxSize().padding(12.dp)) {
             items(s.zones, key = { it.id }) { zone ->
-                Card(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                        .clickable { onZoneClick(zone.id) },
+                ) {
                     Column(Modifier.padding(12.dp)) {
                         Text(zone.name, style = MaterialTheme.typography.titleMedium)
                         Text("${zone.recordsCount ?: 0} records", style = MaterialTheme.typography.bodyMedium)

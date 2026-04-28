@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.ui.screens.s3
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,14 +46,22 @@ class S3ViewModel @Inject constructor(private val repo: S3Repo) : ViewModel() {
 }
 
 @Composable
-fun S3Screen(viewModel: S3ViewModel = hiltViewModel()) {
+fun S3Screen(
+    onOpenBucket: (String) -> Unit = {},
+    viewModel: S3ViewModel = hiltViewModel(),
+) {
     val s by viewModel.state.collectAsState()
     when {
         s.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         s.error != null -> Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) { Text(s.error!!) }
         else -> LazyColumn(Modifier.fillMaxSize().padding(12.dp)) {
             items(s.buckets, key = { it }) { bucket ->
-                Card(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                Card(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                        .clickable { onOpenBucket(bucket) },
+                ) {
                     Column(Modifier.padding(12.dp)) {
                         Text(bucket, style = MaterialTheme.typography.titleMedium)
                     }
