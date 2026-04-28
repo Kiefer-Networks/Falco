@@ -57,6 +57,7 @@ fun CloudHubScreen(
     onAddProject: () -> Unit,
     onManageProjects: () -> Unit,
     onOpenStorageBox: (Long) -> Unit = {},
+    onOpenServer: (Long) -> Unit = {},
     viewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
@@ -119,7 +120,7 @@ fun CloudHubScreen(
             }
             Box(modifier = Modifier.fillMaxSize()) {
                 when (selected) {
-                    0 -> CloudScreen()
+                    0 -> CloudScreen(onOpenServer = onOpenServer)
                     1 -> CloudVolumesTab()
                     2 -> CloudNetworksTab()
                     3 -> CloudFirewallsTab()

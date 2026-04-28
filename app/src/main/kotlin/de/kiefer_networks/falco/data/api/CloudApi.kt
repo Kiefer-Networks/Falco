@@ -1,13 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.data.api
 
+import de.kiefer_networks.falco.data.dto.AttachIsoRequest
+import de.kiefer_networks.falco.data.dto.ChangeProtectionRequest
+import de.kiefer_networks.falco.data.dto.ChangeServerTypeRequest
 import de.kiefer_networks.falco.data.dto.CloudFirewallList
 import de.kiefer_networks.falco.data.dto.CloudFloatingIpList
+import de.kiefer_networks.falco.data.dto.CloudImageList
+import de.kiefer_networks.falco.data.dto.CloudIsoList
+import de.kiefer_networks.falco.data.dto.CloudMetricsResponse
 import de.kiefer_networks.falco.data.dto.CloudNetworkList
+import de.kiefer_networks.falco.data.dto.CloudServerActionResponse
+import de.kiefer_networks.falco.data.dto.CloudServerEnvelope
 import de.kiefer_networks.falco.data.dto.CloudServerList
+import de.kiefer_networks.falco.data.dto.CloudServerTypeList
 import de.kiefer_networks.falco.data.dto.CloudVolumeList
+import de.kiefer_networks.falco.data.dto.EnableRescueRequest
+import de.kiefer_networks.falco.data.dto.RebuildServerRequest
 import de.kiefer_networks.falco.data.dto.ServerAction
+import de.kiefer_networks.falco.data.dto.UpdateServerRequest
+import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PUT
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -48,6 +63,83 @@ interface CloudApi {
 
     @GET("networks")
     suspend fun listNetworks(): CloudNetworkList
+
+    @GET("servers/{id}")
+    suspend fun getServer(@Path("id") id: Long): CloudServerEnvelope
+
+    @PUT("servers/{id}")
+    suspend fun updateServer(
+        @Path("id") id: Long,
+        @Body body: UpdateServerRequest,
+    ): CloudServerEnvelope
+
+    @DELETE("servers/{id}")
+    suspend fun deleteServer(@Path("id") id: Long): CloudServerActionResponse
+
+    @POST("servers/{id}/actions/rebuild")
+    suspend fun rebuildServer(
+        @Path("id") id: Long,
+        @Body body: RebuildServerRequest,
+    ): CloudServerActionResponse
+
+    @POST("servers/{id}/actions/enable_rescue")
+    suspend fun enableRescue(
+        @Path("id") id: Long,
+        @Body body: EnableRescueRequest,
+    ): CloudServerActionResponse
+
+    @POST("servers/{id}/actions/disable_rescue")
+    suspend fun disableRescue(@Path("id") id: Long): CloudServerActionResponse
+
+    @POST("servers/{id}/actions/enable_backup")
+    suspend fun enableBackup(@Path("id") id: Long): CloudServerActionResponse
+
+    @POST("servers/{id}/actions/disable_backup")
+    suspend fun disableBackup(@Path("id") id: Long): CloudServerActionResponse
+
+    @POST("servers/{id}/actions/attach_iso")
+    suspend fun attachIso(
+        @Path("id") id: Long,
+        @Body body: AttachIsoRequest,
+    ): CloudServerActionResponse
+
+    @POST("servers/{id}/actions/detach_iso")
+    suspend fun detachIso(@Path("id") id: Long): CloudServerActionResponse
+
+    @POST("servers/{id}/actions/change_type")
+    suspend fun changeServerType(
+        @Path("id") id: Long,
+        @Body body: ChangeServerTypeRequest,
+    ): CloudServerActionResponse
+
+    @POST("servers/{id}/actions/change_protection")
+    suspend fun changeServerProtection(
+        @Path("id") id: Long,
+        @Body body: ChangeProtectionRequest,
+    ): CloudServerActionResponse
+
+    @GET("servers/{id}/metrics")
+    suspend fun serverMetrics(
+        @Path("id") id: Long,
+        @Query("type") type: String,
+        @Query("start") start: String,
+        @Query("end") end: String,
+        @Query("step") step: Int,
+    ): CloudMetricsResponse
+
+    @GET("images")
+    suspend fun listImages(
+        @Query("type") type: String = "system",
+        @Query("architecture") architecture: String? = null,
+        @Query("sort") sort: String = "name",
+        @Query("per_page") perPage: Int = 100,
+    ): CloudImageList
+
+    @GET("server_types")
+    suspend fun listServerTypes(@Query("per_page") perPage: Int = 100): CloudServerTypeList
+
+    @GET("isos")
+    suspend fun listIsos(@Query("per_page") perPage: Int = 100): CloudIsoList
 }
 
 /**

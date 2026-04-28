@@ -27,6 +27,10 @@ object Routes {
     const val CLOUD_STORAGE_BOX_DETAIL = "cloud/storagebox/{id}"
     fun cloudStorageBoxDetail(id: Long) = "cloud/storagebox/$id"
 
+    const val CLOUD_SERVER_DETAIL = "cloud/server/{id}"
+    fun cloudServerDetail(id: Long) = "cloud/server/$id"
+    const val ARG_CLOUD_SERVER_ID = "id"
+
     const val PROJECTS = "cloud/projects"
     const val PROJECT_NEW = "cloud/projects/new"
     const val PROJECT_EDIT = "cloud/projects/edit/{projectId}"

@@ -63,7 +63,10 @@ import de.kiefer_networks.falco.ui.components.ErrorState
 import de.kiefer_networks.falco.ui.components.LoadingState
 
 @Composable
-fun CloudScreen(viewModel: CloudViewModel = hiltViewModel()) {
+fun CloudScreen(
+    onOpenServer: (Long) -> Unit = {},
+    viewModel: CloudViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsState()
     when (val s = state) {
         is CloudUiState.Loading -> LoadingState()
@@ -71,6 +74,7 @@ fun CloudScreen(viewModel: CloudViewModel = hiltViewModel()) {
         is CloudUiState.Loaded -> ServerList(
             servers = s.servers,
             onAction = { action, id -> viewModel.action(action, id) },
+            onOpen = onOpenServer,
         )
     }
 }
@@ -79,6 +83,7 @@ fun CloudScreen(viewModel: CloudViewModel = hiltViewModel()) {
 private fun ServerList(
     servers: List<CloudServer>,
     onAction: (CloudViewModel.ServerAction, Long) -> Unit,
+    onOpen: (Long) -> Unit,
 ) {
     if (servers.isEmpty()) {
         EmptyState(
@@ -93,7 +98,7 @@ private fun ServerList(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(servers, key = { it.id }) { server ->
-            ServerCard(server = server, onAction = onAction)
+            ServerCard(server = server, onAction = onAction, onClick = { onOpen(server.id) })
         }
     }
 }
@@ -103,8 +108,9 @@ private fun ServerList(
 private fun ServerCard(
     server: CloudServer,
     onAction: (CloudViewModel.ServerAction, Long) -> Unit,
+    onClick: () -> Unit,
 ) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    ElevatedCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),

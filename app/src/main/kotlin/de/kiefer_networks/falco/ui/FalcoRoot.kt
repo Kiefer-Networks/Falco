@@ -104,6 +104,15 @@ fun FalcoRoot(viewModel: FalcoRootViewModel) {
                     onAddProject = { nav.navigate(Routes.PROJECT_NEW) },
                     onManageProjects = { nav.navigate(Routes.PROJECTS) },
                     onOpenStorageBox = { id -> nav.navigate(Routes.cloudStorageBoxDetail(id)) },
+                    onOpenServer = { id -> nav.navigate(Routes.cloudServerDetail(id)) },
+                )
+            }
+            composable(
+                route = Routes.CLOUD_SERVER_DETAIL,
+                arguments = listOf(navArgument(Routes.ARG_CLOUD_SERVER_ID) { type = NavType.LongType }),
+            ) {
+                de.kiefer_networks.falco.ui.screens.cloud.CloudServerDetailScreen(
+                    onBack = { nav.popBackStack() },
                 )
             }
             composable(Routes.PROJECTS) {

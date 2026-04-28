@@ -4,6 +4,7 @@ package de.kiefer_networks.falco.data.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable data class CloudServerList(val servers: List<CloudServer>, val meta: Meta? = null)
 @Serializable data class CloudServer(
@@ -18,7 +19,17 @@ import kotlinx.serialization.Serializable
     val image: Image? = null,
     val labels: Map<String, String> = emptyMap(),
     val locked: Boolean = false,
+    @SerialName("backup_window") val backupWindow: String? = null,
+    @SerialName("rescue_enabled") val rescueEnabled: Boolean = false,
+    val iso: CloudIso? = null,
+    val protection: CloudServerProtection? = null,
+    @SerialName("included_traffic") val includedTraffic: Long? = null,
+    @SerialName("outgoing_traffic") val outgoingTraffic: Long? = null,
+    @SerialName("ingoing_traffic") val ingoingTraffic: Long? = null,
+    @SerialName("primary_disk_size") val primaryDiskSize: Int? = null,
 )
+
+@Serializable data class CloudServerProtection(val delete: Boolean = false, val rebuild: Boolean = false)
 
 @Serializable data class PublicNet(val ipv4: Ipv4? = null, val ipv6: Ipv6? = null)
 @Serializable data class Ipv4(val ip: String, val blocked: Boolean = false, @SerialName("dns_ptr") val dnsPtr: String? = null)
@@ -94,6 +105,74 @@ import kotlinx.serialization.Serializable
     val servers: List<Long> = emptyList(),
 )
 @Serializable data class NetworkSubnet(val type: String, @SerialName("ip_range") val ipRange: String, @SerialName("network_zone") val networkZone: String)
+
+// Cloud Server detail / action support (v0.5)
+@Serializable data class CloudServerEnvelope(val server: CloudServer)
+@Serializable data class CloudServerActionResponse(
+    val action: ActionEnvelope,
+    @SerialName("root_password") val rootPassword: String? = null,
+)
+
+@Serializable data class CloudImageList(val images: List<CloudImage>, val meta: Meta? = null)
+@Serializable data class CloudImage(
+    val id: Long,
+    val type: String,
+    val status: String,
+    val name: String? = null,
+    val description: String? = null,
+    @SerialName("os_flavor")  val osFlavor: String? = null,
+    @SerialName("os_version") val osVersion: String? = null,
+    val architecture: String? = null,
+    @SerialName("image_size") val imageSize: Double? = null,
+    @SerialName("disk_size")  val diskSize: Double? = null,
+    @SerialName("created_from") val createdFrom: ResourceRef? = null,
+    val deprecated: String? = null,
+    val labels: Map<String, String> = emptyMap(),
+)
+
+@Serializable data class CloudServerTypeList(@SerialName("server_types") val serverTypes: List<CloudServerType>)
+@Serializable data class CloudServerType(
+    val id: Long,
+    val name: String,
+    val description: String,
+    val cores: Int,
+    val memory: Double,
+    val disk: Int,
+    @SerialName("cpu_type") val cpuType: String? = null,
+    val architecture: String? = null,
+    val deprecated: Boolean = false,
+)
+
+@Serializable data class CloudIsoList(val isos: List<CloudIso>, val meta: Meta? = null)
+@Serializable data class CloudIso(
+    val id: Long,
+    val name: String,
+    val description: String? = null,
+    val type: String? = null,
+    val deprecated: String? = null,
+)
+
+@Serializable data class CloudMetricsResponse(val metrics: CloudMetrics)
+@Serializable data class CloudMetrics(
+    val start: String,
+    val end: String,
+    val step: Float,
+    @SerialName("time_series") val timeSeries: Map<String, CloudTimeSeries> = emptyMap(),
+)
+@Serializable data class CloudTimeSeries(val values: List<List<JsonElement>> = emptyList())
+
+@Serializable data class RebuildServerRequest(val image: String)
+@Serializable data class EnableRescueRequest(
+    val type: String = "linux64",
+    @SerialName("ssh_keys") val sshKeys: List<Long>? = null,
+)
+@Serializable data class AttachIsoRequest(val iso: String)
+@Serializable data class ChangeServerTypeRequest(
+    @SerialName("server_type") val serverType: String,
+    @SerialName("upgrade_disk") val upgradeDisk: Boolean = false,
+)
+@Serializable data class ChangeProtectionRequest(val delete: Boolean? = null, val rebuild: Boolean? = null)
+@Serializable data class UpdateServerRequest(val name: String? = null, val labels: Map<String, String>? = null)
 
 @Serializable data class CloudStorageBoxList(@SerialName("storage_boxes") val storageBoxes: List<CloudStorageBox>)
 
