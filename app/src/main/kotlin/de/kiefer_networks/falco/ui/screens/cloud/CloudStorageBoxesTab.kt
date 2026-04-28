@@ -136,7 +136,7 @@ private fun StorageBoxCard(box: CloudStorageBox, onClick: () -> Unit) {
                     if (st.size != null) {
                         Spacer(Modifier.size(8.dp))
                         Text(
-                            text = "· ${st.size} GB",
+                            text = "· ${de.kiefer_networks.falco.ui.util.formatBytes(st.size)}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

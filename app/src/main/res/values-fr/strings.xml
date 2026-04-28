@@ -317,4 +317,12 @@
     <string name="storagebox_password_reset">Réinitialiser le mot de passe</string>
     <string name="storagebox_password_reset_confirm">Définir un nouveau mot de passe Storage Box ? Les connexions actives devront se réauthentifier.</string>
     <string name="storagebox_new_password">Nouveau mot de passe</string>
+
+    <string name="storagebox_stats_used">Utilisé</string>
+    <string name="storagebox_stats_data">Données</string>
+    <string name="storagebox_stats_snapshots">Taille des snapshots</string>
+    <string name="storagebox_access_title">Paramètres d\'accès</string>
+    <string name="storagebox_access_caption">Les protocoles activés ici s\'appliquent à toute la Storage Box. Les sous-comptes en héritent.</string>
+    <string name="storagebox_access_zfs">ZFS</string>
+    <string name="storagebox_subaccount_protocols_hint">Les protocoles sont gérés au niveau de la box ; voir Paramètres d\'accès ci-dessus.</string>
 </resources>

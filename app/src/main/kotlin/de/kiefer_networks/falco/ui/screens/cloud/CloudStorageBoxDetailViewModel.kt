@@ -77,6 +77,22 @@ class CloudStorageBoxDetailViewModel @Inject constructor(
         repo.resetStorageBoxPassword(boxId, newPassword)
     }
 
+    fun setSamba(enabled: Boolean) = wrap(refreshAfter = true) {
+        repo.updateStorageBoxAccessSettings(boxId, sambaEnabled = enabled)
+    }
+    fun setSsh(enabled: Boolean) = wrap(refreshAfter = true) {
+        repo.updateStorageBoxAccessSettings(boxId, sshEnabled = enabled)
+    }
+    fun setWebdav(enabled: Boolean) = wrap(refreshAfter = true) {
+        repo.updateStorageBoxAccessSettings(boxId, webdavEnabled = enabled)
+    }
+    fun setZfs(enabled: Boolean) = wrap(refreshAfter = true) {
+        repo.updateStorageBoxAccessSettings(boxId, zfsEnabled = enabled)
+    }
+    fun setExternal(enabled: Boolean) = wrap(refreshAfter = true) {
+        repo.updateStorageBoxAccessSettings(boxId, reachableExternally = enabled)
+    }
+
     fun createSnapshot(description: String?) = wrap(refreshAfter = true) {
         repo.createStorageBoxSnapshot(boxId, description)
     }

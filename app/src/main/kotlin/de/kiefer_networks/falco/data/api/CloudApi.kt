@@ -69,6 +69,12 @@ interface StorageBoxApi {
         @retrofit2.http.Body body: de.kiefer_networks.falco.data.dto.ResetStorageBoxPasswordRequest,
     ): de.kiefer_networks.falco.data.dto.CloudStorageBoxActionResponse
 
+    @retrofit2.http.POST("storage_boxes/{id}/actions/update_access_settings")
+    suspend fun updateStorageBoxAccessSettings(
+        @Path("id") id: Long,
+        @retrofit2.http.Body body: de.kiefer_networks.falco.data.dto.UpdateStorageBoxAccessSettings,
+    ): de.kiefer_networks.falco.data.dto.CloudStorageBoxActionResponse
+
     @GET("storage_boxes/{id}/snapshots")
     suspend fun listStorageBoxSnapshots(@Path("id") id: Long): de.kiefer_networks.falco.data.dto.CloudStorageBoxSnapshotList
 

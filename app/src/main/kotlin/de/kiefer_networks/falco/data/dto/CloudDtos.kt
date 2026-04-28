@@ -109,6 +109,37 @@ import kotlinx.serialization.Serializable
     val protection: CloudStorageBoxProtection? = null,
     @SerialName("linked_resources") val linkedResources: List<CloudLinkedResource> = emptyList(),
     val labels: Map<String, String> = emptyMap(),
+    @SerialName("access_settings") val accessSettings: CloudStorageBoxAccessSettings? = null,
+    val stats: CloudStorageBoxStats? = null,
+    val server: String? = null,
+    val system: String? = null,
+)
+
+/**
+ * Box-level access toggles. Hetzner enforces these as a master gate — a
+ * subaccount may only use protocols enabled here. The subaccount-level
+ * `access_settings` further restricts a single subaccount within that gate.
+ */
+@Serializable data class CloudStorageBoxAccessSettings(
+    @SerialName("samba_enabled") val sambaEnabled: Boolean = false,
+    @SerialName("ssh_enabled") val sshEnabled: Boolean = true,
+    @SerialName("webdav_enabled") val webdavEnabled: Boolean = false,
+    @SerialName("zfs_enabled") val zfsEnabled: Boolean = false,
+    @SerialName("reachable_externally") val reachableExternally: Boolean = false,
+)
+
+@Serializable data class CloudStorageBoxStats(
+    val size: Long? = null,
+    @SerialName("size_data") val sizeData: Long? = null,
+    @SerialName("size_snapshots") val sizeSnapshots: Long? = null,
+)
+
+@Serializable data class UpdateStorageBoxAccessSettings(
+    @SerialName("samba_enabled") val sambaEnabled: Boolean? = null,
+    @SerialName("ssh_enabled") val sshEnabled: Boolean? = null,
+    @SerialName("webdav_enabled") val webdavEnabled: Boolean? = null,
+    @SerialName("zfs_enabled") val zfsEnabled: Boolean? = null,
+    @SerialName("reachable_externally") val reachableExternally: Boolean? = null,
 )
 
 @Serializable data class CloudStorageBoxType(

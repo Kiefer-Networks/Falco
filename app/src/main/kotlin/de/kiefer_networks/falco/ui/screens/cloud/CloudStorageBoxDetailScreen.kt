@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.dto.CloudStorageBox
+import de.kiefer_networks.falco.data.dto.CloudStorageBoxAccessSettings
 import de.kiefer_networks.falco.data.dto.CloudStorageBoxSnapshot
 import de.kiefer_networks.falco.data.dto.CloudStorageBoxSubaccount
 import de.kiefer_networks.falco.data.dto.CloudSubaccountAccessSettings
@@ -143,6 +144,18 @@ fun CloudStorageBoxDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     item { OverviewCard(box) }
+                    box.accessSettings?.let { settings ->
+                        item {
+                            AccessSettingsCard(
+                                settings = settings,
+                                onSamba = viewModel::setSamba,
+                                onSsh = viewModel::setSsh,
+                                onWebdav = viewModel::setWebdav,
+                                onZfs = viewModel::setZfs,
+                                onExternal = viewModel::setExternal,
+                            )
+                        }
+                    }
 
                     item { SectionHeader(Icons.Filled.PhotoCamera, R.string.storagebox_snapshots) }
                     item {
@@ -320,7 +333,37 @@ private fun OverviewCard(box: CloudStorageBox) {
             box.storageBoxType?.let { st ->
                 Property(label = stringResource(R.string.cloud_storage_box_type_label), value = st.name)
                 st.size?.let {
-                    Property(label = stringResource(R.string.cloud_storage_box_size_label), value = "$it GB")
+                    Property(
+                        label = stringResource(R.string.cloud_storage_box_size_label),
+                        value = de.kiefer_networks.falco.ui.util.formatBytes(it),
+                    )
+                }
+            }
+            box.stats?.let { stats ->
+                val total = box.storageBoxType?.size
+                val used = stats.size
+                if (used != null && total != null) {
+                    Property(
+                        label = stringResource(R.string.storagebox_stats_used),
+                        value = "${de.kiefer_networks.falco.ui.util.formatBytes(used)} / ${de.kiefer_networks.falco.ui.util.formatBytes(total)}",
+                    )
+                } else if (used != null) {
+                    Property(
+                        label = stringResource(R.string.storagebox_stats_used),
+                        value = de.kiefer_networks.falco.ui.util.formatBytes(used),
+                    )
+                }
+                stats.sizeData?.let {
+                    Property(
+                        label = stringResource(R.string.storagebox_stats_data),
+                        value = de.kiefer_networks.falco.ui.util.formatBytes(it),
+                    )
+                }
+                stats.sizeSnapshots?.let {
+                    Property(
+                        label = stringResource(R.string.storagebox_stats_snapshots),
+                        value = de.kiefer_networks.falco.ui.util.formatBytes(it),
+                    )
                 }
             }
             box.location?.let { loc ->
@@ -336,6 +379,47 @@ private fun OverviewCard(box: CloudStorageBox) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun AccessSettingsCard(
+    settings: CloudStorageBoxAccessSettings,
+    onSamba: (Boolean) -> Unit,
+    onSsh: (Boolean) -> Unit,
+    onWebdav: (Boolean) -> Unit,
+    onZfs: (Boolean) -> Unit,
+    onExternal: (Boolean) -> Unit,
+) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                stringResource(R.string.storagebox_access_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                stringResource(R.string.storagebox_access_caption),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            AccessRow(stringResource(R.string.storagebox_subaccount_ssh), settings.sshEnabled, onSsh)
+            AccessRow(stringResource(R.string.storagebox_subaccount_samba), settings.sambaEnabled, onSamba)
+            AccessRow(stringResource(R.string.storagebox_subaccount_webdav), settings.webdavEnabled, onWebdav)
+            AccessRow(stringResource(R.string.storagebox_access_zfs), settings.zfsEnabled, onZfs)
+            AccessRow(stringResource(R.string.storagebox_subaccount_external), settings.reachableExternally, onExternal)
+        }
+    }
+}
+
+@Composable
+private fun AccessRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+        androidx.compose.material3.Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
@@ -358,7 +442,7 @@ private fun SnapshotCard(
                 Text(
                     text = listOfNotNull(
                         snapshot.created,
-                        snapshot.stats?.size?.let { "${it / 1024 / 1024} MB" },
+                        snapshot.stats?.size?.let { de.kiefer_networks.falco.ui.util.formatBytes(it) },
                         if (snapshot.isAutomatic) stringResource(R.string.storagebox_snapshot_automatic) else null,
                     ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
@@ -636,6 +720,12 @@ private fun TextPromptDialog(
     )
 }
 
+/**
+ * SSH / Samba / WebDAV are gated by the box-level access_settings — toggling
+ * them per subaccount can never widen the box's permission. Keep only the
+ * subaccount-specific flags (readonly + external) here; protocol toggles
+ * inherit from the box.
+ */
 @Composable
 private fun SubaccountFormDialog(
     onDismiss: () -> Unit,
@@ -644,9 +734,6 @@ private fun SubaccountFormDialog(
     var password by remember { mutableStateOf("") }
     var home by remember { mutableStateOf("/") }
     var description by remember { mutableStateOf("") }
-    var ssh by remember { mutableStateOf(true) }
-    var samba by remember { mutableStateOf(false) }
-    var webdav by remember { mutableStateOf(false) }
     var readonly by remember { mutableStateOf(false) }
     var external by remember { mutableStateOf(false) }
 
@@ -677,20 +764,10 @@ private fun SubaccountFormDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                ProtocolToggle(
-                    checked = ssh,
-                    onCheckedChange = { ssh = it },
-                    label = stringResource(R.string.storagebox_subaccount_ssh),
-                )
-                ProtocolToggle(
-                    checked = samba,
-                    onCheckedChange = { samba = it },
-                    label = stringResource(R.string.storagebox_subaccount_samba),
-                )
-                ProtocolToggle(
-                    checked = webdav,
-                    onCheckedChange = { webdav = it },
-                    label = stringResource(R.string.storagebox_subaccount_webdav),
+                Text(
+                    stringResource(R.string.storagebox_subaccount_protocols_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 ProtocolToggle(
                     checked = readonly,
@@ -712,9 +789,11 @@ private fun SubaccountFormDialog(
                         password,
                         home,
                         CloudSubaccountAccessSettings(
-                            sambaEnabled = samba,
-                            sshEnabled = ssh,
-                            webdavEnabled = webdav,
+                            // Protocol fields stay at API defaults (true for ssh, false otherwise);
+                            // the box-level master toggles are the source of truth.
+                            sambaEnabled = false,
+                            sshEnabled = true,
+                            webdavEnabled = false,
                             readonly = readonly,
                             reachableExternally = external,
                         ),

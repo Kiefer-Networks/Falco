@@ -321,4 +321,12 @@
     <string name="storagebox_password_reset">Сбросить пароль</string>
     <string name="storagebox_password_reset_confirm">Задать новый пароль Storage Box? Активные подключения потребуют повторной аутентификации.</string>
     <string name="storagebox_new_password">Новый пароль</string>
+
+    <string name="storagebox_stats_used">Занято</string>
+    <string name="storagebox_stats_data">Данные</string>
+    <string name="storagebox_stats_snapshots">Размер снапшотов</string>
+    <string name="storagebox_access_title">Настройки доступа</string>
+    <string name="storagebox_access_caption">Включённые здесь протоколы действуют для всей Storage Box. Субаккаунты наследуют их.</string>
+    <string name="storagebox_access_zfs">ZFS</string>
+    <string name="storagebox_subaccount_protocols_hint">Протоколы задаются на уровне Box; см. «Настройки доступа» выше.</string>
 </resources>

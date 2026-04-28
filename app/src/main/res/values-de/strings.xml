@@ -313,4 +313,12 @@
     <string name="storagebox_password_reset">Passwort zurücksetzen</string>
     <string name="storagebox_password_reset_confirm">Neues Storagebox-Passwort setzen? Aktive Verbindungen müssen sich neu authentifizieren.</string>
     <string name="storagebox_new_password">Neues Passwort</string>
+
+    <string name="storagebox_stats_used">Belegt</string>
+    <string name="storagebox_stats_data">Daten</string>
+    <string name="storagebox_stats_snapshots">Snapshot-Größe</string>
+    <string name="storagebox_access_title">Zugriffseinstellungen</string>
+    <string name="storagebox_access_caption">Hier aktivierte Protokolle gelten für die gesamte Storagebox. Unterkonten erben davon.</string>
+    <string name="storagebox_access_zfs">ZFS</string>
+    <string name="storagebox_subaccount_protocols_hint">Protokolle werden auf Box-Ebene verwaltet — siehe Zugriffseinstellungen oben.</string>
 </resources>

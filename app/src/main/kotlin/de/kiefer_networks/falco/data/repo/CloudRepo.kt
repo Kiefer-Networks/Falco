@@ -18,6 +18,7 @@ import de.kiefer_networks.falco.data.dto.CreateStorageBoxSnapshot
 import de.kiefer_networks.falco.data.dto.CreateStorageBoxSubaccount
 import de.kiefer_networks.falco.data.dto.ResetStorageBoxPasswordRequest
 import de.kiefer_networks.falco.data.dto.ResetSubaccountPasswordRequest
+import de.kiefer_networks.falco.data.dto.UpdateStorageBoxAccessSettings
 import de.kiefer_networks.falco.data.dto.UpdateStorageBoxSubaccount
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -50,6 +51,24 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
 
     suspend fun resetStorageBoxPassword(id: Long, password: String) =
         storageBoxApi().resetStorageBoxPassword(id, ResetStorageBoxPasswordRequest(password))
+
+    suspend fun updateStorageBoxAccessSettings(
+        id: Long,
+        sambaEnabled: Boolean? = null,
+        sshEnabled: Boolean? = null,
+        webdavEnabled: Boolean? = null,
+        zfsEnabled: Boolean? = null,
+        reachableExternally: Boolean? = null,
+    ) = storageBoxApi().updateStorageBoxAccessSettings(
+        id,
+        UpdateStorageBoxAccessSettings(
+            sambaEnabled = sambaEnabled,
+            sshEnabled = sshEnabled,
+            webdavEnabled = webdavEnabled,
+            zfsEnabled = zfsEnabled,
+            reachableExternally = reachableExternally,
+        ),
+    )
 
     suspend fun listStorageBoxSnapshots(id: Long): List<CloudStorageBoxSnapshot> =
         storageBoxApi().listStorageBoxSnapshots(id).snapshots

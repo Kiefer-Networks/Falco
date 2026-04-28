@@ -317,4 +317,12 @@
     <string name="storagebox_password_reset">Restablecer contraseña</string>
     <string name="storagebox_password_reset_confirm">¿Establecer nueva contraseña de Storage Box? Las conexiones existentes deberán reautenticarse.</string>
     <string name="storagebox_new_password">Nueva contraseña</string>
+
+    <string name="storagebox_stats_used">Usado</string>
+    <string name="storagebox_stats_data">Datos</string>
+    <string name="storagebox_stats_snapshots">Tamaño de snapshots</string>
+    <string name="storagebox_access_title">Ajustes de acceso</string>
+    <string name="storagebox_access_caption">Los protocolos habilitados aquí se aplican a toda la Storage Box. Las subcuentas heredan de aquí.</string>
+    <string name="storagebox_access_zfs">ZFS</string>
+    <string name="storagebox_subaccount_protocols_hint">Los protocolos se gestionan a nivel de caja; ver Ajustes de acceso arriba.</string>
 </resources>
