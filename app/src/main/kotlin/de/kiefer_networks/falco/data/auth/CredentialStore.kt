@@ -7,6 +7,7 @@ import android.os.Build
 import android.security.keystore.KeyProperties
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,7 +24,7 @@ import javax.inject.Singleton
  * id-to-display-name mapping.
  */
 @Singleton
-class CredentialStore @Inject constructor(context: Context) {
+class CredentialStore @Inject constructor(@ApplicationContext context: Context) {
 
     private val prefs: SharedPreferences = run {
         val ctx = context.applicationContext

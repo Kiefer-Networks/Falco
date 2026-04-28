@@ -96,6 +96,13 @@ android {
                 "/META-INF/LICENSE*",
                 "/META-INF/NOTICE*",
                 "/META-INF/*.kotlin_module",
+                "/META-INF/INDEX.LIST",
+                "/META-INF/io.netty.versions.properties",
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                "META-INF/versions/*/OSGI-INF/MANIFEST.MF",
+            )
+            pickFirsts += setOf(
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
             )
         }
     }
