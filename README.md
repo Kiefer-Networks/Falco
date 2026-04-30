@@ -1,122 +1,171 @@
+<div align="center">
+
 # Falco — Hetzner Manager for Android
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![CI](https://github.com/MalteKiefer/Falco/actions/workflows/ci.yml/badge.svg)](https://github.com/MalteKiefer/Falco/actions/workflows/ci.yml)
+[![Donate](https://img.shields.io/badge/donate-Liberapay-F6C915?style=flat&logo=liberapay)](https://de.liberapay.com/beli3ver)
 
-Falco is a privacy-respecting Android client for [Hetzner Online](https://www.hetzner.com)
-services. It manages **Hetzner Cloud**, **Robot** (dedicated servers + Storage Boxes),
-**DNS Console** and **Object Storage** (S3) from a single secure app.
+Privacy-respecting Android client for [Hetzner Online](https://www.hetzner.com).
+Manage **Hetzner Cloud**, **Robot** (dedicated servers + Storage Boxes),
+**DNS Console** and **Object Storage** from one secure app.
+
+</div>
 
 > Falco is community software and is **not affiliated** with Hetzner Online GmbH.
-
-## Status
-
-Early skeleton. Account setup, server listing/control and storage browsing work
-end-to-end; the polish, error UX and edge cases are still being filled in. See
-[`CHANGELOG.md`](CHANGELOG.md).
+> Hetzner is a trademark of Hetzner Online GmbH.
 
 ## Highlights
 
-- 100 % free software (GPL-3.0-or-later) — no Google Play Services, no Firebase,
-  no proprietary dependencies. Designed to be reproducibly buildable on F-Droid.
-- Credentials stored in `EncryptedSharedPreferences` with the master key bound
-  to the **Android Keystore** (StrongBox-backed when available).
-- **BiometricPrompt** (Class 3 / Device Credential) gate on app start.
+- **100 % free software** (GPL-3.0-or-later) — no Google Play Services, no
+  Firebase, no proprietary dependencies. Designed to be reproducibly buildable
+  on F-Droid.
+- **Multi-account, multi-project** — switch between Hetzner customers and
+  Cloud projects on the fly. Per-account credentials.
+- **Hardened storage** — credentials in `EncryptedSharedPreferences` with the
+  master key bound to the Android Keystore (StrongBox-backed when available).
+- **Biometric gate** — `BiometricPrompt` (Class 3 / Device Credential) on app
+  start; auto-relock on background timeout.
 - **TLS 1.3 only** with **certificate pinning** for every Hetzner endpoint
-  (Cloud, Robot, DNS, Object Storage).
+  (Cloud, Robot, DNS, Object Storage). Pins are root anchors so they survive
+  Let's Encrypt's leaf rotation cycle.
 - `FLAG_SECURE` on every screen, `allowBackup="false"`, auto-backup excluded.
-- Multi-account support — switch between Hetzner customer accounts.
-- Localised in **7 languages** (en, de, es, fr, it, zh-CN, ru).
+- Localised in **7 languages** (en, de, es, fr, it, ru, zh-CN).
+
+## Features
+
+### Hetzner Cloud
+- Servers: list, detail, metrics, create wizard, power actions, reset password,
+  rebuild, change type, ISO attach/detach, rescue mode, backup toggle, console
+  request, reverse DNS, rename, protection, delete.
+- Volumes: list, create wizard with live price estimate, attach/detach,
+  rename, resize, format, automount, protection, delete.
+- Networks: list, create wizard, subnets add/delete, routes, change IP range,
+  expose to vSwitch, protection, delete.
+- Floating IPs: list, create wizard, assign/unassign, change reverse DNS,
+  protection, delete.
+- Firewalls: list, create, edit rules, apply to / remove from resources.
+- SSH keys: list, create, rename, delete.
+- Primary IPs: list, create, assign/unassign, protection, delete.
+- Load Balancers: list overview *(create + actions wired in repo, UI growing)*.
+- Certificates: upload PEM or request managed (Let's Encrypt) certs, list,
+  delete, retry managed issuance.
+- Placement Groups: list, create, delete.
+- Storage Boxes: full detail screen — list, snapshots, subaccounts, password
+  reset, access toggles (SSH/Samba/WebDAV/ZFS).
+
+### Hetzner Robot
+- Servers: rich list (status dot, chips, IPv4/IPv6 with copy, datacenter,
+  paid-until), detail screen, reset (sw/hw/manual), Wake-on-LAN, rescue mode
+  enable/disable, reverse DNS setter, server cancellation + withdraw.
+- Failover IPs: list, route to active server, unroute.
+- vSwitches: list, create, update, delete, attach/detach servers.
+- SSH keys: list, create, delete.
+
+### DNS Console
+- Zones: list, create, update, delete, single-zone fetch.
+- Records: list, create, update, delete, single-record fetch, **bulk
+  create/update**, BIND import/export, validate.
+- Primary servers (secondary zone sources): full CRUD.
+
+### Object Storage (S3-compatible)
+- Buckets: list, exists, create, delete.
+- Objects: list (prefix browser), upload via foreground service, download via
+  signed URL, head/stat, copy, delete (single + batch), presigned upload URL.
+- Bucket settings: versioning toggle.
 
 ## Building
 
-Falco uses the standard Android toolchain. Requirements:
+Requires:
 
-- **JDK 17** (configured via `kotlin { jvmToolchain(17) }` — Gradle will
-  provision it automatically if absent).
-- **Android SDK** with API 35 platform and recent build-tools.
-- **Gradle 8.11.1** — once provisioned via the wrapper, you can use
-  `./gradlew` directly. To bootstrap the wrapper jar on a fresh checkout
-  (only needed once), run:
-  ```bash
-  gradle wrapper --gradle-version 8.11.1
-  ```
-  with a system Gradle, or open the project in Android Studio which generates
-  the wrapper automatically.
+- **JDK 17** (set via Gradle toolchain — auto-provisions if absent).
+- **Android SDK 35** (compileSdk).
+- **Kotlin 2.1**, **AGP 8.x**, **Compose BoM 2025.01**.
+
+```sh
+git clone https://github.com/MalteKiefer/Falco.git
+cd Falco
+./gradlew :app:assembleDebug
+```
+
+The debug APK lands in `app/build/outputs/apk/debug/`.
+
+### Release builds
+
+Release builds are signed with a real keystore. Provide one via
+`keystore.properties` at the repo root (this file is git-ignored):
+
+```properties
+storeFile=keystore.jks
+storePassword=YOUR_STORE_PASSWORD
+keyAlias=upload
+keyPassword=YOUR_KEY_PASSWORD
+```
 
 Then:
 
-```bash
-./gradlew :app:assembleRelease    # release APK
-./gradlew :app:installDebug       # install debug build to attached device
-./gradlew :app:test               # unit tests
-./gradlew :app:lintRelease        # lint
+```sh
+./gradlew :app:assembleRelease   # APK
+./gradlew :app:bundleRelease     # AAB
 ```
 
-### Signing for release
+### Quality gates
 
-Place a `keystore.properties` file at the repo root:
-
-```
-storeFile=/absolute/path/to/falco-release.jks
-storePassword=…
-keyAlias=falco
-keyPassword=…
+```sh
+./gradlew :app:lintDebug          # Android Lint
+./gradlew testDebugUnitTest       # unit tests
 ```
 
-The release build will pick it up automatically. Never commit the keystore or
-this file (`.gitignore` already excludes them).
-
-## F-Droid release flow
-
-1. Bump `versionName` and `versionCode` in `app/build.gradle.kts`.
-2. Update `CHANGELOG.md` and add a new `fastlane/metadata/android/<locale>/changelogs/<versionCode>.txt`.
-3. Refresh certificate pins:
-   ```bash
-   ./scripts/fetch_pins.sh > /tmp/pins.txt
-   # review, then paste relevant pins into app/src/main/kotlin/.../data/api/Pins.kt
-   ```
-4. Tag the release: `git tag -s v0.x.y && git push origin v0.x.y`.
-5. Verify reproducibility locally:
-   ```bash
-   ./gradlew :app:assembleRelease
-   cp app/build/outputs/apk/release/app-release-unsigned.apk a.apk
-   ./gradlew clean :app:assembleRelease
-   diffoscope a.apk app/build/outputs/apk/release/app-release-unsigned.apk
-   ```
-6. Open a PR against [`fdroiddata`](https://gitlab.com/fdroid/fdroiddata)
-   referencing `metadata/de.kiefer_networks.falco.yml`.
-
-## Security model
-
-| Threat | Mitigation |
-|---|---|
-| Token exfiltration via filesystem | EncryptedSharedPreferences (AES-256-GCM, MasterKey in Keystore + StrongBox) |
-| Token leak via screenshots / Recents | `FLAG_SECURE` on the only Activity |
-| Token leak via auto-backup / device transfer | `allowBackup="false"`, `data_extraction_rules.xml` excludes everything |
-| Network MITM | TLS 1.3-only `RESTRICTED_TLS` ConnectionSpec + per-host SHA-256 SPKI pinning |
-| Token leak via logs | `Log.{v,d,i}` stripped by R8 in release builds |
-| Token leak via crash dumps | No third-party crash reporter; only stack traces with stripped source filenames |
-| Stolen device | BiometricPrompt (Class 3) + Device Credential gate; auto-lock timeout configurable |
+CI runs both on every push.
 
 ## Architecture
 
-```
-ui (Compose + ViewModel + Hilt) ──▶ domain (UseCases) ──▶ data
-                                                          ├── auth (CredentialStore, AccountManager, BiometricGate)
-                                                          ├── api  (Retrofit/MinIO clients per Hetzner service)
-                                                          ├── repo (CloudRepo, RobotRepo, DnsRepo, S3Repo)
-                                                          └── dto  (kotlinx.serialization data classes)
-```
+- **UI**: Jetpack Compose + Material 3, single-Activity (Hilt entry point).
+- **DI**: Hilt.
+- **Networking**: Retrofit 2 + OkHttp 4, Kotlin Serialization JSON
+  converter. TLS pinning via `CertificatePinner` (SPKI SHA-256 of trust
+  anchors).
+- **Storage**: Jetpack DataStore for non-sensitive prefs;
+  `EncryptedSharedPreferences` (AES-256-GCM, Keystore master key) for
+  Hetzner tokens / S3 secrets / Robot credentials.
+- **S3**: MinIO Java SDK 8.5 routed through the same hardened OkHttp client
+  so it inherits TLS + pinning policy.
+- **Concurrency**: Kotlin Coroutines + `StateFlow` / `SharedFlow`.
 
-Single-module Clean-Architecture-lite. Compose handles the *View* layer,
-ViewModels are the *ViewModel/Controller*, repositories are the *Model* layer.
+## Permissions
+
+| Permission | Why |
+|---|---|
+| `INTERNET` | API calls (Hetzner + S3). |
+| `ACCESS_NETWORK_STATE` | Network availability checks. |
+| `USE_BIOMETRIC` | Unlock gate. |
+| `POST_NOTIFICATIONS` | Upload-progress notifications (Android 13+). |
+| `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_DATA_SYNC` | S3 upload service. |
+
+No location, contacts, broad storage, accounts, or analytics permissions.
+
+## Localisation
+
+The default language is English. Falco ships with full translations of the
+~530 user-facing strings for: German, Spanish, French, Italian, Russian and
+Simplified Chinese. Help us add more in `app/src/main/res/values-*`.
+
+## Donate
+
+If Falco saves you time, please consider supporting development via
+**[Liberapay — de.liberapay.com/beli3ver](https://de.liberapay.com/beli3ver)**.
+Liberapay is non-profit, anonymous-friendly and takes no platform cut.
 
 ## Contributing
 
-Issues and pull requests welcome at
-[`github.com/maltekiefer/falco`](https://github.com/maltekiefer/falco). All
-contributions must be GPL-3.0-or-later compatible.
+PRs welcome. Please:
+
+1. Match the project's code style (Compose-first, no Views, no XML layouts).
+2. Add strings to **all** seven `values-*/strings.xml` files when introducing
+   user-visible text.
+3. Run `./gradlew :app:lintDebug` and `./gradlew testDebugUnitTest` before
+   opening a PR.
 
 ## License
 
-[GPL-3.0-or-later](LICENSE). Copyright © 2026 Malte Kiefer.
+[GPL-3.0-or-later](LICENSE). See [`LICENSE`](LICENSE) for the full text.
