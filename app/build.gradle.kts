@@ -67,6 +67,16 @@ android {
         }
     }
 
+    // Disambiguate APK / AAB names so multi-app repositories (F-Droid mirror,
+    // GitHub release bundles) never collide on the generic `app-release.apk`.
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            output.outputFileName = "Falco-${variant.versionName}-${variant.buildType.name}.apk"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
