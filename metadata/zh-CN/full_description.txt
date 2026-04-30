@@ -1,0 +1,48 @@
+Falco 是一款注重隐私的 Hetzner Online 服务 Android 客户端。一个安全
+的应用即可管理 Hetzner Cloud、Robot 独立服务器（含 Storage Box）、
+DNS 控制台和 S3 兼容对象存储。
+
+Hetzner Cloud
+- 服务器：指标、电源、重置密码、重建、更改类型、挂载/卸载 ISO、
+  救援模式、备份、控制台、反向 DNS、重命名、保护、删除。
+- 卷：创建向导含实时月费估算、挂载/卸载、调整大小、格式化、自动
+  挂载、删除保护。
+- 网络：向导、子网、路由、更改 IP 范围、向 vSwitch 暴露路由。
+- 浮动 IP：分配 / 取消分配，反向 DNS。
+- 防火墙、负载均衡器、证书 (上传或托管 Let's Encrypt)、放置组。
+- SSH 密钥和主 IP。
+- Storage Box：快照、子账户、密码重置、访问开关 (SSH、Samba、
+  WebDAV、ZFS)。
+
+Hetzner Robot
+- 独立服务器概览：状态、IP、数据中心、付费至。
+- 重置 (sw/hw/手动)、Wake-on-LAN、救援模式、反向 DNS、取消订单和
+  撤销取消。
+- vSwitch CRUD + 服务器挂载/卸载。
+- 故障转移 IP 路由，SSH 密钥。
+
+DNS 控制台
+- 区域：列表、创建、编辑、删除。
+- 记录：添加、编辑、删除、批量创建/更新、BIND 导入/导出、验证。
+- 副域名 Primary 服务器。
+
+对象存储 (S3 兼容)
+- 浏览存储桶与前缀、通过前台服务上传、通过签名 URL 下载、复制、
+  批量删除、预签名上传 URL、版本控制。
+
+安全性
+- 100 % 自由软件 (GPL-3.0-or-later)。不含 Google Play Services、
+  Firebase、分析或遥测。
+- 凭据存储于 EncryptedSharedPreferences，主密钥绑定到 Android
+  Keystore (可用时使用 StrongBox)。
+- 每次冷启动和后台超时后均要求 BiometricPrompt。
+- 仅使用 TLS 1.3，对四个 API 进行根证书 pinning。
+- 每个屏幕都启用 FLAG_SECURE。
+
+外观：浅色 / 深色 / 系统 / OLED 纯黑，五种强调色 (Hetzner 红、蓝、
+绿、紫、橙)。已本地化为英语、德语、西班牙语、法语、意大利语、
+俄语、简体中文。
+
+Falco 是社区软件，与 Hetzner Online GmbH 无关。
+
+捐赠请见 Liberapay：https://de.liberapay.com/beli3ver

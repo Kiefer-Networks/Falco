@@ -1,0 +1,57 @@
+Falco è un client Android rispettoso della privacy per i servizi
+Hetzner Online. Da un'unica app sicura gestisci Hetzner Cloud, server
+dedicati Robot inclusi Storage Box, la console DNS e l'Object Storage
+compatibile S3.
+
+Hetzner Cloud
+- Server con metriche, azioni di alimentazione, reset password,
+  rebuild, cambio tipo, ISO, modalità rescue, backup, console, DNS
+  inverso, rinomina, protezione, eliminazione.
+- Volumi con wizard di creazione e stima del prezzo mensile in
+  tempo reale, collega, scollega, ridimensiona, formatta, automount.
+- Reti: wizard, sottoreti, rotte, cambio range IP, esposizione al
+  vSwitch.
+- IP fluttuanti: assegna / rimuovi, DNS inverso.
+- Firewall, load balancer, certificati (caricati o gestiti Let's
+  Encrypt), placement group.
+- Chiavi SSH e Primary IP.
+- Storage Box: snapshot, subaccount, reset password, switch di accesso
+  (SSH, Samba, WebDAV, ZFS).
+
+Hetzner Robot
+- Panoramica server dedicati con stato, IP, datacenter, pagato fino al.
+- Reset (sw / hw / manuale), Wake-on-LAN, modalità rescue, DNS inverso,
+  disdetta e ritiro.
+- CRUD vSwitch + collegamento/scollegamento server.
+- Instradamento failover, chiavi SSH.
+
+Console DNS
+- Zone: elenco, crea, modifica, elimina.
+- Record: aggiungi, modifica, elimina, bulk create/update, import/
+  export BIND, validazione.
+- Primary server per zone secondarie.
+
+Object Storage (S3)
+- Sfoglia bucket e prefissi, upload via foreground service, download
+  via URL firmato, copia, eliminazione batch, URL upload presignato,
+  versioning.
+
+Sicurezza
+- 100 % software libero (GPL-3.0-or-later). Niente Google Play
+  Services, niente Firebase, niente analytics, niente telemetria.
+- Credenziali in EncryptedSharedPreferences con chiave master legata
+  all'Android Keystore (StrongBox se disponibile).
+- BiometricPrompt a ogni avvio a freddo e dopo timeout configurabile
+  in background.
+- Solo TLS 1.3 con pinning di radice per tutte e quattro le API.
+- FLAG_SECURE su ogni schermata.
+
+Aspetto: Chiaro / Scuro / Sistema / Nero OLED e cinque colori di
+accento (Hetzner Rosso, Blu, Verde, Viola, Arancione). Tradotto in
+inglese, tedesco, spagnolo, francese, italiano, russo e cinese
+semplificato.
+
+Falco è software della community e non è affiliato con Hetzner Online
+GmbH.
+
+Donazioni via Liberapay: https://de.liberapay.com/beli3ver

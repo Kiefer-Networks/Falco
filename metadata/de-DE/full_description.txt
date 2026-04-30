@@ -1,0 +1,63 @@
+Falco ist ein datenschutzfreundlicher Android-Client für Hetzner-Online-
+Dienste. Aus einer sicheren App heraus verwaltest du Hetzner Cloud,
+dedizierte Robot-Server inklusive Storage Boxes, die DNS-Console und
+S3-kompatibles Object Storage.
+
+Hetzner Cloud
+- Server mit Metriken, Ein-/Aus-Schalten, Reset, Passwort zurücksetzen,
+  Rebuild, Servertyp ändern, ISO an-/abhängen, Rescue-Modus,
+  Backup-Schalter, Console-Request, Reverse DNS, Umbenennen, Löschschutz,
+  Löschen.
+- Volumes mit Create-Wizard und Live-Preisschätzung pro Monat, anhängen,
+  lösen, vergrößern, formatieren, Automount, Löschschutz.
+- Netzwerke: Create-Wizard, Subnetze, Routen, IP-Range ändern, an
+  vSwitch exponieren.
+- Floating IPs: Create-Wizard, Zuweisen/Lösen, Reverse DNS.
+- Firewalls: Regel-Editor, auf Ressourcen anwenden/entfernen.
+- Load Balancer, Zertifikate (Upload oder Managed Let's Encrypt) und
+  Placement Groups.
+- SSH-Keys und Primary IPs.
+- Storage Boxes: Snapshots, Subaccounts, Passwort-Reset, Zugriffs-
+  Schalter (SSH, Samba, WebDAV, ZFS).
+
+Hetzner Robot
+- Übersicht dedizierter Server mit Status, IPs, Datacenter,
+  Bezahl-Datum.
+- Reset (SW/HW/manuell), Wake-on-LAN, Rescue-Modus, Reverse DNS,
+  Server-Kündigung und Rücknahme.
+- vSwitch-CRUD plus Server an-/abhängen.
+- Failover-IP-Routing, SSH-Keys.
+
+DNS Console
+- Zonen: Anlegen, Bearbeiten, Löschen.
+- Records: Hinzufügen, Bearbeiten, Löschen, Bulk-Anlegen/-Aktualisieren,
+  BIND-Import/-Export, Validierung.
+- Primary Server für Secondary-Zonen.
+
+Object Storage (S3-kompatibel)
+- Buckets und Präfixe durchsuchen, Upload via Foreground-Service,
+  Download via signierter URL, Copy, Batch-Delete, Presigned Upload
+  URL, Versioning-Schalter.
+
+Sicherheit
+- 100 % freie Software (GPL-3.0-or-later). Keine Google-Play-Dienste,
+  kein Firebase, keine Analytics, keine Telemetrie.
+- Zugangsdaten in EncryptedSharedPreferences mit Masterschlüssel im
+  Android Keystore (StrongBox-gestützt, wenn verfügbar).
+- BiometricPrompt-Gate (Klasse 3 oder Bildschirmsperre) bei jedem
+  Kaltstart und nach konfigurierbarem Hintergrund-Timeout.
+- Nur TLS 1.3 mit Root-Pinning für alle vier Hetzner-APIs und für
+  Object Storage.
+- FLAG_SECURE auf jedem Screen — Inhalte bleiben aus Screenshots und
+  dem Recent-Apps-Switcher.
+- Auto-Backup deaktiviert, keine pauschale Speicher-Berechtigung.
+
+Aussehen anpassbar mit Light / Dark / System / OLED-Schwarz plus fünf
+Akzentfarben (Hetzner-Rot, Blau, Grün, Lila, Orange). Lokalisiert in
+Englisch, Deutsch, Spanisch, Französisch, Italienisch, Russisch und
+vereinfachtem Chinesisch.
+
+Falco ist Community-Software und steht in keiner Verbindung zur Hetzner
+Online GmbH. Hetzner ist eine Marke der Hetzner Online GmbH.
+
+Spenden willkommen via Liberapay: https://de.liberapay.com/beli3ver

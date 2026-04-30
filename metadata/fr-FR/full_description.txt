@@ -1,0 +1,57 @@
+Falco est un client Android respectueux de la vie privée pour les
+services Hetzner Online. Depuis une seule application sécurisée vous
+gérez Hetzner Cloud, les serveurs dédiés Robot avec Storage Boxes, la
+console DNS et le stockage objet compatible S3.
+
+Hetzner Cloud
+- Serveurs avec métriques, actions d'alimentation, réinitialisation du
+  mot de passe, rebuild, changement de type, ISO, mode secours,
+  sauvegarde, console, DNS inverse, renommage, protection, suppression.
+- Volumes avec assistant de création et estimation de prix mensuel en
+  direct, attacher, détacher, redimensionner, formater, automount.
+- Réseaux : assistant, sous-réseaux, routes, changer plage IP, exposer
+  au vSwitch.
+- IP flottantes : attribuer / retirer, DNS inverse.
+- Pare-feu, load balancers, certificats (téléversés ou managés Let's
+  Encrypt), placement groups.
+- Clés SSH et IP primaires.
+- Storage Boxes : snapshots, sous-comptes, réinitialisation du mot de
+  passe, bascules d'accès (SSH, Samba, WebDAV, ZFS).
+
+Hetzner Robot
+- Vue des serveurs dédiés avec statut, IPs, datacenter, payé jusqu'à.
+- Reset (sw / hw / manuel), Wake-on-LAN, mode secours, DNS inverse,
+  résiliation et annulation.
+- CRUD vSwitch + attacher/détacher serveurs.
+- Routage des IP failover, clés SSH.
+
+Console DNS
+- Zones : liste, créer, éditer, supprimer.
+- Enregistrements : ajouter, éditer, supprimer, bulk create/update,
+  import/export BIND, validation.
+- Primary servers pour zones secondaires.
+
+Object Storage (S3)
+- Parcourir buckets et préfixes, upload via foreground service,
+  download via URL signée, copy, batch delete, presigned upload URL,
+  versionnage.
+
+Sécurité
+- 100 % logiciel libre (GPL-3.0-or-later). Pas de Google Play Services,
+  pas de Firebase, pas d'analytique, pas de télémétrie.
+- Identifiants dans EncryptedSharedPreferences avec clé maître ancrée
+  au Android Keystore (StrongBox si disponible).
+- BiometricPrompt à chaque démarrage à froid et après un délai
+  configurable en arrière-plan.
+- TLS 1.3 uniquement avec épinglage de racine pour les quatre API.
+- FLAG_SECURE sur chaque écran — contenu hors captures et sélecteur
+  d'apps récentes.
+
+Apparence : Clair / Sombre / Système / Noir OLED et cinq couleurs
+d'accent (Hetzner Rouge, Bleu, Vert, Violet, Orange). Traduit en
+anglais, allemand, espagnol, français, italien, russe et chinois
+simplifié.
+
+Falco est un logiciel communautaire non affilié à Hetzner Online GmbH.
+
+Dons via Liberapay : https://de.liberapay.com/beli3ver

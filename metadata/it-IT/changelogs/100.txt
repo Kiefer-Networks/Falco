@@ -1,0 +1,11 @@
+Falco 1.0.0 — prima versione stabile.
+
+In evidenza:
+- Gestione multi-account e multi-progetto Hetzner per Cloud, Robot,
+  DNS e Object Storage S3 in un'unica app.
+- Privacy prima di tutto: TLS 1.3 con pinning di radice, gate
+  biometrico rinforzato, FLAG_SECURE su ogni schermata, niente
+  telemetria.
+- Hub impostazioni con sotto-schermate Sicurezza, Aspetto e Lingua —
+  tema nero OLED e cinque colori di accento inclusi.
+- Supporto donazioni via Liberapay.

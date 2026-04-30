@@ -1,0 +1,10 @@
+Falco 1.0.0 — first stable release.
+
+Highlights:
+- Multi-account, multi-project Hetzner management for Cloud, Robot, DNS
+  and S3-compatible Object Storage in one app.
+- Privacy-first: TLS 1.3 with root-anchor certificate pinning, hardened
+  biometric gate, FLAG_SECURE on every screen, no telemetry.
+- Settings hub with Security, Appearance and Language sub-screens —
+  including OLED-black theme and five accent colours.
+- Donation support via Liberapay.
