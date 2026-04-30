@@ -19,6 +19,10 @@ data class ServerDetailUiState(
     val running: Boolean = false,
     val server: RobotServer? = null,
     val error: String? = null,
+    val rescueActive: Boolean = false,
+    val rescuePassword: String? = null,
+    val cancellationDate: String? = null,
+    val cancellationCancelled: Boolean = false,
 )
 
 sealed interface ServerActionResult {
@@ -48,13 +52,91 @@ class ServerDetailViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _state.value = _state.value.copy(loading = true, error = null)
-            runCatching {
-                repo.listServers().firstOrNull { it.serverNumber == serverNumber }
-            }.onSuccess { server ->
-                _state.value = _state.value.copy(loading = false, server = server)
-            }.onFailure { e ->
-                _state.value = _state.value.copy(loading = false, error = e.message)
+            runCatching { repo.getServer(serverNumber) }
+                .onSuccess { server ->
+                    _state.value = _state.value.copy(loading = false, server = server)
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(loading = false, error = e.message)
+                }
+            // Best-effort side fetches; ignore failures (some servers lack these endpoints).
+            runCatching { repo.rescueOptions(serverNumber) }.onSuccess { r ->
+                _state.value = _state.value.copy(rescueActive = r.active)
             }
+            runCatching { repo.getCancellation(serverNumber) }.onSuccess { c ->
+                _state.value = _state.value.copy(
+                    cancellationDate = c.cancellationDate,
+                    cancellationCancelled = c.cancelled,
+                )
+            }
+        }
+    }
+
+    fun enableRescue(authorizedKey: String?, successMsg: String, failureFmt: (String) -> String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(running = true)
+            runCatching { repo.enableRescue(serverNumber, "linux", authorizedKey) }
+                .onSuccess {
+                    _state.value = _state.value.copy(rescueActive = true, rescuePassword = it.password)
+                    _events.value = ServerActionResult.Success(successMsg)
+                }
+                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
+            _state.value = _state.value.copy(running = false)
+        }
+    }
+
+    fun disableRescue(successMsg: String, failureFmt: (String) -> String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(running = true)
+            runCatching {
+                val resp = repo.disableRescue(serverNumber)
+                if (!resp.isSuccessful) error("HTTP ${resp.code()}")
+            }
+                .onSuccess {
+                    _state.value = _state.value.copy(rescueActive = false, rescuePassword = null)
+                    _events.value = ServerActionResult.Success(successMsg)
+                }
+                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
+            _state.value = _state.value.copy(running = false)
+        }
+    }
+
+    fun setRdns(ip: String, ptr: String, successMsg: String, failureFmt: (String) -> String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(running = true)
+            runCatching { repo.setRdns(ip, ptr) }
+                .onSuccess { _events.value = ServerActionResult.Success(successMsg) }
+                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
+            _state.value = _state.value.copy(running = false)
+        }
+    }
+
+    fun cancelServer(date: String, reason: String?, successMsg: String, failureFmt: (String) -> String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(running = true)
+            runCatching { repo.cancelServer(serverNumber, date, reason) }
+                .onSuccess { c ->
+                    _state.value = _state.value.copy(cancellationDate = c.cancellationDate, cancellationCancelled = c.cancelled)
+                    _events.value = ServerActionResult.Success(successMsg)
+                }
+                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
+            _state.value = _state.value.copy(running = false)
+        }
+    }
+
+    fun withdrawCancellation(successMsg: String, failureFmt: (String) -> String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(running = true)
+            runCatching {
+                val resp = repo.withdrawCancellation(serverNumber)
+                if (!resp.isSuccessful) error("HTTP ${resp.code()}")
+            }
+                .onSuccess {
+                    _state.value = _state.value.copy(cancellationDate = null, cancellationCancelled = false)
+                    _events.value = ServerActionResult.Success(successMsg)
+                }
+                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
+            _state.value = _state.value.copy(running = false)
         }
     }
 
