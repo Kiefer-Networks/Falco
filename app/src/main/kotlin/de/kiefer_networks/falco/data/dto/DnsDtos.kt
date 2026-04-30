@@ -37,3 +37,53 @@ import kotlinx.serialization.Serializable
     val value: String,
     val ttl: Int? = null,
 )
+
+@Serializable data class DnsZoneEnvelope(val zone: DnsZone)
+@Serializable data class DnsRecordEnvelope(val record: DnsRecord)
+
+@Serializable data class CreateDnsZoneRequest(
+    val name: String,
+    val ttl: Int? = null,
+)
+
+@Serializable data class BulkRecordsRequest(val records: List<CreateDnsRecord>)
+@Serializable data class BulkUpdateRecordsRequest(val records: List<DnsRecord>)
+
+@Serializable data class BulkCreateRecordsResponse(
+    val records: List<DnsRecord> = emptyList(),
+    @SerialName("invalid_records") val invalidRecords: List<DnsRecord> = emptyList(),
+)
+
+@Serializable data class BulkUpdateRecordsResponse(
+    val records: List<DnsRecord> = emptyList(),
+    @SerialName("failed_records") val failedRecords: List<DnsRecord> = emptyList(),
+)
+
+@Serializable data class DnsValidateResponse(
+    @SerialName("parsed_records") val parsedRecords: Int = 0,
+    @SerialName("valid_records") val validRecords: List<DnsRecord> = emptyList(),
+    @SerialName("invalid_records") val invalidRecords: List<DnsRecord> = emptyList(),
+)
+
+@Serializable data class DnsPrimaryServerList(
+    @SerialName("primary_servers") val primaryServers: List<DnsPrimaryServer>,
+)
+
+@Serializable data class DnsPrimaryServerEnvelope(
+    @SerialName("primary_server") val primaryServer: DnsPrimaryServer,
+)
+
+@Serializable data class DnsPrimaryServer(
+    val id: String,
+    val address: String,
+    val port: Int,
+    @SerialName("zone_id") val zoneId: String,
+    val created: String? = null,
+    val modified: String? = null,
+)
+
+@Serializable data class CreateDnsPrimaryServerRequest(
+    val address: String,
+    val port: Int,
+    @SerialName("zone_id") val zoneId: String,
+)

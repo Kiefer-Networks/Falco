@@ -29,6 +29,20 @@ class S3Repo @Inject constructor(private val accounts: AccountManager) {
     suspend fun listBuckets() = client().listBuckets()
     suspend fun listObjects(bucket: String, prefix: String = "") = client().listObjects(bucket, prefix)
     suspend fun delete(bucket: String, key: String) = client().deleteObject(bucket, key)
+    suspend fun deleteAll(bucket: String, keys: List<String>) = client().deleteObjects(bucket, keys)
     suspend fun shareLink(bucket: String, key: String, hours: Int): String =
         client().presignedDownloadUrl(bucket, key, hours * 3600)
+    suspend fun uploadLink(bucket: String, key: String, hours: Int): String =
+        client().presignedUploadUrl(bucket, key, hours * 3600)
+
+    suspend fun bucketExists(bucket: String) = client().bucketExists(bucket)
+    suspend fun createBucket(bucket: String, region: String? = null) = client().createBucket(bucket, region)
+    suspend fun deleteBucket(bucket: String) = client().deleteBucket(bucket)
+    suspend fun copy(srcBucket: String, srcKey: String, dstBucket: String, dstKey: String) =
+        client().copyObject(srcBucket, srcKey, dstBucket, dstKey)
+    suspend fun stat(bucket: String, key: String) = client().stat(bucket, key)
+
+    suspend fun versioningStatus(bucket: String) = client().getBucketVersioning(bucket)
+    suspend fun setVersioning(bucket: String, enabled: Boolean) = client().setBucketVersioning(bucket, enabled)
+
 }

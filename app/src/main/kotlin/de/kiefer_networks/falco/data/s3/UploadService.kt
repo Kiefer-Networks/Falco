@@ -39,10 +39,15 @@ class UploadService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val bucket = intent?.getStringExtra(EXTRA_BUCKET) ?: return START_NOT_STICKY
-        val key = intent.getStringExtra(EXTRA_KEY) ?: return START_NOT_STICKY
-        val source = intent.getParcelableExtra<Uri>(EXTRA_SOURCE_URI) ?: return START_NOT_STICKY
-        val mime = intent.getStringExtra(EXTRA_MIME) ?: "application/octet-stream"
+        val bucket = intent?.getStringExtra(EXTRA_BUCKET)?.takeIf { isValidBucket(it) }
+            ?: return START_NOT_STICKY
+        val key = intent.getStringExtra(EXTRA_KEY)?.takeIf { isValidObjectKey(it) }
+            ?: return START_NOT_STICKY
+        val source = intent.getParcelableExtra<Uri>(EXTRA_SOURCE_URI)?.takeIf { isLocalContentUri(it) }
+            ?: return START_NOT_STICKY
+        val mime = intent.getStringExtra(EXTRA_MIME)
+            ?.takeIf { it.matches(MIME_REGEX) }
+            ?: "application/octet-stream"
 
         startInForeground(buildNotification("Uploading $key…"))
 
@@ -60,7 +65,7 @@ class UploadService : Service() {
                 val resolver = applicationContext.contentResolver
                 val size = resolver.openFileDescriptor(source, "r")?.use { it.statSize } ?: -1L
                 resolver.openInputStream(source).use { input ->
-                    requireNotNull(input)
+                    requireNotNull(input) { "Cannot open input stream for $source" }
                     client.putObject(bucket, key, mime, size, input)
                 }
             }.onFailure { /* TODO surface error notification */ }
@@ -68,6 +73,21 @@ class UploadService : Service() {
         }
         return START_NOT_STICKY
     }
+
+    /** S3 bucket name format per AWS spec — lowercase alphanumerics, dot, dash, 3-63 chars. */
+    private fun isValidBucket(name: String): Boolean =
+        name.matches(BUCKET_REGEX) && !name.startsWith("-") && !name.endsWith("-")
+
+    /** Reject path-traversal sequences and absolute paths. */
+    private fun isValidObjectKey(key: String): Boolean =
+        key.isNotBlank() &&
+            !key.startsWith("/") &&
+            "/../" !in "/$key/" &&
+            key.length <= MAX_KEY_LEN
+
+    /** Only accept content:// or file:// from the local resolver — never opaque/remote schemes. */
+    private fun isLocalContentUri(uri: Uri): Boolean =
+        uri.scheme in setOf("content", "file")
 
     override fun onDestroy() {
         scope.cancel()
@@ -104,5 +124,8 @@ class UploadService : Service() {
         const val EXTRA_MIME = "mime"
         private const val CHANNEL_ID = "falco_uploads"
         private const val NOTIFICATION_ID = 0xF1A1
+        private const val MAX_KEY_LEN = 1024
+        private val BUCKET_REGEX = "^[a-z0-9](?:[a-z0-9.\\-]{1,61}[a-z0-9])?$".toRegex()
+        private val MIME_REGEX = "^[\\w.+-]+/[\\w.+-]+$".toRegex()
     }
 }

@@ -1,13 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.data.api
 
+import io.minio.BucketExistsArgs
+import io.minio.CopyObjectArgs
+import io.minio.CopySource
+import io.minio.GetBucketVersioningArgs
 import io.minio.GetPresignedObjectUrlArgs
 import io.minio.ListObjectsArgs
+import io.minio.MakeBucketArgs
 import io.minio.MinioClient
 import io.minio.PutObjectArgs
+import io.minio.RemoveBucketArgs
 import io.minio.RemoveObjectArgs
+import io.minio.RemoveObjectsArgs
+import io.minio.SetBucketVersioningArgs
 import io.minio.StatObjectArgs
 import io.minio.http.Method
+import io.minio.messages.DeleteObject
+import io.minio.messages.VersioningConfiguration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.InputStream
@@ -94,4 +104,72 @@ class S3Client(
                     .build(),
             )
         }
+
+    suspend fun presignedUploadUrl(bucket: String, key: String, expirySeconds: Int): String =
+        withContext(Dispatchers.IO) {
+            client.getPresignedObjectUrl(
+                GetPresignedObjectUrlArgs.builder()
+                    .method(Method.PUT)
+                    .bucket(bucket)
+                    .`object`(key)
+                    .expiry(expirySeconds, TimeUnit.SECONDS)
+                    .build(),
+            )
+        }
+
+    suspend fun bucketExists(bucket: String): Boolean = withContext(Dispatchers.IO) {
+        client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())
+    }
+
+    suspend fun createBucket(bucket: String, region: String? = null) = withContext(Dispatchers.IO) {
+        val builder = MakeBucketArgs.builder().bucket(bucket)
+        if (!region.isNullOrBlank()) builder.region(region)
+        client.makeBucket(builder.build())
+    }
+
+    suspend fun deleteBucket(bucket: String) = withContext(Dispatchers.IO) {
+        client.removeBucket(RemoveBucketArgs.builder().bucket(bucket).build())
+    }
+
+    suspend fun deleteObjects(bucket: String, keys: List<String>): List<String> =
+        withContext(Dispatchers.IO) {
+            if (keys.isEmpty()) return@withContext emptyList()
+            val args = RemoveObjectsArgs.builder()
+                .bucket(bucket)
+                .objects(keys.map { DeleteObject(it) })
+                .build()
+            client.removeObjects(args).mapNotNull {
+                runCatching { it.get().objectName() }.getOrNull()
+            }
+        }
+
+    suspend fun copyObject(
+        srcBucket: String,
+        srcKey: String,
+        dstBucket: String,
+        dstKey: String,
+    ) = withContext(Dispatchers.IO) {
+        val args = CopyObjectArgs.builder()
+            .bucket(dstBucket)
+            .`object`(dstKey)
+            .source(CopySource.builder().bucket(srcBucket).`object`(srcKey).build())
+            .build()
+        client.copyObject(args)
+    }
+
+    suspend fun getBucketVersioning(bucket: String): String = withContext(Dispatchers.IO) {
+        client.getBucketVersioning(GetBucketVersioningArgs.builder().bucket(bucket).build())
+            .status()?.toString() ?: "Off"
+    }
+
+    suspend fun setBucketVersioning(bucket: String, enabled: Boolean) = withContext(Dispatchers.IO) {
+        val cfg = VersioningConfiguration(
+            if (enabled) VersioningConfiguration.Status.ENABLED else VersioningConfiguration.Status.SUSPENDED,
+            false,
+        )
+        client.setBucketVersioning(
+            SetBucketVersioningArgs.builder().bucket(bucket).config(cfg).build(),
+        )
+    }
+
 }

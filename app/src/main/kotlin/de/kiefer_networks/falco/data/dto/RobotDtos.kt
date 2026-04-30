@@ -80,10 +80,63 @@ import kotlinx.serialization.Serializable
     val netmask: String? = null,
 )
 
+@Serializable data class RobotKeyEnvelope(val key: RobotSshKey)
+@Serializable data class RobotSshKey(
+    val name: String,
+    val fingerprint: String,
+    val type: String? = null,
+    val size: Int? = null,
+    val data: String,
+    @SerialName("created_at") val createdAt: String? = null,
+)
+
 @Serializable data class RobotVSwitchEnvelope(val vswitch: RobotVSwitch)
 @Serializable data class RobotVSwitch(
     val id: Long,
     val name: String,
     val vlan: Int,
     val cancelled: Boolean = false,
+    val server: List<RobotVSwitchServer> = emptyList(),
+)
+
+@Serializable data class RobotVSwitchServer(
+    @SerialName("server_number") val serverNumber: Long? = null,
+    @SerialName("server_ip") val serverIp: String? = null,
+    val status: String? = null,
+)
+
+@Serializable data class RobotRdnsEnvelope(val rdns: RobotRdns)
+@Serializable data class RobotRdns(
+    val ip: String,
+    val ptr: String,
+)
+
+@Serializable data class RobotBootEnvelope(val boot: RobotBoot)
+@Serializable data class RobotBoot(
+    val rescue: RobotRescue? = null,
+    val linux: kotlinx.serialization.json.JsonElement? = null,
+)
+
+@Serializable data class RobotRescueEnvelope(val rescue: RobotRescue)
+@Serializable data class RobotRescue(
+    @SerialName("server_ip") val serverIp: String? = null,
+    @SerialName("server_number") val serverNumber: Long? = null,
+    val active: Boolean = false,
+    val password: String? = null,
+    @SerialName("authorized_key") val authorizedKey: kotlinx.serialization.json.JsonElement? = null,
+    val os: kotlinx.serialization.json.JsonElement? = null,
+)
+
+@Serializable data class RobotCancellationEnvelope(val cancellation: RobotCancellation)
+@Serializable data class RobotCancellation(
+    @SerialName("server_ip") val serverIp: String? = null,
+    @SerialName("server_number") val serverNumber: Long? = null,
+    @SerialName("server_name") val serverName: String? = null,
+    val cancelled: Boolean = false,
+    @SerialName("cancellation_date") val cancellationDate: String? = null,
+    val reason: String? = null,
+)
+
+@Serializable data class RobotTrafficResponse(
+    val traffic: kotlinx.serialization.json.JsonElement? = null,
 )
