@@ -35,6 +35,7 @@
     <string name="bio_prompt_subtitle">Authenticate to access your Hetzner credentials</string>
     <string name="bio_prompt_negative">Cancel</string>
     <string name="bio_unavailable">Biometric authentication is not available on this device. Set up a screen lock first.</string>
+    <string name="bio_open_security_settings">Open security settings</string>
 
     <!-- Accounts -->
     <string name="account_add">Add account</string>
@@ -46,21 +47,89 @@
     <string name="account_s3_endpoint">S3 endpoint (e.g. fsn1.your-objectstorage.com)</string>
     <string name="account_s3_access_key">S3 access key</string>
     <string name="account_s3_secret_key">S3 secret key</string>
+    <string name="account_manage_projects">Manage projects</string>
     <string name="account_remove">Remove account</string>
     <string name="account_remove_confirm">Remove this account and all stored credentials?</string>
     <string name="account_remove_button">Remove</string>
     <string name="account_active_label">Active</string>
     <string name="account_switch">Switch to this account</string>
+    <string name="account_edit">Edit account</string>
+    <string name="account_description">Description</string>
+    <string name="account_set_default">Set as default</string>
+    <string name="account_default_active">Default account</string>
+    <string name="account_default_label">Default</string>
     <string name="accounts_empty">No accounts yet. Add your first one to get started.</string>
 
     <!-- Cloud -->
     <string name="cloud_servers">Servers</string>
+    <string name="cloud_server_create">Create server</string>
+    <string name="cloud_server_create_action">Create</string>
+    <string name="cloud_server_create_name">Name</string>
+    <string name="cloud_server_create_location">Location</string>
+    <string name="cloud_server_create_type">Server type</string>
+    <string name="cloud_server_create_image">Image</string>
+    <string name="cloud_server_create_ssh_keys">SSH keys</string>
+    <string name="cloud_server_create_user_data">Cloud-init user data (optional)</string>
+    <string name="cloud_server_create_start">Start after create</string>
+    <string name="cloud_storage_box_create">Create Storage Box</string>
+    <string name="cloud_storage_box_create_action">Create</string>
+    <string name="cloud_storage_box_create_name">Name</string>
+    <string name="cloud_storage_box_create_password">Password</string>
+    <string name="cloud_storage_box_create_type">Type</string>
+    <string name="cloud_storage_box_create_password_hint">At least 8 characters</string>
+    <string name="cloud_volume_create">Create volume</string>
+    <string name="cloud_volume_create_action">Create</string>
+    <string name="cloud_volume_create_name">Name</string>
+    <string name="cloud_volume_attach_mode">Attach to server</string>
+    <string name="cloud_volume_size_hint">10–10240 GB</string>
+    <string name="cloud_volume_price_label">Estimated price</string>
+    <string name="cloud_volume_price_gross_per_month">%1$s / month (incl. VAT)</string>
+    <string name="cloud_volume_price_net_per_month">%1$s / month (net)</string>
+    <string name="cloud_volume_price_per_gb">%1$s per GB / month</string>
+    <string name="cloud_volume_format_none">None</string>
+    <string name="cloud_create_cores">cores</string>
+    <string name="cloud_create_ssh_empty">No SSH keys yet. Skip this step or add keys first.</string>
+    <string name="wizard_step_location">Location</string>
+    <string name="wizard_step_type">Type</string>
+    <string name="wizard_step_image">Image</string>
+    <string name="wizard_step_ssh">SSH</string>
+    <string name="wizard_step_details">Details</string>
+    <string name="wizard_step_credentials">Credentials</string>
+    <string name="wizard_step_target">Target</string>
+    <string name="wizard_step_size">Size</string>
+    <string name="wizard_summary_title">Summary</string>
     <string name="cloud_volumes">Volumes</string>
     <string name="cloud_networks">Networks</string>
     <string name="cloud_firewalls">Firewalls</string>
     <string name="cloud_floating_ips">Floating IPs</string>
-    <string name="cloud_load_balancers">Load Balancers</string>
+<string name="cloud_load_balancers">Load Balancers</string>
+    <string name="cloud_certificates">Certificates</string>
+    <string name="cloud_certificate_upload">Add certificate</string>
+    <string name="cloud_certificate_uploaded">Uploaded</string>
+    <string name="cloud_certificate_managed">Managed (Let\'s Encrypt)</string>
+    <string name="cloud_certificate_name">Name</string>
+    <string name="cloud_certificate_domains">Domains (comma-separated)</string>
+    <string name="cloud_certificate_pem">Certificate PEM</string>
+    <string name="cloud_certificate_private_key">Private key PEM</string>
+    <string name="cloud_placement_groups">Placement Groups</string>
+    <string name="cloud_placement_group_create">Create placement group</string>
+    <string name="cloud_placement_group_name">Name</string>
+
     <string name="cloud_volume_size_gb">%1$d GB</string>
+    <string name="cloud_volume_size_label">Size</string>
+    <string name="cloud_volume_format">Format</string>
+    <string name="cloud_volume_section_attachment">Attachment</string>
+    <string name="cloud_volume_section_protection">Protection</string>
+    <string name="cloud_volume_unattached">Not attached to any server</string>
+    <string name="cloud_volume_delete_protection">Delete protection</string>
+    <string name="cloud_volume_action_rename">Rename</string>
+    <string name="cloud_volume_action_resize">Resize</string>
+    <string name="cloud_volume_action_attach">Attach to server</string>
+    <string name="cloud_volume_action_detach">Detach</string>
+    <string name="cloud_volume_resize_hint">New size in GB. Volumes can only grow, not shrink.</string>
+    <string name="cloud_volume_automount">Auto-mount on attach</string>
+    <string name="cloud_volume_delete_title">Delete volume?</string>
+    <string name="cloud_volume_delete_warning">Volume \"%1$s\" will be permanently removed.</string>
     <string name="cloud_status_label">Status: %1$s</string>
     <string name="cloud_attached_server">Server: %1$d</string>
     <string name="cloud_location_label">Location: %1$s</string>
@@ -81,6 +150,94 @@
         <item quantity="one">Applied to %1$d resource</item>
         <item quantity="other">Applied to %1$d resources</item>
     </plurals>
+    <string name="about_title">About</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_license">GPL-3.0-or-later</string>
+    <string name="about_repo">github.com/kiefernetworks/falco</string>
+<string name="about_description">Privacy-respecting Hetzner manager for Android.</string>
+    <string name="about_section_links">Links</string>
+    <string name="about_section_developer">Developer</string>
+    <string name="about_section_legal">Legal</string>
+    <string name="about_website">Website</string>
+    <string name="about_donate">Support development</string>
+    <string name="about_source_code">Source code</string>
+    <string name="about_developer">Kiefer Networks</string>
+    <string name="about_license_label">License</string>
+    <string name="about_legalese">Falco is community software and is not affiliated with Hetzner Online GmbH. Hetzner is a trademark of Hetzner Online GmbH.</string>
+
+    <string name="nav_drawer_title">Falco</string>
+    <string name="nav_section_services">Services</string>
+    <string name="nav_section_system">System</string>
+    <string name="cloud_tab_resources">Resources</string>
+    <string name="server_detail_section_metrics">Metrics</string>
+    <string name="server_detail_section_settings">Settings</string>
+    <string name="server_detail_section_network">Network</string>
+    <string name="server_detail_section_specs">Specs</string>
+    <string name="server_action_more">More</string>
+    <string name="actions_sheet_title">Actions</string>
+    <string name="account_service_cloud">Cloud</string>
+    <string name="account_service_cloud_with_count">Cloud (%1$d)</string>
+    <plurals name="server_cores">
+        <item quantity="one">%1$d core</item>
+        <item quantity="other">%1$d cores</item>
+    </plurals>
+    <plurals name="dns_records_count">
+        <item quantity="one">%1$d record</item>
+        <item quantity="other">%1$d records</item>
+    </plurals>
+    <string name="server_type_current_suffix">(current)</string>
+    <string name="server_type_specs">%1$s cores · %2$s GB RAM · %3$d GB disk</string>
+    <string name="server_section_attached">Attached resources</string>
+    <string name="server_section_load_balancers">Load Balancers</string>
+    <string name="server_action_reverse_dns">Reverse DNS</string>
+    <string name="server_action_console">Console</string>
+    <string name="server_reverse_dns_ip">IP</string>
+    <string name="server_reverse_dns_ptr">PTR (FQDN, leave empty for default)</string>
+    <string name="server_reverse_dns_hint">Pick the IP, then enter the PTR record. Empty resets to Hetzner default.</string>
+    <string name="server_console_hint">One-time console URL valid for ~1 minute. Open in a noVNC client.</string>
+    <string name="server_console_url">URL</string>
+    <string name="server_console_password">Password</string>
+    <string name="server_public_ipv4">Public IPv4</string>
+    <string name="server_public_ipv6">Public IPv6</string>
+    <string name="image_deprecated_label">deprecated · %1$s</string>
+    <string name="s3_share_link_clip_label">share link</string>
+    <string name="firewall_create_title">Create firewall</string>
+    <string name="firewall_create_name">Name</string>
+    <string name="robot_ssh_keys">SSH keys</string>
+    <string name="robot_ssh_key_add">Add SSH key</string>
+    <string name="robot_ssh_key_name">Name</string>
+    <string name="robot_ssh_key_data">Public key (paste here)</string>
+    <string name="robot_ssh_key_pick_file">Upload from file</string>
+    <string name="robot_ssh_key_add_manual">Create manually</string>
+    <string name="robot_ssh_key_delete_title">Delete SSH key?</string>
+    <string name="robot_no_permission">No access. Enable this section in Hetzner Robot → Settings → Web service.</string>
+    <string name="firewall_status_active">Active</string>
+    <string name="firewall_status_unapplied">Not applied</string>
+    <string name="firewall_section_rules">Rules</string>
+    <string name="firewall_section_attached">Attached servers</string>
+    <string name="firewall_no_rules">No rules defined</string>
+    <string name="firewall_no_attached">Not attached to any server</string>
+    <string name="firewall_action_rename">Rename</string>
+    <string name="firewall_action_detach">Detach</string>
+    <string name="firewall_apply_title">Attach to server</string>
+    <string name="firewall_apply_search">Search</string>
+    <string name="firewall_delete_title">Delete firewall?</string>
+    <string name="firewall_delete_warning">Firewall \"%1$s\" will be permanently removed.</string>
+    <string name="firewall_rule_new">New rule</string>
+    <string name="firewall_rule_edit">Edit rule</string>
+    <string name="firewall_rule_direction">Direction</string>
+    <string name="firewall_rule_protocol">Protocol</string>
+    <string name="firewall_rule_port_hint">Port (e.g. 22 or 8000-9000)</string>
+    <string name="firewall_rule_description">Description</string>
+    <string name="firewall_rule_any_ipv4">Any IPv4</string>
+    <string name="firewall_rule_any_ipv6">Any IPv6</string>
+    <string name="firewall_rule_source_ips">Source IPs (CIDR)</string>
+    <string name="firewall_rule_destination_ips">Destination IPs (CIDR)</string>
+    <string name="firewall_rule_delete_title">Delete rule?</string>
+    <string name="firewall_dir_in">Inbound</string>
+    <string name="firewall_dir_out">Outbound</string>
+    <string name="firewall_detach_title">Detach server?</string>
+    <string name="firewall_detach_warning">Server will no longer be protected by this firewall.</string>
     <string name="cloud_floating_ip_type">Type: %1$s</string>
     <string name="cloud_home_location">Home: %1$s</string>
     <string name="action_power_on">Power on</string>
@@ -93,7 +250,6 @@
 
     <!-- Robot -->
     <string name="robot_dedis">Dedicated servers</string>
-    <string name="robot_storageboxes">Storage Boxes</string>
     <string name="robot_failover">Failover IPs</string>
     <string name="robot_vswitch">vSwitches</string>
     <string name="storagebox_snapshots">Snapshots</string>
@@ -106,13 +262,9 @@
     <string name="robot_field_product">Product</string>
     <string name="robot_field_datacenter">Datacenter</string>
     <string name="robot_field_paid_until">Paid until</string>
+    <string name="robot_field_cancelled">Cancelled</string>
     <string name="robot_field_traffic">Traffic</string>
     <string name="robot_field_status">Status</string>
-    <string name="robot_field_login">Login</string>
-    <string name="robot_field_location">Location</string>
-    <string name="robot_field_disk">Disk</string>
-    <string name="robot_field_protocols">Protocols</string>
-    <string name="robot_disk_value">%1$d / %2$d MB</string>
     <string name="robot_reset_title">Reset server</string>
     <string name="robot_reset_message">Choose reset type:</string>
     <string name="robot_reset_type_sw">Software reset (Ctrl+Alt+Del)</string>
@@ -120,10 +272,6 @@
     <string name="robot_reset_type_man">Manual reset by support</string>
     <string name="robot_reset_type_power">Power cycle</string>
     <string name="robot_wol_confirm">Send Wake-on-LAN packet to this server?</string>
-    <string name="robot_create_snapshot">Create snapshot</string>
-    <string name="robot_create_snapshot_confirm">Create a new snapshot of this Storage Box?</string>
-    <string name="robot_snapshot_meta">Size: %1$s • FS: %2$s</string>
-    <string name="robot_action_running">Running…</string>
     <string name="robot_action_done">Action completed</string>
     <string name="robot_action_failed">Action failed: %1$s</string>
 
@@ -189,10 +337,6 @@
     <string name="confirm_destructive_title">Confirm action</string>
     <string name="confirm_destructive_msg">This action cannot be undone. Continue?</string>
 
-    <string name="robot_tab_dedis">Dedicated</string>
-    <string name="robot_tab_storageboxes">Storage Box</string>
-    <string name="robot_tab_failover">Failover</string>
-    <string name="robot_tab_vswitch">vSwitch</string>
     <string name="robot_failover_active_on">Active on %1$s</string>
     <string name="robot_vswitch_meta">VLAN %1$d • #%2$d</string>
     <string name="robot_vswitch_cancelled">Cancelled</string>
@@ -205,7 +349,7 @@
     <string name="settings_lock_30s">After 30 seconds</string>
     <string name="settings_lock_60s">After 1 minute</string>
     <string name="settings_lock_5min">After 5 minutes</string>
-    <string name="settings_lock_never">Never</string>
+    <string name="settings_lock_15min">15 minutes</string>
     <string name="settings_pinning_info">Certificate pinning is enforced for all Hetzner endpoints. Pin material is updated per release via scripts/fetch_pins.sh.</string>
     <string name="settings_language_info">Falco follows your device language. Change it in Android Settings → System → Languages. Supported: English, Deutsch, Español, Français, Italiano, 简体中文, Русский.</string>
 
@@ -287,12 +431,9 @@
     <string name="project_picker_manage">Manage projects</string>
     <string name="project_no_active">No project selected</string>
     <string name="project_default_name">Default</string>
-    <string name="project_count_one">%1$d project</string>
-    <string name="project_count_other">%1$d projects</string>
     <string name="project_manage_title">Cloud projects</string>
     <string name="s3_no_creds_for_project">This project has no S3 credentials. Add them in project settings.</string>
     <string name="cloud_storage_boxes">Storage Boxes</string>
-    <string name="cloud_tab_storage_boxes">Storage Boxes</string>
     <string name="cloud_storage_box_status_active">Active</string>
     <string name="cloud_storage_box_status_inactive">Inactive</string>
     <string name="cloud_storage_box_protected">Protected</string>
@@ -301,7 +442,6 @@
     <string name="cloud_storage_box_size_label">Size</string>
     <string name="cloud_storage_box_type_label">Type</string>
 
-    <string name="storagebox_overview">Overview</string>
     <string name="storagebox_create_snapshot">Create snapshot</string>
     <string name="storagebox_snapshot_description">Description (optional)</string>
     <string name="storagebox_snapshot_rollback">Rollback to snapshot</string>
@@ -349,6 +489,13 @@
     <string name="server_action_rebuild">Rebuild</string>
     <string name="server_action_rescue_enable">Enable rescue mode</string>
     <string name="server_action_rescue_disable">Disable rescue mode</string>
+    <string name="server_action_cancellation">Cancel server</string>
+    <string name="server_action_cancellation_withdraw">Withdraw cancellation</string>
+    <string name="server_rescue_caption">Boots into rescue Linux on next reset. SSH key optional.</string>
+    <string name="server_rescue_authorized_key">SSH public key (optional)</string>
+    <string name="server_cancellation_caption">Schedule a cancellation date. Server keeps running until that date.</string>
+    <string name="server_cancellation_date">Cancellation date</string>
+    <string name="server_cancellation_reason">Reason (optional)</string>
     <string name="server_action_backup_enable">Enable backups</string>
     <string name="server_action_backup_disable">Disable backups</string>
     <string name="server_action_iso_attach">Attach ISO</string>
@@ -376,4 +523,38 @@
     <string name="server_section_overview">Overview</string>
     <string name="server_section_metrics">Metrics</string>
     <string name="server_section_actions">Actions</string>
+
+    <string name="server_action_reset_password">Reset root password</string>
+    <string name="image_fallback_name">Image #%1$d</string>
+    <string name="unit_bits">%1$d bit</string>
+    <string name="cloud_ssh_keys">SSH keys</string>
+    <string name="floating_ip_assigned">Assigned</string>
+    <string name="floating_ip_unassigned">Unassigned</string>
+    <string name="floating_ip_section_assignment">Assignment</string>
+    <string name="server_section_power">Power</string>
+    <string name="server_section_state">State</string>
+    <string name="server_section_danger">Danger zone</string>
+
+    <!-- Floating IP create wizard -->
+    <string name="cloud_floating_ip_create">Create Floating IP</string>
+    <string name="cloud_floating_ip_create_action">Create</string>
+    <string name="cloud_floating_ip_assign_mode">Assign to server immediately</string>
+    <string name="cloud_floating_ip_type_label">Type</string>
+    <string name="cloud_floating_ip_type_ipv4">IPv4</string>
+    <string name="cloud_floating_ip_type_ipv6">IPv6</string>
+    <string name="cloud_floating_ip_name">Name (optional)</string>
+    <string name="cloud_floating_ip_description">Description (optional)</string>
+
+    <!-- Network create wizard -->
+    <string name="cloud_network_create">Create network</string>
+    <string name="cloud_network_create_action">Create</string>
+    <string name="cloud_network_create_name">Name</string>
+    <string name="cloud_network_create_ip_range">IP range (CIDR)</string>
+    <string name="cloud_network_create_ip_range_hint">Private range, e.g. 10.0.0.0/16</string>
+    <string name="cloud_network_create_subnet_optional">Add initial subnet</string>
+    <string name="cloud_network_subnet_zone">Network zone</string>
+    <string name="cloud_network_subnet_type">Subnet type</string>
+    <string name="cloud_network_subnet_ip_range">Subnet IP range (optional)</string>
+    <string name="cloud_network_subnet_ip_range_hint">Must be inside the network range. Leave empty to let Hetzner pick.</string>
+    <string name="wizard_step_subnet">Subnet</string>
 </resources>
