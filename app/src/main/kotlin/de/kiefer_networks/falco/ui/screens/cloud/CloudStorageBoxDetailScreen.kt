@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -96,6 +98,7 @@ fun CloudStorageBoxDetailScreen(
         }
     }
 
+    var sheetOpen by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
     var showCreateSnapshot by remember { mutableStateOf(false) }
     var showCreateSubaccount by remember { mutableStateOf(false) }
@@ -120,8 +123,11 @@ fun CloudStorageBoxDetailScreen(
                         }
                     },
                     actions = {
-                        IconButton(onClick = { showResetDialog = true }) {
-                            Icon(Icons.Filled.Lock, contentDescription = stringResource(R.string.storagebox_password_reset))
+                        androidx.compose.material3.FilledTonalButton(
+                            onClick = { sheetOpen = true },
+                            modifier = Modifier.padding(end = 8.dp),
+                        ) {
+                            Text(stringResource(R.string.actions_sheet_title))
                         }
                     },
                 )
@@ -211,6 +217,37 @@ fun CloudStorageBoxDetailScreen(
                 }
             }
         }
+    }
+
+    if (sheetOpen) {
+        de.kiefer_networks.falco.ui.components.dialog.ActionsBottomSheetSections(
+            title = stringResource(R.string.actions_sheet_title),
+            sections = listOf(
+                de.kiefer_networks.falco.ui.components.dialog.SheetSection(
+                    title = stringResource(R.string.server_detail_section_settings),
+                    actions = listOf(
+                        de.kiefer_networks.falco.ui.components.dialog.SheetAction(
+                            icon = Icons.Filled.Lock,
+                            label = stringResource(R.string.storagebox_password_reset),
+                        ) { sheetOpen = false; showResetDialog = true },
+                    ),
+                ),
+                de.kiefer_networks.falco.ui.components.dialog.SheetSection(
+                    title = stringResource(R.string.server_section_state),
+                    actions = listOf(
+                        de.kiefer_networks.falco.ui.components.dialog.SheetAction(
+                            icon = Icons.Filled.PhotoCamera,
+                            label = stringResource(R.string.storagebox_create_snapshot),
+                        ) { sheetOpen = false; showCreateSnapshot = true },
+                        de.kiefer_networks.falco.ui.components.dialog.SheetAction(
+                            icon = Icons.Filled.Person,
+                            label = stringResource(R.string.storagebox_create_subaccount),
+                        ) { sheetOpen = false; showCreateSubaccount = true },
+                    ),
+                ),
+            ),
+            onDismiss = { sheetOpen = false },
+        )
     }
 
     if (showResetDialog) {
@@ -737,75 +774,91 @@ private fun SubaccountFormDialog(
     var readonly by remember { mutableStateOf(false) }
     var external by remember { mutableStateOf(false) }
 
-    AlertDialog(
+    androidx.compose.ui.window.Dialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.storagebox_create_subaccount)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text(stringResource(R.string.storagebox_new_password)) },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = home,
-                    onValueChange = { home = it },
-                    label = { Text(stringResource(R.string.storagebox_subaccount_homedir)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text(stringResource(R.string.dns_record_value)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Text(
-                    stringResource(R.string.storagebox_subaccount_protocols_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                ProtocolToggle(
-                    checked = readonly,
-                    onCheckedChange = { readonly = it },
-                    label = stringResource(R.string.storagebox_subaccount_readonly),
-                )
-                ProtocolToggle(
-                    checked = external,
-                    onCheckedChange = { external = it },
-                    label = stringResource(R.string.storagebox_subaccount_external),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = password.length >= 8 && home.isNotBlank(),
-                onClick = {
-                    onConfirm(
-                        password,
-                        home,
-                        CloudSubaccountAccessSettings(
-                            // Protocol fields stay at API defaults (true for ssh, false otherwise);
-                            // the box-level master toggles are the source of truth.
-                            sambaEnabled = false,
-                            sshEnabled = true,
-                            webdavEnabled = false,
-                            readonly = readonly,
-                            reachableExternally = external,
-                        ),
-                        description.takeIf(String::isNotBlank),
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Scaffold(
+                topBar = {
+                    CenterAlignedTopAppBar(
+                        title = { Text(stringResource(R.string.storagebox_create_subaccount)) },
+                        navigationIcon = {
+                            IconButton(onClick = onDismiss) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                            }
+                        },
+                        actions = {
+                            TextButton(
+                                enabled = password.length >= 8 && home.isNotBlank(),
+                                onClick = {
+                                    onConfirm(
+                                        password,
+                                        home,
+                                        CloudSubaccountAccessSettings(
+                                            sambaEnabled = false,
+                                            sshEnabled = true,
+                                            webdavEnabled = false,
+                                            readonly = readonly,
+                                            reachableExternally = external,
+                                        ),
+                                        description.takeIf(String::isNotBlank),
+                                    )
+                                },
+                            ) { Text(stringResource(R.string.save)) }
+                        },
                     )
                 },
-            ) { Text(stringResource(R.string.ok)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-    )
+            ) { padding ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text(stringResource(R.string.storagebox_new_password)) },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = home,
+                        onValueChange = { home = it },
+                        label = { Text(stringResource(R.string.storagebox_subaccount_homedir)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text(stringResource(R.string.dns_record_value)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        stringResource(R.string.storagebox_subaccount_protocols_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    ProtocolToggle(
+                        checked = readonly,
+                        onCheckedChange = { readonly = it },
+                        label = stringResource(R.string.storagebox_subaccount_readonly),
+                    )
+                    ProtocolToggle(
+                        checked = external,
+                        onCheckedChange = { external = it },
+                        label = stringResource(R.string.storagebox_subaccount_external),
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

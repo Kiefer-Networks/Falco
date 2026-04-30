@@ -6,23 +6,26 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Computer
-import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -40,16 +43,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.ui.components.EmptyState
+import de.kiefer_networks.falco.ui.nav.LocalNavDrawer
 
 private data class CloudTab(val labelRes: Int, val icon: ImageVector)
 
 private val CLOUD_TABS = listOf(
     CloudTab(R.string.cloud_servers, Icons.Filled.Computer),
-    CloudTab(R.string.cloud_volumes, Icons.Filled.Storage),
-    CloudTab(R.string.cloud_networks, Icons.Filled.Hub),
     CloudTab(R.string.cloud_firewalls, Icons.Filled.Security),
-    CloudTab(R.string.cloud_floating_ips, Icons.Filled.SwapHoriz),
     CloudTab(R.string.cloud_storage_boxes, Icons.Filled.Inventory2),
+    CloudTab(R.string.cloud_tab_resources, Icons.Filled.ViewModule),
+    CloudTab(R.string.cloud_ssh_keys, Icons.Filled.Key),
 )
 
 @Composable
@@ -58,6 +61,9 @@ fun CloudHubScreen(
     onManageProjects: () -> Unit,
     onOpenStorageBox: (Long) -> Unit = {},
     onOpenServer: (Long) -> Unit = {},
+    onOpenFirewall: (Long) -> Unit = {},
+    onOpenVolume: (Long) -> Unit = {},
+    onOpenFloatingIp: (Long) -> Unit = {},
     viewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
@@ -66,9 +72,22 @@ fun CloudHubScreen(
     val activeProject = projectsState.projects.firstOrNull { it.id == projectsState.activeProjectId }
     val hasProjects = projectsState.projects.isNotEmpty()
 
+    val drawer = LocalNavDrawer.current
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
+                navigationIcon = {
+                    if (drawer.isCompact) {
+                        IconButton(onClick = drawer::open) {
+                            Icon(Icons.Filled.Menu, contentDescription = stringResource(R.string.nav_drawer_title))
+                        }
+                    }
+                },
+                actions = {
+                    if (drawer.isCompact) {
+                        Spacer(modifier = Modifier.size(48.dp))
+                    }
+                },
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -104,7 +123,7 @@ fun CloudHubScreen(
                 )
                 return@Column
             }
-            SecondaryTabRow(selectedTabIndex = selected) {
+            TabRow(selectedTabIndex = selected) {
                 CLOUD_TABS.forEachIndexed { index, tab ->
                     Tab(
                         selected = selected == index,
@@ -119,13 +138,14 @@ fun CloudHubScreen(
                 }
             }
             Box(modifier = Modifier.fillMaxSize()) {
-                when (selected) {
-                    0 -> CloudScreen(onOpenServer = onOpenServer)
-                    1 -> CloudVolumesTab()
-                    2 -> CloudNetworksTab()
-                    3 -> CloudFirewallsTab()
-                    4 -> CloudFloatingIpsTab()
-                    5 -> CloudStorageBoxesTab(onOpen = onOpenStorageBox)
+                androidx.compose.runtime.key(projectsState.activeProjectId) {
+                    when (selected) {
+                        0 -> CloudScreen(onOpenServer = onOpenServer)
+                        1 -> CloudFirewallsTab(onOpen = onOpenFirewall)
+                        2 -> CloudStorageBoxesTab(onOpen = onOpenStorageBox)
+                        3 -> CloudResourcesTab(onOpenVolume = onOpenVolume, onOpenFloatingIp = onOpenFloatingIp)
+                        4 -> CloudSshKeysTab()
+                    }
                 }
             }
         }
@@ -135,7 +155,10 @@ fun CloudHubScreen(
         ProjectPickerSheet(
             state = projectsState,
             onDismiss = { pickerOpen = false },
-            onSelect = { id -> viewModel.setActive(id) },
+            onSelect = { id ->
+                viewModel.setActive(id)
+                pickerOpen = false
+            },
             onAdd = {
                 pickerOpen = false
                 onAddProject()

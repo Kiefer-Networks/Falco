@@ -25,11 +25,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Public
@@ -39,13 +40,13 @@ import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -75,6 +76,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -85,6 +87,9 @@ import de.kiefer_networks.falco.data.repo.MetricPeriod
 import de.kiefer_networks.falco.ui.components.ErrorState
 import de.kiefer_networks.falco.ui.components.LineChart
 import de.kiefer_networks.falco.ui.components.LoadingState
+import de.kiefer_networks.falco.ui.components.dialog.ActionsBottomSheetSections
+import de.kiefer_networks.falco.ui.components.dialog.SheetAction
+import de.kiefer_networks.falco.ui.components.dialog.SheetSection
 import kotlinx.coroutines.launch
 
 @Composable
@@ -96,6 +101,7 @@ fun CloudServerDetailScreen(
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
+    var consoleResult by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { ev ->
@@ -112,13 +118,16 @@ fun CloudServerDetailScreen(
                         copyToClipboard(ctx, "root password", ev.password)
                     }
                 }
+                is CloudServerEvent.ConsoleReady -> {
+                    consoleResult = ev.wssUrl to ev.password
+                }
             }
         }
     }
 
     LaunchedEffect(state.deleted) { if (state.deleted) onBack() }
 
-    var menuOpen by remember { mutableStateOf(false) }
+    var sheetOpen by remember { mutableStateOf(false) }
     var showRebuild by remember { mutableStateOf(false) }
     var showChangeType by remember { mutableStateOf(false) }
     var showIso by remember { mutableStateOf(false) }
@@ -126,6 +135,7 @@ fun CloudServerDetailScreen(
     var showDeleteFirst by remember { mutableStateOf(false) }
     var showDeleteFinal by remember { mutableStateOf(false) }
     var showProtection by remember { mutableStateOf(false) }
+    var showReverseDns by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -146,72 +156,35 @@ fun CloudServerDetailScreen(
                         IconButton(onClick = viewModel::refresh) {
                             Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.refresh))
                         }
-                        Box {
-                            IconButton(onClick = { menuOpen = true }) {
-                                Icon(Icons.Filled.MoreVert, contentDescription = null)
-                            }
-                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.server_action_rename)) },
-                                    onClick = { menuOpen = false; showRename = true },
+                        IconButton(
+                            onClick = {
+                                viewModel.setProtection(
+                                    delete = !(state.server?.protection?.delete ?: false),
+                                    rebuild = !(state.server?.protection?.rebuild ?: false),
                                 )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.server_action_rebuild)) },
-                                    leadingIcon = { Icon(Icons.Filled.Build, contentDescription = null) },
-                                    onClick = {
-                                        menuOpen = false
-                                        viewModel.loadImages()
-                                        showRebuild = true
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.server_action_change_type)) },
-                                    onClick = {
-                                        menuOpen = false
-                                        viewModel.loadServerTypes()
-                                        showChangeType = true
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.server_action_iso_attach)) },
-                                    onClick = {
-                                        menuOpen = false
-                                        viewModel.loadIsos()
-                                        showIso = true
-                                    },
-                                )
-                                if (state.server?.iso != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.server_action_iso_detach)) },
-                                        onClick = {
-                                            menuOpen = false
-                                            viewModel.detachIso()
-                                        },
-                                    )
-                                }
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.server_action_protection)) },
-                                    leadingIcon = { Icon(Icons.Filled.Shield, contentDescription = null) },
-                                    onClick = { menuOpen = false; showProtection = true },
-                                )
-                                HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            stringResource(R.string.server_action_delete),
-                                            color = MaterialTheme.colorScheme.error,
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Filled.Delete,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.error,
-                                        )
-                                    },
-                                    onClick = { menuOpen = false; showDeleteFirst = true },
-                                )
-                            }
+                            },
+                        ) {
+                            Icon(
+                                Icons.Filled.Shield,
+                                contentDescription = stringResource(R.string.server_action_protection),
+                                tint = if (state.server?.protection?.delete == true) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            )
+                        }
+                        IconButton(onClick = viewModel::requestConsole) {
+                            Icon(
+                                Icons.Filled.Computer,
+                                contentDescription = stringResource(R.string.server_action_console),
+                            )
+                        }
+                        FilledTonalButton(
+                            onClick = { sheetOpen = true },
+                            modifier = Modifier.padding(end = 8.dp),
+                        ) {
+                            Text(stringResource(R.string.actions_sheet_title))
                         }
                     },
                 )
@@ -232,7 +205,6 @@ fun CloudServerDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     item { OverviewCard(server) }
-                    item { PowerActionsRow(server, viewModel) }
                     item {
                         ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -258,9 +230,120 @@ fun CloudServerDetailScreen(
                         }
                     }
                     item { ToggleSettingsCard(server, viewModel) }
+                    item { AttachedResourcesCard(server) }
                 }
             }
         }
+    }
+
+    if (sheetOpen) {
+        val server = state.server
+        val running = server?.status == "running"
+        val sections = if (server == null) emptyList() else buildList {
+            // Power group
+            add(
+                SheetSection(
+                    title = stringResource(R.string.server_section_power),
+                    actions = buildList {
+                        if (running) {
+                            add(SheetAction(Icons.Filled.RestartAlt, stringResource(R.string.action_reboot)) {
+                                sheetOpen = false; viewModel.reboot()
+                            })
+                            add(SheetAction(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_shutdown)) {
+                                sheetOpen = false; viewModel.shutdown()
+                            })
+                            add(SheetAction(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_power_off)) {
+                                sheetOpen = false; viewModel.powerOff()
+                            })
+                        } else {
+                            add(SheetAction(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_power_on)) {
+                                sheetOpen = false; viewModel.powerOn()
+                            })
+                        }
+                        add(SheetAction(Icons.Filled.RestartAlt, stringResource(R.string.action_reset)) {
+                            sheetOpen = false; viewModel.reset()
+                        })
+                    },
+                ),
+            )
+            // Image / state
+            add(
+                SheetSection(
+                    title = stringResource(R.string.server_section_state),
+                    actions = listOf(
+                        SheetAction(Icons.Filled.PhotoCamera, stringResource(R.string.action_snapshot)) {
+                            sheetOpen = false; viewModel.snapshot()
+                        },
+                        SheetAction(Icons.Filled.VpnKey, stringResource(R.string.server_action_reset_password)) {
+                            sheetOpen = false; viewModel.resetRootPassword()
+                        },
+                        SheetAction(Icons.Filled.Build, stringResource(R.string.server_action_rebuild)) {
+                            sheetOpen = false; viewModel.loadImages(); showRebuild = true
+                        },
+                        SheetAction(Icons.Filled.Memory, stringResource(R.string.server_action_change_type)) {
+                            sheetOpen = false; viewModel.loadServerTypes(); showChangeType = true
+                        },
+                        if (server.iso == null) {
+                            SheetAction(Icons.Filled.Storage, stringResource(R.string.server_action_iso_attach)) {
+                                sheetOpen = false; viewModel.loadIsos(); showIso = true
+                            }
+                        } else {
+                            SheetAction(Icons.Filled.Storage, stringResource(R.string.server_action_iso_detach)) {
+                                sheetOpen = false; viewModel.detachIso()
+                            }
+                        },
+                    ),
+                ),
+            )
+            // Network / Console
+            add(
+                SheetSection(
+                    title = stringResource(R.string.server_detail_section_network),
+                    actions = listOf(
+                        SheetAction(Icons.Filled.Dns, stringResource(R.string.server_action_reverse_dns)) {
+                            sheetOpen = false; showReverseDns = true
+                        },
+                        SheetAction(Icons.Filled.Computer, stringResource(R.string.server_action_console)) {
+                            sheetOpen = false; viewModel.requestConsole()
+                        },
+                    ),
+                ),
+            )
+            // Settings
+            add(
+                SheetSection(
+                    title = stringResource(R.string.server_detail_section_settings),
+                    actions = listOf(
+                        SheetAction(Icons.Filled.Shield, stringResource(R.string.server_action_protection)) {
+                            sheetOpen = false; showProtection = true
+                        },
+                        SheetAction(Icons.Filled.Settings, stringResource(R.string.server_action_rename)) {
+                            sheetOpen = false; showRename = true
+                        },
+                    ),
+                ),
+            )
+            // Destructive
+            add(
+                SheetSection(
+                    title = stringResource(R.string.server_section_danger),
+                    actions = listOf(
+                        SheetAction(
+                            icon = Icons.Filled.Delete,
+                            label = stringResource(R.string.server_action_delete),
+                            destructive = true,
+                        ) {
+                            sheetOpen = false; showDeleteFirst = true
+                        },
+                    ),
+                ),
+            )
+        }
+        ActionsBottomSheetSections(
+            title = stringResource(R.string.actions_sheet_title),
+            sections = sections,
+            onDismiss = { sheetOpen = false },
+        )
     }
 
     if (showRebuild) {
@@ -368,6 +451,120 @@ fun CloudServerDetailScreen(
             },
         )
     }
+
+    if (showReverseDns) {
+        ReverseDnsDialog(
+            ipv4 = state.server?.publicNet?.ipv4?.ip,
+            ipv4Ptr = state.server?.publicNet?.ipv4?.dnsPtr,
+            ipv6 = state.server?.publicNet?.ipv6?.ip,
+            onDismiss = { showReverseDns = false },
+            onConfirm = { ip, ptr ->
+                viewModel.changeReverseDns(ip, ptr)
+                showReverseDns = false
+            },
+        )
+    }
+
+    consoleResult?.let { (url, password) ->
+        ConsoleResultDialog(
+            wssUrl = url,
+            password = password,
+            onDismiss = { consoleResult = null },
+            onCopyUrl = { copyToClipboard(ctx, "console url", url) },
+            onCopyPassword = { copyToClipboard(ctx, "console password", password) },
+        )
+    }
+}
+
+@Composable
+private fun ReverseDnsDialog(
+    ipv4: String?,
+    ipv4Ptr: String?,
+    ipv6: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (ip: String, ptr: String?) -> Unit,
+) {
+    var selectedIp by remember { mutableStateOf(ipv4 ?: ipv6.orEmpty()) }
+    var ptr by remember { mutableStateOf(ipv4Ptr.orEmpty()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.server_action_reverse_dns)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (ipv4 != null) {
+                    AssistChip(
+                        onClick = { selectedIp = ipv4 },
+                        label = { Text(ipv4) },
+                    )
+                }
+                if (ipv6 != null) {
+                    AssistChip(
+                        onClick = { selectedIp = ipv6 },
+                        label = { Text(ipv6) },
+                    )
+                }
+                OutlinedTextField(
+                    value = selectedIp,
+                    onValueChange = { selectedIp = it },
+                    label = { Text(stringResource(R.string.server_reverse_dns_ip)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = ptr,
+                    onValueChange = { ptr = it },
+                    label = { Text(stringResource(R.string.server_reverse_dns_ptr)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    stringResource(R.string.server_reverse_dns_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = selectedIp.isNotBlank(),
+                onClick = { onConfirm(selectedIp, ptr.takeIf { it.isNotBlank() }) },
+            ) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun ConsoleResultDialog(
+    wssUrl: String,
+    password: String,
+    onDismiss: () -> Unit,
+    onCopyUrl: () -> Unit,
+    onCopyPassword: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.server_action_console)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    stringResource(R.string.server_console_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(stringResource(R.string.server_console_url), style = MaterialTheme.typography.labelSmall)
+                Text(wssUrl, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                TextButton(onClick = onCopyUrl) { Text(stringResource(R.string.copy)) }
+                Text(stringResource(R.string.server_console_password), style = MaterialTheme.typography.labelSmall)
+                Text(password, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                TextButton(onClick = onCopyPassword) { Text(stringResource(R.string.copy)) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
+        },
+    )
 }
 
 @Composable
@@ -401,7 +598,7 @@ private fun OverviewCard(server: CloudServer) {
             }
             server.serverType?.let { st ->
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SpecChip(Icons.Filled.Settings, "${st.cores} ${if (st.cores == 1) "core" else "cores"}")
+                    SpecChip(Icons.Filled.Settings, pluralStringResource(R.plurals.server_cores, st.cores, st.cores))
                     SpecChip(Icons.Filled.Memory, "${formatGb(st.memory)} RAM")
                     SpecChip(Icons.Filled.Storage, "${st.disk} GB")
                     SpecChip(Icons.Filled.Sell, st.name)
@@ -409,60 +606,75 @@ private fun OverviewCard(server: CloudServer) {
             }
             HorizontalDivider()
             server.publicNet?.ipv4?.ip?.let {
-                CopyRow(Icons.Filled.Public, "Public IPv4", it, ctx)
+                CopyRow(Icons.Filled.Public, stringResource(R.string.server_public_ipv4), it, ctx)
             }
             server.publicNet?.ipv6?.ip?.let {
-                CopyRow(Icons.Filled.Public, "Public IPv6", it, ctx)
+                CopyRow(Icons.Filled.Public, stringResource(R.string.server_public_ipv6), it, ctx)
             }
             val loc = listOfNotNull(
-                server.datacenter?.name,
                 server.datacenter?.location?.city,
                 server.datacenter?.location?.country,
-            ).joinToString(" · ")
+            ).joinToString(", ")
             if (loc.isNotBlank()) {
-                Property(Icons.Filled.LocationOn, "Datacenter", loc)
-            }
-            server.image?.let { img ->
-                Property(
-                    Icons.Filled.Build,
-                    "Image",
-                    listOfNotNull(img.name, img.description).joinToString(" · "),
-                )
-            }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (server.rescueEnabled) {
-                    AssistChip(onClick = {}, label = { Text("rescue") })
-                }
-                server.iso?.let {
-                    AssistChip(onClick = {}, label = { Text("ISO: ${it.name}") })
-                }
-                if (server.backupWindow != null) {
-                    AssistChip(
-                        onClick = {},
-                        label = { Text("backup: ${server.backupWindow}") },
-                    )
-                }
+                Property(Icons.Filled.LocationOn, stringResource(R.string.server_label_location), loc)
             }
         }
     }
 }
 
 @Composable
-private fun PowerActionsRow(server: CloudServer, vm: CloudServerDetailViewModel) {
+private fun AttachedResourcesCard(server: CloudServer) {
+    if (server.volumes.isEmpty() && server.firewalls.isEmpty() && server.privateNet.isEmpty() && server.loadBalancers.isEmpty()) {
+        return
+    }
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SectionTitle(R.string.server_section_actions)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                ActionChip(Icons.Filled.RestartAlt, stringResource(R.string.action_reboot), vm::reboot)
-                if (server.status == "running") {
-                    ActionChip(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_shutdown), vm::shutdown)
-                    ActionChip(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_power_off), vm::powerOff)
-                } else {
-                    ActionChip(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_power_on), vm::powerOn)
-                }
-                ActionChip(Icons.Filled.RestartAlt, stringResource(R.string.action_reset), vm::reset)
-                ActionChip(Icons.Filled.PhotoCamera, stringResource(R.string.action_snapshot), vm::snapshot)
+            SectionTitle(R.string.server_section_attached)
+            if (server.volumes.isNotEmpty()) {
+                AttachedRow(
+                    icon = Icons.Filled.Storage,
+                    label = stringResource(R.string.cloud_volumes),
+                    value = server.volumes.joinToString(", ") { "#$it" },
+                )
             }
+            if (server.firewalls.isNotEmpty()) {
+                AttachedRow(
+                    icon = Icons.Filled.Shield,
+                    label = stringResource(R.string.cloud_firewalls),
+                    value = server.firewalls.joinToString(", ") { "#${it.firewall.id}" },
+                )
+            }
+            if (server.privateNet.isNotEmpty()) {
+                AttachedRow(
+                    icon = Icons.Filled.Public,
+                    label = stringResource(R.string.cloud_networks),
+                    value = server.privateNet.joinToString(", ") { it.ip ?: "#${it.network}" },
+                )
+            }
+            if (server.loadBalancers.isNotEmpty()) {
+                AttachedRow(
+                    icon = Icons.Filled.Memory,
+                    label = stringResource(R.string.server_section_load_balancers),
+                    value = server.loadBalancers.joinToString(", ") { "#$it" },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AttachedRow(icon: ImageVector, label: String, value: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -590,15 +802,6 @@ private fun SpecChip(icon: ImageVector, label: String) {
         onClick = {},
         leadingIcon = { Icon(icon, contentDescription = null, modifier = Modifier.size(AssistChipDefaults.IconSize)) },
         label = { Text(label, style = MaterialTheme.typography.labelMedium) },
-    )
-}
-
-@Composable
-private fun ActionChip(icon: ImageVector, label: String, onClick: () -> Unit) {
-    AssistChip(
-        onClick = onClick,
-        leadingIcon = { Icon(icon, contentDescription = null, modifier = Modifier.size(AssistChipDefaults.IconSize)) },
-        label = { Text(label) },
     )
 }
 

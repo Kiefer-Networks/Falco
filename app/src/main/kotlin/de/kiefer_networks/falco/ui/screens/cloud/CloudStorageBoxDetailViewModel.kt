@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import de.kiefer_networks.falco.data.util.sanitizeError
 import javax.inject.Inject
 
 data class StorageBoxDetailUiState(
@@ -68,7 +69,7 @@ class CloudStorageBoxDetailViewModel @Inject constructor(
                     )
                 }
             }.onFailure { e ->
-                _state.update { it.copy(loading = false, error = e.message ?: "error") }
+                _state.update { it.copy(loading = false, error = sanitizeError(e)) }
             }
         }
     }
@@ -131,7 +132,7 @@ class CloudStorageBoxDetailViewModel @Inject constructor(
                     _events.emit(StorageBoxEvent.Toast("done"))
                     if (refreshAfter) refresh()
                 }
-                .onFailure { e -> _events.emit(StorageBoxEvent.Failure(e.message ?: "error")) }
+                .onFailure { e -> _events.emit(StorageBoxEvent.Failure(sanitizeError(e))) }
             _state.update { it.copy(running = false) }
         }
     }

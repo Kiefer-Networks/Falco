@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import de.kiefer_networks.falco.data.util.sanitizeError
 import javax.inject.Inject
 
 sealed interface MetricLoadState {
@@ -51,6 +52,7 @@ sealed interface CloudServerEvent {
     data class Toast(val text: String) : CloudServerEvent
     data class Failure(val message: String) : CloudServerEvent
     data class RootPasswordRevealed(val password: String) : CloudServerEvent
+    data class ConsoleReady(val wssUrl: String, val password: String) : CloudServerEvent
 }
 
 @HiltViewModel
@@ -79,7 +81,7 @@ class CloudServerDetailViewModel @Inject constructor(
                     loadMetrics(_state.value.period)
                 }
                 .onFailure { e ->
-                    _state.update { it.copy(loading = false, error = e.message ?: "error") }
+                    _state.update { it.copy(loading = false, error = sanitizeError(e)) }
                 }
         }
     }
@@ -107,7 +109,7 @@ class CloudServerDetailViewModel @Inject constructor(
                     it.copy(
                         cpuMetrics = cpuRes.fold(
                             { s -> MetricLoadState.Loaded(s) },
-                            { e -> MetricLoadState.Failed(e.message ?: "error") },
+                            { e -> MetricLoadState.Failed(sanitizeError(e)) },
                         ),
                     )
                 }
@@ -116,7 +118,7 @@ class CloudServerDetailViewModel @Inject constructor(
                     it.copy(
                         diskMetrics = diskRes.fold(
                             { s -> MetricLoadState.Loaded(s) },
-                            { e -> MetricLoadState.Failed(e.message ?: "error") },
+                            { e -> MetricLoadState.Failed(sanitizeError(e)) },
                         ),
                     )
                 }
@@ -125,7 +127,7 @@ class CloudServerDetailViewModel @Inject constructor(
                     it.copy(
                         networkMetrics = netRes.fold(
                             { s -> MetricLoadState.Loaded(s) },
-                            { e -> MetricLoadState.Failed(e.message ?: "error") },
+                            { e -> MetricLoadState.Failed(sanitizeError(e)) },
                         ),
                     )
                 }
@@ -161,6 +163,13 @@ class CloudServerDetailViewModel @Inject constructor(
         }
     }
 
+    /** Resets the live root password (`reset_password` Hetzner action). The new
+     *  password is delivered via [CloudServerEvent.RootPasswordRevealed]. */
+    fun resetRootPassword() = wrap {
+        val response = repo.resetServerPassword(serverId)
+        response.rootPassword?.let { _events.emit(CloudServerEvent.RootPasswordRevealed(it)) }
+    }
+
     fun attachIso(iso: String) = wrap(refreshAfter = true) { repo.attachIso(serverId, iso) }
     fun detachIso() = wrap(refreshAfter = true) { repo.detachIso(serverId) }
 
@@ -175,6 +184,15 @@ class CloudServerDetailViewModel @Inject constructor(
     fun delete() = wrap {
         repo.deleteServer(serverId)
         _state.update { it.copy(deleted = true) }
+    }
+
+    fun changeReverseDns(ip: String, ptr: String?) = wrap(refreshAfter = true) {
+        repo.changeServerDnsPtr(serverId, ip, ptr)
+    }
+
+    fun requestConsole() = wrap {
+        val res = repo.requestServerConsole(serverId)
+        _events.emit(CloudServerEvent.ConsoleReady(res.wssUrl, res.password))
     }
 
     fun loadImages() = viewModelScope.launch {
@@ -209,7 +227,7 @@ class CloudServerDetailViewModel @Inject constructor(
                     if (refreshAfter) refresh()
                 }
                 .onFailure { e ->
-                    _events.emit(CloudServerEvent.Failure(e.message ?: "error"))
+                    _events.emit(CloudServerEvent.Failure(sanitizeError(e)))
                 }
             _state.update { it.copy(running = false) }
         }

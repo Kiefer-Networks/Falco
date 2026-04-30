@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.LocationOn
@@ -38,6 +39,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,6 +49,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -68,13 +73,33 @@ fun CloudScreen(
     viewModel: CloudViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
-    when (val s = state) {
-        is CloudUiState.Loading -> LoadingState()
-        is CloudUiState.Failed -> ErrorState(message = s.message, onRetry = viewModel::refresh)
-        is CloudUiState.Loaded -> ServerList(
-            servers = s.servers,
-            onAction = { action, id -> viewModel.action(action, id) },
-            onOpen = onOpenServer,
+    var createOpen by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.refresh() }
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (val s = state) {
+            is CloudUiState.Loading -> LoadingState()
+            is CloudUiState.Failed -> ErrorState(message = s.message, onRetry = viewModel::refresh)
+            is CloudUiState.Loaded -> ServerList(
+                servers = s.servers,
+                onAction = { action, id -> viewModel.action(action, id) },
+                onOpen = onOpenServer,
+            )
+        }
+        FloatingActionButton(
+            onClick = {
+                viewModel.loadCreateOptions()
+                createOpen = true
+            },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cloud_server_create))
+        }
+    }
+    if (createOpen) {
+        CreateServerSheet(
+            viewModel = viewModel,
+            onDismiss = { createOpen = false },
+            onCreated = { createOpen = false },
         )
     }
 }

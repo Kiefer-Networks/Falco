@@ -4,19 +4,22 @@ package de.kiefer_networks.falco.ui.screens.cloud
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
@@ -27,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -54,52 +56,57 @@ fun RebuildDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            shape = MaterialTheme.shapes.large,
-        ) {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                Text(
-                    stringResource(R.string.server_rebuild_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-                Text(
-                    stringResource(R.string.server_rebuild_warning),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-                SecondaryTabRow(selectedTabIndex = tab) {
-                    Tab(
-                        selected = tab == 0,
-                        onClick = { tab = 0 },
-                        text = { Text(stringResource(R.string.server_rebuild_image_picker_system)) },
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Scaffold(
+                topBar = {
+                    CenterAlignedTopAppBar(
+                        title = { Text(stringResource(R.string.server_rebuild_title)) },
+                        navigationIcon = {
+                            IconButton(onClick = onDismiss) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                            }
+                        },
+                        actions = {
+                            TextButton(
+                                enabled = selected != null,
+                                onClick = { showFinal = true },
+                            ) { Text(stringResource(R.string.server_rebuild_button)) }
+                        },
                     )
-                    Tab(
-                        selected = tab == 1,
-                        onClick = { tab = 1 },
-                        text = { Text(stringResource(R.string.server_rebuild_image_picker_snapshot)) },
+                },
+            ) { padding ->
+                Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                    Text(
+                        stringResource(R.string.server_rebuild_warning),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
-                }
-                val current = if (tab == 0) systemImages else snapshotImages
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f).padding(top = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(current, key = { it.id }) { image ->
-                        ImageRow(
-                            image = image,
-                            selected = selected?.id == image.id,
-                            onClick = { selected = image },
+                    SecondaryTabRow(selectedTabIndex = tab) {
+                        Tab(
+                            selected = tab == 0,
+                            onClick = { tab = 0 },
+                            text = { Text(stringResource(R.string.server_rebuild_image_picker_system)) },
+                        )
+                        Tab(
+                            selected = tab == 1,
+                            onClick = { tab = 1 },
+                            text = { Text(stringResource(R.string.server_rebuild_image_picker_snapshot)) },
                         )
                     }
-                }
-                Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.CenterEnd) {
-                    Button(
-                        enabled = selected != null,
-                        onClick = { showFinal = true },
-                    ) { Text(stringResource(R.string.server_rebuild_button)) }
+                    val current = if (tab == 0) systemImages else snapshotImages
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(current, key = { it.id }) { image ->
+                            ImageRow(
+                                image = image,
+                                selected = selected?.id == image.id,
+                                onClick = { selected = image },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -139,7 +146,7 @@ private fun ImageRow(image: CloudImage, selected: Boolean, onClick: () -> Unit) 
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
-                text = image.name ?: image.description ?: "image #${image.id}",
+                text = image.name ?: image.description ?: stringResource(R.string.image_fallback_name, image.id),
                 style = MaterialTheme.typography.titleSmall,
             )
             val parts = listOfNotNull(
@@ -153,7 +160,7 @@ private fun ImageRow(image: CloudImage, selected: Boolean, onClick: () -> Unit) 
             }
             if (image.deprecated != null) {
                 Text(
-                    "deprecated · ${image.deprecated}",
+                    stringResource(R.string.image_deprecated_label, image.deprecated!!),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
                 )
