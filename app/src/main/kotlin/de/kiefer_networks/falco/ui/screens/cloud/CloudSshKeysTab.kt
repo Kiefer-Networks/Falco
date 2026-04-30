@@ -96,10 +96,10 @@ class CloudSshKeysViewModel @Inject constructor(private val repo: CloudRepo) : V
             .onFailure { e -> _state.value = CloudSshKeysUiState(loading = false, error = sanitizeError(e)) }
     }
 
-    fun create(name: String, data: String) = viewModelScope.launch {
+    fun create(name: String, data: String, projectId: String? = null) = viewModelScope.launch {
         if (_state.value.running) return@launch
         _state.update { it.copy(running = true) }
-        runCatching { repo.createSshKey(name, data) }.onSuccess { refresh() }
+        runCatching { repo.createSshKey(name, data, projectId) }.onSuccess { refresh() }
         _state.update { it.copy(running = false) }
     }
 
@@ -117,12 +117,17 @@ private sealed interface SshAddMode {
 }
 
 @Composable
-fun CloudSshKeysTab(viewModel: CloudSshKeysViewModel = hiltViewModel()) {
+fun CloudSshKeysTab(
+    viewModel: CloudSshKeysViewModel = hiltViewModel(),
+    projectsViewModel: ProjectsViewModel = hiltViewModel(),
+) {
     val s by viewModel.state.collectAsState()
+    val projectsState by projectsViewModel.state.collectAsState()
     val context = LocalContext.current
     var fabExpanded by remember { mutableStateOf(false) }
     var addMode by remember { mutableStateOf<SshAddMode?>(null) }
     var pendingDelete by remember { mutableStateOf<CloudSshKey?>(null) }
+    var pickProjectFor by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
@@ -182,8 +187,23 @@ fun CloudSshKeysTab(viewModel: CloudSshKeysViewModel = hiltViewModel()) {
             initialData = (mode as? SshAddMode.FromFile)?.initialData.orEmpty(),
             onDismiss = { addMode = null },
             onConfirm = { name, data ->
-                viewModel.create(name.trim(), data.trim())
                 addMode = null
+                if (projectsState.aggregateProjects && projectsState.projects.size > 1) {
+                    pickProjectFor = name.trim() to data.trim()
+                } else {
+                    viewModel.create(name.trim(), data.trim())
+                }
+            },
+        )
+    }
+
+    pickProjectFor?.let { (name, data) ->
+        de.kiefer_networks.falco.ui.components.dialog.ProjectChooserDialog(
+            projects = projectsState.projects,
+            onDismiss = { pickProjectFor = null },
+            onPick = { id ->
+                viewModel.create(name, data, projectId = id)
+                pickProjectFor = null
             },
         )
     }

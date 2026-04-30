@@ -263,7 +263,7 @@ fun CloudResourcesTab(
     }
 
     pendingCreate?.let { kind ->
-        ProjectChooserDialog(
+        de.kiefer_networks.falco.ui.components.dialog.ProjectChooserDialog(
             projects = projectsState.projects,
             onDismiss = { pendingCreate = null },
             onPick = { id ->
@@ -279,55 +279,6 @@ fun CloudResourcesTab(
             },
         )
     }
-}
-
-@Composable
-private fun ProjectChooserDialog(
-    projects: List<de.kiefer_networks.falco.data.model.CloudProject>,
-    onDismiss: () -> Unit,
-    onPick: (String) -> Unit,
-) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.project_chooser_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    stringResource(R.string.project_chooser_caption),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.size(Spacing.sm))
-                projects.forEach { project ->
-                    androidx.compose.material3.OutlinedCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp)
-                            .clickable { onPick(project.id) },
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                Icons.Filled.Apps,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                            Spacer(Modifier.size(8.dp))
-                            Text(project.name, style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            androidx.compose.material3.TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-    )
 }
 
 @Composable
