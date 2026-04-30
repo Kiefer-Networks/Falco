@@ -457,6 +457,8 @@
     <string name="project_picker_add">New project</string>
     <string name="project_picker_manage">Manage projects</string>
     <string name="project_all">All projects</string>
+    <string name="project_chooser_title">Pick project</string>
+    <string name="project_chooser_caption">Choose which Cloud project the new resource belongs to.</string>
     <string name="project_no_active">No project selected</string>
     <string name="project_default_name">Default</string>
     <string name="project_manage_title">Cloud projects</string>

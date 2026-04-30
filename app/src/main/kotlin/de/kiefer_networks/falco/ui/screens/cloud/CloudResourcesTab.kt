@@ -64,6 +64,8 @@ import de.kiefer_networks.falco.data.dto.CloudPlacementGroup
 import de.kiefer_networks.falco.data.dto.CloudVolume
 import de.kiefer_networks.falco.ui.theme.Spacing
 
+private enum class PendingCreate { Volume, Network, FloatingIp, PlacementGroup, Certificate }
+
 @Composable
 fun CloudResourcesTab(
     onOpenVolume: (Long) -> Unit = {},
@@ -74,6 +76,7 @@ fun CloudResourcesTab(
     loadBalancersViewModel: CloudLoadBalancersViewModel = hiltViewModel(),
     certificatesViewModel: CloudCertificatesViewModel = hiltViewModel(),
     placementGroupsViewModel: CloudPlacementGroupsViewModel = hiltViewModel(),
+    projectsViewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     val v by volumesViewModel.state.collectAsState()
     val n by networksViewModel.state.collectAsState()
@@ -81,13 +84,31 @@ fun CloudResourcesTab(
     val lb by loadBalancersViewModel.state.collectAsState()
     val cert by certificatesViewModel.state.collectAsState()
     val pg by placementGroupsViewModel.state.collectAsState()
+    val projectsState by projectsViewModel.state.collectAsState()
 
     var createVolumeOpen by remember { mutableStateOf(false) }
     var createNetworkOpen by remember { mutableStateOf(false) }
     var createFloatingIpOpen by remember { mutableStateOf(false) }
     var createPlacementGroupOpen by remember { mutableStateOf(false) }
     var uploadCertOpen by remember { mutableStateOf(false) }
+    var pendingCreate by remember { mutableStateOf<PendingCreate?>(null) }
+    var pickedProjectId by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
+
+    fun launchCreate(kind: PendingCreate) {
+        if (projectsState.aggregateProjects && projectsState.projects.size > 1) {
+            pendingCreate = kind
+        } else {
+            pickedProjectId = null
+            when (kind) {
+                PendingCreate.Volume -> { volumesViewModel.loadCreateOptions(); createVolumeOpen = true }
+                PendingCreate.Network -> createNetworkOpen = true
+                PendingCreate.FloatingIp -> { floatingIpsViewModel.loadCreateOptions(); createFloatingIpOpen = true }
+                PendingCreate.PlacementGroup -> createPlacementGroupOpen = true
+                PendingCreate.Certificate -> uploadCertOpen = true
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         volumesViewModel.refresh()
@@ -129,10 +150,7 @@ fun CloudResourcesTab(
                 stringResource(R.string.cloud_volumes),
                 v.data.size,
                 addContentDescription = stringResource(R.string.cloud_volume_create),
-                onAdd = {
-                    volumesViewModel.loadCreateOptions()
-                    createVolumeOpen = true
-                },
+                onAdd = { launchCreate(PendingCreate.Volume) },
             )
         }
         if (v.loading) item { LoadingRow() }
@@ -144,7 +162,7 @@ fun CloudResourcesTab(
                 stringResource(R.string.cloud_networks),
                 n.data.size,
                 addContentDescription = stringResource(R.string.cloud_network_create),
-                onAdd = { createNetworkOpen = true },
+                onAdd = { launchCreate(PendingCreate.Network) },
             )
         }
         if (n.loading) item { LoadingRow() }
@@ -156,10 +174,7 @@ fun CloudResourcesTab(
                 stringResource(R.string.cloud_floating_ips),
                 f.data.size,
                 addContentDescription = stringResource(R.string.cloud_floating_ip_create),
-                onAdd = {
-                    floatingIpsViewModel.loadCreateOptions()
-                    createFloatingIpOpen = true
-                },
+                onAdd = { launchCreate(PendingCreate.FloatingIp) },
             )
         }
         if (f.loading) item { LoadingRow() }
@@ -176,7 +191,7 @@ fun CloudResourcesTab(
                 stringResource(R.string.cloud_certificates),
                 cert.data.size,
                 addContentDescription = stringResource(R.string.cloud_certificate_upload),
-                onAdd = { uploadCertOpen = true },
+                onAdd = { launchCreate(PendingCreate.Certificate) },
             )
         }
         if (cert.loading) item { LoadingRow() }
@@ -188,7 +203,7 @@ fun CloudResourcesTab(
                 stringResource(R.string.cloud_placement_groups),
                 pg.data.size,
                 addContentDescription = stringResource(R.string.cloud_placement_group_create),
-                onAdd = { createPlacementGroupOpen = true },
+                onAdd = { launchCreate(PendingCreate.PlacementGroup) },
             )
         }
         if (pg.loading) item { LoadingRow() }
@@ -200,43 +215,119 @@ fun CloudResourcesTab(
     if (createVolumeOpen) {
         CreateVolumeWizard(
             viewModel = volumesViewModel,
-            onDismiss = { createVolumeOpen = false },
-            onCreated = { createVolumeOpen = false },
+            onDismiss = { createVolumeOpen = false; pickedProjectId = null },
+            onCreated = { createVolumeOpen = false; pickedProjectId = null },
+            projectId = pickedProjectId,
         )
     }
     if (createNetworkOpen) {
         CreateNetworkWizard(
             viewModel = networksViewModel,
-            onDismiss = { createNetworkOpen = false },
-            onCreated = { createNetworkOpen = false },
+            onDismiss = { createNetworkOpen = false; pickedProjectId = null },
+            onCreated = { createNetworkOpen = false; pickedProjectId = null },
+            projectId = pickedProjectId,
         )
     }
     if (uploadCertOpen) {
         UploadCertificateDialog(
-            onDismiss = { uploadCertOpen = false },
+            onDismiss = { uploadCertOpen = false; pickedProjectId = null },
             onUpload = { name, cert, key ->
-                certificatesViewModel.upload(name, cert, key) { ok -> if (ok) uploadCertOpen = false }
+                certificatesViewModel.upload(name, cert, key, { ok ->
+                    if (ok) { uploadCertOpen = false; pickedProjectId = null }
+                }, projectId = pickedProjectId)
             },
             onRequestManaged = { name, domains ->
-                certificatesViewModel.requestManaged(name, domains) { ok -> if (ok) uploadCertOpen = false }
+                certificatesViewModel.requestManaged(name, domains, { ok ->
+                    if (ok) { uploadCertOpen = false; pickedProjectId = null }
+                }, projectId = pickedProjectId)
             },
         )
     }
     if (createPlacementGroupOpen) {
         CreatePlacementGroupDialog(
-            onDismiss = { createPlacementGroupOpen = false },
+            onDismiss = { createPlacementGroupOpen = false; pickedProjectId = null },
             onCreate = { name, type ->
-                placementGroupsViewModel.create(name, type) { ok -> if (ok) createPlacementGroupOpen = false }
+                placementGroupsViewModel.create(name, type, { ok ->
+                    if (ok) { createPlacementGroupOpen = false; pickedProjectId = null }
+                }, projectId = pickedProjectId)
             },
         )
     }
     if (createFloatingIpOpen) {
         CreateFloatingIpWizard(
             viewModel = floatingIpsViewModel,
-            onDismiss = { createFloatingIpOpen = false },
-            onCreated = { createFloatingIpOpen = false },
+            onDismiss = { createFloatingIpOpen = false; pickedProjectId = null },
+            onCreated = { createFloatingIpOpen = false; pickedProjectId = null },
+            projectId = pickedProjectId,
         )
     }
+
+    pendingCreate?.let { kind ->
+        ProjectChooserDialog(
+            projects = projectsState.projects,
+            onDismiss = { pendingCreate = null },
+            onPick = { id ->
+                pickedProjectId = id
+                pendingCreate = null
+                when (kind) {
+                    PendingCreate.Volume -> { volumesViewModel.loadCreateOptions(); createVolumeOpen = true }
+                    PendingCreate.Network -> createNetworkOpen = true
+                    PendingCreate.FloatingIp -> { floatingIpsViewModel.loadCreateOptions(); createFloatingIpOpen = true }
+                    PendingCreate.PlacementGroup -> createPlacementGroupOpen = true
+                    PendingCreate.Certificate -> uploadCertOpen = true
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun ProjectChooserDialog(
+    projects: List<de.kiefer_networks.falco.data.model.CloudProject>,
+    onDismiss: () -> Unit,
+    onPick: (String) -> Unit,
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.project_chooser_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    stringResource(R.string.project_chooser_caption),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.size(Spacing.sm))
+                projects.forEach { project ->
+                    androidx.compose.material3.OutlinedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp)
+                            .clickable { onPick(project.id) },
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                Icons.Filled.Apps,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Spacer(Modifier.size(8.dp))
+                            Text(project.name, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
 }
 
 @Composable

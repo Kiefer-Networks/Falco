@@ -112,6 +112,7 @@ class CloudFloatingIpsViewModel @Inject constructor(private val repo: CloudRepo)
         homeLocation: String?,
         serverId: Long?,
         onDone: (Boolean) -> Unit,
+        projectId: String? = null,
     ) {
         if (_create.value.running) return
         viewModelScope.launch {
@@ -123,6 +124,7 @@ class CloudFloatingIpsViewModel @Inject constructor(private val repo: CloudRepo)
                     description = description,
                     homeLocation = homeLocation,
                     serverId = serverId,
+                    projectId = projectId,
                 )
             }
             _create.update { it.copy(running = false) }
@@ -219,6 +221,7 @@ internal fun CreateFloatingIpWizard(
     viewModel: CloudFloatingIpsViewModel,
     onDismiss: () -> Unit,
     onCreated: () -> Unit,
+    projectId: String? = null,
 ) {
     val opts by viewModel.createOptions.collectAsState()
 
@@ -261,6 +264,7 @@ internal fun CreateFloatingIpWizard(
                 homeLocation = if (assignToServer) null else location,
                 serverId = if (assignToServer) serverId else null,
                 onDone = { ok -> if (ok) onCreated() },
+                projectId = projectId,
             )
         },
         nextLabel = stringResource(R.string.wizard_next),

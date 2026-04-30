@@ -98,12 +98,13 @@ class CloudNetworksViewModel @Inject constructor(private val repo: CloudRepo) : 
         subnetZone: String,
         subnetIpRange: String?,
         onDone: (Boolean) -> Unit,
+        projectId: String? = null,
     ) {
         if (_create.value.running) return
         viewModelScope.launch {
             _create.update { it.copy(running = true) }
             val res = runCatching {
-                val net = repo.createNetwork(name = name, ipRange = ipRange)
+                val net = repo.createNetwork(name = name, ipRange = ipRange, projectId = projectId)
                 if (addSubnet) {
                     repo.addNetworkSubnet(
                         id = net.id,
@@ -202,6 +203,7 @@ internal fun CreateNetworkWizard(
     viewModel: CloudNetworksViewModel,
     onDismiss: () -> Unit,
     onCreated: () -> Unit,
+    projectId: String? = null,
 ) {
     val opts by viewModel.createOptions.collectAsState()
 
@@ -243,6 +245,7 @@ internal fun CreateNetworkWizard(
                 subnetZone = subnetZone ?: "eu-central",
                 subnetIpRange = subnetIpRange.trim().ifBlank { null },
                 onDone = { ok -> if (ok) onCreated() },
+                projectId = projectId,
             )
         },
         nextLabel = stringResource(R.string.wizard_next),

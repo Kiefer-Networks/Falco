@@ -134,6 +134,7 @@ class CloudVolumesViewModel @Inject constructor(private val repo: CloudRepo) : V
         format: String?,
         automount: Boolean?,
         onDone: (Boolean) -> Unit,
+        projectId: String? = null,
     ) {
         if (_create.value.running) return
         viewModelScope.launch {
@@ -146,6 +147,7 @@ class CloudVolumesViewModel @Inject constructor(private val repo: CloudRepo) : V
                     serverId = serverId,
                     format = format,
                     automount = automount,
+                    projectId = projectId,
                 )
             }
             _create.update { it.copy(running = false) }
@@ -294,6 +296,7 @@ internal fun CreateVolumeWizard(
     viewModel: CloudVolumesViewModel,
     onDismiss: () -> Unit,
     onCreated: () -> Unit,
+    projectId: String? = null,
 ) {
     val opts by viewModel.createOptions.collectAsState()
 
@@ -338,6 +341,7 @@ internal fun CreateVolumeWizard(
                 format = format,
                 automount = if (attachMode) automount else null,
                 onDone = { ok -> if (ok) onCreated() },
+                projectId = projectId,
             )
         },
         nextLabel = stringResource(R.string.wizard_next),

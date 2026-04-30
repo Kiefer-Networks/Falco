@@ -75,16 +75,27 @@ class CloudCertificatesViewModel @Inject constructor(private val repo: CloudRepo
             .onFailure { _events.emit(sanitizeError(it)) }
     }
 
-    fun upload(name: String, certificate: String, privateKey: String, onDone: (Boolean) -> Unit) =
+    fun upload(
+        name: String,
+        certificate: String,
+        privateKey: String,
+        onDone: (Boolean) -> Unit,
+        projectId: String? = null,
+    ) =
         viewModelScope.launch {
-            runCatching { repo.uploadCertificate(name.trim(), certificate, privateKey) }
+            runCatching { repo.uploadCertificate(name.trim(), certificate, privateKey, projectId) }
                 .onSuccess { refresh(); onDone(true) }
                 .onFailure { _events.emit(sanitizeError(it)); onDone(false) }
         }
 
-    fun requestManaged(name: String, domains: List<String>, onDone: (Boolean) -> Unit) =
+    fun requestManaged(
+        name: String,
+        domains: List<String>,
+        onDone: (Boolean) -> Unit,
+        projectId: String? = null,
+    ) =
         viewModelScope.launch {
-            runCatching { repo.requestManagedCertificate(name.trim(), domains) }
+            runCatching { repo.requestManagedCertificate(name.trim(), domains, projectId) }
                 .onSuccess { refresh(); onDone(true) }
                 .onFailure { _events.emit(sanitizeError(it)); onDone(false) }
         }
@@ -112,8 +123,13 @@ class CloudPlacementGroupsViewModel @Inject constructor(private val repo: CloudR
             .onFailure { _state.value = CloudPlacementGroupsUiState(loading = false, error = sanitizeError(it)) }
     }
 
-    fun create(name: String, type: String, onDone: (Boolean) -> Unit) = viewModelScope.launch {
-        runCatching { repo.createPlacementGroup(name.trim(), type) }
+    fun create(
+        name: String,
+        type: String,
+        onDone: (Boolean) -> Unit,
+        projectId: String? = null,
+    ) = viewModelScope.launch {
+        runCatching { repo.createPlacementGroup(name.trim(), type, projectId) }
             .onSuccess { refresh(); onDone(true) }
             .onFailure { _events.emit(sanitizeError(it)); onDone(false) }
     }

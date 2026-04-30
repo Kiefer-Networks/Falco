@@ -449,6 +449,8 @@
     <string name="project_picker_add">新项目</string>
     <string name="project_picker_manage">管理项目</string>
     <string name="project_all">所有项目</string>
+    <string name="project_chooser_title">选择项目</string>
+    <string name="project_chooser_caption">选择新资源所属的 Cloud 项目。</string>
     <string name="project_no_active">未选择项目</string>
     <string name="project_default_name">默认</string>
     <string name="project_manage_title">Cloud 项目</string>

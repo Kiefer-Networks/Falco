@@ -478,6 +478,8 @@
     <string name="project_picker_add">Новый проект</string>
     <string name="project_picker_manage">Управление проектами</string>
     <string name="project_all">Все проекты</string>
+    <string name="project_chooser_title">Выбор проекта</string>
+    <string name="project_chooser_caption">Выберите проект Cloud для новой ресурсы.</string>
     <string name="project_no_active">Проект не выбран</string>
     <string name="project_default_name">По умолчанию</string>
     <string name="project_manage_title">Cloud-проекты</string>

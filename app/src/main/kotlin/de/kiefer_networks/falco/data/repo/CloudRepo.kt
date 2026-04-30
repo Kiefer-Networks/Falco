@@ -60,16 +60,33 @@ class CloudRepo @Inject constructor(
     private val prefs: SecurityPreferences,
 ) {
 
-    private suspend fun api(): CloudApi {
-        val project = accounts.activeCloudProject.first()
-            ?: error("No active Cloud project for the current account")
-        return HttpClientFactory.cloudRetrofit(project.cloudToken).create(CloudApi::class.java)
+    private suspend fun api(): CloudApi = api(null)
+
+    /**
+     * Cloud API for a specific project, falling back to the active project when
+     * [projectId] is null. Used by create / update / delete paths so the user
+     * can target a project explicitly while in aggregate-projects mode.
+     */
+    private suspend fun api(projectId: String?): CloudApi {
+        val token = tokenFor(projectId)
+            ?: error("No Cloud project token available")
+        return HttpClientFactory.cloudRetrofit(token).create(CloudApi::class.java)
     }
 
-    private suspend fun storageBoxApi(): StorageBoxApi {
-        val project = accounts.activeCloudProject.first()
-            ?: error("No active Cloud project for the current account")
-        return HttpClientFactory.storageBoxRetrofit(project.cloudToken).create(StorageBoxApi::class.java)
+    private suspend fun storageBoxApi(): StorageBoxApi = storageBoxApi(null)
+
+    private suspend fun storageBoxApi(projectId: String?): StorageBoxApi {
+        val token = tokenFor(projectId)
+            ?: error("No Cloud project token available")
+        return HttpClientFactory.storageBoxRetrofit(token).create(StorageBoxApi::class.java)
+    }
+
+    private suspend fun tokenFor(projectId: String?): String? {
+        if (projectId == null) {
+            return accounts.activeCloudProject.first()?.cloudToken
+        }
+        val accountId = accounts.activeAccountId.first() ?: return null
+        return accounts.cloudProjects(accountId).firstOrNull { it.id == projectId }?.cloudToken
     }
 
     /**
@@ -116,6 +133,7 @@ class CloudRepo @Inject constructor(
         labels: Map<String, String>? = null,
         enableIpv4: Boolean = true,
         enableIpv6: Boolean = true,
+        projectId: String? = null,
     ): de.kiefer_networks.falco.data.dto.CreateServerResponse {
         val body = de.kiefer_networks.falco.data.dto.CreateServerRequest(
             name = name,
@@ -135,7 +153,7 @@ class CloudRepo @Inject constructor(
                 de.kiefer_networks.falco.data.dto.CreateServerPublicNet(enableIpv4, enableIpv6)
             } else null,
         )
-        return api().createServer(body)
+        return api(projectId).createServer(body)
     }
 
     suspend fun listVolumes(): List<CloudVolume> = apis().flatMap { it.listVolumes().volumes }
@@ -148,7 +166,8 @@ class CloudRepo @Inject constructor(
         serverId: Long? = null,
         format: String? = null,
         automount: Boolean? = null,
-    ): CloudVolume = api().createVolume(
+        projectId: String? = null,
+    ): CloudVolume = api(projectId).createVolume(
         de.kiefer_networks.falco.data.dto.CreateVolumeRequest(
             name = name, size = size, location = location, server = serverId,
             format = format, automount = automount,
@@ -175,8 +194,8 @@ class CloudRepo @Inject constructor(
         api().changeVolumeProtection(id, ChangeProtectionRequest(delete = delete))
     suspend fun listFirewalls(): List<CloudFirewall> = apis().flatMap { it.listFirewalls().firewalls }
 
-    suspend fun createFirewall(name: String): CloudFirewall =
-        api().createFirewall(de.kiefer_networks.falco.data.dto.CreateFirewallRequest(name = name)).firewall
+    suspend fun createFirewall(name: String, projectId: String? = null): CloudFirewall =
+        api(projectId).createFirewall(de.kiefer_networks.falco.data.dto.CreateFirewallRequest(name = name)).firewall
 
     suspend fun getFirewall(id: Long): CloudFirewall = api().getFirewall(id).firewall
     suspend fun renameFirewall(id: Long, name: String): CloudFirewall =
@@ -202,7 +221,8 @@ class CloudRepo @Inject constructor(
         description: String? = null,
         homeLocation: String? = null,
         serverId: Long? = null,
-    ): CloudFloatingIp = api().createFloatingIp(
+        projectId: String? = null,
+    ): CloudFloatingIp = api(projectId).createFloatingIp(
         de.kiefer_networks.falco.data.dto.CreateFloatingIpRequest(
             type = type, name = name, description = description,
             homeLocation = homeLocation, server = serverId,
@@ -224,8 +244,8 @@ class CloudRepo @Inject constructor(
 
     suspend fun listNetworks(): List<CloudNetwork> = apis().flatMap { it.listNetworks().networks }
     suspend fun getNetwork(id: Long): CloudNetwork = api().getNetwork(id).network
-    suspend fun createNetwork(name: String, ipRange: String): CloudNetwork =
-        api().createNetwork(
+    suspend fun createNetwork(name: String, ipRange: String, projectId: String? = null): CloudNetwork =
+        api(projectId).createNetwork(
             de.kiefer_networks.falco.data.dto.CreateNetworkRequest(name = name, ipRange = ipRange),
         ).network
     suspend fun renameNetwork(id: Long, name: String): CloudNetwork =
@@ -291,8 +311,12 @@ class CloudRepo @Inject constructor(
 
     suspend fun listSshKeys(): List<de.kiefer_networks.falco.data.dto.CloudSshKey> =
         apis().flatMap { it.listSshKeys().sshKeys }
-    suspend fun createSshKey(name: String, publicKey: String): de.kiefer_networks.falco.data.dto.CloudSshKey =
-        api().createSshKey(
+    suspend fun createSshKey(
+        name: String,
+        publicKey: String,
+        projectId: String? = null,
+    ): de.kiefer_networks.falco.data.dto.CloudSshKey =
+        api(projectId).createSshKey(
             de.kiefer_networks.falco.data.dto.CreateSshKeyRequest(name = name, publicKey = publicKey),
         ).sshKey
     suspend fun renameSshKey(id: Long, name: String): de.kiefer_networks.falco.data.dto.CloudSshKey =
@@ -614,8 +638,13 @@ class CloudRepo @Inject constructor(
     suspend fun getCertificate(id: Long): de.kiefer_networks.falco.data.dto.CloudCertificate =
         api().getCertificate(id).certificate
 
-    suspend fun uploadCertificate(name: String, certificate: String, privateKey: String) =
-        api().createCertificate(
+    suspend fun uploadCertificate(
+        name: String,
+        certificate: String,
+        privateKey: String,
+        projectId: String? = null,
+    ) =
+        api(projectId).createCertificate(
             de.kiefer_networks.falco.data.dto.CreateCertificateRequest(
                 name = name,
                 type = "uploaded",
@@ -624,8 +653,12 @@ class CloudRepo @Inject constructor(
             ),
         ).certificate
 
-    suspend fun requestManagedCertificate(name: String, domainNames: List<String>) =
-        api().createCertificate(
+    suspend fun requestManagedCertificate(
+        name: String,
+        domainNames: List<String>,
+        projectId: String? = null,
+    ) =
+        api(projectId).createCertificate(
             de.kiefer_networks.falco.data.dto.CreateCertificateRequest(
                 name = name,
                 type = "managed",
@@ -649,8 +682,12 @@ class CloudRepo @Inject constructor(
     suspend fun getPlacementGroup(id: Long): de.kiefer_networks.falco.data.dto.CloudPlacementGroup =
         api().getPlacementGroup(id).placementGroup
 
-    suspend fun createPlacementGroup(name: String, type: String = "spread") =
-        api().createPlacementGroup(
+    suspend fun createPlacementGroup(
+        name: String,
+        type: String = "spread",
+        projectId: String? = null,
+    ) =
+        api(projectId).createPlacementGroup(
             de.kiefer_networks.falco.data.dto.CreatePlacementGroupRequest(name = name, type = type),
         ).placementGroup
 

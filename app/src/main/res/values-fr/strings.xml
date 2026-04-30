@@ -472,6 +472,8 @@
     <string name="project_picker_add">Nouveau projet</string>
     <string name="project_picker_manage">Gérer les projets</string>
     <string name="project_all">Tous les projets</string>
+    <string name="project_chooser_title">Choisir un projet</string>
+    <string name="project_chooser_caption">Sélectionnez le projet Cloud auquel appartient la nouvelle ressource.</string>
     <string name="project_no_active">Aucun projet sélectionné</string>
     <string name="project_default_name">Par défaut</string>
     <string name="project_manage_title">Projets Cloud</string>
