@@ -24,6 +24,11 @@
     <string name="nav_dns">DNS</string>
     <string name="nav_storage">存储</string>
     <string name="nav_accounts">账户</string>
+    <string name="nav_search">搜索</string>
+    <string name="search_title">搜索</string>
+    <string name="search_hint">输入以搜索服务器、卷、网络等。</string>
+    <string name="search_empty">没有匹配项。</string>
+    <string name="search_placeholder">搜索…</string>
     <string name="nav_settings">设置</string>
 
     <string name="welcome_title">欢迎使用 Falco</string>

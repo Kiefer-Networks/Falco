@@ -24,6 +24,11 @@
     <string name="nav_dns">DNS</string>
     <string name="nav_storage">Stockage</string>
     <string name="nav_accounts">Comptes</string>
+    <string name="nav_search">Rechercher</string>
+    <string name="search_title">Rechercher</string>
+    <string name="search_hint">Tapez pour rechercher dans serveurs, volumes, réseaux et plus.</string>
+    <string name="search_empty">Aucun résultat.</string>
+    <string name="search_placeholder">Rechercher…</string>
     <string name="nav_settings">Paramètres</string>
 
     <string name="welcome_title">Bienvenue sur Falco</string>

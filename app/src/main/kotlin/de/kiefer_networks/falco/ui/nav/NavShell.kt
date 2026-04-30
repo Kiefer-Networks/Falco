@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.DrawerState
@@ -96,6 +97,7 @@ private val ALL_SERVICES = listOf(
 )
 
 private val SYSTEM = listOf(
+    DrawerEntry(Routes.SEARCH, R.string.nav_search, Icons.Filled.Search),
     DrawerEntry(Routes.ACCOUNTS, R.string.nav_accounts, Icons.Filled.Person),
     DrawerEntry(Routes.SETTINGS, R.string.nav_settings, Icons.Filled.Settings),
 )

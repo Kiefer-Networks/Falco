@@ -187,6 +187,18 @@ fun FalcoRoot(viewModel: FalcoRootViewModel, windowSizeClass: WindowSizeClass) {
                     },
                 )
             }
+            composable(Routes.SEARCH) {
+                de.kiefer_networks.falco.ui.screens.search.SearchScreen(
+                    onOpenServer = { id -> nav.navigate(Routes.cloudServerDetail(id)) },
+                    onOpenVolume = { id -> nav.navigate(Routes.cloudVolumeDetail(id)) },
+                    onOpenFloatingIp = { id -> nav.navigate(Routes.cloudFloatingIpDetail(id)) },
+                    onOpenFirewall = { id -> nav.navigate(Routes.cloudFirewallDetail(id)) },
+                    onOpenStorageBox = { id -> nav.navigate(Routes.cloudStorageBoxDetail(id)) },
+                    onOpenRobot = { num -> nav.navigate(Routes.robotServerDetail(num)) },
+                    onOpenDnsZone = { id -> nav.navigate(Routes.dnsZoneDetail(id)) },
+                    onBack = { nav.popBackStack() },
+                )
+            }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onAbout = { nav.navigate(Routes.ABOUT) },

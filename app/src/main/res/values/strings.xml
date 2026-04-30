@@ -26,6 +26,11 @@
     <string name="nav_dns">DNS</string>
     <string name="nav_storage">Storage</string>
     <string name="nav_accounts">Accounts</string>
+    <string name="nav_search">Search</string>
+    <string name="search_title">Search</string>
+    <string name="search_hint">Type to search across servers, volumes, networks and more.</string>
+    <string name="search_empty">Nothing matches your query.</string>
+    <string name="search_placeholder">Search…</string>
     <string name="nav_settings">Settings</string>
 
     <!-- Onboarding / Biometric -->

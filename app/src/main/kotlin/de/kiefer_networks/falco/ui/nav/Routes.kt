@@ -12,6 +12,7 @@ object Routes {
     const val DNS_ZONE_DETAIL = "dns/zone/{id}"
     const val S3 = "s3"
     const val S3_BROWSER = "s3/browser?bucket={bucket}&prefix={prefix}"
+    const val SEARCH = "search"
     const val SETTINGS = "settings"
     const val SETTINGS_SECURITY = "settings/security"
     const val SETTINGS_APPEARANCE = "settings/appearance"
