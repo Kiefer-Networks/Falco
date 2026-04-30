@@ -188,7 +188,27 @@ fun FalcoRoot(viewModel: FalcoRootViewModel, windowSizeClass: WindowSizeClass) {
                 )
             }
             composable(Routes.SETTINGS) {
-                SettingsScreen(onAbout = { nav.navigate(Routes.ABOUT) })
+                SettingsScreen(
+                    onAbout = { nav.navigate(Routes.ABOUT) },
+                    onSecurity = { nav.navigate(Routes.SETTINGS_SECURITY) },
+                    onAppearance = { nav.navigate(Routes.SETTINGS_APPEARANCE) },
+                    onLanguage = { nav.navigate(Routes.SETTINGS_LANGUAGE) },
+                )
+            }
+            composable(Routes.SETTINGS_SECURITY) {
+                de.kiefer_networks.falco.ui.screens.settings.SecuritySettingsScreen(
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable(Routes.SETTINGS_APPEARANCE) {
+                de.kiefer_networks.falco.ui.screens.settings.AppearanceSettingsScreen(
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable(Routes.SETTINGS_LANGUAGE) {
+                de.kiefer_networks.falco.ui.screens.settings.LanguageSettingsScreen(
+                    onBack = { nav.popBackStack() },
+                )
             }
             composable(Routes.ABOUT) {
                 de.kiefer_networks.falco.ui.screens.about.AboutScreen(onBack = { nav.popBackStack() })

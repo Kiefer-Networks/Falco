@@ -13,6 +13,9 @@ object Routes {
     const val S3 = "s3"
     const val S3_BROWSER = "s3/browser?bucket={bucket}&prefix={prefix}"
     const val SETTINGS = "settings"
+    const val SETTINGS_SECURITY = "settings/security"
+    const val SETTINGS_APPEARANCE = "settings/appearance"
+    const val SETTINGS_LANGUAGE = "settings/language"
     const val ABOUT = "about"
 
     fun robotServerDetail(number: Long) = "robot/server/$number"
