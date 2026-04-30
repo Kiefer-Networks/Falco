@@ -19,10 +19,12 @@ import javax.inject.Singleton
 data class HetznerAccount(
     val id: String,
     val displayName: String,
+    val description: String?,
     val cloudProjectCount: Int,
     val activeCloudProjectId: String?,
     val hasRobot: Boolean,
     val hasDns: Boolean,
+    val hasS3: Boolean,
 )
 
 data class AccountSecrets(
@@ -56,6 +58,8 @@ class AccountManager @Inject constructor(
 
     val activeAccountId: Flow<String?> = dataStore.data.map { it[ACTIVE_ID] }
 
+    val defaultAccountId: Flow<String?> = dataStore.data.map { it[DEFAULT_ID] }
+
     /** Active project of the active account, or null when no project exists. */
     val activeCloudProject: Flow<CloudProject?> = combine(
         activeAccountId,
@@ -84,6 +88,20 @@ class AccountManager @Inject constructor(
         dataStore.edit { it[ACTIVE_ID] = id }
     }
 
+    suspend fun setDefault(id: String) {
+        dataStore.edit { it[DEFAULT_ID] = id }
+    }
+
+    suspend fun updateDisplayName(id: String, name: String) {
+        store.put(id, CredentialStore.Field.DISPLAY_NAME, name)
+        dataStore.edit { /* trigger flow */ }
+    }
+
+    suspend fun updateDescription(id: String, description: String) {
+        store.put(id, CredentialStore.Field.DESCRIPTION, description)
+        dataStore.edit { /* trigger flow */ }
+    }
+
     suspend fun remove(id: String) {
         store.remove(id)
         dataStore.edit { prefs ->
@@ -93,6 +111,7 @@ class AccountManager @Inject constructor(
                 .orEmpty()
             prefs[ACCOUNT_IDS] = remaining.joinToString(",")
             if (prefs[ACTIVE_ID] == id) prefs[ACTIVE_ID] = remaining.firstOrNull() ?: ""
+            if (prefs[DEFAULT_ID] == id) prefs[DEFAULT_ID] = ""
         }
     }
 
@@ -126,8 +145,8 @@ class AccountManager @Inject constructor(
 
     suspend fun setActiveCloudProject(accountId: String, projectId: String) {
         store.put(accountId, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID, projectId)
-        // Touch DataStore so the activeCloudProject Flow re-emits.
-        dataStore.edit { /* no-op trigger */ }
+        // Bump tick so dataStore.data emits and Flow re-evaluates.
+        dataStore.edit { it[ACTIVE_PROJECT_TICK] = "$accountId:$projectId:${System.nanoTime()}" }
     }
 
     suspend fun secretsFor(id: String): AccountSecrets {
@@ -201,16 +220,24 @@ class AccountManager @Inject constructor(
         return HetznerAccount(
             id = id,
             displayName = store.get(id, CredentialStore.Field.DISPLAY_NAME).orEmpty(),
+            description = store.get(id, CredentialStore.Field.DESCRIPTION)?.takeIf { it.isNotBlank() },
             cloudProjectCount = projects.size,
             activeCloudProjectId = activeProj,
             hasRobot = !store.get(id, CredentialStore.Field.ROBOT_USER).isNullOrBlank() &&
                 !store.get(id, CredentialStore.Field.ROBOT_PASS).isNullOrBlank(),
             hasDns = !store.get(id, CredentialStore.Field.DNS_TOKEN).isNullOrBlank(),
+            hasS3 = projects.any {
+                !it.s3Endpoint.isNullOrBlank() &&
+                    !it.s3AccessKey.isNullOrBlank() &&
+                    !it.s3SecretKey.isNullOrBlank()
+            },
         )
     }
 
     companion object {
         private val ACCOUNT_IDS = stringPreferencesKey("account_ids")
         private val ACTIVE_ID = stringPreferencesKey("active_id")
+        private val DEFAULT_ID = stringPreferencesKey("default_id")
+        private val ACTIVE_PROJECT_TICK = stringPreferencesKey("active_project_tick")
     }
 }

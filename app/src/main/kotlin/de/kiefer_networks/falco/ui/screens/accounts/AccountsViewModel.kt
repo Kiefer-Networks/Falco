@@ -17,6 +17,7 @@ import javax.inject.Inject
 data class AccountsUiState(
     val accounts: List<HetznerAccount> = emptyList(),
     val activeId: String? = null,
+    val defaultId: String? = null,
 )
 
 @HiltViewModel
@@ -33,8 +34,13 @@ class AccountsViewModel @Inject constructor(
     val uiState: StateFlow<AccountsUiState> = combine(
         accountManager.accounts,
         accountManager.activeAccountId,
-    ) { accounts, activeId ->
-        AccountsUiState(accounts = accounts, activeId = activeId?.takeIf { it.isNotBlank() })
+        accountManager.defaultAccountId,
+    ) { accounts, activeId, defaultId ->
+        AccountsUiState(
+            accounts = accounts,
+            activeId = activeId?.takeIf { it.isNotBlank() },
+            defaultId = defaultId?.takeIf { it.isNotBlank() },
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccountsUiState())
 
     fun addAccount(name: String, secrets: AccountSecrets, onDone: () -> Unit) {
@@ -50,5 +56,16 @@ class AccountsViewModel @Inject constructor(
 
     fun setActive(id: String) {
         viewModelScope.launch { accountManager.setActive(id) }
+    }
+
+    fun setDefault(id: String) {
+        viewModelScope.launch { accountManager.setDefault(id) }
+    }
+
+    fun update(id: String, name: String, description: String) {
+        viewModelScope.launch {
+            accountManager.updateDisplayName(id, name)
+            accountManager.updateDescription(id, description)
+        }
     }
 }
