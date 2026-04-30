@@ -1,18 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package de.kiefer_networks.falco.ui.screens.dns
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,13 +34,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.dto.CreateDnsRecord
 import de.kiefer_networks.falco.data.dto.DnsRecord
 
 private val RECORD_TYPES = listOf("A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV", "CAA")
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecordDialog(
     zoneId: String,
@@ -47,85 +58,97 @@ fun RecordDialog(
     val titleRes = if (existing == null) R.string.dns_record_create_title else R.string.dns_record_edit_title
     val isValid = name.isNotBlank() && value.isNotBlank() && (ttl.toIntOrNull() ?: -1) >= 0
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(titleRes)) },
-        text = {
-            Column(Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.dns_record_name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(8.dp))
-                ExposedDropdownMenuBox(
-                    expanded = typeExpanded,
-                    onExpandedChange = { typeExpanded = it },
-                ) {
-                    OutlinedTextField(
-                        value = type,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(stringResource(R.string.dns_record_type)) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
-                        modifier = Modifier
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
-                            .fillMaxWidth(),
-                    )
-                    ExposedDropdownMenu(
-                        expanded = typeExpanded,
-                        onDismissRequest = { typeExpanded = false },
-                    ) {
-                        RECORD_TYPES.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(option) },
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Scaffold(
+                topBar = {
+                    CenterAlignedTopAppBar(
+                        title = { Text(stringResource(titleRes)) },
+                        navigationIcon = {
+                            IconButton(onClick = onDismiss) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                            }
+                        },
+                        actions = {
+                            TextButton(
+                                enabled = isValid,
                                 onClick = {
-                                    type = option
-                                    typeExpanded = false
+                                    onConfirm(
+                                        CreateDnsRecord(
+                                            zoneId = zoneId,
+                                            name = name.trim(),
+                                            type = type,
+                                            value = value.trim(),
+                                            ttl = ttl.toIntOrNull(),
+                                        ),
+                                    )
                                 },
-                            )
-                        }
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = { value = it },
-                    label = { Text(stringResource(R.string.dns_record_value)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = ttl,
-                    onValueChange = { input -> ttl = input.filter { it.isDigit() } },
-                    label = { Text(stringResource(R.string.dns_record_ttl)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = isValid,
-                onClick = {
-                    onConfirm(
-                        CreateDnsRecord(
-                            zoneId = zoneId,
-                            name = name.trim(),
-                            type = type,
-                            value = value.trim(),
-                            ttl = ttl.toIntOrNull(),
-                        ),
+                            ) { Text(stringResource(R.string.save)) }
+                        },
                     )
                 },
-            ) { Text(stringResource(R.string.save)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-    )
+            ) { padding ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text(stringResource(R.string.dns_record_name)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    ExposedDropdownMenuBox(
+                        expanded = typeExpanded,
+                        onExpandedChange = { typeExpanded = it },
+                    ) {
+                        OutlinedTextField(
+                            value = type,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(stringResource(R.string.dns_record_type)) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
+                            modifier = Modifier
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
+                                .fillMaxWidth(),
+                        )
+                        ExposedDropdownMenu(
+                            expanded = typeExpanded,
+                            onDismissRequest = { typeExpanded = false },
+                        ) {
+                            RECORD_TYPES.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        type = option
+                                        typeExpanded = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = { value = it },
+                        label = { Text(stringResource(R.string.dns_record_value)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = ttl,
+                        onValueChange = { input -> ttl = input.filter { it.isDigit() } },
+                        label = { Text(stringResource(R.string.dns_record_ttl)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
 }

@@ -1,24 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi::class,
+)
 package de.kiefer_networks.falco.ui
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -27,7 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.nav.NavShell
 import de.kiefer_networks.falco.ui.nav.Routes
 import de.kiefer_networks.falco.ui.screens.accounts.AccountWizardScreen
 import de.kiefer_networks.falco.ui.screens.accounts.AccountsScreen
@@ -37,50 +33,33 @@ import de.kiefer_networks.falco.ui.screens.dns.DnsScreen
 import de.kiefer_networks.falco.ui.screens.dns.ZoneDetailScreen
 import de.kiefer_networks.falco.ui.screens.robot.RobotScreen
 import de.kiefer_networks.falco.ui.screens.robot.ServerDetailScreen
-import de.kiefer_networks.falco.ui.screens.robot.StorageBoxDetailScreen
 import de.kiefer_networks.falco.ui.screens.s3.ObjectBrowserScreen
 import de.kiefer_networks.falco.ui.screens.s3.S3Screen
 import de.kiefer_networks.falco.ui.screens.settings.SettingsScreen
 import de.kiefer_networks.falco.ui.screens.welcome.OnboardingScreen
 
 @Composable
-fun FalcoRoot(viewModel: FalcoRootViewModel) {
+fun FalcoRoot(viewModel: FalcoRootViewModel, windowSizeClass: WindowSizeClass) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val hasAccount by viewModel.hasAccount.collectAsState()
+    val accountsBar by viewModel.accountsBar.collectAsState()
 
-    Scaffold(
-        bottomBar = {
-            if (hasAccount && currentRoute in TAB_ROUTES) {
-                NavigationBar {
-                    TABS.forEach { tab ->
-                        NavigationBarItem(
-                            selected = backStack?.destination?.hierarchy?.any { it.route == tab.route } == true,
-                            onClick = {
-                                nav.navigate(tab.route) {
-                                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(tab.icon, contentDescription = null) },
-                            label = { Text(stringResource(tab.label)) },
-                        )
-                    }
-                }
-            }
-        },
-    ) { padding ->
+    val navHost: @Composable () -> Unit = {
         NavHost(
             navController = nav,
             startDestination = if (hasAccount) Routes.CLOUD else Routes.WELCOME,
-            modifier = Modifier.padding(padding),
         ) {
             composable(Routes.WELCOME) {
                 OnboardingScreen(onAddAccount = { nav.navigate(Routes.ACCOUNT_NEW) })
             }
-            composable(Routes.ACCOUNTS) { AccountsScreen(onAdd = { nav.navigate(Routes.ACCOUNT_NEW) }) }
+            composable(Routes.ACCOUNTS) {
+                AccountsScreen(
+                    onAdd = { nav.navigate(Routes.ACCOUNT_NEW) },
+                    onManageProjects = { nav.navigate(Routes.PROJECTS) },
+                )
+            }
             composable(Routes.ACCOUNT_NEW) {
                 AccountWizardScreen(onClose = { firstService ->
                     val target = when (firstService) {
@@ -105,6 +84,9 @@ fun FalcoRoot(viewModel: FalcoRootViewModel) {
                     onManageProjects = { nav.navigate(Routes.PROJECTS) },
                     onOpenStorageBox = { id -> nav.navigate(Routes.cloudStorageBoxDetail(id)) },
                     onOpenServer = { id -> nav.navigate(Routes.cloudServerDetail(id)) },
+                    onOpenFirewall = { id -> nav.navigate(Routes.cloudFirewallDetail(id)) },
+                    onOpenVolume = { id -> nav.navigate(Routes.cloudVolumeDetail(id)) },
+                    onOpenFloatingIp = { id -> nav.navigate(Routes.cloudFloatingIpDetail(id)) },
                 )
             }
             composable(
@@ -112,6 +94,30 @@ fun FalcoRoot(viewModel: FalcoRootViewModel) {
                 arguments = listOf(navArgument(Routes.ARG_CLOUD_SERVER_ID) { type = NavType.LongType }),
             ) {
                 de.kiefer_networks.falco.ui.screens.cloud.CloudServerDetailScreen(
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable(
+                route = Routes.CLOUD_FIREWALL_DETAIL,
+                arguments = listOf(navArgument(Routes.ARG_FIREWALL_ID) { type = NavType.LongType }),
+            ) {
+                de.kiefer_networks.falco.ui.screens.cloud.CloudFirewallDetailScreen(
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable(
+                route = Routes.CLOUD_VOLUME_DETAIL,
+                arguments = listOf(navArgument(Routes.ARG_VOLUME_ID) { type = NavType.LongType }),
+            ) {
+                de.kiefer_networks.falco.ui.screens.cloud.CloudVolumeDetailScreen(
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable(
+                route = Routes.CLOUD_FLOATING_IP_DETAIL,
+                arguments = listOf(navArgument(Routes.ARG_FLOATING_IP_ID) { type = NavType.LongType }),
+            ) {
+                de.kiefer_networks.falco.ui.screens.cloud.CloudFloatingIpDetailScreen(
                     onBack = { nav.popBackStack() },
                 )
             }
@@ -148,17 +154,12 @@ fun FalcoRoot(viewModel: FalcoRootViewModel) {
             composable(Routes.ROBOT) {
                 RobotScreen(
                     onServerClick = { number -> nav.navigate(Routes.robotServerDetail(number)) },
-                    onStorageBoxClick = { id -> nav.navigate(Routes.robotStorageBoxDetail(id)) },
                 )
             }
             composable(
                 route = Routes.ROBOT_SERVER_DETAIL,
                 arguments = listOf(navArgument(Routes.ARG_SERVER_NUMBER) { type = NavType.LongType }),
-            ) { ServerDetailScreen() }
-            composable(
-                route = Routes.ROBOT_STORAGE_BOX_DETAIL,
-                arguments = listOf(navArgument(Routes.ARG_STORAGE_BOX_ID) { type = NavType.LongType }),
-            ) { StorageBoxDetailScreen() }
+            ) { ServerDetailScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.DNS) {
                 DnsScreen(onZoneClick = { id -> nav.navigate(Routes.dnsZoneDetail(id)) })
             }
@@ -186,20 +187,41 @@ fun FalcoRoot(viewModel: FalcoRootViewModel) {
                     },
                 )
             }
-            composable(Routes.SETTINGS) { SettingsScreen() }
+            composable(Routes.SETTINGS) {
+                SettingsScreen(onAbout = { nav.navigate(Routes.ABOUT) })
+            }
+            composable(Routes.ABOUT) {
+                de.kiefer_networks.falco.ui.screens.about.AboutScreen(onBack = { nav.popBackStack() })
+            }
+        }
+    }
+
+    if (hasAccount) {
+        NavShell(
+            windowSizeClass = windowSizeClass,
+            currentRoute = currentRoute,
+            accounts = accountsBar.accounts,
+            activeAccount = accountsBar.activeAccount,
+            onSelectAccount = viewModel::switchAccount,
+            onAddAccount = { nav.navigate(Routes.ACCOUNT_NEW) },
+            onSelect = { route ->
+                nav.navigate(route) {
+                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
+            content = navHost,
+        )
+    } else {
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+            color = MaterialTheme.colorScheme.background,
+        ) {
+            navHost()
         }
     }
 }
-
-private data class Tab(val route: String, val label: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector)
-
-private val TABS = listOf(
-    Tab(Routes.CLOUD, R.string.nav_cloud, Icons.Filled.Cloud),
-    Tab(Routes.ROBOT, R.string.nav_robot, Icons.Filled.Memory),
-    Tab(Routes.DNS, R.string.nav_dns, Icons.Filled.Dns),
-    Tab(Routes.S3, R.string.nav_storage, Icons.Filled.Storage),
-    Tab(Routes.ACCOUNTS, R.string.nav_accounts, Icons.Filled.Person),
-    Tab(Routes.SETTINGS, R.string.nav_settings, Icons.Filled.Settings),
-)
-
-private val TAB_ROUTES = TABS.map { it.route }.toSet()

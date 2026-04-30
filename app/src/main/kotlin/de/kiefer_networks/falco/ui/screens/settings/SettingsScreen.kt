@@ -18,14 +18,19 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -107,14 +112,33 @@ class SettingsViewModel @Inject constructor(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    viewModel: SettingsViewModel = hiltViewModel(),
+    onAbout: () -> Unit = {},
+) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     var languageExpanded by remember { mutableStateOf(false) }
+    val drawer = de.kiefer_networks.falco.ui.nav.LocalNavDrawer.current
 
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.nav_settings)) },
+                navigationIcon = {
+                    if (drawer.isCompact) {
+                        IconButton(onClick = drawer::open) {
+                            Icon(Icons.Filled.Menu, contentDescription = stringResource(R.string.nav_drawer_title))
+                        }
+                    }
+                },
+            )
+        },
+    ) { padding ->
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item { SectionHeader(Icons.Filled.Person, R.string.settings_section_account) }
@@ -205,44 +229,36 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
         item { SectionHeader(null, R.string.settings_about) }
         item {
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(
-                        stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        stringResource(R.string.settings_license),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, SOURCE_URL.toUri()))
-                            }
-                            .padding(vertical = 4.dp),
-                    ) {
-                        Icon(
-                            Icons.Filled.OpenInNew,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp),
-                        )
-                        Spacer(Modifier.size(8.dp))
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth().clickable { onAbout() },
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            stringResource(R.string.settings_source),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
+                            stringResource(R.string.about_title),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                    Icon(
+                        Icons.Filled.OpenInNew,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
             }
         }
 
         item { Spacer(Modifier.height(24.dp)) }
+    }
     }
 }
 
@@ -299,7 +315,7 @@ private val LOCK_OPTIONS = listOf(
     30 to R.string.settings_lock_30s,
     60 to R.string.settings_lock_60s,
     300 to R.string.settings_lock_5min,
-    SecurityPreferences.LOCK_NEVER to R.string.settings_lock_never,
+    SecurityPreferences.MAX_LOCK_TIMEOUT to R.string.settings_lock_15min,
 )
 
 private val THEME_OPTIONS = listOf(

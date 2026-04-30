@@ -117,6 +117,7 @@ private fun ResultDialog(url: String, onDismiss: () -> Unit) {
     val clipboard = remember(context) {
         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     }
+    val clipLabel = stringResource(R.string.s3_share_link_clip_label)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -134,7 +135,7 @@ private fun ResultDialog(url: String, onDismiss: () -> Unit) {
                 ) {
                     OutlinedButton(
                         onClick = {
-                            val clip = ClipData.newPlainText("share link", url)
+                            val clip = ClipData.newPlainText(clipLabel, url)
                             clipboard.setPrimaryClip(clip)
                         },
                         modifier = Modifier.fillMaxWidth().weight(1f),
