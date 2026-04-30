@@ -95,7 +95,7 @@ fun SearchScreen(
                 placeholder = { Text(stringResource(R.string.search_placeholder)) },
             )
 
-            if (state.loading) {
+            if (state.indexing) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
@@ -123,8 +123,10 @@ fun SearchScreen(
             }
 
             LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                items(state.results, key = { "${it.kind}-${it.id}" }) { hit ->
+                items(state.results, key = { "${it.kind}-${it.projectId.orEmpty()}-${it.id}" }) { hit ->
                     ResultRow(hit) {
+                        // Switch active Cloud project so detail screens hit the right token.
+                        hit.projectId?.let { viewModel.selectProject(it) }
                         when (hit.kind) {
                             ResultKind.CloudServer -> onOpenServer(hit.id.toLong())
                             ResultKind.Volume -> onOpenVolume(hit.id.toLong())

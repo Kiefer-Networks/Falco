@@ -4,14 +4,32 @@ package de.kiefer_networks.falco.ui.screens.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import de.kiefer_networks.falco.data.repo.CloudRepo
+import de.kiefer_networks.falco.data.api.CloudApi
+import de.kiefer_networks.falco.data.api.HttpClientFactory
+import de.kiefer_networks.falco.data.api.StorageBoxApi
+import de.kiefer_networks.falco.data.auth.AccountManager
+import de.kiefer_networks.falco.data.dto.CloudCertificate
+import de.kiefer_networks.falco.data.dto.CloudFirewall
+import de.kiefer_networks.falco.data.dto.CloudFloatingIp
+import de.kiefer_networks.falco.data.dto.CloudLoadBalancer
+import de.kiefer_networks.falco.data.dto.CloudNetwork
+import de.kiefer_networks.falco.data.dto.CloudPlacementGroup
+import de.kiefer_networks.falco.data.dto.CloudPrimaryIp
+import de.kiefer_networks.falco.data.dto.CloudServer
+import de.kiefer_networks.falco.data.dto.CloudSshKey
+import de.kiefer_networks.falco.data.dto.CloudStorageBox
+import de.kiefer_networks.falco.data.dto.CloudVolume
+import de.kiefer_networks.falco.data.dto.DnsZone
+import de.kiefer_networks.falco.data.dto.RobotServer
 import de.kiefer_networks.falco.data.repo.DnsRepo
 import de.kiefer_networks.falco.data.repo.RobotRepo
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -26,17 +44,39 @@ data class SearchHit(
     val id: String,
     val title: String,
     val subtitle: String,
+    val projectId: String? = null,
+)
+
+private data class ProjectIndex(
+    val projectId: String,
+    val cloudServers: List<CloudServer> = emptyList(),
+    val volumes: List<CloudVolume> = emptyList(),
+    val networks: List<CloudNetwork> = emptyList(),
+    val floatingIps: List<CloudFloatingIp> = emptyList(),
+    val firewalls: List<CloudFirewall> = emptyList(),
+    val storageBoxes: List<CloudStorageBox> = emptyList(),
+    val sshKeys: List<CloudSshKey> = emptyList(),
+    val loadBalancers: List<CloudLoadBalancer> = emptyList(),
+    val certificates: List<CloudCertificate> = emptyList(),
+    val placementGroups: List<CloudPlacementGroup> = emptyList(),
+    val primaryIps: List<CloudPrimaryIp> = emptyList(),
+)
+
+private data class SearchCache(
+    val projects: List<ProjectIndex> = emptyList(),
+    val robotServers: List<RobotServer> = emptyList(),
+    val dnsZones: List<DnsZone> = emptyList(),
 )
 
 data class SearchUiState(
     val query: String = "",
-    val loading: Boolean = false,
+    val indexing: Boolean = true,
     val results: List<SearchHit> = emptyList(),
 )
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val cloud: CloudRepo,
+    private val accounts: AccountManager,
     private val robot: RobotRepo,
     private val dns: DnsRepo,
 ) : ViewModel() {
@@ -44,28 +84,40 @@ class SearchViewModel @Inject constructor(
     private val _state = MutableStateFlow(SearchUiState())
     val state: StateFlow<SearchUiState> = _state.asStateFlow()
 
-    private var debounceJob: Job? = null
+    private var cache = SearchCache()
 
-    fun onQueryChange(value: String) {
-        _state.value = _state.value.copy(query = value)
-        debounceJob?.cancel()
-        if (value.isBlank()) {
-            _state.value = _state.value.copy(loading = false, results = emptyList())
-            return
-        }
-        debounceJob = viewModelScope.launch {
-            delay(250)
-            runSearch(value)
+    init { refresh() }
+
+    fun refresh() {
+        _state.value = _state.value.copy(indexing = true)
+        viewModelScope.launch {
+            cache = loadAll()
+            _state.value = _state.value.copy(indexing = false)
+            applyFilter(_state.value.query)
         }
     }
 
-    private suspend fun runSearch(q: String) {
-        _state.value = _state.value.copy(loading = true)
-        val needle = q.trim().lowercase()
+    fun onQueryChange(value: String) {
+        _state.value = _state.value.copy(query = value)
+        applyFilter(value)
+    }
+
+    /** Switch the active Cloud project so detail screens load against the right token. */
+    fun selectProject(projectId: String) = viewModelScope.launch {
+        val accountId = accounts.activeAccountId.first() ?: return@launch
+        accounts.setActiveCloudProject(accountId, projectId)
+    }
+
+    private fun applyFilter(query: String) {
+        if (query.isBlank()) {
+            _state.value = _state.value.copy(results = emptyList())
+            return
+        }
+        val needle = query.trim().lowercase()
         val hits = mutableListOf<SearchHit>()
 
-        runCatching {
-            cloud.listServers().forEach { s ->
+        cache.projects.forEach { idx ->
+            idx.cloudServers.forEach { s ->
                 if (s.name.lowercase().contains(needle) ||
                     s.publicNet?.ipv4?.ip?.contains(needle) == true ||
                     s.publicNet?.ipv6?.ip?.lowercase()?.contains(needle) == true
@@ -79,176 +131,113 @@ class SearchViewModel @Inject constructor(
                             s.datacenter?.location?.city ?: s.datacenter?.location?.name,
                             s.publicNet?.ipv4?.ip,
                         ).joinToString(" · "),
+                        projectId = idx.projectId,
                     )
                 }
             }
-        }
-
-        runCatching {
-            cloud.listVolumes().forEach { v ->
+            idx.volumes.forEach { v ->
                 if (v.name.lowercase().contains(needle)) {
                     hits += SearchHit(
-                        kind = ResultKind.Volume,
-                        id = v.id.toString(),
-                        title = v.name,
-                        subtitle = "${v.size} GB · ${v.status}",
+                        ResultKind.Volume, v.id.toString(), v.name,
+                        "${v.size} GB · ${v.status}", idx.projectId,
                     )
                 }
             }
-        }
-
-        runCatching {
-            cloud.listNetworks().forEach { n ->
+            idx.networks.forEach { n ->
                 if (n.name.lowercase().contains(needle) || n.ipRange.contains(needle)) {
-                    hits += SearchHit(
-                        kind = ResultKind.Network,
-                        id = n.id.toString(),
-                        title = n.name,
-                        subtitle = n.ipRange,
-                    )
+                    hits += SearchHit(ResultKind.Network, n.id.toString(), n.name, n.ipRange, idx.projectId)
                 }
             }
-        }
-
-        runCatching {
-            cloud.listFloatingIps().forEach { fip ->
+            idx.floatingIps.forEach { fip ->
                 val name = fip.name ?: fip.ip
                 if (name.lowercase().contains(needle) || fip.ip.contains(needle)) {
                     hits += SearchHit(
-                        kind = ResultKind.FloatingIp,
-                        id = fip.id.toString(),
-                        title = name,
-                        subtitle = "${fip.type.uppercase()} · ${fip.ip}",
+                        ResultKind.FloatingIp, fip.id.toString(), name,
+                        "${fip.type.uppercase()} · ${fip.ip}", idx.projectId,
                     )
                 }
             }
-        }
-
-        runCatching {
-            cloud.listFirewalls().forEach { fw ->
+            idx.firewalls.forEach { fw ->
                 if (fw.name.lowercase().contains(needle)) {
                     hits += SearchHit(
-                        kind = ResultKind.Firewall,
-                        id = fw.id.toString(),
-                        title = fw.name,
-                        subtitle = "${fw.rules.size} rules",
+                        ResultKind.Firewall, fw.id.toString(), fw.name,
+                        "${fw.rules.size} rules", idx.projectId,
                     )
                 }
             }
-        }
-
-        runCatching {
-            cloud.listStorageBoxes().forEach { sb ->
+            idx.storageBoxes.forEach { sb ->
                 val username = sb.username.orEmpty()
                 if (sb.name.lowercase().contains(needle) || username.lowercase().contains(needle)) {
                     hits += SearchHit(
-                        kind = ResultKind.StorageBox,
-                        id = sb.id.toString(),
-                        title = sb.name,
-                        subtitle = username,
+                        ResultKind.StorageBox, sb.id.toString(), sb.name, username, idx.projectId,
                     )
                 }
             }
-        }
-
-        runCatching {
-            cloud.listLoadBalancers().forEach { lb ->
+            idx.loadBalancers.forEach { lb ->
                 if (lb.name.lowercase().contains(needle)) {
                     hits += SearchHit(
-                        kind = ResultKind.LoadBalancer,
-                        id = lb.id.toString(),
-                        title = lb.name,
-                        subtitle = listOfNotNull(lb.type?.name, lb.location?.name).joinToString(" · "),
+                        ResultKind.LoadBalancer, lb.id.toString(), lb.name,
+                        listOfNotNull(lb.type?.name, lb.location?.name).joinToString(" · "),
+                        idx.projectId,
                     )
                 }
             }
-        }
-
-        runCatching {
-            cloud.listCertificates().forEach { c ->
+            idx.certificates.forEach { c ->
                 if (c.name.lowercase().contains(needle) ||
                     c.domainNames.any { it.lowercase().contains(needle) }
                 ) {
                     hits += SearchHit(
-                        kind = ResultKind.Certificate,
-                        id = c.id.toString(),
-                        title = c.name,
-                        subtitle = c.domainNames.joinToString(", ").take(48),
+                        ResultKind.Certificate, c.id.toString(), c.name,
+                        c.domainNames.joinToString(", ").take(48),
+                        idx.projectId,
                     )
                 }
             }
-        }
-
-        runCatching {
-            cloud.listPlacementGroups().forEach { pg ->
+            idx.placementGroups.forEach { pg ->
                 if (pg.name.lowercase().contains(needle)) {
                     hits += SearchHit(
-                        kind = ResultKind.PlacementGroup,
-                        id = pg.id.toString(),
-                        title = pg.name,
-                        subtitle = "${pg.type} · ${pg.servers.size} servers",
+                        ResultKind.PlacementGroup, pg.id.toString(), pg.name,
+                        "${pg.type} · ${pg.servers.size} servers",
+                        idx.projectId,
                     )
                 }
             }
-        }
-
-        runCatching {
-            cloud.listSshKeys().forEach { sk ->
+            idx.sshKeys.forEach { sk ->
                 if (sk.name.lowercase().contains(needle) || sk.fingerprint.lowercase().contains(needle)) {
                     hits += SearchHit(
-                        kind = ResultKind.SshKey,
-                        id = sk.id.toString(),
-                        title = sk.name,
-                        subtitle = sk.fingerprint,
+                        ResultKind.SshKey, sk.id.toString(), sk.name, sk.fingerprint, idx.projectId,
                     )
                 }
             }
-        }
-
-        runCatching {
-            cloud.listPrimaryIps().forEach { p ->
+            idx.primaryIps.forEach { p ->
                 if (p.name.lowercase().contains(needle) || p.ip.contains(needle)) {
                     hits += SearchHit(
-                        kind = ResultKind.PrimaryIp,
-                        id = p.id.toString(),
-                        title = p.name,
-                        subtitle = "${p.type.uppercase()} · ${p.ip}",
+                        ResultKind.PrimaryIp, p.id.toString(), p.name,
+                        "${p.type.uppercase()} · ${p.ip}", idx.projectId,
                     )
                 }
             }
         }
 
-        runCatching {
-            robot.listServers().forEach { s ->
-                val title = s.serverName ?: s.serverIp ?: "#${s.serverNumber}"
-                if (title.lowercase().contains(needle) ||
-                    s.serverIp?.contains(needle) == true ||
-                    s.serverIpv6Net?.lowercase()?.contains(needle) == true
-                ) {
-                    hits += SearchHit(
-                        kind = ResultKind.RobotServer,
-                        id = s.serverNumber.toString(),
-                        title = title,
-                        subtitle = listOfNotNull(s.product, s.dc, s.serverIp).joinToString(" · "),
-                    )
-                }
+        cache.robotServers.forEach { s ->
+            val title = s.serverName ?: s.serverIp ?: "#${s.serverNumber}"
+            if (title.lowercase().contains(needle) ||
+                s.serverIp?.contains(needle) == true ||
+                s.serverIpv6Net?.lowercase()?.contains(needle) == true
+            ) {
+                hits += SearchHit(
+                    ResultKind.RobotServer, s.serverNumber.toString(), title,
+                    listOfNotNull(s.product, s.dc, s.serverIp).joinToString(" · "),
+                )
             }
         }
 
-        runCatching {
-            dns.listZones().forEach { z ->
-                if (z.name.lowercase().contains(needle)) {
-                    hits += SearchHit(
-                        kind = ResultKind.DnsZone,
-                        id = z.id,
-                        title = z.name,
-                        subtitle = "${z.recordsCount ?: 0} records",
-                    )
-                }
+        cache.dnsZones.forEach { z ->
+            if (z.name.lowercase().contains(needle)) {
+                hits += SearchHit(ResultKind.DnsZone, z.id, z.name, "${z.recordsCount ?: 0} records")
             }
         }
 
-        // Stable order: most-likely-relevant kinds first.
         val priority = listOf(
             ResultKind.CloudServer, ResultKind.RobotServer, ResultKind.Volume,
             ResultKind.FloatingIp, ResultKind.PrimaryIp, ResultKind.Network,
@@ -257,7 +246,40 @@ class SearchViewModel @Inject constructor(
             ResultKind.DnsZone,
         )
         val ordered = hits.sortedWith(compareBy({ priority.indexOf(it.kind) }, { it.title.lowercase() }))
+        _state.value = _state.value.copy(results = ordered)
+    }
 
-        _state.value = _state.value.copy(loading = false, results = ordered)
+    private suspend fun loadAll(): SearchCache = coroutineScope {
+        val accountId = accounts.activeAccountId.first()
+        val projects = if (accountId == null) emptyList() else accounts.cloudProjects(accountId)
+
+        val perProjectAsync = projects.map { p ->
+            async {
+                val api = HttpClientFactory.cloudRetrofit(p.cloudToken).create(CloudApi::class.java)
+                val sbApi = HttpClientFactory.storageBoxRetrofit(p.cloudToken).create(StorageBoxApi::class.java)
+                ProjectIndex(
+                    projectId = p.id,
+                    cloudServers = runCatching { api.listServers().servers }.getOrDefault(emptyList()),
+                    volumes = runCatching { api.listVolumes().volumes }.getOrDefault(emptyList()),
+                    networks = runCatching { api.listNetworks().networks }.getOrDefault(emptyList()),
+                    floatingIps = runCatching { api.listFloatingIps().floatingIps }.getOrDefault(emptyList()),
+                    firewalls = runCatching { api.listFirewalls().firewalls }.getOrDefault(emptyList()),
+                    storageBoxes = runCatching { sbApi.listStorageBoxes().storageBoxes }.getOrDefault(emptyList()),
+                    sshKeys = runCatching { api.listSshKeys().sshKeys }.getOrDefault(emptyList()),
+                    loadBalancers = runCatching { api.listLoadBalancers().loadBalancers }.getOrDefault(emptyList()),
+                    certificates = runCatching { api.listCertificates().certificates }.getOrDefault(emptyList()),
+                    placementGroups = runCatching { api.listPlacementGroups().placementGroups }.getOrDefault(emptyList()),
+                    primaryIps = runCatching { api.listPrimaryIps().primaryIps }.getOrDefault(emptyList()),
+                )
+            }
+        }
+        val robotServersAsync = async { runCatching { robot.listServers() }.getOrDefault(emptyList()) }
+        val dnsZonesAsync = async { runCatching { dns.listZones() }.getOrDefault(emptyList()) }
+
+        SearchCache(
+            projects = perProjectAsync.awaitAll(),
+            robotServers = robotServersAsync.await(),
+            dnsZones = dnsZonesAsync.await(),
+        )
     }
 }
