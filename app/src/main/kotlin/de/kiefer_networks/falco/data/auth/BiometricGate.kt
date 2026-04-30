@@ -8,19 +8,44 @@ import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
+/**
+ * Unlock-gate. Accepts Class-3 biometrics OR the device credential
+ * (PIN/pattern/password). If biometrics are enrolled, the system prompt
+ * will offer them as the primary affordance and fall back to the device PIN
+ * via the built-in "Use PIN" link inside the prompt.
+ *
+ * Trade-off note: A previous revision bound the prompt to a Keystore-backed
+ * `CryptoObject` so the unlock proved key-possession rather than just user-
+ * presence. The user explicitly requested PIN as a sufficient unlock with
+ * biometrics merely suggested, so the CryptoObject binding is removed.
+ * Credentials remain encrypted at rest via [CredentialStore]
+ * (EncryptedSharedPreferences with a Keystore master key); this gate
+ * controls only access to the running session.
+ */
 class BiometricGate(private val activity: FragmentActivity) {
 
     enum class Availability { AVAILABLE, NO_HARDWARE, NONE_ENROLLED, UNAVAILABLE }
 
     fun availability(): Availability {
         val mgr = BiometricManager.from(activity)
-        val auth = BiometricManager.Authenticators.BIOMETRIC_STRONG or
+        // Either Class-3 biometric or the device credential satisfies the gate.
+        val combined = BiometricManager.Authenticators.BIOMETRIC_STRONG or
             BiometricManager.Authenticators.DEVICE_CREDENTIAL
-        return when (mgr.canAuthenticate(auth)) {
+        return when (mgr.canAuthenticate(combined)) {
             BiometricManager.BIOMETRIC_SUCCESS -> Availability.AVAILABLE
             BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE,
-            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> Availability.NO_HARDWARE
-            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> Availability.NONE_ENROLLED
+            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> {
+                // No biometric hardware — but a device PIN/pattern still works.
+                if (mgr.canAuthenticate(BiometricManager.Authenticators.DEVICE_CREDENTIAL) ==
+                    BiometricManager.BIOMETRIC_SUCCESS
+                ) Availability.AVAILABLE else Availability.NO_HARDWARE
+            }
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                // No biometrics enrolled — fall through if device credential is set.
+                if (mgr.canAuthenticate(BiometricManager.Authenticators.DEVICE_CREDENTIAL) ==
+                    BiometricManager.BIOMETRIC_SUCCESS
+                ) Availability.AVAILABLE else Availability.NONE_ENROLLED
+            }
             else -> Availability.UNAVAILABLE
         }
     }
@@ -35,9 +60,12 @@ class BiometricGate(private val activity: FragmentActivity) {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     if (cont.isActive) cont.resume(Result.Error(errorCode, errString.toString()))
                 }
-                override fun onAuthenticationFailed() = Unit // silent — the prompt re-prompts.
+                override fun onAuthenticationFailed() = Unit
             }
             val prompt = BiometricPrompt(activity, executor, callback)
+
+            // BiometricPrompt forbids `setNegativeButtonText` together with
+            // DEVICE_CREDENTIAL — the system supplies the cancel affordance.
             val info = BiometricPrompt.PromptInfo.Builder()
                 .setTitle(title)
                 .setSubtitle(subtitle)
@@ -45,8 +73,9 @@ class BiometricGate(private val activity: FragmentActivity) {
                     BiometricManager.Authenticators.BIOMETRIC_STRONG or
                         BiometricManager.Authenticators.DEVICE_CREDENTIAL,
                 )
-                .setConfirmationRequired(false)
+                .setConfirmationRequired(true)
                 .build()
+
             prompt.authenticate(info)
             cont.invokeOnCancellation { prompt.cancelAuthentication() }
         }

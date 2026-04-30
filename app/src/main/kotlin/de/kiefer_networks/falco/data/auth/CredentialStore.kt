@@ -68,6 +68,7 @@ class CredentialStore @Inject constructor(@ApplicationContext context: Context) 
 
     enum class Field {
         DISPLAY_NAME,
+        DESCRIPTION,
         // Legacy v0.1/v0.2 fields. Read by the migration in AccountManager and
         // then folded into CLOUD_PROJECTS_JSON; new writes go through the
         // project-list field below.

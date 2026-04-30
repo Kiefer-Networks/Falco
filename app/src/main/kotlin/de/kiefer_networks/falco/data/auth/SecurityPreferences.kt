@@ -17,26 +17,35 @@ import javax.inject.Singleton
  *
  * Auto-lock timeout is stored in seconds:
  *   * `0`  — re-gate immediately on every resume.
- *   * `-1` — never re-gate after the initial unlock (until the process dies).
- *   * any other positive value — number of seconds the app may sit in the
+ *   * `30` / `60` / `300` / `900` — number of seconds the app may sit in the
  *     background before the next resume requires a fresh biometric unlock.
  *
- * The default of 60 seconds is applied when the key is absent.
+ * Hard-capped at [MAX_LOCK_TIMEOUT] (15 minutes) so the user cannot disable
+ * re-authentication indefinitely. A previously persisted unlimited-session
+ * value (legacy `-1`) is mapped to the default on read.
  */
 @Singleton
 class SecurityPreferences @Inject constructor(
     private val dataStore: DataStore<Preferences>,
 ) {
     val autoLockTimeoutSeconds: Flow<Int> =
-        dataStore.data.map { it[KEY_LOCK_TIMEOUT] ?: DEFAULT_LOCK_TIMEOUT }
+        dataStore.data.map {
+            val raw = it[KEY_LOCK_TIMEOUT] ?: DEFAULT_LOCK_TIMEOUT
+            when {
+                raw < 0 -> DEFAULT_LOCK_TIMEOUT
+                raw > MAX_LOCK_TIMEOUT -> MAX_LOCK_TIMEOUT
+                else -> raw
+            }
+        }
 
     suspend fun setAutoLockTimeoutSeconds(value: Int) {
-        dataStore.edit { it[KEY_LOCK_TIMEOUT] = value }
+        val clamped = value.coerceIn(LOCK_IMMEDIATE, MAX_LOCK_TIMEOUT)
+        dataStore.edit { it[KEY_LOCK_TIMEOUT] = clamped }
     }
 
     /** Theme mode: 0 = follow system, 1 = light, 2 = dark. */
     val themeMode: Flow<Int> =
-        dataStore.data.map { it[KEY_THEME_MODE] ?: THEME_SYSTEM }
+        dataStore.data.map { it[KEY_THEME_MODE] ?: THEME_LIGHT }
 
     suspend fun setThemeMode(value: Int) {
         dataStore.edit { it[KEY_THEME_MODE] = value }
@@ -60,7 +69,7 @@ class SecurityPreferences @Inject constructor(
     companion object {
         const val DEFAULT_LOCK_TIMEOUT = 60
         const val LOCK_IMMEDIATE = 0
-        const val LOCK_NEVER = -1
+        const val MAX_LOCK_TIMEOUT = 900
 
         const val THEME_SYSTEM = 0
         const val THEME_LIGHT = 1

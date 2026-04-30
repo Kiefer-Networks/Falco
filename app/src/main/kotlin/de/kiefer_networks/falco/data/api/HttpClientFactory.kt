@@ -15,6 +15,21 @@ import java.util.concurrent.TimeUnit
 
 object HttpClientFactory {
 
+    init {
+        // Release builds must ship non-empty SPKI pin sets. An empty Pins.kt
+        // silently degrades to system-trust-only (still TLS-enforced, but
+        // unpinned) — which is a CA-compromise vector. Fail closed so a
+        // forgotten `scripts/fetch_pins.sh` run before release blocks startup
+        // instead of shipping unpinned binaries to F-Droid.
+        if (!de.kiefer_networks.falco.BuildConfig.DEBUG) {
+            val empty = Pins.all().filterValues { it.isEmpty() }
+            require(empty.isEmpty()) {
+                "Certificate pins missing for release: ${empty.keys}. " +
+                    "Run scripts/fetch_pins.sh and rebuild."
+            }
+        }
+    }
+
     private val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false
