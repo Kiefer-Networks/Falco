@@ -84,51 +84,9 @@ class RobotApiTest {
         assertEquals("/server", recorded.path)
     }
 
-    @Test
-    fun `listStorageBoxes parses envelope-wrapped response`() = runTest {
-        server.enqueue(
-            MockResponse()
-                .setHeader("Content-Type", "application/json")
-                .setBody(
-                    """
-                    [
-                      {
-                        "storagebox": {
-                          "id": 1234,
-                          "login": "u12345",
-                          "name": "Backup HD 1",
-                          "product": "BX10",
-                          "cancelled": false,
-                          "locked": false,
-                          "location": "FSN1",
-                          "linked_server": 321,
-                          "paid_until": "2026-12-31",
-                          "disk_quota": 107374182400,
-                          "disk_usage": 5242880,
-                          "webdav": true,
-                          "samba": true,
-                          "ssh": true,
-                          "external_reachability": false,
-                          "zfs": false
-                        }
-                      }
-                    ]
-                    """.trimIndent(),
-                ),
-        )
-
-        val boxes = api.listStorageBoxes()
-        assertEquals(1, boxes.size)
-        val box = boxes.first().storageBox
-        assertEquals(1234L, box.id)
-        assertEquals("u12345", box.login)
-        assertEquals("Backup HD 1", box.name)
-        assertEquals(321L, box.linkedServer)
-
-        val recorded = server.takeRequest()
-        assertEquals("GET", recorded.method)
-        assertEquals("/storagebox", recorded.path)
-    }
+    // Storage Box endpoints on robot-ws were removed by Hetzner on 2025-07-30 —
+    // the corresponding test was deleted. Storage Boxes now live on api.hetzner.com
+    // (see CloudApi/StorageBoxApi).
 
     @Test
     fun `reset issues POST with form-encoded type field`() = runTest {
