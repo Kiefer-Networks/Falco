@@ -1,0 +1,20 @@
+Falco 1.1.0
+
+Mode multi-projets agrégé + recherche globale.
+
+Points forts :
+- Paramètres → Cloud → « Combiner tous les projets » : les listes
+  (serveurs, volumes, réseaux, IP flottantes, pare-feu, storage boxes,
+  load balancers, certificats, placement groups, clés SSH, IP
+  primaires) sont fusionnées sur tous les projets du compte actif.
+  Le sélecteur de projet est masqué.
+- Avant chaque « + » (volumes, réseaux, IP flottantes, certificats,
+  placement groups, clés SSH), un sélecteur de projet s'affiche en
+  mode agrégé.
+- Nouvel écran de recherche globale dans le tiroir : indexe en
+  parallèle tous les projets, serveurs Robot et zones DNS à
+  l'ouverture, puis filtre localement à chaque frappe. Un appui sur
+  un résultat bascule automatiquement le projet actif avant la
+  navigation.
+- Les artefacts de build s'appellent désormais `Falco-<version>-
+  <type>.apk` dès la sortie de Gradle.

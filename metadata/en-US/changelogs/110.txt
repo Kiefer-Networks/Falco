@@ -1,0 +1,23 @@
+Falco 1.1.0
+
+Aggregate-projects mode + global search.
+
+Highlights:
+- Settings → Cloud → "Combine all projects": list endpoints (servers,
+  volumes, networks, floating IPs, firewalls, storage boxes, load
+  balancers, certificates, placement groups, SSH keys, primary IPs)
+  fan out across every project of the active account and merge into a
+  single view. Project picker hides while it's on.
+- Project chooser before every "+" entry-point (volumes, networks,
+  floating IPs, certificates, placement groups, SSH keys) so you pick
+  the destination project up-front when running aggregate mode.
+- New global Search screen in the drawer: pre-indexes every Cloud
+  project plus Robot servers and DNS zones in parallel, then filters
+  locally on each keystroke. Tapping a result switches the active
+  project automatically before navigating to the detail screen.
+- Build artefacts now ship as `Falco-<version>-<type>.apk` from the
+  build tree to avoid name clashes when sharing an F-Droid mirror.
+
+Smaller fixes:
+- Project switch from the picker actually re-renders tabs.
+- Volume create wizard shows live €/month cost estimate.

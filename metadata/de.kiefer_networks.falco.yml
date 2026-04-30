@@ -42,7 +42,19 @@ Builds:
       - yes
     output: build/outputs/apk/release/app-release-unsigned.apk
 
+  - versionName: 1.1.0
+    versionCode: 110
+    commit: v1.1.0
+    subdir: app
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-17-jdk-headless
+      - update-java-alternatives -s java-1.17.0-openjdk-amd64
+    gradle:
+      - yes
+    output: build/outputs/apk/release/Falco-1.1.0-release.apk
+
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.0
-CurrentVersionCode: 100
+CurrentVersion: 1.1.0
+CurrentVersionCode: 110

@@ -1,0 +1,20 @@
+Falco 1.1.0
+
+Modalità progetti aggregati + ricerca globale.
+
+In evidenza:
+- Impostazioni → Cloud → "Combina tutti i progetti": le liste
+  (server, volumi, reti, IP fluttuanti, firewall, storage box, load
+  balancer, certificati, placement group, chiavi SSH, IP primari)
+  vengono unite da tutti i progetti dell'account attivo. Il selettore
+  di progetto si nasconde.
+- Prima di ogni "+" (volumi, reti, IP fluttuanti, certificati,
+  placement group, chiavi SSH) compare un selettore di progetto per
+  scegliere la destinazione in modalità aggregata.
+- Nuova schermata di ricerca globale nel drawer: indicizza in
+  parallelo tutti i progetti, i server Robot e le zone DNS, poi
+  filtra localmente per ogni tasto. Toccando un risultato si passa
+  automaticamente al progetto corretto prima di navigare al
+  dettaglio.
+- Gli artefatti di build ora si chiamano `Falco-<version>-<type>.apk`
+  direttamente.

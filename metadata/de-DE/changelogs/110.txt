@@ -1,0 +1,24 @@
+Falco 1.1.0
+
+Projekt-Aggregation + globale Suche.
+
+Highlights:
+- Einstellungen → Cloud → „Alle Projekte zusammenfassen": Listen
+  (Server, Volumes, Netzwerke, Floating-IPs, Firewalls, Storage Boxes,
+  Load Balancer, Zertifikate, Placement Groups, SSH-Keys, Primary IPs)
+  werden über alle Projekte des aktiven Kontos zusammengeführt. Der
+  Projekt-Picker verschwindet dann.
+- Vor jedem „+" (Volumes, Netzwerke, Floating-IPs, Zertifikate,
+  Placement Groups, SSH-Keys) erscheint ein Projekt-Wähler, sodass das
+  Ziel-Projekt im Aggregat-Modus vorher festgelegt wird.
+- Neuer globaler Suche-Screen im Drawer: indexiert beim Öffnen alle
+  Projekte plus Robot-Server und DNS-Zonen parallel, filtert dann pro
+  Tastendruck lokal. Treffer wechseln vor der Navigation automatisch
+  ins Quell-Projekt.
+- Build-Artefakte heißen jetzt `Falco-<version>-<type>.apk` direkt im
+  Build-Tree (kein `app-release.apk` mehr) — keine Kollisionen im
+  F-Droid-Mirror.
+
+Kleinere Fixes:
+- Projektwechsel aus dem Picker rendert Tabs jetzt wirklich neu.
+- Volume-Create-Wizard zeigt Live-Preisschätzung in €/Monat.
