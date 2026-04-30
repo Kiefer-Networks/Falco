@@ -51,7 +51,9 @@ class MainActivity : FragmentActivity() {
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Block screenshots and Recent-Apps thumbnails — secrets live on this surface.
+        // Block screenshots and Recent-Apps thumbnails by default — secrets live on
+        // this surface. User can opt out via Settings → Security; the LaunchedEffect
+        // below re-applies on preference change.
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         enableEdgeToEdge()
         // Force re-auth on every cold start, including activity recreation after
@@ -60,8 +62,17 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             val themeMode by securityPrefs.themeMode.collectAsState(initial = SecurityPreferences.THEME_LIGHT)
+            val accentMode by securityPrefs.accentMode.collectAsState(initial = SecurityPreferences.ACCENT_RED)
+            val blockScreenshots by securityPrefs.blockScreenshots.collectAsState(initial = true)
+            androidx.compose.runtime.LaunchedEffect(blockScreenshots) {
+                if (blockScreenshots) {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                } else {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                }
+            }
             val windowSizeClass = calculateWindowSizeClass(this)
-            FalcoTheme(themeMode = themeMode) {
+            FalcoTheme(themeMode = themeMode, accentMode = accentMode) {
                 when {
                     biometricUnavailable.value -> BiometricUnavailableScreen(
                         onOpenSettings = { startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS)) },
