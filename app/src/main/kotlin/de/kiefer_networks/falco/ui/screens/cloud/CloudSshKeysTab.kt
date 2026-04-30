@@ -127,9 +127,13 @@ fun CloudSshKeysTab(
     var fabExpanded by remember { mutableStateOf(false) }
     var addMode by remember { mutableStateOf<SshAddMode?>(null) }
     var pendingDelete by remember { mutableStateOf<CloudSshKey?>(null) }
-    var pickProjectFor by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var pickedProjectId by remember { mutableStateOf<String?>(null) }
+    // When set, the project chooser is open and will run this action with the picked id.
+    var pendingMode by remember { mutableStateOf<SshAddMode?>(null) }
 
     LaunchedEffect(Unit) { viewModel.refresh() }
+
+    val needsProjectPick = projectsState.aggregateProjects && projectsState.projects.size > 1
 
     val picker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -142,7 +146,13 @@ fun CloudSshKeysTab(
                 ?.substringAfterLast('/')
                 ?.removeSuffix(".pub")
                 .orEmpty()
-            addMode = SshAddMode.FromFile(name, text.trim())
+            val mode = SshAddMode.FromFile(name, text.trim())
+            if (needsProjectPick) {
+                pendingMode = mode
+            } else {
+                pickedProjectId = null
+                addMode = mode
+            }
         }
         fabExpanded = false
     }
@@ -172,8 +182,13 @@ fun CloudSshKeysTab(
             onToggle = { fabExpanded = !fabExpanded },
             onPickFile = { picker.launch(arrayOf("*/*")) },
             onCreateManual = {
-                addMode = SshAddMode.Manual
                 fabExpanded = false
+                if (needsProjectPick) {
+                    pendingMode = SshAddMode.Manual
+                } else {
+                    pickedProjectId = null
+                    addMode = SshAddMode.Manual
+                }
             },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -181,29 +196,27 @@ fun CloudSshKeysTab(
         )
     }
 
-    addMode?.let { mode ->
-        AddKeySheet(
-            initialName = (mode as? SshAddMode.FromFile)?.initialName.orEmpty(),
-            initialData = (mode as? SshAddMode.FromFile)?.initialData.orEmpty(),
-            onDismiss = { addMode = null },
-            onConfirm = { name, data ->
-                addMode = null
-                if (projectsState.aggregateProjects && projectsState.projects.size > 1) {
-                    pickProjectFor = name.trim() to data.trim()
-                } else {
-                    viewModel.create(name.trim(), data.trim())
-                }
+    pendingMode?.let { mode ->
+        de.kiefer_networks.falco.ui.components.dialog.ProjectChooserDialog(
+            projects = projectsState.projects,
+            onDismiss = { pendingMode = null },
+            onPick = { id ->
+                pickedProjectId = id
+                addMode = mode
+                pendingMode = null
             },
         )
     }
 
-    pickProjectFor?.let { (name, data) ->
-        de.kiefer_networks.falco.ui.components.dialog.ProjectChooserDialog(
-            projects = projectsState.projects,
-            onDismiss = { pickProjectFor = null },
-            onPick = { id ->
-                viewModel.create(name, data, projectId = id)
-                pickProjectFor = null
+    addMode?.let { mode ->
+        AddKeySheet(
+            initialName = (mode as? SshAddMode.FromFile)?.initialName.orEmpty(),
+            initialData = (mode as? SshAddMode.FromFile)?.initialData.orEmpty(),
+            onDismiss = { addMode = null; pickedProjectId = null },
+            onConfirm = { name, data ->
+                viewModel.create(name.trim(), data.trim(), projectId = pickedProjectId)
+                addMode = null
+                pickedProjectId = null
             },
         )
     }
