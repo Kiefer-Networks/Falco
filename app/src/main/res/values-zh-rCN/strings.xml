@@ -318,6 +318,9 @@
     <string name="settings_import_accounts">导入账户</string>
     <string name="settings_about">关于</string>
 <string name="settings_section_general">常规</string>
+    <string name="settings_section_cloud">云</string>
+    <string name="settings_aggregate_projects">合并所有项目</string>
+    <string name="settings_aggregate_projects_desc">在一个统一视图中显示当前账户所有项目的服务器、卷、网络等。</string>
     <string name="settings_section_about">关于</string>
     <string name="settings_security_summary">自动锁定：%1$s</string>
     <string name="settings_section_unlock">解锁</string>
@@ -445,6 +448,7 @@
     <string name="project_picker_title">切换项目</string>
     <string name="project_picker_add">新项目</string>
     <string name="project_picker_manage">管理项目</string>
+    <string name="project_all">所有项目</string>
     <string name="project_no_active">未选择项目</string>
     <string name="project_default_name">默认</string>
     <string name="project_manage_title">Cloud 项目</string>

@@ -341,6 +341,9 @@
     <string name="settings_import_accounts">Importa account</string>
     <string name="settings_about">Info</string>
 <string name="settings_section_general">Generale</string>
+    <string name="settings_section_cloud">Cloud</string>
+    <string name="settings_aggregate_projects">Combina tutti i progetti</string>
+    <string name="settings_aggregate_projects_desc">Mostra server, volumi, reti e tutto il resto da ogni progetto dell account attivo in un unica vista.</string>
     <string name="settings_section_about">Informazioni</string>
     <string name="settings_security_summary">Blocco automatico: %1$s</string>
     <string name="settings_section_unlock">Sblocco</string>
@@ -468,6 +471,7 @@
     <string name="project_picker_title">Cambia progetto</string>
     <string name="project_picker_add">Nuovo progetto</string>
     <string name="project_picker_manage">Gestisci progetti</string>
+    <string name="project_all">Tutti i progetti</string>
     <string name="project_no_active">Nessun progetto selezionato</string>
     <string name="project_default_name">Predefinito</string>
     <string name="project_manage_title">Progetti Cloud</string>

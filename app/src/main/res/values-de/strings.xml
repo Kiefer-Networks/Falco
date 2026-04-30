@@ -315,6 +315,9 @@
     <string name="settings_import_accounts">Konten importieren</string>
     <string name="settings_about">Über</string>
 <string name="settings_section_general">Allgemein</string>
+    <string name="settings_section_cloud">Cloud</string>
+    <string name="settings_aggregate_projects">Alle Projekte zusammenfassen</string>
+    <string name="settings_aggregate_projects_desc">Server, Volumes, Netzwerke und alles andere aus allen Projekten des aktiven Kontos in einer Ansicht zeigen.</string>
     <string name="settings_section_about">Über</string>
     <string name="settings_security_summary">Auto-Sperre: %1$s</string>
     <string name="settings_section_unlock">Entsperren</string>
@@ -442,6 +445,7 @@
     <string name="project_picker_title">Projekt wechseln</string>
     <string name="project_picker_add">Neues Projekt</string>
     <string name="project_picker_manage">Projekte verwalten</string>
+    <string name="project_all">Alle Projekte</string>
     <string name="project_no_active">Kein Projekt ausgewählt</string>
     <string name="project_default_name">Standard</string>
     <string name="project_manage_title">Cloud-Projekte</string>

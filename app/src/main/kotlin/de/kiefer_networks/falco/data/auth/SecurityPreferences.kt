@@ -113,6 +113,18 @@ class SecurityPreferences @Inject constructor(
         dataStore.edit { it[KEY_KEEP_DIAGNOSTICS] = value }
     }
 
+    /**
+     * Aggregate-projects mode: when true, list-style Cloud queries fan out to
+     * every Cloud project of the active account and return the merged result.
+     * Lets the user skip the project picker.
+     */
+    val aggregateProjects: Flow<Boolean> =
+        dataStore.data.map { it[KEY_AGGREGATE_PROJECTS] ?: false }
+    suspend fun setAggregateProjects(value: Boolean) {
+        dataStore.edit { it[KEY_AGGREGATE_PROJECTS] = value }
+    }
+    suspend fun aggregateProjectsNow(): Boolean = dataStore.data.first()[KEY_AGGREGATE_PROJECTS] ?: false
+
     companion object {
         const val DEFAULT_LOCK_TIMEOUT = 60
         const val LOCK_IMMEDIATE = 0
@@ -137,5 +149,6 @@ class SecurityPreferences @Inject constructor(
         private val KEY_REQUIRE_UNLOCK_ON_LAUNCH = booleanPreferencesKey("require_unlock_on_launch")
         private val KEY_CONFIRM_DESTRUCTIVE = booleanPreferencesKey("confirm_destructive")
         private val KEY_KEEP_DIAGNOSTICS = booleanPreferencesKey("keep_diagnostics")
+        private val KEY_AGGREGATE_PROJECTS = booleanPreferencesKey("aggregate_projects")
     }
 }

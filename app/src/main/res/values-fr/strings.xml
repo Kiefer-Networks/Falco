@@ -341,6 +341,9 @@
     <string name="settings_import_accounts">Importer les comptes</string>
     <string name="settings_about">À propos</string>
 <string name="settings_section_general">Général</string>
+    <string name="settings_section_cloud">Cloud</string>
+    <string name="settings_aggregate_projects">Combiner tous les projets</string>
+    <string name="settings_aggregate_projects_desc">Afficher serveurs, volumes, réseaux et le reste de chaque projet du compte actif dans une vue fusionnée.</string>
     <string name="settings_section_about">À propos</string>
     <string name="settings_security_summary">Verrouillage auto : %1$s</string>
     <string name="settings_section_unlock">Déverrouillage</string>
@@ -468,6 +471,7 @@
     <string name="project_picker_title">Changer de projet</string>
     <string name="project_picker_add">Nouveau projet</string>
     <string name="project_picker_manage">Gérer les projets</string>
+    <string name="project_all">Tous les projets</string>
     <string name="project_no_active">Aucun projet sélectionné</string>
     <string name="project_default_name">Par défaut</string>
     <string name="project_manage_title">Projets Cloud</string>

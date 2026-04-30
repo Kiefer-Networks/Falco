@@ -5,6 +5,7 @@ import de.kiefer_networks.falco.data.api.CloudApi
 import de.kiefer_networks.falco.data.api.HttpClientFactory
 import de.kiefer_networks.falco.data.api.StorageBoxApi
 import de.kiefer_networks.falco.data.auth.AccountManager
+import de.kiefer_networks.falco.data.auth.SecurityPreferences
 import de.kiefer_networks.falco.data.dto.ActionEnvelope
 import de.kiefer_networks.falco.data.dto.AttachIsoRequest
 import de.kiefer_networks.falco.data.dto.ChangeProtectionRequest
@@ -54,7 +55,10 @@ enum class MetricPeriod(val secondsBack: Long, val step: Int) {
 data class MetricSeries(val series: Map<String, List<Pair<Long, Double>>>)
 
 @Singleton
-class CloudRepo @Inject constructor(private val accounts: AccountManager) {
+class CloudRepo @Inject constructor(
+    private val accounts: AccountManager,
+    private val prefs: SecurityPreferences,
+) {
 
     private suspend fun api(): CloudApi {
         val project = accounts.activeCloudProject.first()
@@ -68,7 +72,33 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
         return HttpClientFactory.storageBoxRetrofit(project.cloudToken).create(StorageBoxApi::class.java)
     }
 
-    suspend fun listServers(): List<CloudServer> = api().listServers().servers
+    /**
+     * Returns either [api] alone or a fan-out across every Cloud project of
+     * the active account, depending on [SecurityPreferences.aggregateProjects].
+     * Used by list endpoints so the UI can show a unified view without forcing
+     * the user to switch projects.
+     */
+    private suspend fun apis(): List<CloudApi> {
+        if (!prefs.aggregateProjectsNow()) return listOf(api())
+        val accountId = accounts.activeAccountId.first() ?: return listOf(api())
+        val projects = accounts.cloudProjects(accountId)
+        if (projects.isEmpty()) return listOf(api())
+        return projects.map {
+            HttpClientFactory.cloudRetrofit(it.cloudToken).create(CloudApi::class.java)
+        }
+    }
+
+    private suspend fun storageBoxApis(): List<StorageBoxApi> {
+        if (!prefs.aggregateProjectsNow()) return listOf(storageBoxApi())
+        val accountId = accounts.activeAccountId.first() ?: return listOf(storageBoxApi())
+        val projects = accounts.cloudProjects(accountId)
+        if (projects.isEmpty()) return listOf(storageBoxApi())
+        return projects.map {
+            HttpClientFactory.storageBoxRetrofit(it.cloudToken).create(StorageBoxApi::class.java)
+        }
+    }
+
+    suspend fun listServers(): List<CloudServer> = apis().flatMap { it.listServers().servers }
 
     suspend fun createServer(
         name: String,
@@ -108,7 +138,7 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
         return api().createServer(body)
     }
 
-    suspend fun listVolumes(): List<CloudVolume> = api().listVolumes().volumes
+    suspend fun listVolumes(): List<CloudVolume> = apis().flatMap { it.listVolumes().volumes }
     suspend fun getVolume(id: Long): CloudVolume = api().getVolume(id).volume
 
     suspend fun createVolume(
@@ -143,7 +173,7 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
 
     suspend fun setVolumeProtection(id: Long, delete: Boolean? = null) =
         api().changeVolumeProtection(id, ChangeProtectionRequest(delete = delete))
-    suspend fun listFirewalls(): List<CloudFirewall> = api().listFirewalls().firewalls
+    suspend fun listFirewalls(): List<CloudFirewall> = apis().flatMap { it.listFirewalls().firewalls }
 
     suspend fun createFirewall(name: String): CloudFirewall =
         api().createFirewall(de.kiefer_networks.falco.data.dto.CreateFirewallRequest(name = name)).firewall
@@ -164,7 +194,7 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
             id,
             RemoveFirewallRequest(listOf(FirewallApplyTarget("server", ResourceRef(serverId)))),
         )
-    suspend fun listFloatingIps(): List<CloudFloatingIp> = api().listFloatingIps().floatingIps
+    suspend fun listFloatingIps(): List<CloudFloatingIp> = apis().flatMap { it.listFloatingIps().floatingIps }
     suspend fun getFloatingIp(id: Long): CloudFloatingIp = api().getFloatingIp(id).floatingIp
     suspend fun createFloatingIp(
         type: String,
@@ -192,7 +222,7 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
     suspend fun setFloatingIpProtection(id: Long, delete: Boolean? = null) =
         api().changeFloatingIpProtection(id, ChangeProtectionRequest(delete = delete))
 
-    suspend fun listNetworks(): List<CloudNetwork> = api().listNetworks().networks
+    suspend fun listNetworks(): List<CloudNetwork> = apis().flatMap { it.listNetworks().networks }
     suspend fun getNetwork(id: Long): CloudNetwork = api().getNetwork(id).network
     suspend fun createNetwork(name: String, ipRange: String): CloudNetwork =
         api().createNetwork(
@@ -260,7 +290,7 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
     // ---- SSH Keys ---------------------------------------------------------
 
     suspend fun listSshKeys(): List<de.kiefer_networks.falco.data.dto.CloudSshKey> =
-        api().listSshKeys().sshKeys
+        apis().flatMap { it.listSshKeys().sshKeys }
     suspend fun createSshKey(name: String, publicKey: String): de.kiefer_networks.falco.data.dto.CloudSshKey =
         api().createSshKey(
             de.kiefer_networks.falco.data.dto.CreateSshKeyRequest(name = name, publicKey = publicKey),
@@ -275,7 +305,7 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
     // ---- Primary IPs ------------------------------------------------------
 
     suspend fun listPrimaryIps(): List<de.kiefer_networks.falco.data.dto.CloudPrimaryIp> =
-        api().listPrimaryIps().primaryIps
+        apis().flatMap { it.listPrimaryIps().primaryIps }
     suspend fun getPrimaryIp(id: Long): de.kiefer_networks.falco.data.dto.CloudPrimaryIp =
         api().getPrimaryIp(id).primaryIp
     suspend fun createPrimaryIp(
@@ -302,7 +332,7 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
     suspend fun getPricing(): de.kiefer_networks.falco.data.dto.CloudPricing = api().getPricing().pricing
     suspend fun getAction(id: Long): de.kiefer_networks.falco.data.dto.ActionEnvelope =
         api().getAction(id).action
-    suspend fun listStorageBoxes(): List<CloudStorageBox> = storageBoxApi().listStorageBoxes().storageBoxes
+    suspend fun listStorageBoxes(): List<CloudStorageBox> = storageBoxApis().flatMap { it.listStorageBoxes().storageBoxes }
 
     suspend fun listStorageBoxTypes(): List<de.kiefer_networks.falco.data.dto.CloudStorageBoxType> =
         storageBoxApi().listStorageBoxTypes().storageBoxTypes
@@ -479,7 +509,7 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
     // ---- Load Balancers ----------------------------------------------------
 
     suspend fun listLoadBalancers(): List<de.kiefer_networks.falco.data.dto.CloudLoadBalancer> =
-        api().listLoadBalancers().loadBalancers
+        apis().flatMap { it.listLoadBalancers().loadBalancers }
 
     suspend fun getLoadBalancer(id: Long): de.kiefer_networks.falco.data.dto.CloudLoadBalancer =
         api().getLoadBalancer(id).loadBalancer
@@ -579,7 +609,7 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
     // ---- Certificates ------------------------------------------------------
 
     suspend fun listCertificates(): List<de.kiefer_networks.falco.data.dto.CloudCertificate> =
-        api().listCertificates().certificates
+        apis().flatMap { it.listCertificates().certificates }
 
     suspend fun getCertificate(id: Long): de.kiefer_networks.falco.data.dto.CloudCertificate =
         api().getCertificate(id).certificate
@@ -614,7 +644,7 @@ class CloudRepo @Inject constructor(private val accounts: AccountManager) {
     // ---- Placement Groups --------------------------------------------------
 
     suspend fun listPlacementGroups(): List<de.kiefer_networks.falco.data.dto.CloudPlacementGroup> =
-        api().listPlacementGroups().placementGroups
+        apis().flatMap { it.listPlacementGroups().placementGroups }
 
     suspend fun getPlacementGroup(id: Long): de.kiefer_networks.falco.data.dto.CloudPlacementGroup =
         api().getPlacementGroup(id).placementGroup

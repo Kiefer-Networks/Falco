@@ -347,6 +347,9 @@
     <string name="settings_import_accounts">Импорт учётных записей</string>
     <string name="settings_about">О приложении</string>
 <string name="settings_section_general">Общие</string>
+    <string name="settings_section_cloud">Cloud</string>
+    <string name="settings_aggregate_projects">Объединить все проекты</string>
+    <string name="settings_aggregate_projects_desc">Показывать серверы, тома, сети и прочее из всех проектов активной учётной записи в едином виде.</string>
     <string name="settings_section_about">О приложении</string>
     <string name="settings_security_summary">Автоблокировка: %1$s</string>
     <string name="settings_section_unlock">Разблокировка</string>
@@ -474,6 +477,7 @@
     <string name="project_picker_title">Сменить проект</string>
     <string name="project_picker_add">Новый проект</string>
     <string name="project_picker_manage">Управление проектами</string>
+    <string name="project_all">Все проекты</string>
     <string name="project_no_active">Проект не выбран</string>
     <string name="project_default_name">По умолчанию</string>
     <string name="project_manage_title">Cloud-проекты</string>

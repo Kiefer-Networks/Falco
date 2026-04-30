@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Palette
@@ -75,6 +76,7 @@ data class SettingsUiState(
     val requireUnlockOnLaunch: Boolean = true,
     val confirmDestructive: Boolean = true,
     val keepDiagnostics: Boolean = false,
+    val aggregateProjects: Boolean = false,
 )
 
 @HiltViewModel
@@ -95,6 +97,7 @@ class SettingsViewModel @Inject constructor(
             prefs.confirmDestructiveActions,
             prefs.keepDiagnostics,
             prefs.accentMode,
+            prefs.aggregateProjects,
         ),
     ) { values ->
         @Suppress("UNCHECKED_CAST")
@@ -110,6 +113,7 @@ class SettingsViewModel @Inject constructor(
             confirmDestructive = values[7] as Boolean,
             keepDiagnostics = values[8] as Boolean,
             accentMode = values[9] as Int,
+            aggregateProjects = values[10] as Boolean,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -121,6 +125,7 @@ class SettingsViewModel @Inject constructor(
     fun setRequireUnlockOnLaunch(v: Boolean) = viewModelScope.launch { prefs.setRequireUnlockOnLaunch(v) }
     fun setConfirmDestructive(v: Boolean) = viewModelScope.launch { prefs.setConfirmDestructiveActions(v) }
     fun setKeepDiagnostics(v: Boolean) = viewModelScope.launch { prefs.setKeepDiagnostics(v) }
+    fun setAggregateProjects(v: Boolean) = viewModelScope.launch { prefs.setAggregateProjects(v) }
 }
 
 @Composable
@@ -184,6 +189,19 @@ fun SettingsScreen(
                     subtitle = currentLocaleLabel(state.locale),
                     onClick = onLanguage,
                 )
+            }
+
+            item { SectionHeader(R.string.settings_section_cloud) }
+            item {
+                OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+                    ToggleTile(
+                        icon = Icons.Filled.Layers,
+                        title = stringResource(R.string.settings_aggregate_projects),
+                        subtitle = stringResource(R.string.settings_aggregate_projects_desc),
+                        checked = state.aggregateProjects,
+                        onChange = viewModel::setAggregateProjects,
+                    )
+                }
             }
 
             item { SectionHeader(R.string.settings_section_security) }

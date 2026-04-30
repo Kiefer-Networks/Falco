@@ -89,18 +89,22 @@ fun CloudHubScreen(
                     }
                 },
                 title = {
+                    val aggregate = projectsState.aggregateProjects
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(horizontal = 8.dp)
-                            .clickable(enabled = hasProjects) { pickerOpen = true },
+                            .clickable(enabled = hasProjects && !aggregate) { pickerOpen = true },
                     ) {
                         Text(
-                            text = activeProject?.name ?: stringResource(R.string.project_no_active),
+                            text = when {
+                                aggregate -> stringResource(R.string.project_all)
+                                else -> activeProject?.name ?: stringResource(R.string.project_no_active)
+                            },
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
-                        if (hasProjects) {
+                        if (hasProjects && !aggregate) {
                             Icon(
                                 Icons.Filled.ArrowDropDown,
                                 contentDescription = stringResource(R.string.project_picker_title),
@@ -138,7 +142,7 @@ fun CloudHubScreen(
                 }
             }
             Box(modifier = Modifier.fillMaxSize()) {
-                androidx.compose.runtime.key(projectsState.activeProjectId) {
+                androidx.compose.runtime.key(projectsState.activeProjectId, projectsState.aggregateProjects) {
                     when (selected) {
                         0 -> CloudScreen(onOpenServer = onOpenServer)
                         1 -> CloudFirewallsTab(onOpen = onOpenFirewall)

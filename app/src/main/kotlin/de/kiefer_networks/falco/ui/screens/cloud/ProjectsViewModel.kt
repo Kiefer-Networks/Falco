@@ -19,24 +19,28 @@ data class ProjectsUiState(
     val accountId: String? = null,
     val projects: List<CloudProject> = emptyList(),
     val activeProjectId: String? = null,
+    val aggregateProjects: Boolean = false,
 )
 
 @HiltViewModel
 class ProjectsViewModel @Inject constructor(
     private val accountManager: AccountManager,
+    private val securityPreferences: de.kiefer_networks.falco.data.auth.SecurityPreferences,
 ) : ViewModel() {
 
     val state: StateFlow<ProjectsUiState> = combine(
         accountManager.activeAccountId,
         accountManager.accounts,
         accountManager.activeCloudProject,
-    ) { activeId, accounts, activeProject ->
+        securityPreferences.aggregateProjects,
+    ) { activeId, accounts, activeProject, aggregate ->
         val account = accounts.firstOrNull { it.id == activeId }
         val projects = if (account == null) emptyList() else accountManager.cloudProjects(account.id)
         ProjectsUiState(
             accountId = account?.id,
             projects = projects,
             activeProjectId = activeProject?.id ?: account?.activeCloudProjectId,
+            aggregateProjects = aggregate,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProjectsUiState())
 
