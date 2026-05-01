@@ -5,8 +5,6 @@
 )
 package de.kiefer_networks.falco.ui.screens.cloud
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -331,8 +329,7 @@ private fun PropertyRow(
 }
 
 private fun copyToClipboard(context: Context, label: String, value: String) {
-    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    cm.setPrimaryClip(ClipData.newPlainText(label, value))
+    de.kiefer_networks.falco.ui.util.Clipboard.copySensitive(context, label, value)
 }
 
 private fun statusColor(status: String): Color = when (status.lowercase()) {

@@ -74,8 +74,6 @@ data class SettingsUiState(
     val locale: String = "",
     val blockScreenshots: Boolean = true,
     val requireUnlockOnLaunch: Boolean = true,
-    val confirmDestructive: Boolean = true,
-    val keepDiagnostics: Boolean = false,
     val aggregateProjects: Boolean = false,
 )
 
@@ -94,8 +92,6 @@ class SettingsViewModel @Inject constructor(
             prefs.appLocale,
             prefs.blockScreenshots,
             prefs.requireUnlockOnLaunch,
-            prefs.confirmDestructiveActions,
-            prefs.keepDiagnostics,
             prefs.accentMode,
             prefs.aggregateProjects,
         ),
@@ -110,10 +106,8 @@ class SettingsViewModel @Inject constructor(
             locale = values[4] as String,
             blockScreenshots = values[5] as Boolean,
             requireUnlockOnLaunch = values[6] as Boolean,
-            confirmDestructive = values[7] as Boolean,
-            keepDiagnostics = values[8] as Boolean,
-            accentMode = values[9] as Int,
-            aggregateProjects = values[10] as Boolean,
+            accentMode = values[7] as Int,
+            aggregateProjects = values[8] as Boolean,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -123,8 +117,6 @@ class SettingsViewModel @Inject constructor(
     fun setAppLocale(tag: String) = viewModelScope.launch { prefs.setAppLocale(tag) }
     fun setBlockScreenshots(v: Boolean) = viewModelScope.launch { prefs.setBlockScreenshots(v) }
     fun setRequireUnlockOnLaunch(v: Boolean) = viewModelScope.launch { prefs.setRequireUnlockOnLaunch(v) }
-    fun setConfirmDestructive(v: Boolean) = viewModelScope.launch { prefs.setConfirmDestructiveActions(v) }
-    fun setKeepDiagnostics(v: Boolean) = viewModelScope.launch { prefs.setKeepDiagnostics(v) }
     fun setAggregateProjects(v: Boolean) = viewModelScope.launch { prefs.setAggregateProjects(v) }
 }
 
@@ -287,22 +279,6 @@ fun SecuritySettingsScreen(
                     subtitle = stringResource(R.string.settings_block_screenshots_desc),
                     checked = state.blockScreenshots,
                     onChange = viewModel::setBlockScreenshots,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                ToggleTile(
-                    icon = Icons.Filled.Shield,
-                    title = stringResource(R.string.settings_confirm_destructive),
-                    subtitle = stringResource(R.string.settings_confirm_destructive_desc),
-                    checked = state.confirmDestructive,
-                    onChange = viewModel::setConfirmDestructive,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                ToggleTile(
-                    icon = Icons.Filled.Info,
-                    title = stringResource(R.string.settings_keep_diagnostics),
-                    subtitle = stringResource(R.string.settings_keep_diagnostics_desc),
-                    checked = state.keepDiagnostics,
-                    onChange = viewModel::setKeepDiagnostics,
                 )
             }
         }

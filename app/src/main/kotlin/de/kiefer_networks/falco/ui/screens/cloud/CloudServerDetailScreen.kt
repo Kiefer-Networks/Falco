@@ -5,8 +5,6 @@
 )
 package de.kiefer_networks.falco.ui.screens.cloud
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -57,7 +55,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
@@ -80,6 +77,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.hilt.navigation.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.dto.CloudServer
@@ -102,21 +101,15 @@ fun CloudServerDetailScreen(
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
     var consoleResult by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var revealedPassword by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { ev ->
             when (ev) {
                 is CloudServerEvent.Toast -> scope.launch { snackbar.showSnackbar(ev.text) }
                 is CloudServerEvent.Failure -> scope.launch { snackbar.showSnackbar(ev.message) }
-                is CloudServerEvent.RootPasswordRevealed -> scope.launch {
-                    val res = snackbar.showSnackbar(
-                        message = ctx.getString(R.string.server_rescue_root_password, ev.password),
-                        actionLabel = ctx.getString(R.string.copy),
-                        duration = androidx.compose.material3.SnackbarDuration.Long,
-                    )
-                    if (res == SnackbarResult.ActionPerformed) {
-                        copyToClipboard(ctx, "root password", ev.password)
-                    }
+                is CloudServerEvent.RootPasswordRevealed -> {
+                    revealedPassword = ev.password
                 }
                 is CloudServerEvent.ConsoleReady -> {
                     consoleResult = ev.wssUrl to ev.password
@@ -474,6 +467,16 @@ fun CloudServerDetailScreen(
             onCopyPassword = { copyToClipboard(ctx, "console password", password) },
         )
     }
+
+    revealedPassword?.let { pw ->
+        de.kiefer_networks.falco.ui.components.dialog.SecureRevealDialog(
+            title = stringResource(R.string.server_root_password_title),
+            secret = pw,
+            warning = stringResource(R.string.server_root_password_warning),
+            onCopy = { copyToClipboard(ctx, "root password", pw) },
+            onDismiss = { revealedPassword = null },
+        )
+    }
 }
 
 @Composable
@@ -546,6 +549,7 @@ private fun ConsoleResultDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
         title = { Text(stringResource(R.string.server_action_console)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -884,8 +888,7 @@ private fun ProtectionDialog(
 }
 
 private fun copyToClipboard(context: Context, label: String, value: String) {
-    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    cm.setPrimaryClip(ClipData.newPlainText(label, value))
+    de.kiefer_networks.falco.ui.util.Clipboard.copySensitive(context, label, value)
 }
 
 private fun statusDotColor(status: String): Color = when (status.lowercase()) {

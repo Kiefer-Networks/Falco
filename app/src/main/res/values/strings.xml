@@ -346,10 +346,6 @@
     <string name="settings_lock_15m">After 15 minutes</string>
     <string name="settings_block_screenshots">Block screenshots</string>
     <string name="settings_block_screenshots_desc">Hide content in screenshots and the recent apps switcher (FLAG_SECURE).</string>
-    <string name="settings_confirm_destructive">Confirm destructive actions</string>
-    <string name="settings_confirm_destructive_desc">Show a prompt before deleting servers, volumes or accounts.</string>
-    <string name="settings_keep_diagnostics">Keep diagnostics</string>
-    <string name="settings_keep_diagnostics_desc">Retain crash logs locally on this device — never uploaded automatically.</string>
     <string name="settings_pinning_title">TLS pinning</string>
     <string name="settings_theme_oled">OLED black</string>
     <string name="settings_accent">Accent color</string>
@@ -553,6 +549,9 @@
     <string name="server_change_type_upgrade_disk">Upgrade disk (irreversible)</string>
     <string name="server_change_type_warning">The server must be powered off. Disk upgrades cannot be reverted.</string>
     <string name="server_rescue_root_password">Rescue root password: %1$s</string>
+    <string name="server_root_password_title">Root password</string>
+    <string name="server_root_password_warning">Shown only once. Copy it now and store it in your password manager. Screenshots are blocked while this dialog is open.</string>
+    <string name="cloud_ssh_key_private_warning">This looks like a private key. Only paste your public key (e.g. starts with ssh-ed25519, ssh-rsa, ecdsa-sha2-…).</string>
     <string name="server_iso_title">Attach ISO</string>
     <string name="server_iso_search_hint">Search ISOs</string>
     <string name="server_section_overview">Overview</string>

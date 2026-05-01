@@ -363,10 +363,6 @@
     <string name="settings_lock_15m">Tras 15 minutos</string>
     <string name="settings_block_screenshots">Bloquear capturas</string>
     <string name="settings_block_screenshots_desc">Ocultar contenido en capturas y vista de apps recientes (FLAG_SECURE).</string>
-    <string name="settings_confirm_destructive">Confirmar acciones destructivas</string>
-    <string name="settings_confirm_destructive_desc">Mostrar aviso antes de borrar servidores, volúmenes o cuentas.</string>
-    <string name="settings_keep_diagnostics">Conservar diagnósticos</string>
-    <string name="settings_keep_diagnostics_desc">Mantener registros de fallos localmente — nunca se suben automáticamente.</string>
     <string name="settings_pinning_title">Anclaje TLS</string>
     <string name="settings_theme_oled">Negro OLED</string>
     <string name="settings_accent">Color de acento</string>
@@ -568,6 +564,9 @@
     <string name="server_change_type_upgrade_disk">Ampliar disco (irreversible)</string>
     <string name="server_change_type_warning">El servidor debe estar apagado. La ampliación de disco no es reversible.</string>
     <string name="server_rescue_root_password">Contraseña root del rescate: %1$s</string>
+    <string name="server_root_password_title">Contraseña root</string>
+    <string name="server_root_password_warning">Se muestra solo una vez. Cópiala ahora y guárdala en tu gestor de contraseñas. Las capturas de pantalla están bloqueadas en este diálogo.</string>
+    <string name="cloud_ssh_key_private_warning">Esto parece una clave privada. Pega solo la clave pública (p. ej. ssh-ed25519, ssh-rsa, ecdsa-sha2-…).</string>
     <string name="server_iso_title">Adjuntar ISO</string>
     <string name="server_iso_search_hint">Buscar ISOs</string>
     <string name="server_section_overview">Resumen</string>

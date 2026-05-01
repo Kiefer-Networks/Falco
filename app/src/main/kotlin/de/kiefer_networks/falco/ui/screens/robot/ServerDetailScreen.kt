@@ -2,8 +2,6 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package de.kiefer_networks.falco.ui.screens.robot
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -88,6 +86,11 @@ fun ServerDetailScreen(
     var showRdnsDialog by remember { mutableStateOf(false) }
     var showCancelDialog by remember { mutableStateOf(false) }
     var sheetOpen by remember { mutableStateOf(false) }
+    var revealedRescuePassword by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.rescuePassword.collect { pw -> revealedRescuePassword = pw }
+    }
 
     val doneMsg = stringResource(R.string.robot_action_done)
     val failedFmt = stringResource(R.string.robot_action_failed)
@@ -415,6 +418,19 @@ fun ServerDetailScreen(
             },
         )
     }
+
+    revealedRescuePassword?.let { pw ->
+        val ctx = LocalContext.current
+        de.kiefer_networks.falco.ui.components.dialog.SecureRevealDialog(
+            title = stringResource(R.string.server_root_password_title),
+            secret = pw,
+            warning = stringResource(R.string.server_root_password_warning),
+            onCopy = {
+                de.kiefer_networks.falco.ui.util.Clipboard.copySensitive(ctx, "rescue password", pw)
+            },
+            onDismiss = { revealedRescuePassword = null },
+        )
+    }
 }
 
 @Composable
@@ -499,8 +515,7 @@ private fun CopyRow(
             Text(value, style = MaterialTheme.typography.bodyMedium)
         }
         IconButton(onClick = {
-            val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            cm.setPrimaryClip(ClipData.newPlainText(label, value))
+            de.kiefer_networks.falco.ui.util.Clipboard.copySensitive(ctx, label, value)
         }) {
             Icon(Icons.Filled.ContentCopy, contentDescription = stringResource(R.string.copy))
         }

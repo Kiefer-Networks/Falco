@@ -340,10 +340,6 @@
     <string name="settings_lock_15m">15 分钟后</string>
     <string name="settings_block_screenshots">阻止截屏</string>
     <string name="settings_block_screenshots_desc">在截屏和最近任务中隐藏内容 (FLAG_SECURE)。</string>
-    <string name="settings_confirm_destructive">确认破坏性操作</string>
-    <string name="settings_confirm_destructive_desc">删除服务器、卷或账户前要求确认。</string>
-    <string name="settings_keep_diagnostics">保留诊断</string>
-    <string name="settings_keep_diagnostics_desc">将崩溃日志保存在本地 — 从不自动上传。</string>
     <string name="settings_pinning_title">TLS 钉扎</string>
     <string name="settings_theme_oled">OLED 纯黑</string>
     <string name="settings_accent">强调色</string>
@@ -545,6 +541,9 @@
     <string name="server_change_type_upgrade_disk">扩容磁盘（不可逆）</string>
     <string name="server_change_type_warning">服务器必须先关机。磁盘扩容无法回退。</string>
     <string name="server_rescue_root_password">救援 root 密码：%1$s</string>
+    <string name="server_root_password_title">Root 密码</string>
+    <string name="server_root_password_warning">仅显示一次。请立即复制并保存到密码管理器中。此对话框已禁用截屏。</string>
+    <string name="cloud_ssh_key_private_warning">这看起来像是私钥。请只粘贴公钥（例如以 ssh-ed25519、ssh-rsa、ecdsa-sha2-… 开头）。</string>
     <string name="server_iso_title">挂载 ISO</string>
     <string name="server_iso_search_hint">搜索 ISO</string>
     <string name="server_section_overview">概览</string>

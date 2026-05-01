@@ -318,6 +318,7 @@ private fun AddKeySheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var name by remember { mutableStateOf(initialName) }
     var data by remember { mutableStateOf(initialData) }
+    val looksLikePrivate = looksLikePrivateKey(data)
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -341,19 +342,43 @@ private fun AddKeySheet(
                 label = { Text(stringResource(R.string.robot_ssh_key_data)) },
                 singleLine = false,
                 minLines = 4,
+                isError = looksLikePrivate,
+                supportingText = if (looksLikePrivate) {
+                    {
+                        Text(
+                            stringResource(R.string.cloud_ssh_key_private_warning),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                } else null,
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
                 Spacer(Modifier.size(Spacing.sm))
                 Button(
-                    enabled = name.isNotBlank() && data.isNotBlank(),
+                    enabled = name.isNotBlank() && data.isNotBlank() && !looksLikePrivate,
                     onClick = { onConfirm(name, data) },
                 ) { Text(stringResource(R.string.save)) }
             }
             Spacer(Modifier.size(Spacing.md))
         }
     }
+}
+
+/**
+ * Heuristic guard against accidentally uploading a private key. Hetzner only
+ * stores public keys; if the user pastes a private blob (e.g. `id_ed25519`
+ * instead of `id_ed25519.pub`) we reject before it reaches the API.
+ */
+private fun looksLikePrivateKey(input: String): Boolean {
+    val upper = input.uppercase()
+    return upper.contains("BEGIN PRIVATE KEY") ||
+        upper.contains("BEGIN OPENSSH PRIVATE KEY") ||
+        upper.contains("BEGIN RSA PRIVATE KEY") ||
+        upper.contains("BEGIN DSA PRIVATE KEY") ||
+        upper.contains("BEGIN EC PRIVATE KEY") ||
+        upper.contains("BEGIN ENCRYPTED PRIVATE KEY")
 }
 
 @Composable

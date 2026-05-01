@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.ui.screens.s3
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -114,9 +111,6 @@ private fun TtlPickerDialog(
 @Composable
 private fun ResultDialog(url: String, onDismiss: () -> Unit) {
     val context = LocalContext.current
-    val clipboard = remember(context) {
-        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    }
     val clipLabel = stringResource(R.string.s3_share_link_clip_label)
 
     AlertDialog(
@@ -135,8 +129,7 @@ private fun ResultDialog(url: String, onDismiss: () -> Unit) {
                 ) {
                     OutlinedButton(
                         onClick = {
-                            val clip = ClipData.newPlainText(clipLabel, url)
-                            clipboard.setPrimaryClip(clip)
+                            de.kiefer_networks.falco.ui.util.Clipboard.copySensitive(context, clipLabel, url)
                         },
                         modifier = Modifier.fillMaxWidth().weight(1f),
                     ) {

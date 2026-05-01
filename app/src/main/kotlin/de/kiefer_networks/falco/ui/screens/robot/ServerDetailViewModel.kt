@@ -8,8 +8,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.data.dto.RobotServer
 import de.kiefer_networks.falco.data.repo.RobotRepo
 import de.kiefer_networks.falco.ui.nav.Routes
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -20,7 +23,6 @@ data class ServerDetailUiState(
     val server: RobotServer? = null,
     val error: String? = null,
     val rescueActive: Boolean = false,
-    val rescuePassword: String? = null,
     val cancellationDate: String? = null,
     val cancellationCancelled: Boolean = false,
 )
@@ -46,6 +48,9 @@ class ServerDetailViewModel @Inject constructor(
 
     private val _events = MutableStateFlow<ServerActionResult?>(null)
     val events: StateFlow<ServerActionResult?> = _events.asStateFlow()
+
+    private val _rescuePassword = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val rescuePassword: SharedFlow<String> = _rescuePassword.asSharedFlow()
 
     init { refresh() }
 
@@ -77,7 +82,8 @@ class ServerDetailViewModel @Inject constructor(
             _state.value = _state.value.copy(running = true)
             runCatching { repo.enableRescue(serverNumber, "linux", authorizedKey) }
                 .onSuccess {
-                    _state.value = _state.value.copy(rescueActive = true, rescuePassword = it.password)
+                    _state.value = _state.value.copy(rescueActive = true)
+                    it.password?.let { pw -> _rescuePassword.tryEmit(pw) }
                     _events.value = ServerActionResult.Success(successMsg)
                 }
                 .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
@@ -93,7 +99,7 @@ class ServerDetailViewModel @Inject constructor(
                 if (!resp.isSuccessful) error("HTTP ${resp.code()}")
             }
                 .onSuccess {
-                    _state.value = _state.value.copy(rescueActive = false, rescuePassword = null)
+                    _state.value = _state.value.copy(rescueActive = false)
                     _events.value = ServerActionResult.Success(successMsg)
                 }
                 .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }

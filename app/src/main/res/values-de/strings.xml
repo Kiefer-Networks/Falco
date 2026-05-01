@@ -337,10 +337,6 @@
     <string name="settings_lock_15m">Nach 15 Minuten</string>
     <string name="settings_block_screenshots">Screenshots blockieren</string>
     <string name="settings_block_screenshots_desc">Inhalte in Screenshots und im Recent-Apps-Switcher ausblenden (FLAG_SECURE).</string>
-    <string name="settings_confirm_destructive">Zerstörerische Aktionen bestätigen</string>
-    <string name="settings_confirm_destructive_desc">Vor Löschen von Servern, Volumes oder Konten nachfragen.</string>
-    <string name="settings_keep_diagnostics">Diagnosedaten behalten</string>
-    <string name="settings_keep_diagnostics_desc">Crash-Logs lokal auf dem Gerät behalten — keine automatische Übertragung.</string>
     <string name="settings_pinning_title">TLS-Pinning</string>
     <string name="settings_theme_oled">OLED-Schwarz</string>
     <string name="settings_accent">Akzentfarbe</string>
@@ -542,6 +538,9 @@
     <string name="server_change_type_upgrade_disk">Festplatte vergrößern (irreversibel)</string>
     <string name="server_change_type_warning">Server muss ausgeschaltet sein. Disk-Upgrade kann nicht rückgängig gemacht werden.</string>
     <string name="server_rescue_root_password">Rescue-Root-Passwort: %1$s</string>
+    <string name="server_root_password_title">Root-Passwort</string>
+    <string name="server_root_password_warning">Wird nur einmal angezeigt. Jetzt kopieren und im Passwortmanager speichern. Screenshots sind in diesem Dialog gesperrt.</string>
+    <string name="cloud_ssh_key_private_warning">Das sieht nach einem privaten Schlüssel aus. Bitte nur den öffentlichen Schlüssel einfügen (z. B. ssh-ed25519, ssh-rsa, ecdsa-sha2-…).</string>
     <string name="server_iso_title">ISO einlegen</string>
     <string name="server_iso_search_hint">ISOs durchsuchen</string>
     <string name="server_section_overview">Übersicht</string>

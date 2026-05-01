@@ -369,10 +369,6 @@
     <string name="settings_lock_15m">Через 15 минут</string>
     <string name="settings_block_screenshots">Блокировать скриншоты</string>
     <string name="settings_block_screenshots_desc">Скрывать содержимое в скриншотах и переключателе приложений (FLAG_SECURE).</string>
-    <string name="settings_confirm_destructive">Подтверждение деструктивных действий</string>
-    <string name="settings_confirm_destructive_desc">Запрашивать подтверждение перед удалением серверов, томов или учётных записей.</string>
-    <string name="settings_keep_diagnostics">Хранить диагностику</string>
-    <string name="settings_keep_diagnostics_desc">Сохранять логи сбоев локально — никогда не отправляются автоматически.</string>
     <string name="settings_pinning_title">TLS-pinning</string>
     <string name="settings_theme_oled">OLED-чёрный</string>
     <string name="settings_accent">Акцентный цвет</string>
@@ -574,6 +570,9 @@
     <string name="server_change_type_upgrade_disk">Увеличить диск (необратимо)</string>
     <string name="server_change_type_warning">Сервер должен быть выключен. Увеличение диска необратимо.</string>
     <string name="server_rescue_root_password">Пароль root в режиме восстановления: %1$s</string>
+    <string name="server_root_password_title">Пароль root</string>
+    <string name="server_root_password_warning">Показывается только один раз. Скопируйте сейчас и сохраните в менеджере паролей. Скриншоты в этом диалоге заблокированы.</string>
+    <string name="cloud_ssh_key_private_warning">Похоже на закрытый ключ. Вставляйте только открытый ключ (например, ssh-ed25519, ssh-rsa, ecdsa-sha2-…).</string>
     <string name="server_iso_title">Подключить ISO</string>
     <string name="server_iso_search_hint">Поиск ISO</string>
     <string name="server_section_overview">Обзор</string>

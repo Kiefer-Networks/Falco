@@ -97,23 +97,6 @@ class SecurityPreferences @Inject constructor(
     }
 
     /**
-     * Confirmation prompt before destructive actions (delete server, drop
-     * volume, remove account, etc).
-     */
-    val confirmDestructiveActions: Flow<Boolean> =
-        dataStore.data.map { it[KEY_CONFIRM_DESTRUCTIVE] ?: true }
-    suspend fun setConfirmDestructiveActions(value: Boolean) {
-        dataStore.edit { it[KEY_CONFIRM_DESTRUCTIVE] = value }
-    }
-
-    /** Master switch for the on-device crash-log retention (off-by-default). */
-    val keepDiagnostics: Flow<Boolean> =
-        dataStore.data.map { it[KEY_KEEP_DIAGNOSTICS] ?: false }
-    suspend fun setKeepDiagnostics(value: Boolean) {
-        dataStore.edit { it[KEY_KEEP_DIAGNOSTICS] = value }
-    }
-
-    /**
      * Aggregate-projects mode: when true, list-style Cloud queries fan out to
      * every Cloud project of the active account and return the merged result.
      * Lets the user skip the project picker.
@@ -147,8 +130,6 @@ class SecurityPreferences @Inject constructor(
         private val KEY_APP_LOCALE = stringPreferencesKey("app_locale_tag")
         private val KEY_BLOCK_SCREENSHOTS = booleanPreferencesKey("block_screenshots")
         private val KEY_REQUIRE_UNLOCK_ON_LAUNCH = booleanPreferencesKey("require_unlock_on_launch")
-        private val KEY_CONFIRM_DESTRUCTIVE = booleanPreferencesKey("confirm_destructive")
-        private val KEY_KEEP_DIAGNOSTICS = booleanPreferencesKey("keep_diagnostics")
         private val KEY_AGGREGATE_PROJECTS = booleanPreferencesKey("aggregate_projects")
     }
 }

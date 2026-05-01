@@ -2,8 +2,6 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package de.kiefer_networks.falco.ui.screens.robot
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -358,8 +356,7 @@ private fun CopyLine(icon: ImageVector, label: String, value: String, ctx: Conte
             Text(value, style = MaterialTheme.typography.bodyMedium)
         }
         IconButton(onClick = {
-            val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            cm.setPrimaryClip(ClipData.newPlainText(label, value))
+            de.kiefer_networks.falco.ui.util.Clipboard.copySensitive(ctx, label, value)
         }) {
             Icon(
                 Icons.Filled.ContentCopy,

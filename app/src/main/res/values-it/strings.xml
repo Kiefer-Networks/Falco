@@ -363,10 +363,6 @@
     <string name="settings_lock_15m">Dopo 15 minuti</string>
     <string name="settings_block_screenshots">Blocca screenshot</string>
     <string name="settings_block_screenshots_desc">Nascondi contenuti in screenshot e selettore app recenti (FLAG_SECURE).</string>
-    <string name="settings_confirm_destructive">Conferma azioni distruttive</string>
-    <string name="settings_confirm_destructive_desc">Mostra conferma prima di eliminare server, volumi o account.</string>
-    <string name="settings_keep_diagnostics">Conserva diagnostica</string>
-    <string name="settings_keep_diagnostics_desc">Mantieni log di crash localmente — mai caricati automaticamente.</string>
     <string name="settings_pinning_title">Pinning TLS</string>
     <string name="settings_theme_oled">Nero OLED</string>
     <string name="settings_accent">Colore accento</string>
@@ -568,6 +564,9 @@
     <string name="server_change_type_upgrade_disk">Aumenta disco (irreversibile)</string>
     <string name="server_change_type_warning">Il server deve essere spento. L aumento del disco non è reversibile.</string>
     <string name="server_rescue_root_password">Password root del rescue: %1$s</string>
+    <string name="server_root_password_title">Password root</string>
+    <string name="server_root_password_warning">Mostrata una sola volta. Copiala ora e conservala nel tuo gestore di password. Gli screenshot sono bloccati in questa finestra.</string>
+    <string name="cloud_ssh_key_private_warning">Sembra una chiave privata. Incolla solo la chiave pubblica (es. ssh-ed25519, ssh-rsa, ecdsa-sha2-…).</string>
     <string name="server_iso_title">Monta ISO</string>
     <string name="server_iso_search_hint">Cerca ISO</string>
     <string name="server_section_overview">Panoramica</string>
