@@ -166,7 +166,6 @@ dependencies {
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.kotlinx.serialization)
     implementation(libs.okhttp.core)
-    implementation(libs.okhttp.logging)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
