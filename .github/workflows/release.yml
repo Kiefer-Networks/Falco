@@ -80,6 +80,9 @@ jobs:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
         run: |
           set -euo pipefail
+          # Locked-down umask so any file the heredoc creates is owner-only,
+          # even if the runner ever shares the work tree with another step.
+          umask 077
           echo "$KEYSTORE_BASE64" | base64 -d > app/keystore.jks
           cat > keystore.properties <<KP
           storePassword=${STORE_PASSWORD}
@@ -87,6 +90,7 @@ jobs:
           keyAlias=${KEY_ALIAS}
           storeFile=keystore.jks
           KP
+          chmod 600 app/keystore.jks keystore.properties
 
       - name: Build release APK
         run: ./gradlew :app:assembleRelease --no-daemon

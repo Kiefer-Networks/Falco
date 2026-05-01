@@ -1,8 +1,9 @@
 # Falco ProGuard / R8 rules
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Keep model classes used by Retrofit/kotlinx.serialization
--keep,includedescriptorclasses class de.kiefer_networks.falco.data.dto.** { *; }
+# DTOs are covered by the kotlinx-serialization rules below; the explicit
+# `-keep class data.dto.**` we used to ship was redundant and prevented R8
+# from shrinking unused fields on those classes.
 -keepattributes *Annotation*, InnerClasses, Signature, Exceptions, EnclosingMethod
 -keepclassmembers class **$Companion { *; }
 
