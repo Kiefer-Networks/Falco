@@ -20,8 +20,8 @@ import io.minio.messages.DeleteObject
 import io.minio.messages.VersioningConfiguration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.io.InputStream
-import java.net.URI
 import java.util.concurrent.TimeUnit
 
 /** Thrown when the S3 endpoint host is not in the pin map. */
@@ -41,16 +41,31 @@ private val ALLOWED_S3_HOST_REGEX = Regex("^(fsn1|hel1|nbg1)\\.your-objectstorag
 /**
  * Normalises a user-typed endpoint to `https://<host>`, rejecting cleartext
  * schemes and hosts not covered by [Pins.objectStorage].
+ *
+ * Parses with OkHttp's `HttpUrl` so the validator agrees with the parser the
+ * MinIO/OkHttp client will actually use at request time. Rejects userinfo
+ * (`user:pass@host`), non-default ports, and any non-empty path/query/fragment
+ * to keep the surface flat.
  */
 internal fun validateAndNormalizeS3Endpoint(endpoint: String): String {
     val trimmed = endpoint.trim()
     val lower = trimmed.lowercase()
     if (lower.startsWith("http://")) throw CleartextS3EndpointException()
     val withScheme = if (lower.startsWith("https://")) trimmed else "https://$trimmed"
-    val host = runCatching { URI(withScheme).host }.getOrNull()
-        ?: throw UnpinnedS3EndpointException(trimmed)
+    val httpUrl = withScheme.toHttpUrlOrNull() ?: throw UnpinnedS3EndpointException(trimmed)
+    if (httpUrl.username.isNotEmpty() || httpUrl.password.isNotEmpty()) {
+        throw UnpinnedS3EndpointException(httpUrl.host)
+    }
+    if (httpUrl.port != 443) throw UnpinnedS3EndpointException(httpUrl.host)
+    if (httpUrl.encodedPath != "/" && httpUrl.encodedPath.isNotEmpty()) {
+        throw UnpinnedS3EndpointException(httpUrl.host)
+    }
+    if (httpUrl.encodedQuery != null || httpUrl.encodedFragment != null) {
+        throw UnpinnedS3EndpointException(httpUrl.host)
+    }
+    val host = httpUrl.host
     if (!ALLOWED_S3_HOST_REGEX.matches(host)) throw UnpinnedS3EndpointException(host)
-    return withScheme
+    return "https://$host"
 }
 
 /**
