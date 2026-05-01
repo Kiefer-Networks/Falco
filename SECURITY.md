@@ -54,17 +54,28 @@ threat model assumes:
 
 ## Build supply chain
 
-Gradle dependency verification (`gradle/verification-metadata.xml`) is
-enabled with SHA-256 checksums for every transitive artifact. PGP
-signature verification (`<verify-signatures>`) is currently **off**
-pending population of the `<trusted-keys>` block — see the TODO comment
-at the top of `gradle/verification-metadata.xml` (finding **B-006**).
+Gradle dependency verification metadata (`gradle/verification-metadata.xml`)
+is currently **not shipped**. The hashes Gradle generated locally diverged
+from the transitive set Linux CI runners actually pull (different bom
+`.module` files, platform-specific `aapt2` jars, etc.), and incremental
+patching produced an unreliable file.
 
-Maintainer action item: for each of the listed maven groups (Google /
-AndroidX, JetBrains, Square, MinIO, Dagger), fetch the publisher's
-signing key, cross-check the fingerprint against a second source, add a
-`<trusted-key>` entry, then flip `<verify-signatures>` to `true` and
-verify a clean build still passes.
+Maintainer action item (tracked as findings B-005 + B-006):
+
+1. From a clean Linux environment that mirrors the CI runner image,
+   run `./gradlew --write-verification-metadata sha256,pgp help` to
+   regenerate the metadata file.
+2. Populate `<trusted-keys>` for the maven groups Falco depends on
+   (Google / AndroidX, JetBrains, Square, MinIO, Dagger). For each
+   group, fetch the publisher's signing key, cross-check the
+   fingerprint against a second source, then add a `<trusted-key>`
+   entry.
+3. Flip `<verify-metadata>` and `<verify-signatures>` to `true` and
+   verify a clean build still passes.
+
+Until that's done, supply-chain protection relies on TLS pinning of
+Maven Central / dl.google.com plus reproducible-build verification on
+F-Droid. SHA-256 dependency pinning is a known gap.
 
 ## Accepted Risks
 
