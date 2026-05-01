@@ -196,14 +196,24 @@ private object UserAgentInterceptor : Interceptor {
 private class RobotRateLimitInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
         val response = chain.proceed(chain.request())
+        val retryAfter = response.header("Retry-After")
         val throttled = response.code == 429 ||
-            (response.code == 403 && response.header("Retry-After") != null)
+            (response.code == 403 && retryAfter != null)
         if (throttled) {
             response.close()
-            throw RobotRateLimitException(chain.request())
+            throw RobotRateLimitException(chain.request(), retryAfter)
         }
         return response
     }
 }
 
-class RobotRateLimitException(val request: Request) : RuntimeException("Hetzner Robot rate limit exceeded")
+/**
+ * Robot 429/throttle response. The optional [retryAfter] is the raw
+ * `Retry-After` header value (may be a delta in seconds OR an HTTP-date,
+ * per RFC 7231); UI code can surface it verbatim or parse as needed.
+ */
+class RobotRateLimitException(val request: Request, val retryAfter: String? = null) :
+    RuntimeException(
+        if (retryAfter != null) "Hetzner Robot rate limit exceeded; retry after $retryAfter"
+        else "Hetzner Robot rate limit exceeded",
+    )

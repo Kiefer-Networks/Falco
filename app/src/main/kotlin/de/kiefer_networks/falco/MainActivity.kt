@@ -75,7 +75,7 @@ class MainActivity : FragmentActivity() {
             FalcoTheme(themeMode = themeMode, accentMode = accentMode) {
                 when {
                     biometricUnavailable.value -> BiometricUnavailableScreen(
-                        onOpenSettings = { startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS)) },
+                        onOpenSettings = { openSecuritySettings() },
                         onExit = { finishAndRemoveTask() },
                     )
                     !unlocked.value -> LockedPlaceholder()
@@ -121,6 +121,21 @@ class MainActivity : FragmentActivity() {
                 gateBiometric()
             }
         }
+    }
+
+    /**
+     * Some Android skins (locked-down enterprise images, stripped-down OEM ROMs,
+     * Wear / Auto sub-targets) ship without an activity registered for
+     * `Settings.ACTION_SECURITY_SETTINGS`. Without a guard, the implicit
+     * intent throws `ActivityNotFoundException` and crashes us right after the
+     * user lands on the "biometric unavailable" screen — the worst moment.
+     * `FLAG_ACTIVITY_NEW_TASK` keeps the launch valid in case we are later
+     * called from a non-activity context.
+     */
+    private fun openSecuritySettings() {
+        val intent = Intent(Settings.ACTION_SECURITY_SETTINGS)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { startActivity(intent) }
     }
 
     private fun gateBiometric() {

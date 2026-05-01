@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.ui.screens.s3
 
+import android.content.ComponentName
 import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +39,24 @@ private val TTL_OPTIONS = listOf(
     TtlOption(24, R.string.s3_ttl_24h),
     TtlOption(24 * 7, R.string.s3_ttl_7d),
     TtlOption(24 * 30, R.string.s3_ttl_30d),
+)
+
+/**
+ * Best-effort list of clipboard managers / OEM share helpers that silently
+ * stash the shared text without honouring `EXTRA_IS_SENSITIVE`. Passed via
+ * `EXTRA_EXCLUDE_COMPONENTS` on the share chooser so the URL can only flow
+ * through real recipients (Signal, Mail, etc.) — the explicit Copy button
+ * in the dialog goes through `Clipboard.copySensitive`, which sets the
+ * sensitive-clipboard flag the OS uses to prune logs and previews.
+ *
+ * Unknown ComponentNames are ignored by the framework, so vendor-specific
+ * activity names that don't exist on a given device cost nothing.
+ */
+private val EXCLUDED_SHARE_COMPONENTS = arrayOf(
+    ComponentName("com.miui.notes", "com.miui.notes.ui.NoteEditActivity"),
+    ComponentName("com.samsung.android.app.notes", "com.samsung.android.app.notes.memolist.MemoListActivity"),
+    ComponentName("com.android.clipboard", "com.android.clipboard.ClipboardActivity"),
+    ComponentName("com.huawei.android.clipboard", "com.huawei.android.clipboard.ClipboardActivity"),
 )
 
 /**
@@ -146,7 +165,10 @@ private fun ResultDialog(url: String, onDismiss: () -> Unit) {
                                 putExtra(Intent.EXTRA_TEXT, url)
                                 putExtra("android.intent.extra.IS_SENSITIVE", true)
                             }
-                            context.startActivity(Intent.createChooser(intent, null))
+                            val chooser = Intent.createChooser(intent, null).apply {
+                                putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, EXCLUDED_SHARE_COMPONENTS)
+                            }
+                            context.startActivity(chooser)
                         },
                         modifier = Modifier.fillMaxWidth().weight(1f),
                     ) {

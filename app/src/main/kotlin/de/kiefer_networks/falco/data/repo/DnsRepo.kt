@@ -12,6 +12,22 @@ import javax.inject.Singleton
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 
+/**
+ * Hetzner DNS imports a complete BIND zone file in one POST. Real zones are
+ * tiny (typically <16 KiB); a multi-MiB upload is either malformed input or
+ * an attempt to soak the connection. Capping at 1 MiB before we hit the API
+ * keeps the failure mode local + fast and stops us from burning quota.
+ */
+private const val MAX_BIND_FILE_BYTES: Int = 1 * 1024 * 1024
+
+class BindFileTooLargeException(val sizeBytes: Int) :
+    IllegalArgumentException("BIND zone file is $sizeBytes bytes; max ${MAX_BIND_FILE_BYTES / 1024} KiB")
+
+private fun requireBindFileWithinLimit(text: String) {
+    val size = text.toByteArray(Charsets.UTF_8).size
+    if (size > MAX_BIND_FILE_BYTES) throw BindFileTooLargeException(size)
+}
+
 @Singleton
 class DnsRepo @Inject constructor(private val accounts: AccountManager) {
 
@@ -51,12 +67,15 @@ class DnsRepo @Inject constructor(private val accounts: AccountManager) {
         api().exportZone(id).body()?.string() ?: ""
 
     suspend fun importZoneFile(zoneId: String, bindFileText: String): DnsZone {
+        requireBindFileWithinLimit(bindFileText)
         val body = bindFileText.toRequestBody("text/plain".toMediaType())
         return api().importZoneFile(zoneId, body).zone
     }
 
-    suspend fun validateZone(zoneId: String, bindFileText: String) =
-        api().validateZone(zoneId, bindFileText.toRequestBody("text/plain".toMediaType()))
+    suspend fun validateZone(zoneId: String, bindFileText: String): de.kiefer_networks.falco.data.dto.DnsValidateResponse {
+        requireBindFileWithinLimit(bindFileText)
+        return api().validateZone(zoneId, bindFileText.toRequestBody("text/plain".toMediaType()))
+    }
 
     // ---- Primary servers ------------------------------------------------
 
