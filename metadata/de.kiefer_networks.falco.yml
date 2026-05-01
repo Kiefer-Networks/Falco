@@ -54,9 +54,9 @@ Builds:
       - yes
     output: build/outputs/apk/release/Falco-1.1.0-release.apk
 
-  - versionName: 1.2.0
-    versionCode: 120
-    commit: v1.2.0
+  - versionName: 1.5.0
+    versionCode: 150
+    commit: v1.5.0
     subdir: app
     sudo:
       - apt-get update
@@ -64,9 +64,9 @@ Builds:
       - update-java-alternatives -s java-1.17.0-openjdk-amd64
     gradle:
       - yes
-    output: build/outputs/apk/release/Falco-1.2.0-release.apk
+    output: build/outputs/apk/release/Falco-1.5.0-release.apk
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.2.0
-CurrentVersionCode: 120
+CurrentVersion: 1.5.0
+CurrentVersionCode: 150

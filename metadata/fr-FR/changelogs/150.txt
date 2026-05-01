@@ -1,0 +1,51 @@
+Falco 1.5.0
+
+Version axée sur la sécurité et le durcissement de la chaîne
+d'approvisionnement. Deux passes d'audit ont revu chaque flux
+manipulant des secrets, des entrées de la chaîne d'approvisionnement
+ou des actions destructives.
+
+Faits marquants :
+- Les mots de passe root, les mots de passe de secours et les jetons
+  console s'affichent désormais dans un dialogue à usage unique
+  partagé avec FLAG_SECURE — ni les captures d'écran ni l'aperçu
+  Récents ne peuvent les capter.
+- Les copies sensibles vers le presse-papiers définissent
+  EXTRA_IS_SENSITIVE sur Android 13+ et s'effacent automatiquement au
+  bout de 60 s.
+- Empreintes TLS SPKI rafraîchies depuis la chaîne Hetzner en direct ;
+  intermédiaires Let's Encrypt actuels (E7, R13) ajoutés.
+- Validation du endpoint S3 réécrite sur okhttp HttpUrl : userinfo,
+  ports non par défaut et tout path / query / fragment refusés.
+- En-tête Idempotency-Key (UUIDv4) attaché automatiquement à chaque
+  appel modifiant l'état sur les clients Cloud et Storage Box.
+- toString() des DTO masque password et rootPassword sur les huit DTO
+  Cloud + Robot concernés, pour éviter les fuites dans les logs ou
+  rapports de plantage.
+- Les écritures du stockage de credentials sont désormais durables
+  (commit sur IO) — la fenêtre de compte fantôme après un OOM en
+  pleine création est fermée.
+- La feuille de collage SSH refuse les blobs contenant des marqueurs
+  de clé privée.
+- Import de zone DNS BIND plafonné à 1 Mo.
+- L'exception de limite de débit Robot expose désormais l'en-tête
+  Retry-After.
+- Le dialogue de partage exclut les applis presse-papiers / notes
+  (MIUI, Samsung, Huawei) du sélecteur.
+
+Build et CI :
+- Chaque GitHub Action épinglée à un SHA de commit de 40 caractères.
+- Somme de contrôle de la distribution Gradle 8.11.1 verrouillée.
+- Permissions du keystore fixées à 600 dans la build de release.
+- Téléchargements d'artefacts de release filtrés par nom ; globs des
+  fichiers de release restreints.
+- Nouvelle pré-vérification : le tag doit correspondre à versionName
+  sinon la build échoue.
+
+Petites corrections :
+- Le bouton « Terminer » de l'assistant n'est plus caché derrière la
+  barre de navigation.
+- Thème par défaut basculé en clair ; chevauchement de la barre d'état
+  corrigé.
+- MainActivity protège ACTION_SECURITY_SETTINGS contre les
+  gestionnaires d'intent manquants.

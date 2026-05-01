@@ -1,0 +1,37 @@
+Falco 1.5.0
+
+安全与供应链加固版本。两轮审计覆盖了所有处理机密、供应链输入或破坏性操作的
+流程。
+
+重点：
+- root 密码、救援密码和控制台令牌统一通过共享的 FLAG_SECURE 一次性对话框显示，
+  截图与"最近任务"预览均无法捕获。
+- 敏感剪贴板复制在 Android 13+ 上设置 EXTRA_IS_SENSITIVE，并在 60 秒后
+  自动清除。
+- TLS SPKI 证书指纹按 Hetzner 实时证书链刷新；新增 Let's Encrypt 当前
+  中间证书（E7、R13）。
+- S3 端点校验改用 okhttp HttpUrl 重写：拒绝 userinfo、非默认端口以及任何
+  path / query / fragment。
+- 云端与 Storage Box 客户端的所有状态变更请求自动附加 Idempotency-Key
+  （UUIDv4）头。
+- 八个相关的 Cloud + Robot DTO 的 toString() 现已对 password 和 rootPassword
+  做脱敏，避免泄漏到日志或崩溃报告。
+- 凭据存储写入改为持久化（在 IO 调度器上 commit）——彻底关闭 create()
+  中途 OOM 后留下幽灵账号的窗口。
+- SSH 密钥粘贴面板拒绝包含私钥标记的内容。
+- DNS BIND 区域文件导入上限收紧为 1 MiB。
+- Robot 限速异常现在携带 Retry-After 响应头。
+- 分享对话框从选择器中排除剪贴板 / 便签类应用（MIUI、三星、华为）。
+
+构建与 CI：
+- 每个 GitHub Action 都锁定到 40 位提交 SHA。
+- Gradle 8.11.1 发行版校验和已锁定。
+- 发布构建中 keystore 的文件权限固定为 600。
+- 发布产物下载按名称过滤；发布文件 glob 已收紧。
+- 新增发布前预检：tag 必须与 versionName 一致，否则构建失败。
+
+小修复：
+- 向导"完成"按钮不再被导航栏遮挡。
+- 默认主题改为浅色；状态栏遮挡问题已修复。
+- MainActivity 对缺失 intent 处理器的 ACTION_SECURITY_SETTINGS 做了
+  保护。

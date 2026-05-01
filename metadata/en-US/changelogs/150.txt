@@ -1,0 +1,41 @@
+Falco 1.5.0
+
+Security and supply-chain hardening release. Two audit rounds went
+over every flow that handled secrets, supply-chain inputs or
+destructive actions and tightened them.
+
+Highlights:
+- Root passwords, rescue passwords and console tokens reveal through a
+  shared FLAG_SECURE one-shot dialog, so screenshots and the recents
+  preview cannot capture them.
+- Sensitive clipboard copies set EXTRA_IS_SENSITIVE on Android 13+ and
+  auto-wipe after 60 s.
+- TLS SPKI pins refreshed against the live Hetzner chain; current
+  Let's Encrypt intermediates (E7, R13) added.
+- S3 endpoint validation rewritten on okhttp HttpUrl: rejects userinfo,
+  non-default ports, and any path / query / fragment.
+- Idempotency-Key (UUIDv4) auto-attached to every state-changing call
+  on the cloud and storage-box clients.
+- DTO toString() redacts password and rootPassword on the eight named
+  Cloud + Robot DTOs so secrets cannot leak into logs or crash reports.
+- Credential storage writes are now durable (commit on IO) — the
+  ghost-account window after an OOM mid-create is closed.
+- SSH-key paste sheet refuses blobs containing private-key markers.
+- DNS BIND zone import capped at 1 MiB.
+- Robot rate-limit exception now exposes the Retry-After header.
+- Share dialog excludes clipboard / notes apps (MIUI, Samsung,
+  Huawei) from the chooser.
+
+Build and CI:
+- Every GitHub Action pinned to a 40-char commit SHA.
+- Gradle 8.11.1 distribution checksum locked.
+- Keystore file mode locked to 600 in the release build.
+- Release artefact downloads scoped by name; release file globs
+  constrained.
+- New release preflight: tag must match versionName or the build fails.
+
+Smaller fixes:
+- Wizard finish button no longer hidden behind the navigation bar.
+- Default theme switched to light mode; status-bar overlap fixed.
+- MainActivity guards ACTION_SECURITY_SETTINGS against missing intent
+  handlers.

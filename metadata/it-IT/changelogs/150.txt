@@ -1,0 +1,48 @@
+Falco 1.5.0
+
+Release di sicurezza e irrobustimento della supply chain. Due round
+di audit hanno rivisto ogni flusso che gestisce segreti, input della
+catena di fornitura o azioni distruttive.
+
+In evidenza:
+- Le password root, le password di rescue e i token di console sono
+  ora mostrati in un dialogo condiviso a uso singolo con FLAG_SECURE,
+  per cui screenshot e l'anteprima Recenti non possono catturarli.
+- Le copie sensibili verso gli appunti impostano EXTRA_IS_SENSITIVE
+  su Android 13+ e si cancellano da sole dopo 60 s.
+- Pin TLS SPKI rinfrescati contro la catena Hetzner in produzione;
+  aggiunti gli intermedi correnti di Let's Encrypt (E7, R13).
+- Validazione dell'endpoint S3 riscritta su okhttp HttpUrl: rifiuta
+  userinfo, porte non di default e qualsiasi path / query / fragment.
+- Header Idempotency-Key (UUIDv4) allegato automaticamente a ogni
+  chiamata che cambia stato sui client Cloud e Storage Box.
+- toString() dei DTO redige password e rootPassword sugli otto DTO
+  Cloud + Robot interessati, evitando perdite nei log o nei
+  crash-report.
+- Le scritture del credential store sono ora durabili (commit su IO):
+  chiusa la finestra di account fantasma dopo un OOM durante la
+  create().
+- Il foglio di incolla SSH-key rifiuta blob che contengono marker di
+  chiave privata.
+- Import zone BIND DNS limitato a 1 MiB.
+- L'eccezione di rate-limit del Robot espone ora l'header
+  Retry-After.
+- Il dialogo di condivisione esclude app appunti / note (MIUI,
+  Samsung, Huawei) dal selettore.
+
+Build e CI:
+- Ogni GitHub Action bloccata su uno SHA di commit di 40 caratteri.
+- Checksum della distribuzione Gradle 8.11.1 bloccata.
+- Permessi della keystore fissati a 600 nella build di release.
+- Download degli artefatti di release filtrati per nome; glob dei
+  file di release vincolati.
+- Nuovo preflight: il tag deve combaciare con versionName, altrimenti
+  la build fallisce.
+
+Correzioni minori:
+- Il pulsante Fine del wizard non è più nascosto dietro la barra di
+  navigazione.
+- Tema predefinito impostato su Chiaro; sovrapposizione con la
+  status-bar corretta.
+- MainActivity protegge ACTION_SECURITY_SETTINGS contro intent
+  handler mancanti.

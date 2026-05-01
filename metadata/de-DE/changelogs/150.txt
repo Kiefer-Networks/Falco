@@ -1,0 +1,46 @@
+Falco 1.5.0
+
+Sicherheits- und Supply-Chain-Härtung. Zwei Audit-Runden über alle
+Flows, die mit Secrets, Supply-Chain-Eingaben oder destruktiven
+Aktionen umgehen.
+
+Highlights:
+- Root-Passwörter, Rescue-Passwörter und Konsolen-Tokens werden in
+  einem gemeinsamen FLAG_SECURE-One-Shot-Dialog angezeigt — keine
+  Screenshots, keine Vorschau im Recents-Tab.
+- Sensible Clipboard-Kopien setzen ab Android 13 EXTRA_IS_SENSITIVE
+  und löschen sich nach 60 s automatisch.
+- TLS-SPKI-Pins gegen die Live-Hetzner-Chain erneuert; aktuelle
+  Let's-Encrypt-Intermediates (E7, R13) ergänzt.
+- S3-Endpoint-Validierung mit okhttp HttpUrl neu geschrieben:
+  userinfo, nicht-standardisierte Ports und path/query/fragment werden
+  abgelehnt.
+- Idempotency-Key (UUIDv4) wird automatisch auf jeden zustands­
+  ändernden Call der Cloud- und Storage-Box-Clients gesetzt.
+- DTO-toString() redigiert password und rootPassword auf den acht
+  benannten Cloud- + Robot-DTOs, damit Secrets nicht in Logs oder
+  Crash-Reports landen.
+- Credential-Speicher-Writes sind jetzt durabel (commit auf IO) — das
+  Ghost-Account-Fenster nach OOM während create() ist geschlossen.
+- SSH-Key-Paste-Sheet lehnt Blobs mit Private-Key-Markern ab.
+- DNS-BIND-Zonenimport auf 1 MiB begrenzt.
+- Robot-Rate-Limit-Exception trägt jetzt den Retry-After-Header.
+- Teilen-Dialog schließt Zwischenablage- / Notizen-Apps (MIUI,
+  Samsung, Huawei) aus der Chooser-Auswahl aus.
+
+Build und CI:
+- Jede GitHub Action auf eine 40-Zeichen-Commit-SHA gepinnt.
+- Gradle-8.11.1-Distribution-Checksumme gepinnt.
+- Keystore-Dateirechte im Release-Build auf 600 fixiert.
+- Release-Artefakt-Downloads namensgenau gefiltert; Release-Datei-Globs
+  eingeschränkt.
+- Neuer Release-Preflight: Tag muss versionName entsprechen, sonst
+  bricht der Build ab.
+
+Kleinere Fixes:
+- Wizard-Finish-Button ist nicht mehr hinter der Navigationsleiste
+  versteckt.
+- Standard-Theme auf Light-Mode umgestellt; Status-Bar-Überlappung
+  gefixt.
+- MainActivity sichert ACTION_SECURITY_SETTINGS gegen fehlende
+  Intent-Handler ab.

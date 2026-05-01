@@ -4,11 +4,11 @@ All notable changes to Falco are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — 1.2.0
+## [1.5.0] — 2026-05-01
 
-Security-hardening release. No new feature surface; existing flows that
-handled secrets, supply-chain inputs or destructive actions were audited
-and tightened.
+Security and supply-chain hardening release. No new feature surface;
+two audit rounds went over every flow that handled secrets,
+supply-chain inputs or destructive actions and tightened them.
 
 ### Added
 - `SECURITY.md` vulnerability disclosure policy with private reporting
@@ -27,8 +27,18 @@ and tightened.
   containing `BEGIN PRIVATE KEY` / `OPENSSH PRIVATE KEY` /
   `RSA PRIVATE KEY` / `DSA` / `EC` / `ENCRYPTED PRIVATE KEY` markers,
   preventing accidental private-key uploads.
-- `gradle/verification-metadata.xml` — Gradle dependency verification
-  with SHA-256 entries for every resolved artefact.
+- `IdempotencyKeyInterceptor` (`HttpClientFactory.kt`) — auto-attaches
+  a UUIDv4 `Idempotency-Key` header to every `POST`/`PUT`/`PATCH`/
+  `DELETE` on the cloud and storage-box clients (skipped if a caller
+  already set one).
+- `data/repo/DnsRepo.requireBindFileWithinLimit` — 1 MiB cap on
+  `importZoneFile` and `validateZone`; throws
+  `BindFileTooLargeException` before the POST.
+- `RobotRateLimitException(retryAfter: String?)` carries the raw
+  `Retry-After` header (RFC 7231 delta-seconds or HTTP-date) for
+  callers that want to schedule a backoff.
+- `S3EndpointValidatorTest` and `PasswordRedactionTest` cover the new
+  validator paths and DTO redaction guarantees.
 - Locked the Gradle 8.11.1 distribution checksum
   (`distributionSha256Sum`) in `gradle-wrapper.properties`.
 
@@ -50,9 +60,36 @@ and tightened.
 - `data/s3/UploadService.isLocalContentUri` now accepts only
   `content://` URIs; `file://` is rejected (could otherwise let an
   attacker-controlled file pointer push past the SAF sandbox).
+- `data/s3/S3Client.validateAndNormalizeS3Endpoint` rewritten on top of
+  `okhttp3.HttpUrl`: rejects `userinfo`, non-default ports, and any
+  non-empty path / query / fragment. Replaces the prior `java.net.URI`
+  parser.
+- TLS SPKI pins refreshed against the live Hetzner chain. Current Let's
+  Encrypt intermediates (`E7`, `R13`) added alongside the `ISRG Root`
+  pins; the stale audit TODO on `api.hetzner.com` was retired after
+  confirming the endpoint is DigiCert (Thawte G1).
+- `data/s3/S3Repo` now exposes a separate `clampUploadHours` (hard
+  1 h cap) distinct from `clampShareHours` (1 .. 168 h) to avoid
+  granting week-long upload tokens.
+- `data/auth/CredentialStore.put` / `remove` are now `suspend` and
+  write via `commit()` on `Dispatchers.IO`. The async `apply()` race
+  that could leave a ghost account after an OOM mid-`create()` is
+  closed; `AccountManager.applySecrets` /
+  `readCloudProjects` / `writeCloudProjects` / `readAccount` became
+  `suspend` to match.
+- DTO `toString()` overrides redact `password` / `rootPassword` on the
+  eight named Cloud + Robot DTOs (covered by `PasswordRedactionTest`).
+- `MainActivity.openSecuritySettings()` adds `FLAG_ACTIVITY_NEW_TASK`
+  and wraps `startActivity` in `runCatching` so devices missing the
+  intent handler no longer crash.
+- `ShareLinkDialog` chooser passes `EXTRA_EXCLUDE_COMPONENTS` for MIUI
+  Notes, Samsung Notes, AOSP-Clipboard, Huawei-Clipboard so a
+  presigned URL cannot be silently routed into a clipboard / notes
+  app.
 - `app/proguard-rules.pro` `-assumenosideeffects` extended to strip
   `Log.w` / `Log.e` / `Log.wtf` / `println` in release, not just
-  `Log.d` / `.v` / `.i`.
+  `Log.d` / `.v` / `.i`. Redundant `-keep class data.dto.**` rule
+  dropped (kotlinx-serialization rules already cover DTOs).
 
 ### Removed
 - Decorative `confirmDestructiveActions` and `keepDiagnostics` toggles
@@ -65,6 +102,23 @@ and tightened.
 - Pinned every GitHub Action in `.github/workflows/ci.yml` and
   `release.yml` to a verified 40-character commit SHA (no more floating
   `@v4` tags).
+- `release.yml`: `umask 077` before the keystore heredoc plus explicit
+  `chmod 600 app/keystore.jks keystore.properties` after, so the
+  keystore is never world-readable on the runner.
+- `release.yml`: `actions/download-artifact` scoped by name
+  (`android-apk`, `android-aab`); `softprops/action-gh-release`
+  `files:` constrained to a `release-assets/Falco-*.{apk,aab}` glob
+  so unrelated artefacts can never end up attached to a release.
+- `ci.yml`: `push` trigger restricted to `main`; `pull_request`
+  trigger restricted to `[opened, synchronize, reopened]` against
+  `main`.
+- `release.yml`: preflight step `Verify tag matches versionName`
+  fails the build if `${ref_name#v}` does not equal
+  `app/build.gradle.kts`'s `versionName`.
+- `libs.versions.toml`: `# JUSTIFIED:` comments documenting why
+  `androidx.security.crypto:1.1.0-alpha07` and
+  `androidx.biometric:1.2.0-alpha05` remain pinned to alpha (matches
+  the `SECURITY.md` accepted-risks block).
 
 ## [1.1.0] — 2026-04-30
 

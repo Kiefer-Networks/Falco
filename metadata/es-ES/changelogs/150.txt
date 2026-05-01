@@ -1,0 +1,49 @@
+Falco 1.5.0
+
+Versión centrada en seguridad y endurecimiento de la cadena de
+suministro. Dos rondas de auditoría revisaron cada flujo que maneja
+secretos, entradas de la cadena de suministro o acciones destructivas.
+
+Lo destacado:
+- Las contraseñas root, las contraseñas de rescate y los tokens de
+  consola se muestran en un diálogo único compartido con FLAG_SECURE,
+  por lo que ni capturas ni la vista de tareas recientes pueden
+  registrarlos.
+- Las copias sensibles al portapapeles fijan EXTRA_IS_SENSITIVE en
+  Android 13+ y se borran solas tras 60 s.
+- Pines TLS SPKI actualizados contra la cadena en vivo de Hetzner;
+  añadidos los intermedios actuales de Let's Encrypt (E7, R13).
+- Validación del endpoint S3 reescrita sobre okhttp HttpUrl: rechaza
+  userinfo, puertos no estándar y cualquier path / query / fragment.
+- Cabecera Idempotency-Key (UUIDv4) adjunta automáticamente a cada
+  llamada de cambio de estado en los clientes Cloud y Storage Box.
+- toString() de los DTO redacta password y rootPassword en los ocho
+  DTO Cloud + Robot afectados, evitando filtraciones por logs o
+  informes de fallos.
+- Las escrituras del almacén de credenciales ya son duraderas (commit
+  en IO) — eliminada la ventana de cuenta fantasma tras OOM durante
+  create().
+- La hoja de pegar clave SSH rechaza blobs con marcadores de clave
+  privada.
+- Importación de zonas BIND limitada a 1 MiB.
+- La excepción de rate-limit del Robot expone ahora la cabecera
+  Retry-After.
+- El diálogo de compartir excluye apps de portapapeles / notas (MIUI,
+  Samsung, Huawei) del selector.
+
+Compilación y CI:
+- Cada GitHub Action fijada a un SHA de commit de 40 caracteres.
+- Bloqueada la suma de control de la distribución Gradle 8.11.1.
+- Permisos de la keystore fijados a 600 en la build de release.
+- Descargas de artefactos del release filtradas por nombre; globs de
+  archivos del release acotados.
+- Nuevo preflight del release: la tag debe coincidir con versionName o
+  la build falla.
+
+Correcciones menores:
+- El botón de finalizar del asistente ya no queda oculto tras la barra
+  de navegación.
+- Tema por defecto cambiado a modo claro; corregida la superposición
+  con la barra de estado.
+- MainActivity protege ACTION_SECURITY_SETTINGS frente a intent
+  handlers ausentes.
