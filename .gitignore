@@ -31,3 +31,4 @@ test-results/
 
 # Hetzner test data (never commit)
 test-tokens.txt
+.claude-session-state.md
