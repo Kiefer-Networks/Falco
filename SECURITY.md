@@ -11,7 +11,7 @@ patches to older versions.
 Please report vulnerabilities privately. Do **not** open a public
 GitHub issue.
 
-- Email: malte.kiefer@mailbox.org
+- Email: security.falco@kiefer-networks.de
 - Subject prefix: `[Falco security]`
 - Optional GPG: see https://kiefer-networks.de for the current key
 

@@ -73,7 +73,8 @@ comment — a follow-up PR can finalise the translation.
   silently fall back to unpinned TLS.
 
 If you find a security issue, please **email** instead of opening a public
-issue: `malte.kiefer@kiefer-networks.de`.
+issue: `security.falco@kiefer-networks.de`. See [`SECURITY.md`](SECURITY.md)
+for the full vulnerability disclosure policy.
 
 ## Releasing
 
