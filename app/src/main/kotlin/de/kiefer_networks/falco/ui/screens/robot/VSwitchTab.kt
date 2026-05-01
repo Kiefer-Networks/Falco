@@ -25,6 +25,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.dto.RobotVSwitch
 import de.kiefer_networks.falco.data.repo.RobotRepo
+import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.components.ErrorState
 import de.kiefer_networks.falco.ui.components.LoadingState
 import de.kiefer_networks.falco.ui.theme.Spacing
@@ -58,7 +59,7 @@ class VSwitchViewModel @Inject constructor(private val repo: RobotRepo) : ViewMo
                     when ((e as? HttpException)?.code()) {
                         404 -> _state.value = VSwitchUiState(loading = false, items = emptyList())
                         401, 403 -> _state.value = VSwitchUiState(loading = false, noPermission = true)
-                        else -> _state.value = VSwitchUiState(loading = false, error = e.message)
+                        else -> _state.value = VSwitchUiState(loading = false, error = sanitizeError(e))
                     }
                 }
         }

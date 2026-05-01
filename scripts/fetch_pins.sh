@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Fetches SHA-256 SPKI pins for the four Hetzner endpoints and prints a
+# Fetches SHA-256 SPKI pins for all pinned Hetzner endpoints and prints a
 # Kotlin-friendly snippet ready to paste into app/src/main/kotlin/.../data/api/Pins.kt.
 #
 # Pin the *issuer/intermediate* keys for stability — leaves rotate every 60-90 days.
@@ -13,7 +13,10 @@ hosts=(
   "api.hetzner.cloud"
   "robot-ws.your-server.de"
   "dns.hetzner.com"
+  "api.hetzner.com"
   "fsn1.your-objectstorage.com"
+  "hel1.your-objectstorage.com"
+  "nbg1.your-objectstorage.com"
 )
 
 pin_for() {

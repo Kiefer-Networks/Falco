@@ -63,9 +63,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.dto.RobotSshKey
 import de.kiefer_networks.falco.data.repo.RobotRepo
+import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.components.ErrorState
 import de.kiefer_networks.falco.ui.components.LoadingState
 import de.kiefer_networks.falco.ui.theme.Spacing
+import de.kiefer_networks.falco.ui.util.looksLikePrivateKey
+import de.kiefer_networks.falco.ui.util.looksLikePublicKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -97,7 +100,7 @@ class RobotSshKeysViewModel @Inject constructor(private val repo: RobotRepo) : V
                 when ((e as? HttpException)?.code()) {
                     404 -> _state.value = RobotSshKeysUiState(loading = false, keys = emptyList())
                     401, 403 -> _state.value = RobotSshKeysUiState(loading = false, noPermission = true)
-                    else -> _state.value = RobotSshKeysUiState(loading = false, error = e.message)
+                    else -> _state.value = RobotSshKeysUiState(loading = false, error = sanitizeError(e))
                 }
             }
     }
@@ -306,6 +309,7 @@ private fun AddKeySheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var name by remember { mutableStateOf(initialName) }
     var data by remember { mutableStateOf(initialData) }
+    val invalidKey = data.isNotBlank() && (looksLikePrivateKey(data) || !looksLikePublicKey(data))
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -335,6 +339,15 @@ private fun AddKeySheet(
                 label = { Text(stringResource(R.string.robot_ssh_key_data)) },
                 singleLine = false,
                 minLines = 4,
+                isError = invalidKey,
+                supportingText = if (invalidKey) {
+                    {
+                        Text(
+                            stringResource(R.string.cloud_ssh_key_private_warning),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                } else null,
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(
@@ -344,7 +357,7 @@ private fun AddKeySheet(
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
                 Spacer(Modifier.size(Spacing.sm))
                 Button(
-                    enabled = name.isNotBlank() && data.isNotBlank(),
+                    enabled = name.isNotBlank() && data.isNotBlank() && !invalidKey,
                     onClick = { onConfirm(name, data) },
                 ) { Text(stringResource(R.string.save)) }
             }

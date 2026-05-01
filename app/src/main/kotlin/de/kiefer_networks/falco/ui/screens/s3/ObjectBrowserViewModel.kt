@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.data.api.S3Client
 import de.kiefer_networks.falco.data.repo.S3Repo
 import de.kiefer_networks.falco.data.s3.S3DownloadHelper
+import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.nav.Routes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,7 +63,7 @@ class ObjectBrowserViewModel @Inject constructor(
                     )
                     _state.value = ObjectBrowserUiState(loading = false, objects = sorted)
                 }
-                .onFailure { _state.value = ObjectBrowserUiState(loading = false, error = it.message) }
+                .onFailure { _state.value = ObjectBrowserUiState(loading = false, error = sanitizeError(it)) }
         }
     }
 
@@ -73,7 +74,7 @@ class ObjectBrowserViewModel @Inject constructor(
                     _events.value = ObjectBrowserEvent.DeleteSucceeded(key)
                     refresh()
                 }
-                .onFailure { _events.value = ObjectBrowserEvent.DeleteFailed(it.message ?: "") }
+                .onFailure { _events.value = ObjectBrowserEvent.DeleteFailed(sanitizeError(it)) }
         }
     }
 
@@ -81,7 +82,7 @@ class ObjectBrowserViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { repo.shareLink(bucket, key, hours) }
                 .onSuccess { _events.value = ObjectBrowserEvent.ShareLinkReady(key, it) }
-                .onFailure { _events.value = ObjectBrowserEvent.ShareLinkFailed(it.message ?: "") }
+                .onFailure { _events.value = ObjectBrowserEvent.ShareLinkFailed(sanitizeError(it)) }
         }
     }
 
@@ -91,7 +92,7 @@ class ObjectBrowserViewModel @Inject constructor(
                 output.use { downloader.download(bucket, key, it) }
             }
                 .onSuccess { _events.value = ObjectBrowserEvent.DownloadSucceeded(key) }
-                .onFailure { _events.value = ObjectBrowserEvent.DownloadFailed(it.message ?: "") }
+                .onFailure { _events.value = ObjectBrowserEvent.DownloadFailed(sanitizeError(it)) }
             onComplete()
         }
     }

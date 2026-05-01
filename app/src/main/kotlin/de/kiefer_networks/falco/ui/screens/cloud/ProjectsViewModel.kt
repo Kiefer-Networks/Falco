@@ -49,6 +49,33 @@ class ProjectsViewModel @Inject constructor(
         viewModelScope.launch { accountManager.setActiveCloudProject(accountId, projectId) }
     }
 
+    /**
+     * Switch the active Cloud project, then run [onCommitted] on the main
+     * thread. Used by hub-screen list cards that need to open a project-scoped
+     * detail screen — the DataStore write is async, so callers must wait for
+     * the commit before navigating, otherwise the new screen's Hilt-injected
+     * repo will read the previous project's token (R-006).
+     *
+     * If [projectId] is `null` or already matches the active project, the
+     * action runs immediately without writing.
+     */
+    fun selectProjectThen(projectId: String?, onCommitted: () -> Unit) {
+        val current = state.value.activeProjectId
+        if (projectId == null || projectId == current) {
+            onCommitted()
+            return
+        }
+        val accountId = state.value.accountId
+        if (accountId == null) {
+            onCommitted()
+            return
+        }
+        viewModelScope.launch {
+            accountManager.setActiveCloudProject(accountId, projectId)
+            onCommitted()
+        }
+    }
+
     fun add(project: CloudProject, onDone: () -> Unit = {}) {
         val accountId = state.value.accountId ?: return
         viewModelScope.launch {

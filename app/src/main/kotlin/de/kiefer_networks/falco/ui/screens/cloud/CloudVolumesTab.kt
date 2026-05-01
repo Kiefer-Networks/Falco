@@ -68,7 +68,7 @@ import javax.inject.Inject
 data class CloudVolumesUiState(
     val loading: Boolean = true,
     val error: String? = null,
-    val data: List<CloudVolume> = emptyList(),
+    val data: List<ProjectAware<CloudVolume>> = emptyList(),
 )
 
 data class CreateVolumeOptions(
@@ -96,8 +96,13 @@ class CloudVolumesViewModel @Inject constructor(private val repo: CloudRepo) : V
 
     fun refresh() = viewModelScope.launch {
         _state.value = CloudVolumesUiState(loading = true)
-        runCatching { repo.listVolumes() }
-            .onSuccess { _state.value = CloudVolumesUiState(loading = false, data = it) }
+        runCatching { repo.listVolumesAware() }
+            .onSuccess { items ->
+                _state.value = CloudVolumesUiState(
+                    loading = false,
+                    data = items.map { (pid, v) -> ProjectAware(pid, v) },
+                )
+            }
             .onFailure { _state.value = CloudVolumesUiState(loading = false, error = sanitizeError(it)) }
     }
 
@@ -185,7 +190,10 @@ fun CloudVolumesTab(viewModel: CloudVolumesViewModel = hiltViewModel()) {
                 Text(stringResource(R.string.empty_list))
             }
             else -> LazyColumn(Modifier.fillMaxSize().padding(12.dp)) {
-                items(s.data, key = { it.id }) { volume -> VolumeCard(volume) }
+                items(
+                    s.data,
+                    key = { "${it.projectId.orEmpty()}-${it.item.id}" },
+                ) { entry -> VolumeCard(entry.item) }
             }
         }
         FloatingActionButton(

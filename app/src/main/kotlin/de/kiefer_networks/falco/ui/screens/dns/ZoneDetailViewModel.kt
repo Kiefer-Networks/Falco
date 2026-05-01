@@ -9,6 +9,7 @@ import de.kiefer_networks.falco.data.dto.CreateDnsRecord
 import de.kiefer_networks.falco.data.dto.DnsRecord
 import de.kiefer_networks.falco.data.dto.DnsZone
 import de.kiefer_networks.falco.data.repo.DnsRepo
+import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.nav.Routes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,7 +53,7 @@ class ZoneDetailViewModel @Inject constructor(
                     records = records,
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(loading = false, error = e.message)
+                _state.value = _state.value.copy(loading = false, error = sanitizeError(e))
             }
         }
     }
@@ -60,7 +61,7 @@ class ZoneDetailViewModel @Inject constructor(
     fun createRecord(record: CreateDnsRecord) {
         viewModelScope.launch {
             runCatching { repo.createRecord(record) }
-                .onFailure { e -> _state.value = _state.value.copy(error = e.message) }
+                .onFailure { e -> _state.value = _state.value.copy(error = sanitizeError(e)) }
             refresh()
         }
     }
@@ -72,7 +73,7 @@ class ZoneDetailViewModel @Inject constructor(
             runCatching {
                 repo.deleteRecord(id)
                 repo.createRecord(record)
-            }.onFailure { e -> _state.value = _state.value.copy(error = e.message) }
+            }.onFailure { e -> _state.value = _state.value.copy(error = sanitizeError(e)) }
             refresh()
         }
     }
@@ -80,7 +81,7 @@ class ZoneDetailViewModel @Inject constructor(
     fun deleteRecord(id: String) {
         viewModelScope.launch {
             runCatching { repo.deleteRecord(id) }
-                .onFailure { e -> _state.value = _state.value.copy(error = e.message) }
+                .onFailure { e -> _state.value = _state.value.copy(error = sanitizeError(e)) }
             refresh()
         }
     }

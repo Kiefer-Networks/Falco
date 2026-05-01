@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.data.util
 
+import de.kiefer_networks.falco.data.api.CleartextS3EndpointException
+import de.kiefer_networks.falco.data.api.UnpinnedS3EndpointException
 import retrofit2.HttpException
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
@@ -15,6 +17,8 @@ import kotlin.coroutines.cancellation.CancellationException
  */
 fun sanitizeError(t: Throwable): String = when (t) {
     is CancellationException -> throw t
+    is CleartextS3EndpointException -> "S3 endpoint must use https://"
+    is UnpinnedS3EndpointException -> "S3 endpoint host is not pinned"
     is HttpException -> "HTTP ${t.code()}"
     is IOException -> "Network error"
     else -> "Error"

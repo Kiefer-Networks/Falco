@@ -2,6 +2,7 @@
 package de.kiefer_networks.falco.data.s3
 
 import de.kiefer_networks.falco.data.api.HttpClientFactory
+import de.kiefer_networks.falco.data.api.validateAndNormalizeS3Endpoint
 import de.kiefer_networks.falco.data.auth.AccountManager
 import io.minio.GetObjectArgs
 import io.minio.MinioClient
@@ -31,7 +32,7 @@ class S3DownloadHelper @Inject constructor(
             require(project.hasS3) { "Active Cloud project has no S3 credentials" }
             val endpoint = project.s3Endpoint!!
             val client = MinioClient.builder()
-                .endpoint(if (endpoint.startsWith("http")) endpoint else "https://$endpoint")
+                .endpoint(validateAndNormalizeS3Endpoint(endpoint))
                 .also { if (!project.s3Region.isNullOrBlank()) it.region(project.s3Region) }
                 .credentials(project.s3AccessKey!!, project.s3SecretKey!!)
                 .httpClient(HttpClientFactory.s3OkHttp())

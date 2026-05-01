@@ -68,6 +68,8 @@ import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.components.ErrorState
 import de.kiefer_networks.falco.ui.components.LoadingState
 import de.kiefer_networks.falco.ui.theme.Spacing
+import de.kiefer_networks.falco.ui.util.looksLikePrivateKey
+import de.kiefer_networks.falco.ui.util.looksLikePublicKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -318,7 +320,7 @@ private fun AddKeySheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var name by remember { mutableStateOf(initialName) }
     var data by remember { mutableStateOf(initialData) }
-    val looksLikePrivate = looksLikePrivateKey(data)
+    val invalidKey = data.isNotBlank() && (looksLikePrivateKey(data) || !looksLikePublicKey(data))
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -342,8 +344,8 @@ private fun AddKeySheet(
                 label = { Text(stringResource(R.string.robot_ssh_key_data)) },
                 singleLine = false,
                 minLines = 4,
-                isError = looksLikePrivate,
-                supportingText = if (looksLikePrivate) {
+                isError = invalidKey,
+                supportingText = if (invalidKey) {
                     {
                         Text(
                             stringResource(R.string.cloud_ssh_key_private_warning),
@@ -357,28 +359,13 @@ private fun AddKeySheet(
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
                 Spacer(Modifier.size(Spacing.sm))
                 Button(
-                    enabled = name.isNotBlank() && data.isNotBlank() && !looksLikePrivate,
+                    enabled = name.isNotBlank() && data.isNotBlank() && !invalidKey,
                     onClick = { onConfirm(name, data) },
                 ) { Text(stringResource(R.string.save)) }
             }
             Spacer(Modifier.size(Spacing.md))
         }
     }
-}
-
-/**
- * Heuristic guard against accidentally uploading a private key. Hetzner only
- * stores public keys; if the user pastes a private blob (e.g. `id_ed25519`
- * instead of `id_ed25519.pub`) we reject before it reaches the API.
- */
-private fun looksLikePrivateKey(input: String): Boolean {
-    val upper = input.uppercase()
-    return upper.contains("BEGIN PRIVATE KEY") ||
-        upper.contains("BEGIN OPENSSH PRIVATE KEY") ||
-        upper.contains("BEGIN RSA PRIVATE KEY") ||
-        upper.contains("BEGIN DSA PRIVATE KEY") ||
-        upper.contains("BEGIN EC PRIVATE KEY") ||
-        upper.contains("BEGIN ENCRYPTED PRIVATE KEY")
 }
 
 @Composable

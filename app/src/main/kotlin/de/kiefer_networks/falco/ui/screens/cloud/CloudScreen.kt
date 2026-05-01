@@ -67,7 +67,7 @@ import de.kiefer_networks.falco.ui.components.LoadingState
 
 @Composable
 fun CloudScreen(
-    onOpenServer: (Long) -> Unit = {},
+    onOpenServer: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     viewModel: CloudViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -104,9 +104,9 @@ fun CloudScreen(
 
 @Composable
 private fun ServerList(
-    servers: List<CloudServer>,
+    servers: List<ProjectAware<CloudServer>>,
     onAction: (CloudViewModel.ServerAction, Long) -> Unit,
-    onOpen: (Long) -> Unit,
+    onOpen: (projectId: String?, id: Long) -> Unit,
 ) {
     if (servers.isEmpty()) {
         EmptyState(
@@ -120,8 +120,13 @@ private fun ServerList(
         modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        items(servers, key = { it.id }) { server ->
-            ServerCard(server = server, onAction = onAction, onClick = { onOpen(server.id) })
+        items(servers, key = { "${it.projectId.orEmpty()}-${it.item.id}" }) { entry ->
+            val server = entry.item
+            ServerCard(
+                server = server,
+                onAction = onAction,
+                onClick = { onOpen(entry.projectId, server.id) },
+            )
         }
     }
 }

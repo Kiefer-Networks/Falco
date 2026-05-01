@@ -57,7 +57,14 @@ object HttpClientFactory {
             .writeTimeout(30, TimeUnit.SECONDS)
             .followRedirects(false)
             .followSslRedirects(false)
-            .retryOnConnectionFailure(true)
+            // POST replay danger; OkHttp's retry-on-connection-failure is not
+            // idempotency-aware — leave to caller-level retry policy.
+            // (Cloud action endpoints — snapshot, reset, reset_password,
+            // create_* — must never be silently re-issued. The same client
+            // serves GETs and mutating POSTs, so disable across the board.
+            // Server-side idempotency keys would be the right answer but
+            // that's beyond this fix.)
+            .retryOnConnectionFailure(false)
             .apply { extra.forEach(::addInterceptor) }
             .build()
 
@@ -130,14 +137,24 @@ private object UserAgentInterceptor : Interceptor {
 }
 
 /**
- * Robot enforces a hard cap (200/h queries, 50/h resets). When we see 403/429
- * we surface a typed exception so the UI can render the rate-limit message
- * instead of a generic auth error.
+ * Robot enforces a hard cap (200/h queries, 50/h resets). We surface a typed
+ * exception so the UI can render the rate-limit message instead of a generic
+ * auth error.
+ *
+ * Detection rules (tightened per audit A-005):
+ *   - 429 is always throttling.
+ *   - 403 is throttling ONLY if Robot also sent `Retry-After`. A bare 403
+ *     (e.g. `Content-Length: 0` with no Retry-After) means the Basic-auth
+ *     credentials are wrong — let it propagate so sanitizeError can report
+ *     an auth failure instead of misleading the user with a rate-limit
+ *     dialog.
  */
 private class RobotRateLimitInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
         val response = chain.proceed(chain.request())
-        if (response.code == 429 || (response.code == 403 && response.body?.contentLength() == 0L)) {
+        val throttled = response.code == 429 ||
+            (response.code == 403 && response.header("Retry-After") != null)
+        if (throttled) {
             response.close()
             throw RobotRateLimitException(chain.request())
         }

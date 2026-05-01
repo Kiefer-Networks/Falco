@@ -84,7 +84,23 @@ class MainActivity : FragmentActivity() {
             }
         }
 
-        gateBiometric()
+        // Precedence: when `requireUnlockOnLaunch` is true (default), the cold-start
+        // biometric gate runs and the app shell stays hidden behind LockedPlaceholder
+        // until the user authenticates. When the user has explicitly disabled the
+        // launch gate, we skip the cold-start prompt and mark the session unlocked
+        // so the shell renders immediately — but the foreground auto-lock timeout
+        // in onResume() still applies, so the app re-locks after backgrounding.
+        // We always read the pref via a coroutine; `unlocked` starts false and
+        // setContent has already rendered LockedPlaceholder, so there is no
+        // window where the app shell is visible before this decision is made.
+        lifecycleScope.launch {
+            val requireOnLaunch = securityPrefs.requireUnlockOnLaunch.first()
+            if (requireOnLaunch) {
+                gateBiometric()
+            } else {
+                unlocked.value = true
+            }
+        }
     }
 
     override fun onPause() {

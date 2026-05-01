@@ -73,7 +73,7 @@ import javax.inject.Inject
 data class CloudStorageBoxesUiState(
     val loading: Boolean = true,
     val error: String? = null,
-    val data: List<CloudStorageBox> = emptyList(),
+    val data: List<ProjectAware<CloudStorageBox>> = emptyList(),
 )
 
 data class CreateStorageBoxOptions(
@@ -98,8 +98,13 @@ class CloudStorageBoxesViewModel @Inject constructor(private val repo: CloudRepo
 
     fun refresh() = viewModelScope.launch {
         _state.value = CloudStorageBoxesUiState(loading = true)
-        runCatching { repo.listStorageBoxes() }
-            .onSuccess { _state.value = CloudStorageBoxesUiState(loading = false, data = it) }
+        runCatching { repo.listStorageBoxesAware() }
+            .onSuccess { items ->
+                _state.value = CloudStorageBoxesUiState(
+                    loading = false,
+                    data = items.map { (pid, b) -> ProjectAware(pid, b) },
+                )
+            }
             .onFailure { _state.value = CloudStorageBoxesUiState(loading = false, error = sanitizeError(it)) }
     }
 
@@ -148,7 +153,7 @@ class CloudStorageBoxesViewModel @Inject constructor(private val repo: CloudRepo
 @Composable
 fun CloudStorageBoxesTab(
     viewModel: CloudStorageBoxesViewModel = hiltViewModel(),
-    onOpen: (Long) -> Unit = {},
+    onOpen: (projectId: String?, id: Long) -> Unit = { _, _ -> },
 ) {
     val s by viewModel.state.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
@@ -166,7 +171,13 @@ fun CloudStorageBoxesTab(
                 modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(s.data, key = { it.id }) { box -> StorageBoxCard(box, onClick = { onOpen(box.id) }) }
+                items(
+                    s.data,
+                    key = { "${it.projectId.orEmpty()}-${it.item.id}" },
+                ) { entry ->
+                    val box = entry.item
+                    StorageBoxCard(box, onClick = { onOpen(entry.projectId, box.id) })
+                }
             }
         }
         FloatingActionButton(

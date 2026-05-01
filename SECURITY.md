@@ -13,7 +13,6 @@ GitHub issue.
 
 - Email: security.falco@kiefer-networks.de
 - Subject prefix: `[Falco security]`
-- Optional GPG: see https://kiefer-networks.de for the current key
 
 Please include:
 
@@ -52,6 +51,69 @@ threat model assumes:
 - Issues that require a rooted device with a debugger attached.
 - Vulnerabilities in optional accessibility services the user
   voluntarily installs.
+
+## Build supply chain
+
+Gradle dependency verification (`gradle/verification-metadata.xml`) is
+enabled with SHA-256 checksums for every transitive artifact. PGP
+signature verification (`<verify-signatures>`) is currently **off**
+pending population of the `<trusted-keys>` block — see the TODO comment
+at the top of `gradle/verification-metadata.xml` (finding **B-006**).
+
+Maintainer action item: for each of the listed maven groups (Google /
+AndroidX, JetBrains, Square, MinIO, Dagger), fetch the publisher's
+signing key, cross-check the fingerprint against a second source, add a
+`<trusted-key>` entry, then flip `<verify-signatures>` to `true` and
+verify a clean build still passes.
+
+## Accepted Risks
+
+A handful of items have been reviewed and consciously accepted rather
+than fixed. They are recorded here so the trail is reproducible.
+
+1. **Alpha-track Jetpack security libraries.** Falco pins
+   `androidx.security:security-crypto:1.1.0-alpha06` (used for
+   `EncryptedSharedPreferences` / `MasterKey`) and
+   `androidx.biometric:biometric:1.2.0-alpha05` (used for
+   `BiometricPrompt` Class-3 / `DEVICE_CREDENTIAL`). These are the
+   most recent tracks AndroidX has shipped on these particular
+   libraries. *Why accepted:* the stable `1.0.x` tracks lack the
+   hardware-backed `MasterKey` API and the Class-3 biometric gate
+   Falco's threat model relies on; downgrading would weaken the
+   product. *Revisit:* on every Falco release — bump to the newest
+   alpha (or, ideally, a stable) track and re-run the audit before
+   tagging.
+
+2. **Two informational audit items (F-013 / F-017) accepted as
+   known.** Both were flagged informational only — no exploit
+   path, no user-visible impact. *Why accepted:* informational
+   classification and no remediation path that wouldn't add more
+   risk than it removes. *Revisit:* during the next audit pass —
+   confirm conditions still hold and either close or re-classify.
+
+3. **No public delete-redirect cleanup on the old GitHub URL.** The
+   project moved from `MalteKiefer/Falco` to `Kiefer-Networks/Falco`;
+   GitHub keeps a permanent redirect from the old URL. *Why
+   accepted:* the redirect is transparent to clones, releases and
+   F-Droid recipes, and there is no way to remove it short of
+   deleting and recreating the namespace (which would break every
+   incoming link). *Revisit:* only if GitHub ever ships a "purge
+   redirect" admin action, or if the redirect is observed pointing
+   at the wrong destination.
+
+4. **Gradle dependency PGP verification disabled
+   (`verify-signatures=false`).** `gradle/verification-metadata.xml`
+   ships with PGP signature verification disabled; resolved
+   artefacts are pinned by SHA-256 only and the `<trusted-keys>`
+   set is empty. *Why accepted:* SHA-256 pinning already defeats
+   the in-the-wild supply-chain attacks Falco is most exposed to
+   (a compromised Maven mirror serving a swapped JAR), and
+   populating per-group GPG fingerprints for every transitive
+   dependency is a substantial one-time effort. See the
+   **Build supply chain** section above for the maintainer action
+   item. *Revisit:* before v2.0 — enumerate per-group GPG
+   fingerprints, add `<trusted-key>` entries, and flip
+   `<verify-signatures>` to `true`.
 
 ## Hall of fame
 

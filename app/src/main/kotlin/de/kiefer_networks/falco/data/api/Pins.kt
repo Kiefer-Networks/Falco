@@ -26,10 +26,15 @@ internal object Pins {
     private val digiCertChain = listOf(DIGICERT_GLOBAL_ROOT_CA, THAWTE_TLS_RSA_CA_G1)
 
     val cloud: List<String> = letsEncryptRoots                    // api.hetzner.cloud
+    // TODO(maintainer): Re-run scripts/fetch_pins.sh against api.hetzner.com
+    //  before the next release. The audit (A-003) suspected this host actually
+    //  serves a Let's Encrypt chain, not DigiCert as assumed below — if so,
+    //  switch this list to `letsEncryptRoots`. Until verified live, the
+    //  digiCertChain pin here may break Storage Box traffic in the field.
     val hetznerApi: List<String> = digiCertChain                  // api.hetzner.com (storage boxes)
     val robot: List<String> = digiCertChain                       // robot-ws.your-server.de
     val dns: List<String> = letsEncryptRoots                      // dns.hetzner.com
-    val objectStorage: List<String> = letsEncryptRoots            // *.your-objectstorage.com
+    val objectStorage: List<String> = letsEncryptRoots            // *.your-objectstorage.com (fsn1/hel1/nbg1 — all LE)
 
     fun all(): Map<String, List<String>> = mapOf(
         "api.hetzner.cloud" to cloud,

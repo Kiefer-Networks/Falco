@@ -66,6 +66,26 @@ fun CloudHubScreen(
     onOpenFloatingIp: (Long) -> Unit = {},
     viewModel: ProjectsViewModel = hiltViewModel(),
 ) {
+    // R-006: in aggregate-projects mode the hub lists span every project, but
+    // detail screens read via the active project's token. Wrap each detail-nav
+    // in `selectProjectThen` so the DataStore commit lands before the new
+    // screen's repo runs. The helper is a no-op when the source project is
+    // already active (single-project mode, or a card from the active project).
+    val openServerSwitch: (String?, Long) -> Unit = { pid, id ->
+        viewModel.selectProjectThen(pid) { onOpenServer(id) }
+    }
+    val openFirewallSwitch: (String?, Long) -> Unit = { pid, id ->
+        viewModel.selectProjectThen(pid) { onOpenFirewall(id) }
+    }
+    val openStorageBoxSwitch: (String?, Long) -> Unit = { pid, id ->
+        viewModel.selectProjectThen(pid) { onOpenStorageBox(id) }
+    }
+    val openVolumeSwitch: (String?, Long) -> Unit = { pid, id ->
+        viewModel.selectProjectThen(pid) { onOpenVolume(id) }
+    }
+    val openFloatingIpSwitch: (String?, Long) -> Unit = { pid, id ->
+        viewModel.selectProjectThen(pid) { onOpenFloatingIp(id) }
+    }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var pickerOpen by remember { mutableStateOf(false) }
     val projectsState by viewModel.state.collectAsState()
@@ -144,10 +164,13 @@ fun CloudHubScreen(
             Box(modifier = Modifier.fillMaxSize()) {
                 androidx.compose.runtime.key(projectsState.activeProjectId, projectsState.aggregateProjects) {
                     when (selected) {
-                        0 -> CloudScreen(onOpenServer = onOpenServer)
-                        1 -> CloudFirewallsTab(onOpen = onOpenFirewall)
-                        2 -> CloudStorageBoxesTab(onOpen = onOpenStorageBox)
-                        3 -> CloudResourcesTab(onOpenVolume = onOpenVolume, onOpenFloatingIp = onOpenFloatingIp)
+                        0 -> CloudScreen(onOpenServer = openServerSwitch)
+                        1 -> CloudFirewallsTab(onOpen = openFirewallSwitch)
+                        2 -> CloudStorageBoxesTab(onOpen = openStorageBoxSwitch)
+                        3 -> CloudResourcesTab(
+                            onOpenVolume = openVolumeSwitch,
+                            onOpenFloatingIp = openFloatingIpSwitch,
+                        )
                         4 -> CloudSshKeysTab()
                     }
                 }

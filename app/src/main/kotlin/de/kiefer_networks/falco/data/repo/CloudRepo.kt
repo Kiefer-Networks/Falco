@@ -95,27 +95,62 @@ class CloudRepo @Inject constructor(
      * Used by list endpoints so the UI can show a unified view without forcing
      * the user to switch projects.
      */
-    private suspend fun apis(): List<CloudApi> {
-        if (!prefs.aggregateProjectsNow()) return listOf(api())
-        val accountId = accounts.activeAccountId.first() ?: return listOf(api())
+    private suspend fun apis(): List<CloudApi> = apisWithProjectIds().map { it.second }
+
+    private suspend fun storageBoxApis(): List<StorageBoxApi> =
+        storageBoxApisWithProjectIds().map { it.second }
+
+    /**
+     * Fan-out variant that pairs each Cloud API with the project id it was
+     * built for — used by `*Aware` list endpoints so callers can tag each item
+     * with its source project. In non-aggregate mode the active project's id
+     * is paired (or `null` if the active project cannot be resolved).
+     */
+    private suspend fun apisWithProjectIds(): List<Pair<String?, CloudApi>> {
+        if (!prefs.aggregateProjectsNow()) {
+            val active = accounts.activeCloudProject.first()
+            return listOf(active?.id to api())
+        }
+        val accountId = accounts.activeAccountId.first()
+            ?: return listOf(accounts.activeCloudProject.first()?.id to api())
         val projects = accounts.cloudProjects(accountId)
-        if (projects.isEmpty()) return listOf(api())
+        if (projects.isEmpty()) {
+            return listOf(accounts.activeCloudProject.first()?.id to api())
+        }
         return projects.map {
-            HttpClientFactory.cloudRetrofit(it.cloudToken).create(CloudApi::class.java)
+            it.id to HttpClientFactory.cloudRetrofit(it.cloudToken).create(CloudApi::class.java)
         }
     }
 
-    private suspend fun storageBoxApis(): List<StorageBoxApi> {
-        if (!prefs.aggregateProjectsNow()) return listOf(storageBoxApi())
-        val accountId = accounts.activeAccountId.first() ?: return listOf(storageBoxApi())
+    private suspend fun storageBoxApisWithProjectIds(): List<Pair<String?, StorageBoxApi>> {
+        if (!prefs.aggregateProjectsNow()) {
+            val active = accounts.activeCloudProject.first()
+            return listOf(active?.id to storageBoxApi())
+        }
+        val accountId = accounts.activeAccountId.first()
+            ?: return listOf(accounts.activeCloudProject.first()?.id to storageBoxApi())
         val projects = accounts.cloudProjects(accountId)
-        if (projects.isEmpty()) return listOf(storageBoxApi())
+        if (projects.isEmpty()) {
+            return listOf(accounts.activeCloudProject.first()?.id to storageBoxApi())
+        }
         return projects.map {
-            HttpClientFactory.storageBoxRetrofit(it.cloudToken).create(StorageBoxApi::class.java)
+            it.id to HttpClientFactory.storageBoxRetrofit(it.cloudToken).create(StorageBoxApi::class.java)
         }
     }
+
 
     suspend fun listServers(): List<CloudServer> = apis().flatMap { it.listServers().servers }
+
+    /**
+     * Like [listServers] but tags every server with the project id it came
+     * from. Used by hub UIs that may need to switch the active Cloud project
+     * before opening a project-scoped detail screen (the detail repo otherwise
+     * reads the previous project's token in aggregate-projects mode).
+     */
+    suspend fun listServersAware(): List<Pair<String?, CloudServer>> =
+        apisWithProjectIds().flatMap { (pid, api) ->
+            api.listServers().servers.map { pid to it }
+        }
 
     suspend fun createServer(
         name: String,
@@ -157,6 +192,10 @@ class CloudRepo @Inject constructor(
     }
 
     suspend fun listVolumes(): List<CloudVolume> = apis().flatMap { it.listVolumes().volumes }
+    suspend fun listVolumesAware(): List<Pair<String?, CloudVolume>> =
+        apisWithProjectIds().flatMap { (pid, api) ->
+            api.listVolumes().volumes.map { pid to it }
+        }
     suspend fun getVolume(id: Long): CloudVolume = api().getVolume(id).volume
 
     suspend fun createVolume(
@@ -193,6 +232,10 @@ class CloudRepo @Inject constructor(
     suspend fun setVolumeProtection(id: Long, delete: Boolean? = null) =
         api().changeVolumeProtection(id, ChangeProtectionRequest(delete = delete))
     suspend fun listFirewalls(): List<CloudFirewall> = apis().flatMap { it.listFirewalls().firewalls }
+    suspend fun listFirewallsAware(): List<Pair<String?, CloudFirewall>> =
+        apisWithProjectIds().flatMap { (pid, api) ->
+            api.listFirewalls().firewalls.map { pid to it }
+        }
 
     suspend fun createFirewall(name: String, projectId: String? = null): CloudFirewall =
         api(projectId).createFirewall(de.kiefer_networks.falco.data.dto.CreateFirewallRequest(name = name)).firewall
@@ -214,6 +257,10 @@ class CloudRepo @Inject constructor(
             RemoveFirewallRequest(listOf(FirewallApplyTarget("server", ResourceRef(serverId)))),
         )
     suspend fun listFloatingIps(): List<CloudFloatingIp> = apis().flatMap { it.listFloatingIps().floatingIps }
+    suspend fun listFloatingIpsAware(): List<Pair<String?, CloudFloatingIp>> =
+        apisWithProjectIds().flatMap { (pid, api) ->
+            api.listFloatingIps().floatingIps.map { pid to it }
+        }
     suspend fun getFloatingIp(id: Long): CloudFloatingIp = api().getFloatingIp(id).floatingIp
     suspend fun createFloatingIp(
         type: String,
@@ -357,6 +404,10 @@ class CloudRepo @Inject constructor(
     suspend fun getAction(id: Long): de.kiefer_networks.falco.data.dto.ActionEnvelope =
         api().getAction(id).action
     suspend fun listStorageBoxes(): List<CloudStorageBox> = storageBoxApis().flatMap { it.listStorageBoxes().storageBoxes }
+    suspend fun listStorageBoxesAware(): List<Pair<String?, CloudStorageBox>> =
+        storageBoxApisWithProjectIds().flatMap { (pid, api) ->
+            api.listStorageBoxes().storageBoxes.map { pid to it }
+        }
 
     suspend fun listStorageBoxTypes(): List<de.kiefer_networks.falco.data.dto.CloudStorageBoxType> =
         storageBoxApi().listStorageBoxTypes().storageBoxTypes

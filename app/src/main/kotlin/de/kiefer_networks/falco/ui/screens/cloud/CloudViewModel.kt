@@ -23,7 +23,7 @@ import javax.inject.Inject
 
 sealed interface CloudUiState {
     data object Loading : CloudUiState
-    data class Loaded(val servers: List<CloudServer>) : CloudUiState
+    data class Loaded(val servers: List<ProjectAware<CloudServer>>) : CloudUiState
     data class Failed(val message: String) : CloudUiState
 }
 
@@ -114,9 +114,11 @@ class CloudViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _state.value = CloudUiState.Loading
-            _state.value = runCatching { repo.listServers() }
+            _state.value = runCatching { repo.listServersAware() }
                 .fold(
-                    onSuccess = { CloudUiState.Loaded(it) },
+                    onSuccess = { items ->
+                        CloudUiState.Loaded(items.map { (pid, srv) -> ProjectAware(pid, srv) })
+                    },
                     onFailure = { CloudUiState.Failed(sanitizeError(it)) },
                 )
         }

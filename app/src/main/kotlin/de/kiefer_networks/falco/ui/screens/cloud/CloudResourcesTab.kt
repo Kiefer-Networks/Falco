@@ -68,8 +68,8 @@ private enum class PendingCreate { Volume, Network, FloatingIp, PlacementGroup, 
 
 @Composable
 fun CloudResourcesTab(
-    onOpenVolume: (Long) -> Unit = {},
-    onOpenFloatingIp: (Long) -> Unit = {},
+    onOpenVolume: (projectId: String?, id: Long) -> Unit = { _, _ -> },
+    onOpenFloatingIp: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     volumesViewModel: CloudVolumesViewModel = hiltViewModel(),
     networksViewModel: CloudNetworksViewModel = hiltViewModel(),
     floatingIpsViewModel: CloudFloatingIpsViewModel = hiltViewModel(),
@@ -155,7 +155,15 @@ fun CloudResourcesTab(
         }
         if (v.loading) item { LoadingRow() }
         else if (v.data.isEmpty()) item { EmptyRow() }
-        else items(v.data, key = { "vol-${it.id}" }) { ResourceVolumeCard(it, onClick = { onOpenVolume(it.id) }) }
+        else items(
+            v.data,
+            key = { "vol-${it.projectId.orEmpty()}-${it.item.id}" },
+        ) { entry ->
+            ResourceVolumeCard(
+                entry.item,
+                onClick = { onOpenVolume(entry.projectId, entry.item.id) },
+            )
+        }
 
         item {
             SectionHeader(
@@ -179,7 +187,15 @@ fun CloudResourcesTab(
         }
         if (f.loading) item { LoadingRow() }
         else if (f.data.isEmpty()) item { EmptyRow() }
-        else items(f.data, key = { "fip-${it.id}" }) { ResourceFloatingIpCard(it, onClick = { onOpenFloatingIp(it.id) }) }
+        else items(
+            f.data,
+            key = { "fip-${it.projectId.orEmpty()}-${it.item.id}" },
+        ) { entry ->
+            ResourceFloatingIpCard(
+                entry.item,
+                onClick = { onOpenFloatingIp(entry.projectId, entry.item.id) },
+            )
+        }
 
         item { SectionHeader(stringResource(R.string.cloud_load_balancers), lb.data.size) }
         if (lb.loading) item { LoadingRow() }

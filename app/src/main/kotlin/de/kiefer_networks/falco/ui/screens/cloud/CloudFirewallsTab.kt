@@ -69,7 +69,7 @@ data class CloudFirewallsUiState(
     val loading: Boolean = true,
     val error: String? = null,
     val running: Boolean = false,
-    val data: List<CloudFirewall> = emptyList(),
+    val data: List<ProjectAware<CloudFirewall>> = emptyList(),
     val servers: List<CloudServer> = emptyList(),
 )
 
@@ -85,8 +85,11 @@ class CloudFirewallsViewModel @Inject constructor(private val repo: CloudRepo) :
 
     fun refresh() = viewModelScope.launch {
         _state.update { it.copy(loading = true, error = null) }
-        runCatching { repo.listFirewalls() }
-            .onSuccess { list -> _state.update { CloudFirewallsUiState(loading = false, data = list) } }
+        runCatching { repo.listFirewallsAware() }
+            .onSuccess { items ->
+                val tagged = items.map { (pid, fw) -> ProjectAware(pid, fw) }
+                _state.update { CloudFirewallsUiState(loading = false, data = tagged) }
+            }
             .onFailure { e -> _state.update { it.copy(loading = false, error = sanitizeError(e)) } }
     }
 
@@ -117,7 +120,7 @@ class CloudFirewallsViewModel @Inject constructor(private val repo: CloudRepo) :
 
 @Composable
 fun CloudFirewallsTab(
-    onOpen: (Long) -> Unit = {},
+    onOpen: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     viewModel: CloudFirewallsViewModel = hiltViewModel(),
 ) {
     val s by viewModel.state.collectAsState()
@@ -147,10 +150,14 @@ fun CloudFirewallsTab(
                 Text(stringResource(R.string.empty_list))
             }
             else -> LazyColumn(Modifier.fillMaxSize().padding(12.dp)) {
-                items(s.data, key = { it.id }) { firewall ->
+                items(
+                    s.data,
+                    key = { "${it.projectId.orEmpty()}-${it.item.id}" },
+                ) { entry ->
+                    val firewall = entry.item
                     FirewallCard(
                         firewall,
-                        onClick = { onOpen(firewall.id) },
+                        onClick = { onOpen(entry.projectId, firewall.id) },
                         onApplyClick = {
                             viewModel.loadServers()
                             applyFor = firewall

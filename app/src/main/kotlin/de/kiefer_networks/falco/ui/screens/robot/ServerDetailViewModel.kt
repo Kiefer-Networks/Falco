@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.data.dto.RobotServer
 import de.kiefer_networks.falco.data.repo.RobotRepo
+import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.nav.Routes
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,7 +63,7 @@ class ServerDetailViewModel @Inject constructor(
                     _state.value = _state.value.copy(loading = false, server = server)
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(loading = false, error = e.message)
+                    _state.value = _state.value.copy(loading = false, error = sanitizeError(e))
                 }
             // Best-effort side fetches; ignore failures (some servers lack these endpoints).
             runCatching { repo.rescueOptions(serverNumber) }.onSuccess { r ->
@@ -86,7 +87,7 @@ class ServerDetailViewModel @Inject constructor(
                     it.password?.let { pw -> _rescuePassword.tryEmit(pw) }
                     _events.value = ServerActionResult.Success(successMsg)
                 }
-                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
+                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(sanitizeError(e))) }
             _state.value = _state.value.copy(running = false)
         }
     }
@@ -102,7 +103,7 @@ class ServerDetailViewModel @Inject constructor(
                     _state.value = _state.value.copy(rescueActive = false)
                     _events.value = ServerActionResult.Success(successMsg)
                 }
-                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
+                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(sanitizeError(e))) }
             _state.value = _state.value.copy(running = false)
         }
     }
@@ -112,7 +113,7 @@ class ServerDetailViewModel @Inject constructor(
             _state.value = _state.value.copy(running = true)
             runCatching { repo.setRdns(ip, ptr) }
                 .onSuccess { _events.value = ServerActionResult.Success(successMsg) }
-                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
+                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(sanitizeError(e))) }
             _state.value = _state.value.copy(running = false)
         }
     }
@@ -125,7 +126,7 @@ class ServerDetailViewModel @Inject constructor(
                     _state.value = _state.value.copy(cancellationDate = c.cancellationDate, cancellationCancelled = c.cancelled)
                     _events.value = ServerActionResult.Success(successMsg)
                 }
-                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
+                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(sanitizeError(e))) }
             _state.value = _state.value.copy(running = false)
         }
     }
@@ -141,7 +142,7 @@ class ServerDetailViewModel @Inject constructor(
                     _state.value = _state.value.copy(cancellationDate = null, cancellationCancelled = false)
                     _events.value = ServerActionResult.Success(successMsg)
                 }
-                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
+                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(sanitizeError(e))) }
             _state.value = _state.value.copy(running = false)
         }
     }
@@ -151,7 +152,7 @@ class ServerDetailViewModel @Inject constructor(
             _state.value = _state.value.copy(running = true)
             runCatching { repo.reset(serverNumber, type) }
                 .onSuccess { _events.value = ServerActionResult.Success(successMsg) }
-                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
+                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(sanitizeError(e))) }
             _state.value = _state.value.copy(running = false)
         }
     }
@@ -164,7 +165,7 @@ class ServerDetailViewModel @Inject constructor(
                 if (!resp.isSuccessful) error("HTTP ${resp.code()}")
             }
                 .onSuccess { _events.value = ServerActionResult.Success(successMsg) }
-                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(e.message ?: "")) }
+                .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(sanitizeError(e))) }
             _state.value = _state.value.copy(running = false)
         }
     }

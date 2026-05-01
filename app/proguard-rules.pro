@@ -36,7 +36,14 @@
 -dontwarn org.openjsse.**
 
 # MinIO / S3 SDK
--keep class io.minio.** { *; }
+# MinIO uses Simple-XML annotations on its message DTOs and reflects on them
+# (constructors + annotated fields) for request/response (de)serialization.
+# Names may be obfuscated; the annotated members must remain.
+-keep,allowobfuscation class io.minio.messages.** { *; }
+-keepclassmembers class io.minio.messages.** {
+    <init>(...);
+}
+# Simple-XML reflects on annotated fields/methods to (de)serialize.
 -keep class org.simpleframework.xml.** { *; }
 -dontwarn io.minio.**
 -dontwarn org.bouncycastle.**
@@ -44,10 +51,12 @@
 -dontwarn javax.xml.stream.**
 -dontwarn com.fasterxml.jackson.**
 
-# Compose
--keep class androidx.compose.runtime.** { *; }
-
 # Hilt
+# Kept conservatively: Hilt generates components/entry points reflected on at
+# runtime by the Hilt entry-point lookup and Dagger SPI. The library ships a
+# consumer-rules.pro, but the generated `Hilt_*` wrappers in app code aren't
+# covered there in all setups. Leaving broad until verified against a release
+# build.
 -keep class dagger.hilt.** { *; }
 -keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
 

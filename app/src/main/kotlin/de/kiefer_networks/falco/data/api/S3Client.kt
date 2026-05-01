@@ -21,7 +21,37 @@ import io.minio.messages.VersioningConfiguration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.InputStream
+import java.net.URI
 import java.util.concurrent.TimeUnit
+
+/** Thrown when the S3 endpoint host is not in the pin map. */
+class UnpinnedS3EndpointException(host: String) :
+    SecurityException("S3 endpoint $host is not pinned; refusing to connect")
+
+/** Thrown when the user explicitly typed a cleartext `http://` S3 endpoint. */
+class CleartextS3EndpointException :
+    SecurityException("S3 endpoint must use https://; cleartext http:// is not allowed")
+
+/**
+ * Allow-list of Hetzner Object Storage hosts that match our pin map in [Pins].
+ * Any endpoint outside this set bypasses cert pinning and must be rejected.
+ */
+private val ALLOWED_S3_HOST_REGEX = Regex("^(fsn1|hel1|nbg1)\\.your-objectstorage\\.com$")
+
+/**
+ * Normalises a user-typed endpoint to `https://<host>`, rejecting cleartext
+ * schemes and hosts not covered by [Pins.objectStorage].
+ */
+internal fun validateAndNormalizeS3Endpoint(endpoint: String): String {
+    val trimmed = endpoint.trim()
+    val lower = trimmed.lowercase()
+    if (lower.startsWith("http://")) throw CleartextS3EndpointException()
+    val withScheme = if (lower.startsWith("https://")) trimmed else "https://$trimmed"
+    val host = runCatching { URI(withScheme).host }.getOrNull()
+        ?: throw UnpinnedS3EndpointException(trimmed)
+    if (!ALLOWED_S3_HOST_REGEX.matches(host)) throw UnpinnedS3EndpointException(host)
+    return withScheme
+}
 
 /**
  * Thin MinIO wrapper for Hetzner Object Storage.
@@ -38,7 +68,7 @@ class S3Client(
     secretKey: String,
 ) {
     private val client: MinioClient = MinioClient.builder()
-        .endpoint(if (endpoint.startsWith("http")) endpoint else "https://$endpoint")
+        .endpoint(validateAndNormalizeS3Endpoint(endpoint))
         .also { if (!region.isNullOrBlank()) it.region(region) }
         .credentials(accessKey, secretKey)
         .httpClient(HttpClientFactory.s3OkHttp())

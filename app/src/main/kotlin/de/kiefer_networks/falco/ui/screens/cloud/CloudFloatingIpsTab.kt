@@ -63,7 +63,7 @@ import javax.inject.Inject
 data class CloudFloatingIpsUiState(
     val loading: Boolean = true,
     val error: String? = null,
-    val data: List<CloudFloatingIp> = emptyList(),
+    val data: List<ProjectAware<CloudFloatingIp>> = emptyList(),
 )
 
 data class CreateFloatingIpOptions(
@@ -88,8 +88,13 @@ class CloudFloatingIpsViewModel @Inject constructor(private val repo: CloudRepo)
 
     fun refresh() = viewModelScope.launch {
         _state.value = CloudFloatingIpsUiState(loading = true)
-        runCatching { repo.listFloatingIps() }
-            .onSuccess { _state.value = CloudFloatingIpsUiState(loading = false, data = it) }
+        runCatching { repo.listFloatingIpsAware() }
+            .onSuccess { items ->
+                _state.value = CloudFloatingIpsUiState(
+                    loading = false,
+                    data = items.map { (pid, fip) -> ProjectAware(pid, fip) },
+                )
+            }
             .onFailure { _state.value = CloudFloatingIpsUiState(loading = false, error = sanitizeError(it)) }
     }
 
@@ -162,7 +167,10 @@ fun CloudFloatingIpsTab(viewModel: CloudFloatingIpsViewModel = hiltViewModel()) 
                 Text(stringResource(R.string.empty_list))
             }
             else -> LazyColumn(Modifier.fillMaxSize().padding(12.dp)) {
-                items(s.data, key = { it.id }) { fip -> FloatingIpCard(fip) }
+                items(
+                    s.data,
+                    key = { "${it.projectId.orEmpty()}-${it.item.id}" },
+                ) { entry -> FloatingIpCard(entry.item) }
             }
         }
         FloatingActionButton(
