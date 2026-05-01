@@ -1,0 +1,12 @@
+Falco 1.5.1
+
+Hotfix: el APK del lanzamiento 1.5.0 no estaba firmado (faltaba el
+secreto KEYSTORE_BASE64 en el repositorio). Esta versión está firmada
+con la clave de lanzamiento habitual (SHA512withRSA, RSA-4096) y se
+puede instalar desde F-Droid y desde la release de GitHub.
+
+Build y CI:
+- release.yml ahora falla rápido si falta KEYSTORE_BASE64 en lugar de
+  publicar APK sin firmar.
+
+Sin cambios funcionales respecto a 1.5.0.

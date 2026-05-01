@@ -1,0 +1,12 @@
+Falco 1.5.1
+
+Correctif : l'APK de la version 1.5.0 n'était pas signé (le secret
+KEYSTORE_BASE64 manquait dans le dépôt). Cette version est signée avec
+la clé de release habituelle (SHA512withRSA, RSA-4096) et s'installe
+via F-Droid et la release GitHub.
+
+Build et CI :
+- release.yml échoue désormais immédiatement si KEYSTORE_BASE64 manque
+  au lieu de publier des APK non signés.
+
+Aucun changement fonctionnel par rapport à 1.5.0.

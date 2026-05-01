@@ -4,6 +4,25 @@ All notable changes to Falco are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] — 2026-05-01
+
+Hotfix release. The 1.5.0 APK published to the GitHub release was
+unsigned because `KEYSTORE_BASE64` was missing from the new
+`Kiefer-Networks/Falco` repo's Actions secrets, so `apksigner`/F-Droid
+rejected it as having an invalid signature. 1.5.1 ships the same code
+signed with the regular release key (SHA512withRSA, RSA-4096).
+
+### Fixed
+- Release artifacts are signed again. Reinstalling 1.5.0 from F-Droid /
+  GitHub had failed with `INSTALL_PARSE_FAILED_NO_CERTIFICATES`.
+
+### Changed
+- `release.yml` now fails fast in a dedicated "Verify signing secrets
+  present" step when `KEYSTORE_BASE64` is empty, instead of silently
+  skipping `Set up signing materials` and shipping an unsigned APK.
+
+No functional changes vs. 1.5.0.
+
 ## [1.5.0] — 2026-05-01
 
 Security and supply-chain hardening release. No new feature surface;

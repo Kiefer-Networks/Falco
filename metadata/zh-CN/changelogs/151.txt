@@ -1,0 +1,11 @@
+Falco 1.5.1
+
+热修复：1.5.0 发布的 APK 未签名（仓库中缺少 KEYSTORE_BASE64 机密）。
+本版本使用常规发布密钥（SHA512withRSA，RSA-4096）签名，可通过
+F-Droid 和 GitHub Release 安装。
+
+构建与 CI：
+- 当 KEYSTORE_BASE64 缺失时，release.yml 现在会立即失败，而不是
+  发布未签名的 APK。
+
+相对 1.5.0 无功能变更。

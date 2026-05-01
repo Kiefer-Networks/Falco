@@ -1,0 +1,12 @@
+Falco 1.5.1
+
+Hotfix: the 1.5.0 release APK was unsigned (KEYSTORE_BASE64 secret
+was missing from the repo). This version is signed with the regular
+release key (SHA512withRSA, RSA-4096) and installs via F-Droid and the
+GitHub release.
+
+Build and CI:
+- release.yml now fails fast if KEYSTORE_BASE64 is missing instead of
+  publishing unsigned APKs.
+
+No functional changes over 1.5.0.
