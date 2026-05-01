@@ -17,5 +17,5 @@ fun sanitizeError(t: Throwable): String = when (t) {
     is CancellationException -> throw t
     is HttpException -> "HTTP ${t.code()}"
     is IOException -> "Network error"
-    else -> t::class.simpleName ?: "Error"
+    else -> "Error"
 }

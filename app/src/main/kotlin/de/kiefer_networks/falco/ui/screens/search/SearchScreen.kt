@@ -125,17 +125,25 @@ fun SearchScreen(
             LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 items(state.results, key = { "${it.kind}-${it.projectId.orEmpty()}-${it.id}" }) { hit ->
                     ResultRow(hit) {
-                        // Switch active Cloud project so detail screens hit the right token.
-                        hit.projectId?.let { viewModel.selectProject(it) }
-                        when (hit.kind) {
-                            ResultKind.CloudServer -> onOpenServer(hit.id.toLong())
-                            ResultKind.Volume -> onOpenVolume(hit.id.toLong())
-                            ResultKind.FloatingIp -> onOpenFloatingIp(hit.id.toLong())
-                            ResultKind.Firewall -> onOpenFirewall(hit.id.toLong())
-                            ResultKind.StorageBox -> onOpenStorageBox(hit.id.toLong())
-                            ResultKind.RobotServer -> onOpenRobot(hit.id.toLong())
-                            ResultKind.DnsZone -> onOpenDnsZone(hit.id)
-                            else -> Unit
+                        val nav: () -> Unit = {
+                            when (hit.kind) {
+                                ResultKind.CloudServer -> onOpenServer(hit.id.toLong())
+                                ResultKind.Volume -> onOpenVolume(hit.id.toLong())
+                                ResultKind.FloatingIp -> onOpenFloatingIp(hit.id.toLong())
+                                ResultKind.Firewall -> onOpenFirewall(hit.id.toLong())
+                                ResultKind.StorageBox -> onOpenStorageBox(hit.id.toLong())
+                                ResultKind.RobotServer -> onOpenRobot(hit.id.toLong())
+                                ResultKind.DnsZone -> onOpenDnsZone(hit.id)
+                                else -> Unit
+                            }
+                        }
+                        // Wait for the active-project DataStore write to commit
+                        // before navigating; otherwise the detail screen's repo
+                        // hits the previous project's token.
+                        if (hit.projectId != null) {
+                            viewModel.selectProjectThen(hit.projectId, nav)
+                        } else {
+                            nav()
                         }
                     }
                 }

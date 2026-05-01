@@ -102,10 +102,22 @@ class SearchViewModel @Inject constructor(
         applyFilter(value)
     }
 
-    /** Switch the active Cloud project so detail screens load against the right token. */
-    fun selectProject(projectId: String) = viewModelScope.launch {
-        val accountId = accounts.activeAccountId.first() ?: return@launch
-        accounts.setActiveCloudProject(accountId, projectId)
+    /**
+     * Switch the active Cloud project, then run [onCommitted] on the main thread.
+     *
+     * The DataStore write is async — callers that navigate to a project-scoped
+     * detail screen must wait for the commit, otherwise the new screen's
+     * Hilt-injected repo will read the previous project's token. Run nav inside
+     * [onCommitted] (not after this call) so it observes the new value.
+     */
+    fun selectProjectThen(projectId: String, onCommitted: () -> Unit) {
+        viewModelScope.launch {
+            val accountId = accounts.activeAccountId.first()
+            if (accountId != null) {
+                accounts.setActiveCloudProject(accountId, projectId)
+            }
+            onCommitted()
+        }
     }
 
     private fun applyFilter(query: String) {

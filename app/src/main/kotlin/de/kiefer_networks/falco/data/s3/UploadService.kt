@@ -85,9 +85,8 @@ class UploadService : Service() {
             "/../" !in "/$key/" &&
             key.length <= MAX_KEY_LEN
 
-    /** Only accept content:// or file:// from the local resolver — never opaque/remote schemes. */
-    private fun isLocalContentUri(uri: Uri): Boolean =
-        uri.scheme in setOf("content", "file")
+    /** Only accept content:// from the local resolver — never file:// or opaque/remote schemes. */
+    private fun isLocalContentUri(uri: Uri): Boolean = uri.scheme == "content"
 
     override fun onDestroy() {
         scope.cancel()
