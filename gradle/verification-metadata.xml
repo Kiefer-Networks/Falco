@@ -56,12 +56,11 @@
          (different bom .module files, platform-specific aapt2 .pom from
          maven.google.com, etc.). Enabling enforcement now blocks every
          CI run on whichever artifact is missing first, defeating the
-         purpose. Plan: regenerate the file on the same Linux runner
-         (a workflow_dispatch job that runs
-            ./gradlew --write-verification-metadata sha256,pgp help
-         and commits the result) before flipping these back to true.
-         Recorded hashes below remain a useful artefact reference; flip
-         flags to true after a clean regeneration.
+         purpose. Plan: regenerate the file on the same Linux runner via
+         a workflow_dispatch job that runs gradle with the flag
+         "write-verification-metadata sha256,pgp help" and commits the
+         result, before flipping these back to true. Recorded hashes
+         below remain a useful artefact reference.
       -->
       <verify-metadata>false</verify-metadata>
       <verify-signatures>false</verify-signatures>
