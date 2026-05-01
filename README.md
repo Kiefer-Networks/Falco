@@ -3,7 +3,7 @@
 # Falco — Hetzner Manager for Android
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![CI](https://github.com/MalteKiefer/Falco/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/MalteKiefer/Falco/actions/workflows/ci.yml?query=branch%3Amain)
+[![CI](https://github.com/Kiefer-Networks/Falco/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Kiefer-Networks/Falco/actions/workflows/ci.yml?query=branch%3Amain)
 [![Donate](https://img.shields.io/badge/donate-Liberapay-F6C915?style=flat&logo=liberapay)](https://de.liberapay.com/beli3ver)
 
 Privacy-respecting Android client for [Hetzner Online](https://www.hetzner.com).
@@ -83,7 +83,7 @@ Requires:
 - **Kotlin 2.1**, **AGP 8.x**, **Compose BoM 2025.01**.
 
 ```sh
-git clone https://github.com/MalteKiefer/Falco.git
+git clone https://github.com/Kiefer-Networks/Falco.git
 cd Falco
 ./gradlew :app:assembleDebug
 ```

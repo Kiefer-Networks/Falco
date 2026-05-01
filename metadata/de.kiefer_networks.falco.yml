@@ -5,17 +5,17 @@ License: GPL-3.0-or-later
 AuthorName: Malte Kiefer
 AuthorEmail: malte.kiefer@mailbox.org
 AuthorWebSite: https://kiefer-networks.de
-WebSite: https://github.com/MalteKiefer/Falco
-SourceCode: https://github.com/MalteKiefer/Falco
-IssueTracker: https://github.com/MalteKiefer/Falco/issues
-Changelog: https://github.com/MalteKiefer/Falco/releases
+WebSite: https://github.com/Kiefer-Networks/Falco
+SourceCode: https://github.com/Kiefer-Networks/Falco
+IssueTracker: https://github.com/Kiefer-Networks/Falco/issues
+Changelog: https://github.com/Kiefer-Networks/Falco/releases
 Donate: https://de.liberapay.com/beli3ver
 Liberapay: beli3ver
 
 AutoName: Falco
 
 RepoType: git
-Repo: https://github.com/MalteKiefer/Falco
+Repo: https://github.com/Kiefer-Networks/Falco
 
 Builds:
   - versionName: 0.1.0
