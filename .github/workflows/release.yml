@@ -133,15 +133,22 @@ jobs:
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
-          path: artifacts/
+          name: android-apk
+          path: artifacts/android-apk/
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        with:
+          name: android-aab
+          path: artifacts/android-aab/
 
       - name: Collect release assets
         env:
           VERSION: ${{ needs.preflight.outputs.version }}
         run: |
+          set -euo pipefail
           mkdir -p release-assets
-          cp artifacts/android-apk/*.apk release-assets/ 2>/dev/null || true
-          cp artifacts/android-aab/*.aab release-assets/ 2>/dev/null || true
+          cp "artifacts/android-apk/Falco-${VERSION}.apk" release-assets/
+          cp "artifacts/android-aab/Falco-${VERSION}.aab" release-assets/
           ls -lh release-assets/
 
       - name: Generate release notes
@@ -171,4 +178,6 @@ jobs:
           name: Falco ${{ needs.preflight.outputs.version }}
           draft: false
           body_path: release-notes.md
-          files: release-assets/*
+          files: |
+            release-assets/Falco-*.apk
+            release-assets/Falco-*.aab
