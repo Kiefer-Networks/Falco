@@ -166,7 +166,7 @@ class AccountManager @Inject constructor(
     suspend fun activeSecrets(): AccountSecrets? =
         activeAccountId.first()?.takeIf { it.isNotBlank() }?.let { secretsFor(it) }
 
-    private fun applySecrets(id: String, s: AccountSecrets) {
+    private suspend fun applySecrets(id: String, s: AccountSecrets) {
         if (s.cloudProjects.isNotEmpty()) {
             writeCloudProjects(id, s.cloudProjects)
             val active = s.activeCloudProjectId
@@ -186,7 +186,7 @@ class AccountManager @Inject constructor(
      */
     private val projectListSerializer = ListSerializer(CloudProject.serializer())
 
-    private fun readCloudProjects(id: String): List<CloudProject> {
+    private suspend fun readCloudProjects(id: String): List<CloudProject> {
         val raw = store.get(id, CredentialStore.Field.CLOUD_PROJECTS_JSON)
         if (!raw.isNullOrBlank()) {
             return runCatching { json.decodeFromString(projectListSerializer, raw) }.getOrDefault(emptyList())
@@ -208,11 +208,11 @@ class AccountManager @Inject constructor(
         return listOf(migrated)
     }
 
-    private fun writeCloudProjects(id: String, projects: List<CloudProject>) {
+    private suspend fun writeCloudProjects(id: String, projects: List<CloudProject>) {
         store.put(id, CredentialStore.Field.CLOUD_PROJECTS_JSON, json.encodeToString(projectListSerializer, projects))
     }
 
-    private fun readAccount(id: String): HetznerAccount {
+    private suspend fun readAccount(id: String): HetznerAccount {
         val projects = readCloudProjects(id)
         val activeProj = store.get(id, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID)
             ?.takeIf { tag -> projects.any { it.id == tag } }

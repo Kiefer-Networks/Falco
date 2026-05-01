@@ -125,7 +125,11 @@ import kotlinx.serialization.Serializable
     val password: String? = null,
     @SerialName("authorized_key") val authorizedKey: kotlinx.serialization.json.JsonElement? = null,
     val os: kotlinx.serialization.json.JsonElement? = null,
-)
+) {
+    override fun toString(): String =
+        "RobotRescue(serverIp=$serverIp, serverNumber=$serverNumber, active=$active, " +
+            "password=${if (password == null) "null" else "***"}, authorizedKey=$authorizedKey, os=$os)"
+}
 
 @Serializable data class RobotCancellationEnvelope(val cancellation: RobotCancellation)
 @Serializable data class RobotCancellation(

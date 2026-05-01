@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.data.auth
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
@@ -8,6 +9,8 @@ import android.security.keystore.KeyProperties
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -48,16 +51,32 @@ class CredentialStore @Inject constructor(@ApplicationContext context: Context) 
         )
     }
 
-    fun put(accountId: String, field: Field, value: String) {
-        prefs.edit().putString(key(accountId, field), value).apply()
+    /**
+     * Writes a credential and waits for it to hit disk before returning.
+     *
+     * `apply()` would queue the write asynchronously, which lets us race
+     * AccountManager: if the process dies between an `apply()` and the
+     * follow-up DataStore append for `ACCOUNT_IDS`, the next launch sees an
+     * id with no associated secrets — a "ghost account" that the UI can't
+     * authenticate. `commit()` from an IO dispatcher serialises with the
+     * subsequent DataStore write so the on-disk state is always consistent.
+     */
+    @SuppressLint("ApplySharedPref")
+    suspend fun put(accountId: String, field: Field, value: String) {
+        withContext(Dispatchers.IO) {
+            prefs.edit().putString(key(accountId, field), value).commit()
+        }
     }
 
     fun get(accountId: String, field: Field): String? = prefs.getString(key(accountId, field), null)
 
-    fun remove(accountId: String) {
-        prefs.edit().apply {
-            Field.entries.forEach { remove(key(accountId, it)) }
-        }.apply()
+    @SuppressLint("ApplySharedPref")
+    suspend fun remove(accountId: String) {
+        withContext(Dispatchers.IO) {
+            prefs.edit().apply {
+                Field.entries.forEach { remove(key(accountId, it)) }
+            }.commit()
+        }
     }
 
     fun listAccountIds(): Set<String> = prefs.all.keys

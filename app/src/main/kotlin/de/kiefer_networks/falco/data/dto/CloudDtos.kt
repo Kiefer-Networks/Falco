@@ -133,7 +133,10 @@ import kotlinx.serialization.json.JsonElement
     val action: ActionEnvelope,
     @SerialName("wss_url") val wssUrl: String,
     val password: String,
-)
+) {
+    override fun toString(): String =
+        "RequestConsoleResponse(action=$action, wssUrl=$wssUrl, password=***)"
+}
 @Serializable data class CreateFirewallRequest(
     val name: String,
     val rules: List<FirewallRule> = emptyList(),
@@ -279,7 +282,10 @@ import kotlinx.serialization.json.JsonElement
 @Serializable data class CloudServerActionResponse(
     val action: ActionEnvelope,
     @SerialName("root_password") val rootPassword: String? = null,
-)
+) {
+    override fun toString(): String =
+        "CloudServerActionResponse(action=$action, rootPassword=${if (rootPassword == null) "null" else "***"})"
+}
 
 @Serializable data class CreateServerRequest(
     val name: String,
@@ -307,7 +313,10 @@ import kotlinx.serialization.json.JsonElement
     val action: ActionEnvelope? = null,
     @SerialName("next_actions") val nextActions: List<ActionEnvelope> = emptyList(),
     @SerialName("root_password") val rootPassword: String? = null,
-)
+) {
+    override fun toString(): String =
+        "CreateServerResponse(server=$server, action=$action, nextActions=$nextActions, rootPassword=${if (rootPassword == null) "null" else "***"})"
+}
 
 @Serializable data class CloudImageList(val images: List<CloudImage>, val meta: Meta? = null)
 @Serializable data class CloudImage(
@@ -440,7 +449,12 @@ import kotlinx.serialization.json.JsonElement
     @SerialName("ssh_keys") val sshKeys: List<String>? = null,
     @SerialName("access_settings") val accessSettings: UpdateStorageBoxAccessSettings? = null,
     val labels: Map<String, String>? = null,
-)
+) {
+    override fun toString(): String =
+        "CreateStorageBoxRequest(name=$name, storageBoxType=$storageBoxType, location=$location, " +
+            "password=${if (password == null) "null" else "***"}, sshKeys=$sshKeys, " +
+            "accessSettings=$accessSettings, labels=$labels)"
+}
 @Serializable data class CreateStorageBoxResponse(
     @SerialName("storage_box") val storageBox: CloudStorageBox,
     val action: ActionEnvelope? = null,
@@ -499,13 +513,21 @@ import kotlinx.serialization.json.JsonElement
     @SerialName("access_settings") val accessSettings: CloudSubaccountAccessSettings = CloudSubaccountAccessSettings(),
     val description: String? = null,
     val labels: Map<String, String> = emptyMap(),
-)
+) {
+    override fun toString(): String =
+        "CreateStorageBoxSubaccount(password=***, homeDirectory=$homeDirectory, " +
+            "accessSettings=$accessSettings, description=$description, labels=$labels)"
+}
 @Serializable data class UpdateStorageBoxSubaccount(
     val description: String? = null,
     val labels: Map<String, String>? = null,
 )
-@Serializable data class ResetSubaccountPasswordRequest(val password: String)
-@Serializable data class ResetStorageBoxPasswordRequest(val password: String)
+@Serializable data class ResetSubaccountPasswordRequest(val password: String) {
+    override fun toString(): String = "ResetSubaccountPasswordRequest(password=***)"
+}
+@Serializable data class ResetStorageBoxPasswordRequest(val password: String) {
+    override fun toString(): String = "ResetStorageBoxPasswordRequest(password=***)"
+}
 
 // ---- Server / Network actions ------------------------------------------
 

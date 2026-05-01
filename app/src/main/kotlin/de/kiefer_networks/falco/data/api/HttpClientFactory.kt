@@ -11,6 +11,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 object HttpClientFactory {
@@ -70,7 +71,13 @@ object HttpClientFactory {
 
     fun cloudRetrofit(token: String): Retrofit = retrofit(
         baseUrl = "https://api.hetzner.cloud/v1/",
-        client = baseClient(listOf(BearerInterceptor(token), UserAgentInterceptor)),
+        client = baseClient(
+            listOf(
+                BearerInterceptor(token),
+                IdempotencyKeyInterceptor,
+                UserAgentInterceptor,
+            ),
+        ),
     )
 
     /**
@@ -80,7 +87,13 @@ object HttpClientFactory {
      */
     fun storageBoxRetrofit(token: String): Retrofit = retrofit(
         baseUrl = "https://api.hetzner.com/v1/",
-        client = baseClient(listOf(BearerInterceptor(token), UserAgentInterceptor)),
+        client = baseClient(
+            listOf(
+                BearerInterceptor(token),
+                IdempotencyKeyInterceptor,
+                UserAgentInterceptor,
+            ),
+        ),
     )
 
     fun robotRetrofit(user: String, pass: String): Retrofit = retrofit(
@@ -125,6 +138,37 @@ private class BasicAuthInterceptor(user: String, pass: String) : Interceptor {
     override fun intercept(chain: Interceptor.Chain) = chain.proceed(
         chain.request().newBuilder().header("Authorization", credential).build(),
     )
+}
+
+/**
+ * Injects `Idempotency-Key: <UUID v4>` on every state-changing request.
+ *
+ * Hetzner Cloud + Storage Box accept idempotency keys on action endpoints
+ * (snapshot, reset, reset_password, create_*, delete) — duplicate requests
+ * with the same key are deduplicated server-side, which protects against the
+ * "double-tap snapshot" failure mode where a user retries before the first
+ * response arrives. We do NOT retry transparently, so the key only matters
+ * when the user (or a flaky network) issues the same mutating request twice.
+ *
+ * Skip if the caller already attached its own header (test / future overrides).
+ */
+private object IdempotencyKeyInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
+        val request = chain.request()
+        val needsKey = request.method in MUTATING_METHODS &&
+            request.header("Idempotency-Key") == null
+        return chain.proceed(
+            if (needsKey) {
+                request.newBuilder()
+                    .header("Idempotency-Key", UUID.randomUUID().toString())
+                    .build()
+            } else {
+                request
+            },
+        )
+    }
+
+    private val MUTATING_METHODS = setOf("POST", "PUT", "PATCH", "DELETE")
 }
 
 private object UserAgentInterceptor : Interceptor {

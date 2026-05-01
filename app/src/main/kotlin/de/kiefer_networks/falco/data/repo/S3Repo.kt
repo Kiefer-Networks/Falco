@@ -33,14 +33,21 @@ class S3Repo @Inject constructor(private val accounts: AccountManager) {
     suspend fun shareLink(bucket: String, key: String, hours: Int): String =
         client().presignedDownloadUrl(bucket, key, clampShareHours(hours) * 3600)
     suspend fun uploadLink(bucket: String, key: String, hours: Int): String =
-        client().presignedUploadUrl(bucket, key, clampShareHours(hours) * 3600)
+        client().presignedUploadUrl(bucket, key, clampUploadHours(hours) * 3600)
 
     /**
-     * SigV4 caps presigned URL expiry at 7 days (604800s). Clamp the user
-     * input to a sane range and reject anything outside it.
+     * SigV4 caps presigned URL expiry at 7 days (604800s). Downloads can use
+     * the full window; uploads have a hard 1 h cap because a leaked PUT URL
+     * lets the holder overwrite an arbitrary object until expiry — far more
+     * dangerous than a leaked GET URL on existing data.
      */
     private fun clampShareHours(hours: Int): Int {
         require(hours in 1..168) { "Share link expiry must be 1..168 hours" }
+        return hours
+    }
+
+    private fun clampUploadHours(hours: Int): Int {
+        require(hours in 1..1) { "Upload link expiry must be 1 hour" }
         return hours
     }
 
