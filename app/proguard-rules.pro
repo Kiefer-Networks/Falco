@@ -52,13 +52,23 @@
 -dontwarn javax.xml.stream.**
 -dontwarn com.fasterxml.jackson.**
 
-# Hilt
-# Kept conservatively: Hilt generates components/entry points reflected on at
-# runtime by the Hilt entry-point lookup and Dagger SPI. The library ships a
-# consumer-rules.pro, but the generated `Hilt_*` wrappers in app code aren't
-# covered there in all setups. Leaving broad until verified against a release
-# build.
--keep class dagger.hilt.** { *; }
+# Hilt — narrowed from blanket `dagger.hilt.**`; kept only runtime SPI surface.
+# Hilt ships its own consumer-rules.pro covering most of dagger.hilt internals;
+# we only need to preserve the entry points and the generated `Hilt_*` /
+# `*_Factory` classes that the runtime resolves by string. Everything else is
+# safe for R8 to obfuscate.
+-keep,allowobfuscation class * extends dagger.hilt.EntryPoint
+-keep,allowobfuscation class * extends dagger.hilt.android.HiltAndroidApp
+-keep,allowobfuscation class * extends dagger.hilt.android.AndroidEntryPoint
+-keep class dagger.hilt.internal.GeneratedComponent { *; }
+-keep class dagger.hilt.android.internal.managers.** { *; }
+-keep class * implements dagger.hilt.internal.GeneratedComponent { *; }
+-keep class **_HiltModules { *; }
+-keep class **_HiltModules$* { *; }
+-keep class **_HiltComponents { *; }
+-keep class **_HiltComponents$* { *; }
+-keep class **_GeneratedInjector { *; }
+-keep class **_Provide*Factory { *; }
 -keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
 
 # Strip log calls in release
