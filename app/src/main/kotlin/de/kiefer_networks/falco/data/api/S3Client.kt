@@ -222,8 +222,14 @@ class S3Client(
     }
 
     suspend fun setBucketVersioning(bucket: String, enabled: Boolean) = withContext(Dispatchers.IO) {
+        // MinIO 9 added two slots between the versioning Status and the
+        // MFA-delete Boolean: an MFA-delete Status (nullable) and a Prefix
+        // list (nullable). We don't use either — pass null + the existing
+        // mfaDelete=false in the new last slot.
         val cfg = VersioningConfiguration(
             if (enabled) VersioningConfiguration.Status.ENABLED else VersioningConfiguration.Status.SUSPENDED,
+            null,
+            null,
             false,
         )
         client.setBucketVersioning(
