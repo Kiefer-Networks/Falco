@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.LocationOn
@@ -105,6 +106,7 @@ private val ROBOT_TABS = listOf(
     RobotTab(R.string.robot_dedis, Icons.Filled.Computer),
     RobotTab(R.string.robot_failover, Icons.Filled.SwapHoriz),
     RobotTab(R.string.robot_vswitch, Icons.Filled.Hub),
+    RobotTab(R.string.robot_rdns, Icons.Filled.Dns),
     RobotTab(R.string.robot_ssh_keys, Icons.Filled.Key),
 )
 
@@ -153,6 +155,7 @@ fun RobotScreen(
                     0 -> RobotServersTab(onServerClick = onServerClick)
                     1 -> FailoverTab()
                     2 -> VSwitchTab()
+                    3 -> RobotRdnsTab()
                     else -> RobotSshKeysTab()
                 }
             }

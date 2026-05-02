@@ -287,6 +287,26 @@
     <string name="robot_action_done">Action completed</string>
     <string name="robot_action_failed">Action failed: %1$s</string>
 
+    <!-- Robot · failover routing -->
+    <string name="robot_failover_route_actions">Failover actions</string>
+    <string name="robot_failover_route_to">Route to…</string>
+    <string name="robot_failover_route_unroute">Unroute</string>
+    <string name="robot_failover_route_dialog_title">Route failover IP</string>
+    <string name="robot_failover_route_dialog_caption">Pick the target server IP for failover %1$s.</string>
+    <string name="robot_failover_route_target_ip">Target server IP</string>
+    <string name="robot_failover_route_unroute_title">Unroute failover IP?</string>
+    <string name="robot_failover_route_unroute_warning">This drops the active routing for %1$s. The failover IP will not point at any server until you route it again.</string>
+    <string name="robot_failover_route_unroute_confirm">Unroute</string>
+
+    <!-- Robot · reverse DNS -->
+    <string name="robot_rdns">Reverse DNS</string>
+    <string name="robot_rdns_add">Add PTR record</string>
+    <string name="robot_rdns_edit">Edit PTR record</string>
+    <string name="robot_rdns_ip">IP address</string>
+    <string name="robot_rdns_ptr">PTR (FQDN)</string>
+    <string name="robot_rdns_delete_title">Delete PTR record?</string>
+    <string name="robot_rdns_delete_warning">This removes the reverse DNS entry for %1$s and resets it to the Hetzner default.</string>
+
     <!-- DNS -->
     <string name="dns_zones">Zones</string>
     <string name="dns_records">Records</string>
