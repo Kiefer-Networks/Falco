@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.data.auth.AccountManager
 import de.kiefer_networks.falco.data.auth.AccountSecrets
 import de.kiefer_networks.falco.data.model.CloudProject
+import de.kiefer_networks.falco.data.util.sanitizeError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +54,9 @@ data class WizardState(
     val stepIndex: Int = 0,
     val saving: Boolean = false,
     val saved: Boolean = false,
+    val verifying: Boolean = false,
+    val verified: Boolean = false,
+    val verifyError: String? = null,
 )
 
 @HiltViewModel
@@ -139,29 +143,49 @@ class AccountWizardViewModel @Inject constructor(
         val s = _state.value
         _state.update { it.copy(saving = true) }
         viewModelScope.launch {
-            val projects = if (HetznerService.Cloud in s.services) {
-                s.cloudProjects.map { d ->
-                    CloudProject(
-                        id = d.id,
-                        name = d.name,
-                        cloudToken = d.token,
-                        s3Endpoint = d.s3Endpoint.takeIf { d.s3Enabled && it.isNotBlank() },
-                        s3Region = d.s3Region.takeIf { d.s3Enabled && it.isNotBlank() },
-                        s3AccessKey = d.s3AccessKey.takeIf { d.s3Enabled && it.isNotBlank() },
-                        s3SecretKey = d.s3SecretKey.takeIf { d.s3Enabled && it.isNotBlank() },
-                    )
-                }
-            } else emptyList()
-            val secrets = AccountSecrets(
-                cloudProjects = projects,
-                activeCloudProjectId = projects.firstOrNull()?.id,
-                robotUser = if (HetznerService.Robot in s.services) s.robot.user else null,
-                robotPass = if (HetznerService.Robot in s.services) s.robot.pass else null,
-                dnsToken = if (HetznerService.Dns in s.services) s.dns.token else null,
-            )
+            val secrets = buildSecrets(s)
             accountManager.create(displayName = s.name, secrets = secrets)
             _state.update { it.copy(saving = false, saved = true) }
             next()
         }
+    }
+
+    fun verify() {
+        if (_state.value.verifying) return
+        val s = _state.value
+        _state.update { it.copy(verifying = true, verified = false, verifyError = null) }
+        viewModelScope.launch {
+            val secrets = buildSecrets(s)
+            val result = runCatching { accountManager.probeCredentials(secrets) }
+            _state.update {
+                result.fold(
+                    onSuccess = { it.copy(verifying = false, verified = true, verifyError = null) },
+                    onFailure = { e -> it.copy(verifying = false, verified = false, verifyError = sanitizeError(e)) },
+                )
+            }
+        }
+    }
+
+    private fun buildSecrets(s: WizardState): AccountSecrets {
+        val projects = if (HetznerService.Cloud in s.services) {
+            s.cloudProjects.map { d ->
+                CloudProject(
+                    id = d.id,
+                    name = d.name,
+                    cloudToken = d.token,
+                    s3Endpoint = d.s3Endpoint.takeIf { d.s3Enabled && it.isNotBlank() },
+                    s3Region = d.s3Region.takeIf { d.s3Enabled && it.isNotBlank() },
+                    s3AccessKey = d.s3AccessKey.takeIf { d.s3Enabled && it.isNotBlank() },
+                    s3SecretKey = d.s3SecretKey.takeIf { d.s3Enabled && it.isNotBlank() },
+                )
+            }
+        } else emptyList()
+        return AccountSecrets(
+            cloudProjects = projects,
+            activeCloudProjectId = projects.firstOrNull()?.id,
+            robotUser = if (HetznerService.Robot in s.services) s.robot.user else null,
+            robotPass = if (HetznerService.Robot in s.services) s.robot.pass else null,
+            dnsToken = if (HetznerService.Dns in s.services) s.dns.token else null,
+        )
     }
 }

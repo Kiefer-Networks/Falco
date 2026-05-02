@@ -5,6 +5,10 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import de.kiefer_networks.falco.data.api.CloudApi
+import de.kiefer_networks.falco.data.api.DnsApi
+import de.kiefer_networks.falco.data.api.HttpClientFactory
+import de.kiefer_networks.falco.data.api.RobotApi
 import de.kiefer_networks.falco.data.model.CloudProject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -70,6 +74,38 @@ class AccountManager @Inject constructor(
         if (projects.isEmpty()) return@combine null
         val activeId = store.get(accountId, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID)
         projects.firstOrNull { it.id == activeId } ?: projects.first()
+    }
+
+    /**
+     * Best-effort credential probe: fires cheap GETs against each non-blank
+     * credential supplied in [secrets] (Cloud `listLocations`, DNS `listZones`,
+     * Robot `listFailoverIps`). Throws on the first failure so callers can
+     * abort persistence before bad creds land in [CredentialStore]. Safe to
+     * retry — performs no mutation, touches no DataStore / CredentialStore
+     * state. S3 creds are intentionally not probed (would require spinning up
+     * a MinIO client with a different failure surface). Caller decides when
+     * to invoke; [create] does not wire this in.
+     */
+    suspend fun probeCredentials(secrets: AccountSecrets) {
+        secrets.cloudProjects
+            .filter { it.cloudToken.isNotBlank() }
+            .forEach { project ->
+                HttpClientFactory.cloudRetrofit(project.cloudToken)
+                    .create(CloudApi::class.java)
+                    .listLocations()
+            }
+        secrets.dnsToken?.takeIf { it.isNotBlank() }?.let { token ->
+            HttpClientFactory.dnsRetrofit(token)
+                .create(DnsApi::class.java)
+                .listZones(page = 1, perPage = 1)
+        }
+        val user = secrets.robotUser
+        val pass = secrets.robotPass
+        if (!user.isNullOrBlank() && !pass.isNullOrBlank()) {
+            HttpClientFactory.robotRetrofit(user, pass)
+                .create(RobotApi::class.java)
+                .listFailoverIps()
+        }
     }
 
     suspend fun create(displayName: String, secrets: AccountSecrets): HetznerAccount {

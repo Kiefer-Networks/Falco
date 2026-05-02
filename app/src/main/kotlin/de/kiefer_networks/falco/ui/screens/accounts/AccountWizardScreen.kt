@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -502,6 +503,31 @@ private fun StepReview(state: WizardState, viewModel: AccountWizardViewModel) {
                 value = mask(state.dns.token, revealed),
             )
         }
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedButton(
+            onClick = { viewModel.verify() },
+            enabled = !state.verifying && !state.saving,
+        ) { Text(stringResource(R.string.wizard_verify_button)) }
+        if (state.verifying) {
+            Spacer(Modifier.size(12.dp))
+            CircularProgressIndicator(modifier = Modifier.size(20.dp))
+        }
+    }
+    if (state.verified) {
+        Text(
+            text = stringResource(R.string.wizard_verify_ok),
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+    state.verifyError?.let { err ->
+        Text(
+            text = stringResource(R.string.wizard_verify_failed, err),
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
 
