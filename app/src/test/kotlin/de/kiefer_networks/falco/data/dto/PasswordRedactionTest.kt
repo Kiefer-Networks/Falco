@@ -86,6 +86,39 @@ class PasswordRedactionTest {
         assertNoSecret(s)
     }
 
+    @Test
+    fun `CreateCertificateRequest hides privateKey`() {
+        // F-002: TLS private key must never reach toString in raw form.
+        val pem = "-----BEGIN PRIVATE KEY-----\n$secret\n-----END PRIVATE KEY-----"
+        val s = CreateCertificateRequest(
+            name = "wildcard.example.com",
+            certificate = "cert-pem-body",
+            privateKey = pem,
+        ).toString()
+        assertFalse("toString leaked private key body: $s", s.contains(secret))
+        assertFalse("toString leaked PEM marker: $s", s.contains("BEGIN PRIVATE KEY"))
+        assertTrue("toString must mark redaction with ***: $s", s.contains("***"))
+    }
+
+    @Test
+    fun `CreateServerRequest masks userData length-only`() {
+        // F-008: cloud-init scripts may carry bootstrap secrets. Only a length
+        // hint may leak — never the body.
+        val cloudInit = "#cloud-config\nruncmd:\n  - echo \"$secret\" > /root/.token\n"
+        val s = CreateServerRequest(
+            name = "web-1",
+            serverType = "cx21",
+            image = "debian-12",
+            userData = cloudInit,
+        ).toString()
+        assertFalse("toString leaked user_data body: $s", s.contains(secret))
+        assertFalse("toString leaked cloud-config marker: $s", s.contains("#cloud-config"))
+        assertTrue(
+            "toString should report a length hint instead of body",
+            s.contains("chars"),
+        )
+    }
+
     private fun assertNoSecret(s: String) {
         assertFalse("toString leaked password: $s", s.contains(secret))
         assertTrue("toString must mark redaction with ***: $s", s.contains("***"))
