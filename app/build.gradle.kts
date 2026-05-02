@@ -28,8 +28,8 @@ android {
         applicationId = "de.kiefer_networks.falco"
         minSdk = 26
         targetSdk = 36
-        versionCode = 211
-        versionName = "2.1.1"
+        versionCode = 220
+        versionName = "2.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

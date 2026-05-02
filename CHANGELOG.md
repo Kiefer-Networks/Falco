@@ -4,6 +4,96 @@ All notable changes to Falco are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] — 2026-05-02
+
+API-coverage release. The repository layer has long exposed Hetzner
+endpoints that the UI never surfaced; an audit pass found ~60 unused
+methods. v2.2.0 wires the largest of those gaps. Eight feature agents
+implemented in parallel via isolated git worktrees, integrated
+sequentially.
+
+### Added
+
+#### Cloud
+- **Load Balancer detail screen.** Rename, change algorithm
+  (round_robin / least_connections), change type (LB types loaded via
+  `listLoadBalancerTypes`), enable/disable public interface, toggle
+  delete protection, type-to-confirm delete. Service + target CRUD
+  via inline forms; service add synthesises a minimal TCP health
+  check so Hetzner's `add_service` accepts the payload.
+- **Primary IPs tab + detail screen.** List + create wizard (type,
+  datacenter, name); detail surfaces assign-to-server, unassign,
+  toggle delete protection, type-to-confirm delete. Wired into
+  `CloudResourcesTab` between Floating IPs and Load Balancers.
+- **Network detail screen.** Subnets section (per-row delete, add via
+  inline form), routes section (add/delete), action sheet for
+  rename / change-IP-range (with irreversibility warning) / toggle
+  delete protection / expose-to-vSwitch / type-to-confirm delete.
+- **Server detail extras.** Network attach/detach (uses the
+  `listNetworks` picker), placement-group attach/detach (uses
+  `listPlacementGroups`), ISO tile when a server has an ISO mounted
+  (uses `getIso`), activity history sheet capped at 30 entries
+  (`listServerActions`).
+
+#### Robot
+- **vSwitch CRUD.** Create dialog (name + VLAN, validated 4000–4091),
+  detail screen with name/VLAN/cancellation status, edit dialog,
+  delete (optional `cancellation_date` + type-to-confirm), attach
+  server picker (filters out already-attached), per-row detach.
+- **RDNS tab.** Lists `listRdns`, FAB to create, tap to edit PTR,
+  long-press / overflow to type-to-confirm delete.
+- **Failover routing.** Per-row "Route to…" dialog and "Unroute"
+  type-to-confirm action wired into the existing FailoverTab.
+
+#### DNS
+- **Zone CRUD on the zones list.** "+" FAB to create (name + optional
+  default TTL), long-press menu for edit and type-to-confirm delete.
+- **Bulk record edit on zone detail.** Multi-select sheet over
+  records; selected rows take a side-panel TTL/value apply that
+  fires `bulkUpdateRecords`.
+- **BIND import/export on zone detail.** Overflow menu items —
+  Import opens SAF, runs `validateZone` first, surfaces invalid-
+  record summary before commit. Export calls `exportZone` and saves
+  via SAF.
+- **Primary servers section on zone detail.** Collapsible card
+  listing `listPrimaryServers(zoneId)` with add / edit / delete.
+
+#### S3
+- **Bucket management.** "+" FAB on the bucket-list opens a Create
+  dialog (name + optional region). Long-press → settings (versioning
+  toggle showing current status) and type-to-confirm delete.
+- **Multi-select delete in object browser.** Long-press to enter
+  selection mode, tap to toggle additional rows, app-bar action runs
+  `deleteAll` with a typed `delete N items` confirm.
+- **Per-object copy / move.** Row overflow → "Copy to…" / "Move to…"
+  open a destination picker (bucket + key prefix); Move = copy +
+  delete-source.
+- **Object stat sheet.** Row overflow → "Info" loads `stat` and
+  shows size, last-modified, content-type, ETag.
+- **Bucket versioning toggle** with an explicit warning that
+  disabling versioning suspends — does not delete — existing
+  versions.
+
+### Internal
+- All new flows go through the existing `sanitizeError` ↔
+  `PermissionInterceptor` chain added in v2.1.1, so a read-only token
+  or a Robot sub-user without rights for a given action gets a clear
+  "Insufficient permissions" hint instead of a generic HTTP 403.
+- Eight new strings sections added to `values/strings.xml`
+  (`cloud_lb_*`, `cloud_primary_ip_*`, `cloud_network_*`,
+  `cloud_server_network_*` / `_pg_*` / `_iso_*` / `_activity_*`,
+  `robot_vswitch_*`, `robot_rdns_*`, `robot_failover_route_*`,
+  `dns_*`, `s3_bucket_*` / `_action_*` / `_multi_delete_*` / `_copy_*`
+  / `_move_*` / `_dest_*` / `_info_*` / `_versioning_*`).
+
+### Known limitations
+- Locale strings: only English is shipped for the v2.2.0 additions.
+  Other locales fall back to English. Translations follow in a
+  maintenance pass.
+- A handful of small follow-ups remain from the audit (datacenter
+  picker in create-server wizard, SSH-key rename action, certificate
+  retry, placement-group rename) — tracked for v2.2.x.
+
 ## [2.1.1] — 2026-05-02
 
 Bug-fix + UX-polish release. Three additions on top of v2.1.0.

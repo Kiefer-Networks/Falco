@@ -1,0 +1,37 @@
+Falco 2.2.0
+
+API-coverage release. Eight Hetzner endpoints that the UI never
+surfaced are now wired up.
+
+Cloud:
+- Load Balancer detail (rename, algorithm, type, public toggle,
+  protection, services + targets CRUD, type-to-confirm delete).
+- Primary IPs tab + detail (assign / unassign / protection /
+  delete).
+- Network detail (subnets + routes CRUD, IP-range change,
+  expose-to-vSwitch, protection, delete).
+- Server detail extras: network attach/detach, placement-group
+  attach/detach, ISO tile, activity history sheet.
+
+Robot:
+- vSwitch CRUD (create / rename / VLAN change / delete / attach +
+  detach servers).
+- RDNS tab (list / set / delete).
+- Failover route + unroute UI on the existing failover tab.
+
+DNS:
+- Zone create / edit / delete on the zone list.
+- Bulk record edit (multi-select + apply TTL/value).
+- BIND import + export via SAF, with validation preview.
+- Primary servers section on zone detail.
+
+S3:
+- Bucket create / delete + versioning toggle.
+- Multi-select delete in the object browser.
+- Per-object copy / move + stat info sheet.
+
+Notes:
+- Permission errors detected globally as of v2.1.1 — read-only
+  tokens or restricted Robot sub-users see a clear hint.
+- v2.2.0 ships English strings only for the new flows; locale
+  fallback in place. Translations follow.
