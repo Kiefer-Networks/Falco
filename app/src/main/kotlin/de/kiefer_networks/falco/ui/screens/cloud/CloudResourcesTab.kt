@@ -70,6 +70,7 @@ private enum class PendingCreate { Volume, Network, FloatingIp, PlacementGroup, 
 fun CloudResourcesTab(
     onOpenVolume: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     onOpenFloatingIp: (projectId: String?, id: Long) -> Unit = { _, _ -> },
+    onOpenLoadBalancer: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     volumesViewModel: CloudVolumesViewModel = hiltViewModel(),
     networksViewModel: CloudNetworksViewModel = hiltViewModel(),
     floatingIpsViewModel: CloudFloatingIpsViewModel = hiltViewModel(),
@@ -200,7 +201,12 @@ fun CloudResourcesTab(
         item { SectionHeader(stringResource(R.string.cloud_load_balancers), lb.data.size) }
         if (lb.loading) item { LoadingRow() }
         else if (lb.data.isEmpty()) item { EmptyRow() }
-        else items(lb.data, key = { "lb-${it.id}" }) { ResourceLoadBalancerCard(it) }
+        else items(lb.data, key = { "lb-${it.id}" }) { item ->
+            ResourceLoadBalancerCard(
+                item,
+                onClick = { onOpenLoadBalancer(null, item.id) },
+            )
+        }
 
         item {
             SectionHeader(
@@ -479,13 +485,13 @@ private fun StatChip(icon: ImageVector, text: String) {
 }
 
 @Composable
-private fun ResourceLoadBalancerCard(lb: CloudLoadBalancer) {
+private fun ResourceLoadBalancerCard(lb: CloudLoadBalancer, onClick: () -> Unit = {}) {
     ResourceCardShell(
         icon = Icons.Filled.Lan,
         title = lb.name,
         statusLabel = lb.type?.name ?: "-",
         statusColor = MaterialTheme.colorScheme.primary,
-        onClick = null,
+        onClick = onClick,
     ) {
         StatChip(Icons.Filled.Apps, "${lb.services.size} svc")
         StatChip(Icons.Filled.Computer, "${lb.targets.size} tgt")

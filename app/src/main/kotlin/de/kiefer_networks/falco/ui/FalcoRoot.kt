@@ -87,6 +87,7 @@ fun FalcoRoot(viewModel: FalcoRootViewModel, windowSizeClass: WindowSizeClass) {
                     onOpenFirewall = { id -> nav.navigate(Routes.cloudFirewallDetail(id)) },
                     onOpenVolume = { id -> nav.navigate(Routes.cloudVolumeDetail(id)) },
                     onOpenFloatingIp = { id -> nav.navigate(Routes.cloudFloatingIpDetail(id)) },
+                    onOpenLoadBalancer = { id -> nav.navigate(Routes.cloudLoadBalancerDetail(id)) },
                 )
             }
             composable(
@@ -126,6 +127,10 @@ fun FalcoRoot(viewModel: FalcoRootViewModel, windowSizeClass: WindowSizeClass) {
                 arguments = listOf(navArgument(Routes.ARG_CLOUD_NETWORK_ID) { type = NavType.LongType }),
             ) {
                 de.kiefer_networks.falco.ui.screens.cloud.CloudNetworkDetailScreen(
+                route = Routes.CLOUD_LOAD_BALANCER_DETAIL,
+                arguments = listOf(navArgument(Routes.ARG_LOAD_BALANCER_ID) { type = NavType.LongType }),
+            ) {
+                de.kiefer_networks.falco.ui.screens.cloud.CloudLoadBalancerDetailScreen(
                     onBack = { nav.popBackStack() },
                 )
             }

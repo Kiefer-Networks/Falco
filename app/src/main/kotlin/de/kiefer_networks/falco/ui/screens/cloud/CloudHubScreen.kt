@@ -64,6 +64,7 @@ fun CloudHubScreen(
     onOpenFirewall: (Long) -> Unit = {},
     onOpenVolume: (Long) -> Unit = {},
     onOpenFloatingIp: (Long) -> Unit = {},
+    onOpenLoadBalancer: (Long) -> Unit = {},
     viewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     // R-006: in aggregate-projects mode the hub lists span every project, but
@@ -85,6 +86,9 @@ fun CloudHubScreen(
     }
     val openFloatingIpSwitch: (String?, Long) -> Unit = { pid, id ->
         viewModel.selectProjectThen(pid) { onOpenFloatingIp(id) }
+    }
+    val openLoadBalancerSwitch: (String?, Long) -> Unit = { pid, id ->
+        viewModel.selectProjectThen(pid) { onOpenLoadBalancer(id) }
     }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var pickerOpen by remember { mutableStateOf(false) }
@@ -170,6 +174,7 @@ fun CloudHubScreen(
                         3 -> CloudResourcesTab(
                             onOpenVolume = openVolumeSwitch,
                             onOpenFloatingIp = openFloatingIpSwitch,
+                            onOpenLoadBalancer = openLoadBalancerSwitch,
                         )
                         4 -> CloudSshKeysTab()
                     }
