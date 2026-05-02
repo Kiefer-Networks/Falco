@@ -851,4 +851,36 @@
     <string name="robot_vswitch_server_status_format">#%1$d · %2$s</string>
     <string name="robot_vswitch_server_number_format">#%1$d</string>
     <string name="robot_vswitch_invalid_vlan">Enter a VLAN between 4000 and 4091.</string>
+    <!-- Cloud server detail: network attach / detach -->
+    <string name="cloud_server_network_attach">Attach to network…</string>
+    <string name="cloud_server_network_attach_title">Attach to network</string>
+    <string name="cloud_server_network_attach_button">Attach</string>
+    <string name="cloud_server_network_detach">Detach</string>
+    <string name="cloud_server_network_detach_label">Detach from %1$s</string>
+    <string name="cloud_server_network_detach_title">Detach network</string>
+    <string name="cloud_server_network_detach_confirm">Detach this server from %1$s? Connections inside that private network will drop.</string>
+    <string name="cloud_server_network_ip_optional">Static IP (optional)</string>
+    <string name="cloud_server_network_none">No private networks available in this project.</string>
+
+    <!-- Cloud server detail: placement group -->
+    <string name="cloud_server_pg_section">Placement group</string>
+    <string name="cloud_server_pg_add">Add to placement group…</string>
+    <string name="cloud_server_pg_add_title">Add to placement group</string>
+    <string name="cloud_server_pg_add_button">Add</string>
+    <string name="cloud_server_pg_remove">Remove</string>
+    <string name="cloud_server_pg_remove_label">Remove from %1$s</string>
+    <string name="cloud_server_pg_remove_title">Remove from placement group</string>
+    <string name="cloud_server_pg_remove_confirm">Remove this server from %1$s?</string>
+    <string name="cloud_server_pg_none">No placement groups in this project.</string>
+
+    <!-- Cloud server detail: ISO tile -->
+    <string name="cloud_server_iso_section">Mounted ISO</string>
+    <string name="cloud_server_iso_loading">Loading ISO details…</string>
+
+    <!-- Cloud server detail: activity history -->
+    <string name="cloud_server_activity_section">Activity</string>
+    <string name="cloud_server_activity_title">Recent activity</string>
+    <string name="cloud_server_activity_empty">No recent actions.</string>
+    <string name="cloud_server_activity_started">Started:</string>
+    <string name="cloud_server_activity_finished">Finished:</string>
 </resources>

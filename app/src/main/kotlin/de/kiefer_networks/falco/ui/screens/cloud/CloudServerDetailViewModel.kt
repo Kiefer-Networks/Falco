@@ -5,8 +5,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.kiefer_networks.falco.data.dto.ActionEnvelope
 import de.kiefer_networks.falco.data.dto.CloudImage
 import de.kiefer_networks.falco.data.dto.CloudIso
+import de.kiefer_networks.falco.data.dto.CloudNetwork
+import de.kiefer_networks.falco.data.dto.CloudPlacementGroup
 import de.kiefer_networks.falco.data.dto.CloudServer
 import de.kiefer_networks.falco.data.dto.CloudServerType
 import de.kiefer_networks.falco.data.repo.CloudRepo
@@ -46,6 +49,17 @@ data class CloudServerDetailUiState(
     val imageOptions: List<CloudImage> = emptyList(),
     val typeOptions: List<CloudServerType> = emptyList(),
     val isoOptions: List<CloudIso> = emptyList(),
+    /** Pickers + memberships for network / placement-group sheets. Lazy-loaded. */
+    val networkOptions: List<CloudNetwork> = emptyList(),
+    val placementGroupOptions: List<CloudPlacementGroup> = emptyList(),
+    /** Derived from [placementGroupOptions]: the group whose `servers` list contains this server. */
+    val currentPlacementGroup: CloudPlacementGroup? = null,
+    /** Detail for [CloudServer.iso], lazy-loaded when the ISO tile first renders. */
+    val serverIso: CloudIso? = null,
+    val isoDetailLoading: Boolean = false,
+    /** Recent server actions (capped at 30), lazy-loaded when the activity sheet first opens. */
+    val actions: List<ActionEnvelope>? = null,
+    val actionsLoading: Boolean = false,
 )
 
 sealed interface CloudServerEvent {
@@ -77,7 +91,17 @@ class CloudServerDetailViewModel @Inject constructor(
             _state.update { it.copy(loading = true, error = null) }
             runCatching { repo.getServer(serverId) }
                 .onSuccess { server ->
-                    _state.update { it.copy(loading = false, server = server) }
+                    _state.update { current ->
+                        // Drop cached ISO detail when the server's ISO changed (or was detached);
+                        // the activity history is also stale after any state-mutating action.
+                        val keepIso = current.serverIso?.id == server.iso?.id
+                        current.copy(
+                            loading = false,
+                            server = server,
+                            serverIso = if (keepIso) current.serverIso else null,
+                            actions = null,
+                        )
+                    }
                     loadMetrics(_state.value.period)
                 }
                 .onFailure { e ->
@@ -217,6 +241,93 @@ class CloudServerDetailViewModel @Inject constructor(
         }
     }
 
+    // ---- Network attach / detach ------------------------------------------
+
+    fun attachNetwork(networkId: Long, ip: String? = null) = wrap(refreshAfter = true) {
+        repo.attachServerToNetwork(serverId, networkId, ip)
+    }
+
+    fun detachNetwork(networkId: Long) = wrap(refreshAfter = true) {
+        repo.detachServerFromNetwork(serverId, networkId)
+    }
+
+    /** Lazy-loads the network picker. Network names are also used for nicer
+     *  detach labels ("Detach from <name>") instead of bare ids. */
+    fun loadNetworks() = viewModelScope.launch {
+        runCatching { repo.listNetworks() }.onSuccess { nets ->
+            _state.update { it.copy(networkOptions = nets) }
+        }
+    }
+
+    // ---- Placement-group attach / detach ----------------------------------
+
+    fun addToPlacementGroup(placementGroupId: Long) = wrap(refreshAfter = true) {
+        repo.addServerToPlacementGroup(serverId, placementGroupId)
+        // Re-derive currentPlacementGroup after the change.
+        loadPlacementGroups()
+    }
+
+    fun removeFromPlacementGroup() = wrap(refreshAfter = true) {
+        repo.removeServerFromPlacementGroup(serverId)
+        loadPlacementGroups()
+    }
+
+    /** Loads placement groups and derives the current one by membership
+     *  (CloudServer DTO does not parse a `placement_group` field). */
+    fun loadPlacementGroups() = viewModelScope.launch {
+        runCatching { repo.listPlacementGroups() }.onSuccess { groups ->
+            val current = groups.firstOrNull { serverId in it.servers }
+            _state.update {
+                it.copy(placementGroupOptions = groups, currentPlacementGroup = current)
+            }
+        }
+    }
+
+    // ---- ISO tile ----------------------------------------------------------
+
+    /** Fetches the full [CloudIso] for the server's currently attached ISO.
+     *  Idempotent: cached after first success; cleared by [refresh] if the ISO
+     *  changes. Safe no-op when the server has no ISO. */
+    fun loadIsoDetail() {
+        val iso = _state.value.server?.iso ?: return
+        if (_state.value.serverIso?.id == iso.id || _state.value.isoDetailLoading) return
+        _state.update { it.copy(isoDetailLoading = true) }
+        viewModelScope.launch {
+            runCatching { repo.getIso(iso.id) }
+                .onSuccess { detail ->
+                    _state.update { it.copy(serverIso = detail, isoDetailLoading = false) }
+                }
+                .onFailure {
+                    _state.update { it.copy(isoDetailLoading = false) }
+                }
+        }
+    }
+
+    // ---- Activity history --------------------------------------------------
+
+    /** Lazy-loads the last ~30 server actions for the activity sheet. The list
+     *  is capped client-side because Hetzner's `per_page` may not be honoured
+     *  exactly across regions. */
+    fun loadActions() {
+        if (_state.value.actionsLoading) return
+        _state.update { it.copy(actionsLoading = true) }
+        viewModelScope.launch {
+            runCatching { repo.listServerActions(serverId) }
+                .onSuccess { actions ->
+                    _state.update {
+                        it.copy(
+                            actions = actions.take(ACTIVITY_LIMIT),
+                            actionsLoading = false,
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    _state.update { it.copy(actionsLoading = false) }
+                    _events.emit(CloudServerEvent.Failure(sanitizeError(e)))
+                }
+        }
+    }
+
     private fun wrap(refreshAfter: Boolean = false, block: suspend () -> Unit) {
         if (_state.value.running) return
         _state.update { it.copy(running = true) }
@@ -231,5 +342,10 @@ class CloudServerDetailViewModel @Inject constructor(
                 }
             _state.update { it.copy(running = false) }
         }
+    }
+
+    private companion object {
+        /** UI cap for the activity history sheet. */
+        const val ACTIVITY_LIMIT = 30
     }
 }

@@ -22,11 +22,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.Lan
+import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.PhotoCamera
@@ -42,6 +47,7 @@ import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalButton
@@ -79,8 +85,16 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.hilt.navigation.compose.hiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.data.dto.ActionEnvelope
+import de.kiefer_networks.falco.data.dto.CloudIso
+import de.kiefer_networks.falco.data.dto.CloudNetwork
+import de.kiefer_networks.falco.data.dto.CloudPlacementGroup
 import de.kiefer_networks.falco.data.dto.CloudServer
 import de.kiefer_networks.falco.data.repo.MetricPeriod
 import de.kiefer_networks.falco.ui.components.ErrorState
@@ -129,6 +143,11 @@ fun CloudServerDetailScreen(
     var showDeleteFinal by remember { mutableStateOf(false) }
     var showProtection by remember { mutableStateOf(false) }
     var showReverseDns by remember { mutableStateOf(false) }
+    var showAttachNetwork by remember { mutableStateOf(false) }
+    var detachNetworkTarget by remember { mutableStateOf<Long?>(null) }
+    var showAddPlacementGroup by remember { mutableStateOf(false) }
+    var showRemovePlacementGroup by remember { mutableStateOf(false) }
+    var showActivity by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -198,6 +217,17 @@ fun CloudServerDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     item { OverviewCard(server) }
+                    val attachedIso = server.iso
+                    if (attachedIso != null) {
+                        item {
+                            // Lazy-load on first composition; keyed on ISO id so a changed ISO refetches.
+                            LaunchedEffect(attachedIso.id) { viewModel.loadIsoDetail() }
+                            IsoTile(
+                                iso = state.serverIso ?: attachedIso,
+                                loading = state.isoDetailLoading && state.serverIso == null,
+                            )
+                        }
+                    }
                     item {
                         ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -226,6 +256,16 @@ fun CloudServerDetailScreen(
                     item { AttachedResourcesCard(server) }
                 }
             }
+        }
+    }
+
+    // Lazy-load network and placement-group lists the first time the sheet is opened.
+    // This keeps the detail screen cheap until the user actually needs the labels /
+    // current-PG membership for the network and placement-group sections.
+    LaunchedEffect(sheetOpen) {
+        if (sheetOpen) {
+            if (state.networkOptions.isEmpty()) viewModel.loadNetworks()
+            if (state.placementGroupOptions.isEmpty()) viewModel.loadPlacementGroups()
         }
     }
 
@@ -292,12 +332,76 @@ fun CloudServerDetailScreen(
             add(
                 SheetSection(
                     title = stringResource(R.string.server_detail_section_network),
+                    actions = buildList {
+                        // Detach rows: one per attached private network.
+                        server.privateNet.forEach { pn ->
+                            val name = state.networkOptions.firstOrNull { it.id == pn.network }?.name
+                                ?: "#${pn.network}"
+                            add(
+                                SheetAction(
+                                    Icons.Filled.LinkOff,
+                                    stringResource(R.string.cloud_server_network_detach_label, name),
+                                ) {
+                                    sheetOpen = false; detachNetworkTarget = pn.network
+                                },
+                            )
+                        }
+                        add(
+                            SheetAction(Icons.Filled.Lan, stringResource(R.string.cloud_server_network_attach)) {
+                                sheetOpen = false
+                                viewModel.loadNetworks()
+                                showAttachNetwork = true
+                            },
+                        )
+                        add(
+                            SheetAction(Icons.Filled.Dns, stringResource(R.string.server_action_reverse_dns)) {
+                                sheetOpen = false; showReverseDns = true
+                            },
+                        )
+                        add(
+                            SheetAction(Icons.Filled.Computer, stringResource(R.string.server_action_console)) {
+                                sheetOpen = false; viewModel.requestConsole()
+                            },
+                        )
+                    },
+                ),
+            )
+            // Placement group
+            add(
+                SheetSection(
+                    title = stringResource(R.string.cloud_server_pg_section),
+                    actions = buildList {
+                        val current = state.currentPlacementGroup
+                        if (current != null) {
+                            add(
+                                SheetAction(
+                                    Icons.Filled.LinkOff,
+                                    stringResource(R.string.cloud_server_pg_remove_label, current.name),
+                                ) {
+                                    sheetOpen = false; showRemovePlacementGroup = true
+                                },
+                            )
+                        } else {
+                            add(
+                                SheetAction(Icons.Filled.Hub, stringResource(R.string.cloud_server_pg_add)) {
+                                    sheetOpen = false
+                                    viewModel.loadPlacementGroups()
+                                    showAddPlacementGroup = true
+                                },
+                            )
+                        }
+                    },
+                ),
+            )
+            // Activity
+            add(
+                SheetSection(
+                    title = stringResource(R.string.cloud_server_activity_section),
                     actions = listOf(
-                        SheetAction(Icons.Filled.Dns, stringResource(R.string.server_action_reverse_dns)) {
-                            sheetOpen = false; showReverseDns = true
-                        },
-                        SheetAction(Icons.Filled.Computer, stringResource(R.string.server_action_console)) {
-                            sheetOpen = false; viewModel.requestConsole()
+                        SheetAction(Icons.Filled.History, stringResource(R.string.cloud_server_activity_title)) {
+                            sheetOpen = false
+                            viewModel.loadActions()
+                            showActivity = true
                         },
                     ),
                 ),
@@ -455,6 +559,79 @@ fun CloudServerDetailScreen(
                 viewModel.changeReverseDns(ip, ptr)
                 showReverseDns = false
             },
+        )
+    }
+
+    if (showAttachNetwork) {
+        AttachNetworkDialog(
+            // Hide networks the server is already on.
+            networks = state.networkOptions.filterNot { net ->
+                state.server?.privateNet?.any { it.network == net.id } == true
+            },
+            onDismiss = { showAttachNetwork = false },
+            onAttach = { networkId, ip ->
+                viewModel.attachNetwork(networkId, ip)
+                showAttachNetwork = false
+            },
+        )
+    }
+
+    detachNetworkTarget?.let { networkId ->
+        val name = state.networkOptions.firstOrNull { it.id == networkId }?.name ?: "#$networkId"
+        AlertDialog(
+            onDismissRequest = { detachNetworkTarget = null },
+            title = { Text(stringResource(R.string.cloud_server_network_detach_title)) },
+            text = { Text(stringResource(R.string.cloud_server_network_detach_confirm, name)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.detachNetwork(networkId)
+                    detachNetworkTarget = null
+                }) { Text(stringResource(R.string.cloud_server_network_detach)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { detachNetworkTarget = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+
+    if (showAddPlacementGroup) {
+        AddPlacementGroupDialog(
+            groups = state.placementGroupOptions,
+            onDismiss = { showAddPlacementGroup = false },
+            onAdd = { id ->
+                viewModel.addToPlacementGroup(id)
+                showAddPlacementGroup = false
+            },
+        )
+    }
+
+    if (showRemovePlacementGroup) {
+        val name = state.currentPlacementGroup?.name.orEmpty()
+        AlertDialog(
+            onDismissRequest = { showRemovePlacementGroup = false },
+            title = { Text(stringResource(R.string.cloud_server_pg_remove_title)) },
+            text = { Text(stringResource(R.string.cloud_server_pg_remove_confirm, name)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.removeFromPlacementGroup()
+                    showRemovePlacementGroup = false
+                }) { Text(stringResource(R.string.cloud_server_pg_remove)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRemovePlacementGroup = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+
+    if (showActivity) {
+        ActivitySheet(
+            actions = state.actions,
+            loading = state.actionsLoading,
+            onDismiss = { showActivity = false },
         )
     }
 
@@ -885,6 +1062,253 @@ private fun ProtectionDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
+}
+
+@Composable
+private fun IsoTile(iso: CloudIso, loading: Boolean) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SectionTitle(R.string.cloud_server_iso_section)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Filled.Album,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(iso.name, style = MaterialTheme.typography.titleSmall)
+                    val description = iso.description
+                    if (!description.isNullOrBlank()) {
+                        Text(
+                            description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else if (loading) {
+                        Text(
+                            stringResource(R.string.cloud_server_iso_loading),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AttachNetworkDialog(
+    networks: List<CloudNetwork>,
+    onDismiss: () -> Unit,
+    onAttach: (networkId: Long, ip: String?) -> Unit,
+) {
+    var selected by remember { mutableStateOf<CloudNetwork?>(null) }
+    var ip by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.cloud_server_network_attach_title)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (networks.isEmpty()) {
+                    Text(
+                        stringResource(R.string.cloud_server_network_none),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    networks.forEach { net ->
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth().clickable { selected = net },
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = if (selected?.id == net.id) {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                },
+                            ),
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(net.name, style = MaterialTheme.typography.titleSmall)
+                                Text(
+                                    net.ipRange,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontFamily = FontFamily.Monospace,
+                                )
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = ip,
+                        onValueChange = { ip = it },
+                        label = { Text(stringResource(R.string.cloud_server_network_ip_optional)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = selected != null,
+                onClick = { selected?.let { onAttach(it.id, ip.takeIf { v -> v.isNotBlank() }) } },
+            ) { Text(stringResource(R.string.cloud_server_network_attach_button)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun AddPlacementGroupDialog(
+    groups: List<CloudPlacementGroup>,
+    onDismiss: () -> Unit,
+    onAdd: (groupId: Long) -> Unit,
+) {
+    var selected by remember { mutableStateOf<CloudPlacementGroup?>(null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.cloud_server_pg_add_title)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (groups.isEmpty()) {
+                    Text(
+                        stringResource(R.string.cloud_server_pg_none),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    groups.forEach { g ->
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth().clickable { selected = g },
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = if (selected?.id == g.id) {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                },
+                            ),
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(g.name, style = MaterialTheme.typography.titleSmall)
+                                Text(
+                                    g.type,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = selected != null,
+                onClick = { selected?.let { onAdd(it.id) } },
+            ) { Text(stringResource(R.string.cloud_server_pg_add_button)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun ActivitySheet(
+    actions: List<ActionEnvelope>?,
+    loading: Boolean,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.cloud_server_activity_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            when {
+                loading && actions == null -> Box(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LinearProgressIndicator()
+                }
+                actions == null -> Unit
+                actions.isEmpty() -> Text(
+                    stringResource(R.string.cloud_server_activity_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                else -> Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    actions.forEach { action -> ActivityRow(action) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActivityRow(action: ActionEnvelope) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                shape = CircleShape,
+                color = activityStatusColor(action.status),
+                modifier = Modifier.size(8.dp),
+            ) {}
+            Spacer(Modifier.width(8.dp))
+            Text(action.command, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            Text(
+                action.status,
+                style = MaterialTheme.typography.labelSmall,
+                color = activityStatusColor(action.status),
+            )
+        }
+        val started = action.started
+        val finished = action.finished
+        if (!started.isNullOrBlank() || !finished.isNullOrBlank()) {
+            Text(
+                listOfNotNull(
+                    started?.takeIf { it.isNotBlank() }?.let {
+                        "${stringResource(R.string.cloud_server_activity_started)} $it"
+                    },
+                    finished?.takeIf { it.isNotBlank() }?.let {
+                        "${stringResource(R.string.cloud_server_activity_finished)} $it"
+                    },
+                ).joinToString("  •  "),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontFamily = FontFamily.Monospace,
+            )
+        }
+    }
+}
+
+private fun activityStatusColor(status: String): Color = when (status.lowercase()) {
+    "success" -> Color(0xFF2E7D32)
+    "running" -> Color(0xFFEF6C00)
+    "error" -> Color(0xFFC62828)
+    else -> Color(0xFF9E9E9E)
 }
 
 private fun copyToClipboard(context: Context, label: String, value: String) {
