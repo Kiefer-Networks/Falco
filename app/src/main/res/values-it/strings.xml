@@ -583,4 +583,11 @@
     <string name="server_section_power">Alimentazione</string>
     <string name="server_section_state">Stato</string>
     <string name="server_section_danger">Zona pericolosa</string>
+    <string name="clipboard_pre_a13_caveat">La tua versione Android non può marcare gli elementi degli appunti come sensibili. Il testo sarà cancellato dopo 60 s ma può apparire brevemente nella barra suggerimenti della tastiera.</string>
+    <string name="robot_ssh_key_delete_warning">Rimuove definitivamente la chiave SSH dall\'account Robot. Azione irreversibile.</string>
+    <string name="settings_hardware_bound">Richiedi sblocco recente per credenziali salvate</string>
+    <string name="settings_hardware_bound_desc">Modalità ad alta sicurezza: la nuova registrazione biometrica invalida le credenziali salvate. Lo sblocco con PIN non basta più a leggere i token. I token esistenti potrebbero dover essere reinseriti dopo l\'attivazione. Effetto al prossimo avvio.</string>
+    <string name="wizard_verify_button">Verifica credenziali</string>
+    <string name="wizard_verify_ok">Credenziali valide</string>
+    <string name="wizard_verify_failed">Verifica fallita: %1$s</string>
 </resources>

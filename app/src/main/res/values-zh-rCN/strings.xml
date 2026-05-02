@@ -560,4 +560,11 @@
     <string name="server_section_power">电源</string>
     <string name="server_section_state">状态</string>
     <string name="server_section_danger">危险区域</string>
+    <string name="clipboard_pre_a13_caveat">您的 Android 版本无法将剪贴板内容标记为敏感信息。文本将在 60 秒后清除，但可能短暂出现在键盘建议栏中。</string>
+    <string name="robot_ssh_key_delete_warning">将从 Robot 账户永久删除该 SSH 密钥。操作不可撤销。</string>
+    <string name="settings_hardware_bound">对存储的凭据要求重新解锁</string>
+    <string name="settings_hardware_bound_desc">高保障模式：重新注册生物识别将使存储的凭据失效。PIN 解锁不再足以读取令牌。启用后现有令牌可能需要重新输入。下次启动应用时生效。</string>
+    <string name="wizard_verify_button">验证凭据</string>
+    <string name="wizard_verify_ok">凭据有效</string>
+    <string name="wizard_verify_failed">验证失败：%1$s</string>
 </resources>

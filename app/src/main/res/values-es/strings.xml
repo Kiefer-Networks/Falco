@@ -583,4 +583,11 @@
     <string name="server_section_power">Energía</string>
     <string name="server_section_state">Estado</string>
     <string name="server_section_danger">Zona de peligro</string>
+    <string name="clipboard_pre_a13_caveat">Tu versión de Android no puede marcar elementos del portapapeles como sensibles. El texto se borrará tras 60 s, pero puede aparecer brevemente en la barra de sugerencias del teclado.</string>
+    <string name="robot_ssh_key_delete_warning">Elimina permanentemente la clave SSH de tu cuenta Robot. Acción irreversible.</string>
+    <string name="settings_hardware_bound">Requerir desbloqueo nuevo para credenciales guardadas</string>
+    <string name="settings_hardware_bound_desc">Modo de mayor seguridad: re-inscribir biometría invalida las credenciales guardadas. El PIN de paso ya no basta para leer tokens. Es posible que los tokens existentes deban introducirse de nuevo tras activar. Surte efecto al próximo inicio de la app.</string>
+    <string name="wizard_verify_button">Verificar credenciales</string>
+    <string name="wizard_verify_ok">Credenciales válidas</string>
+    <string name="wizard_verify_failed">Verificación fallida: %1$s</string>
 </resources>

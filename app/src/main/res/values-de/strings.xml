@@ -580,4 +580,11 @@
     <string name="cloud_network_subnet_ip_range">Subnetz-IP-Bereich (optional)</string>
     <string name="cloud_network_subnet_ip_range_hint">Muss innerhalb des Netzwerkbereichs liegen. Leer lassen, damit Hetzner wählt.</string>
     <string name="wizard_step_subnet">Subnetz</string>
+    <string name="clipboard_pre_a13_caveat">Diese Android-Version kann Zwischenablage-Inhalte nicht als sensibel kennzeichnen. Der Text wird nach 60 s gelöscht, kann aber kurz in der Tastatur-Vorschlagsleiste erscheinen.</string>
+    <string name="robot_ssh_key_delete_warning">Entfernt den SSH-Schlüssel dauerhaft aus dem Robot-Account. Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="settings_hardware_bound">Frische Entsperrung für gespeicherte Anmeldedaten verlangen</string>
+    <string name="settings_hardware_bound_desc">Höhere Sicherheitsstufe: Neue Biometrie-Registrierung invalidiert gespeicherte Anmeldedaten. PIN-Pass-through reicht zum Token-Lesen nicht mehr aus. Vorhandene Tokens müssen nach Aktivierung ggf. neu eingegeben werden. Wirksam beim nächsten App-Start.</string>
+    <string name="wizard_verify_button">Anmeldedaten prüfen</string>
+    <string name="wizard_verify_ok">Anmeldedaten gültig</string>
+    <string name="wizard_verify_failed">Prüfung fehlgeschlagen: %1$s</string>
 </resources>

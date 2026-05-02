@@ -583,4 +583,11 @@
     <string name="server_section_power">Alimentation</string>
     <string name="server_section_state">État</string>
     <string name="server_section_danger">Zone dangereuse</string>
+    <string name="clipboard_pre_a13_caveat">Votre version d\'Android ne peut pas marquer le presse-papiers comme sensible. Le texte sera effacé après 60 s mais peut apparaître brièvement dans la barre de suggestions du clavier.</string>
+    <string name="robot_ssh_key_delete_warning">Supprime définitivement la clé SSH de votre compte Robot. Action irréversible.</string>
+    <string name="settings_hardware_bound">Exiger un déverrouillage récent pour les identifiants stockés</string>
+    <string name="settings_hardware_bound_desc">Mode haute assurance : la réinscription biométrique invalide les identifiants stockés. Le PIN seul ne suffit plus à lire les jetons. Les jetons existants devront peut-être être ressaisis après activation. Effet au prochain démarrage de l\'app.</string>
+    <string name="wizard_verify_button">Vérifier les identifiants</string>
+    <string name="wizard_verify_ok">Identifiants valides</string>
+    <string name="wizard_verify_failed">Échec de la vérification : %1$s</string>
 </resources>

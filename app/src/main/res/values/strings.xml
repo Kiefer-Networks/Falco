@@ -206,6 +206,7 @@
     <string name="server_public_ipv6">Public IPv6</string>
     <string name="image_deprecated_label">deprecated · %1$s</string>
     <string name="s3_share_link_clip_label">share link</string>
+    <string name="clipboard_pre_a13_caveat">Your Android version cannot mark clipboard items as sensitive. The text will be wiped after 60 s but may briefly appear in the keyboard suggestion bar.</string>
     <string name="firewall_create_title">Create firewall</string>
     <string name="firewall_create_name">Name</string>
     <string name="robot_ssh_keys">SSH keys</string>
@@ -215,6 +216,7 @@
     <string name="robot_ssh_key_pick_file">Upload from file</string>
     <string name="robot_ssh_key_add_manual">Create manually</string>
     <string name="robot_ssh_key_delete_title">Delete SSH key?</string>
+    <string name="robot_ssh_key_delete_warning">This permanently removes the SSH key from your Robot account. The action cannot be undone.</string>
     <string name="robot_no_permission">No access. Enable this section in Hetzner Robot → Settings → Web service.</string>
     <string name="firewall_status_active">Active</string>
     <string name="firewall_status_unapplied">Not applied</string>
@@ -346,6 +348,8 @@
     <string name="settings_lock_15m">After 15 minutes</string>
     <string name="settings_block_screenshots">Block screenshots</string>
     <string name="settings_block_screenshots_desc">Hide content in screenshots and the recent apps switcher (FLAG_SECURE).</string>
+    <string name="settings_hardware_bound">Require fresh unlock for stored credentials</string>
+    <string name="settings_hardware_bound_desc">Higher-assurance mode: re-enrolling biometrics invalidates stored credentials. Pass-through PIN unlock no longer suffices to read tokens. Existing tokens may need to be re-entered after enabling. Takes effect on next app start.</string>
     <string name="settings_pinning_title">TLS pinning</string>
     <string name="settings_theme_oled">OLED black</string>
     <string name="settings_accent">Accent color</string>
@@ -428,6 +432,9 @@
     <string name="wizard_service_picker_caption">Which Hetzner services do you want this account to manage?</string>
     <string name="wizard_service_required">Pick at least one service</string>
     <string name="wizard_done_caption">"%1$s" is ready to use.</string>
+    <string name="wizard_verify_button">Verify credentials</string>
+    <string name="wizard_verify_ok">Credentials valid</string>
+    <string name="wizard_verify_failed">Verification failed: %1$s</string>
     <string name="account_s3_region_optional">Region (optional)</string>
 
     <string name="server_label_ipv4">Public IPv4</string>

@@ -589,4 +589,11 @@
     <string name="server_section_power">Питание</string>
     <string name="server_section_state">Состояние</string>
     <string name="server_section_danger">Опасная зона</string>
+    <string name="clipboard_pre_a13_caveat">Ваша версия Android не может пометить буфер обмена как конфиденциальный. Текст будет очищен через 60 с, но может кратко появиться в строке подсказок клавиатуры.</string>
+    <string name="robot_ssh_key_delete_warning">Безвозвратно удаляет SSH-ключ из аккаунта Robot. Действие нельзя отменить.</string>
+    <string name="settings_hardware_bound">Требовать свежей разблокировки для сохранённых учётных данных</string>
+    <string name="settings_hardware_bound_desc">Режим повышенной защиты: повторная регистрация биометрии аннулирует сохранённые учётные данные. PIN-разблокировки больше недостаточно для чтения токенов. Существующие токены, возможно, придётся ввести заново. Применяется при следующем запуске.</string>
+    <string name="wizard_verify_button">Проверить учётные данные</string>
+    <string name="wizard_verify_ok">Учётные данные верны</string>
+    <string name="wizard_verify_failed">Проверка не пройдена: %1$s</string>
 </resources>
