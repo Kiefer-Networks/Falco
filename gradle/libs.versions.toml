@@ -1,22 +1,23 @@
 [versions]
-agp = "8.7.3"
-kotlin = "2.1.0"
-ksp = "2.1.0-1.0.29"
+agp = "8.13.0"
+kotlin = "2.2.21"
+ksp = "2.2.21-2.0.5"
 coreKtx = "1.15.0"
 lifecycle = "2.8.7"
 activityCompose = "1.9.3"
 appcompat = "1.7.0"
-composeBom = "2025.01.00"
+composeBom = "2026.05.01"
 navigationCompose = "2.8.5"
-material3 = "1.3.1"
+material3 = "1.4.0"
 coroutines = "1.9.0"
 serializationJson = "1.7.3"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
 hilt = "2.55"
 hiltNavigationCompose = "1.2.0"
-securityCrypto = "1.1.0"         # Stable since 2025-07-30. NOTE: APIs are deprecated as of 1.1.0-beta01 (Jun 2025); long-term migration to direct Android Keystore + Tink/DataStore tracked as v2.0 work item (see SECURITY.md "Accepted Risks").
-biometric = "1.2.0-alpha05"      # JUSTIFIED: 1.4.x is the next active track but requires AGP 8.9.1+ and compileSdk 36; that toolchain bump is out of scope for this security release. 1.1.0 stable from 2021 lacks the Class-3 + DEVICE_CREDENTIAL gating the auth flow uses. Re-evaluate together with the AGP/compileSdk bump in v2.0.
+biometric = "1.4.0-alpha07"      # Active development track. Requires AGP 8.9.1+ and compileSdk 36 — both met in v2.0.
+tink = "1.21.0"                  # Replaces deprecated androidx.security:security-crypto. AEAD primitive (AES-256-GCM) wrapped by Keystore master key.
+securityCrypto = "1.1.0"         # MIGRATION-ONLY in v2.0: read legacy v1 EncryptedSharedPreferences file once and migrate to Tink+DataStore. Drop in v2.1 after migration window ends.
 room = "2.6.1"
 datastore = "1.1.1"
 minio = "8.5.14"
@@ -42,8 +43,9 @@ androidx-compose-material3 = { module = "androidx.compose.material3:material3", 
 androidx-compose-material3-window-sizeclass = { module = "androidx.compose.material3:material3-window-size-class", version.ref = "material3" }
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
-androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
+tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }

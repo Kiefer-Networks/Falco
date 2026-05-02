@@ -19,14 +19,14 @@ val signingProps = Properties().apply {
 
 android {
     namespace = "de.kiefer_networks.falco"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "de.kiefer_networks.falco"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 160
-        versionName = "1.6.0"
+        targetSdk = 36
+        versionCode = 200
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -152,8 +152,10 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
 
-    implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.biometric)
+    implementation(libs.tink.android)
+    // Migration-only: read legacy EncryptedSharedPreferences once, then drop in v2.1.
+    implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.datastore.preferences)
 
     implementation(libs.androidx.room.runtime)

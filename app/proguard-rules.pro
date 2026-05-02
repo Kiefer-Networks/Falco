@@ -82,6 +82,18 @@
     public static int println(...);
 }
 
+# Tink — uses reflection on registered key managers + protobuf schemas.
+# Tink 1.10+ ships consumer-rules.pro that handles most of this; the
+# -dontwarn entries below catch generated protobuf-lite + reflective config.
+-dontwarn com.google.crypto.tink.**
+-dontwarn com.google.protobuf.**
+-keep class com.google.crypto.tink.proto.** { *; }
+
+# androidx.security.crypto — kept here as a transitional dep used only by the
+# v1 -> v2 EncryptedSharedPreferences -> Tink/DataStore migration shim. Drop
+# in v2.1 once the migration window closes.
+-dontwarn androidx.security.crypto.**
+
 # Keep crash-relevant line numbers, hide source filename
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
