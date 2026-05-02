@@ -3,9 +3,9 @@ package de.kiefer_networks.falco.data.api
 
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -36,15 +36,15 @@ class CloudApiTest {
 
     @After
     fun tearDown() {
-        server.shutdown()
+        server.close()
     }
 
     @Test
     fun `listServers parses Hetzner Cloud server payload`() = runTest {
         server.enqueue(
-            MockResponse()
+            MockResponse.Builder()
                 .setHeader("Content-Type", "application/json")
-                .setBody(
+                .body(
                     """
                     {
                       "servers": [
@@ -66,7 +66,8 @@ class CloudApiTest {
                       }
                     }
                     """.trimIndent(),
-                ),
+                )
+                .build(),
         )
 
         val list = api.listServers()
@@ -81,15 +82,15 @@ class CloudApiTest {
         val recorded = this@CloudApiTest.server.takeRequest()
         assertEquals("GET", recorded.method)
         // Default page=1, per_page=50 must be sent
-        assertEquals("/v1/servers?page=1&per_page=50", recorded.path)
+        assertEquals("/v1/servers?page=1&per_page=50", recorded.target)
     }
 
     @Test
     fun `reboot issues POST to correct path`() = runTest {
         server.enqueue(
-            MockResponse()
+            MockResponse.Builder()
                 .setHeader("Content-Type", "application/json")
-                .setBody(
+                .body(
                     """
                     {
                       "action": {
@@ -102,7 +103,8 @@ class CloudApiTest {
                       }
                     }
                     """.trimIndent(),
-                ),
+                )
+                .build(),
         )
 
         val response = api.reboot(42L)
@@ -111,7 +113,7 @@ class CloudApiTest {
 
         val recorded = this@CloudApiTest.server.takeRequest()
         assertEquals("POST", recorded.method)
-        assertEquals("/v1/servers/42/actions/reboot", recorded.path)
+        assertEquals("/v1/servers/42/actions/reboot", recorded.target)
         // Reboot has no body
         assertTrue(recorded.bodySize == 0L)
     }
@@ -119,14 +121,15 @@ class CloudApiTest {
     @Test
     fun `listServers honours custom paging parameters`() = runTest {
         server.enqueue(
-            MockResponse()
+            MockResponse.Builder()
                 .setHeader("Content-Type", "application/json")
-                .setBody("""{"servers": []}"""),
+                .body("""{"servers": []}""")
+                .build(),
         )
 
         api.listServers(page = 3, perPage = 10)
 
         val recorded = server.takeRequest()
-        assertEquals("/v1/servers?page=3&per_page=10", recorded.path)
+        assertEquals("/v1/servers?page=3&per_page=10", recorded.target)
     }
 }

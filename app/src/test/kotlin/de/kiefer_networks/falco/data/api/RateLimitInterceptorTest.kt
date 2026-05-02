@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.data.api
 
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -56,7 +56,7 @@ class RateLimitInterceptorTest {
 
     @After
     fun tearDown() {
-        server.shutdown()
+        server.close()
     }
 
     private fun client(): OkHttpClient = OkHttpClient.Builder()
@@ -66,9 +66,10 @@ class RateLimitInterceptorTest {
     @Test
     fun `429 response throws RobotRateLimitException`() {
         server.enqueue(
-            MockResponse()
-                .setResponseCode(429)
-                .setBody("""{"error":{"status":429,"code":"RATE_LIMIT_EXCEEDED"}}"""),
+            MockResponse.Builder()
+                .code(429)
+                .body("""{"error":{"status":429,"code":"RATE_LIMIT_EXCEEDED"}}""")
+                .build(),
         )
 
         val request = Request.Builder().url(server.url("/server")).build()
@@ -83,9 +84,10 @@ class RateLimitInterceptorTest {
     @Test
     fun `403 with empty body throws RobotRateLimitException`() {
         server.enqueue(
-            MockResponse()
-                .setResponseCode(403)
-                .setHeader("Content-Length", "0"),
+            MockResponse.Builder()
+                .code(403)
+                .setHeader("Content-Length", "0")
+                .build(),
         )
 
         val request = Request.Builder().url(server.url("/server")).build()
@@ -100,10 +102,11 @@ class RateLimitInterceptorTest {
     @Test
     fun `200 response passes through without exception`() {
         server.enqueue(
-            MockResponse()
-                .setResponseCode(200)
+            MockResponse.Builder()
+                .code(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("[]"),
+                .body("[]")
+                .build(),
         )
 
         val request = Request.Builder().url(server.url("/server")).build()
@@ -118,10 +121,11 @@ class RateLimitInterceptorTest {
         // body is empty (typical Robot rate-limit signal). A 403 with a body
         // is a regular auth failure and must pass through.
         server.enqueue(
-            MockResponse()
-                .setResponseCode(403)
+            MockResponse.Builder()
+                .code(403)
                 .setHeader("Content-Type", "application/json")
-                .setBody("""{"error":{"status":403,"code":"FORBIDDEN"}}"""),
+                .body("""{"error":{"status":403,"code":"FORBIDDEN"}}""")
+                .build(),
         )
 
         val request = Request.Builder().url(server.url("/server")).build()

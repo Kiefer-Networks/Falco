@@ -3,9 +3,9 @@ package de.kiefer_networks.falco.data.api
 
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -34,15 +34,15 @@ class RobotApiTest {
 
     @After
     fun tearDown() {
-        server.shutdown()
+        server.close()
     }
 
     @Test
     fun `listServers parses envelope-wrapped response`() = runTest {
         server.enqueue(
-            MockResponse()
+            MockResponse.Builder()
                 .setHeader("Content-Type", "application/json")
-                .setBody(
+                .body(
                     """
                     [
                       {
@@ -69,7 +69,8 @@ class RobotApiTest {
                       }
                     ]
                     """.trimIndent(),
-                ),
+                )
+                .build(),
         )
 
         val servers = api.listServers()
@@ -81,7 +82,7 @@ class RobotApiTest {
 
         val recorded = server.takeRequest()
         assertEquals("GET", recorded.method)
-        assertEquals("/server", recorded.path)
+        assertEquals("/server", recorded.target)
     }
 
     // Storage Box endpoints on robot-ws were removed by Hetzner on 2025-07-30 —
@@ -91,9 +92,9 @@ class RobotApiTest {
     @Test
     fun `reset issues POST with form-encoded type field`() = runTest {
         server.enqueue(
-            MockResponse()
+            MockResponse.Builder()
                 .setHeader("Content-Type", "application/json")
-                .setBody(
+                .body(
                     """
                     {
                       "reset": {
@@ -103,20 +104,21 @@ class RobotApiTest {
                       }
                     }
                     """.trimIndent(),
-                ),
+                )
+                .build(),
         )
 
         api.reset(serverNumber = 321L, type = "hw")
 
         val recorded = server.takeRequest()
         assertEquals("POST", recorded.method)
-        assertEquals("/reset/321", recorded.path)
+        assertEquals("/reset/321", recorded.target)
         // FormUrlEncoded body uses application/x-www-form-urlencoded
-        val contentType = recorded.getHeader("Content-Type") ?: ""
+        val contentType = recorded.headers["Content-Type"] ?: ""
         assertTrue(
             "Expected form-encoded content type, got $contentType",
             contentType.startsWith("application/x-www-form-urlencoded"),
         )
-        assertEquals("type=hw", recorded.body.readUtf8())
+        assertEquals("type=hw", recorded.body?.utf8())
     }
 }

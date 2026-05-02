@@ -3,9 +3,9 @@ package de.kiefer_networks.falco.data.api
 
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -33,15 +33,15 @@ class DnsApiTest {
 
     @After
     fun tearDown() {
-        server.shutdown()
+        server.close()
     }
 
     @Test
     fun `listZones parses zone list`() = runTest {
         server.enqueue(
-            MockResponse()
+            MockResponse.Builder()
                 .setHeader("Content-Type", "application/json")
-                .setBody(
+                .body(
                     """
                     {
                       "zones": [
@@ -61,7 +61,8 @@ class DnsApiTest {
                       ]
                     }
                     """.trimIndent(),
-                ),
+                )
+                .build(),
         )
 
         val list = api.listZones()
@@ -75,6 +76,6 @@ class DnsApiTest {
 
         val recorded = server.takeRequest()
         assertEquals("GET", recorded.method)
-        assertEquals("/api/v1/zones?page=1&per_page=100", recorded.path)
+        assertEquals("/api/v1/zones?page=1&per_page=100", recorded.target)
     }
 }
