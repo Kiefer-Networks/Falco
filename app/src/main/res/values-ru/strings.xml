@@ -596,4 +596,9 @@
     <string name="wizard_verify_button">Проверить учётные данные</string>
     <string name="wizard_verify_ok">Учётные данные верны</string>
     <string name="wizard_verify_failed">Проверка не пройдена: %1$s</string>
+    <string name="robot_section_traffic_month">Трафик за месяц</string>
+    <string name="robot_traffic_in">Входящий</string>
+    <string name="robot_traffic_out">Исходящий</string>
+    <string name="robot_traffic_sum">Всего</string>
+    <string name="robot_traffic_gb_format">%1$.2f ГБ</string>
 </resources>

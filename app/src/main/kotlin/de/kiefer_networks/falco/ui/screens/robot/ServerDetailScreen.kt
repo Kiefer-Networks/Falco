@@ -180,6 +180,27 @@ fun ServerDetailScreen(
                     item {
                         s.traffic?.let { DetailLine(stringResource(R.string.robot_field_traffic), it) }
                     }
+                    state.traffic?.let { t ->
+                        item { SectionHeader(stringResource(R.string.robot_section_traffic_month)) }
+                        item {
+                            DetailLine(
+                                stringResource(R.string.robot_traffic_in),
+                                stringResource(R.string.robot_traffic_gb_format, t.inGb),
+                            )
+                        }
+                        item {
+                            DetailLine(
+                                stringResource(R.string.robot_traffic_out),
+                                stringResource(R.string.robot_traffic_gb_format, t.outGb),
+                            )
+                        }
+                        item {
+                            DetailLine(
+                                stringResource(R.string.robot_traffic_sum),
+                                stringResource(R.string.robot_traffic_gb_format, t.sumGb),
+                            )
+                        }
+                    }
                 }
             }
         }

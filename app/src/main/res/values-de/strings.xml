@@ -587,4 +587,9 @@
     <string name="wizard_verify_button">Anmeldedaten prüfen</string>
     <string name="wizard_verify_ok">Anmeldedaten gültig</string>
     <string name="wizard_verify_failed">Prüfung fehlgeschlagen: %1$s</string>
+    <string name="robot_section_traffic_month">Monatlicher Traffic</string>
+    <string name="robot_traffic_in">Eingehend</string>
+    <string name="robot_traffic_out">Ausgehend</string>
+    <string name="robot_traffic_sum">Gesamt</string>
+    <string name="robot_traffic_gb_format">%1$.2f GB</string>
 </resources>

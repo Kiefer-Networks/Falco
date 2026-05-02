@@ -590,4 +590,9 @@
     <string name="wizard_verify_button">Verifica credenziali</string>
     <string name="wizard_verify_ok">Credenziali valide</string>
     <string name="wizard_verify_failed">Verifica fallita: %1$s</string>
+    <string name="robot_section_traffic_month">Traffico mensile</string>
+    <string name="robot_traffic_in">In entrata</string>
+    <string name="robot_traffic_out">In uscita</string>
+    <string name="robot_traffic_sum">Totale</string>
+    <string name="robot_traffic_gb_format">%1$.2f GB</string>
 </resources>

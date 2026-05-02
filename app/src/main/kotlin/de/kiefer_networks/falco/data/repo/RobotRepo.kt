@@ -7,6 +7,10 @@ import de.kiefer_networks.falco.data.auth.AccountManager
 import de.kiefer_networks.falco.data.dto.RobotFailover
 import de.kiefer_networks.falco.data.dto.RobotServer
 import de.kiefer_networks.falco.data.dto.RobotVSwitch
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -84,4 +88,32 @@ class RobotRepo @Inject constructor(private val accounts: AccountManager) {
     // ---- Traffic ---------------------------------------------------------
 
     suspend fun listTraffic(): de.kiefer_networks.falco.data.dto.RobotTrafficResponse = api().listTraffic()
+
+    /**
+     * Per-IP traffic consumption (in/out/sum, GB) for the current calendar
+     * month. Parses the loosely-typed `/traffic` envelope. Returns an empty
+     * map when the response shape doesn't match — Hetzner Robot responds with
+     * a flat error body inside the `traffic` field for IPs that have no data
+     * yet. Caller passes the IPv4 list to query.
+     */
+    suspend fun monthlyTraffic(ips: List<String>): Map<String, TrafficStats> {
+        if (ips.isEmpty()) return emptyMap()
+        val now = java.time.LocalDate.now()
+        val from = now.withDayOfMonth(1).toString()
+        val to = now.toString()
+        val raw = api().queryTraffic("month", from, to, ips).traffic ?: return emptyMap()
+        val obj = (raw as? JsonObject) ?: return emptyMap()
+        val data = (obj["data"] as? JsonObject) ?: return emptyMap()
+        return data.mapValues { (_, value) ->
+            val v = (value as? JsonObject) ?: return@mapValues TrafficStats()
+            fun field(name: String): Double =
+                (v[name] as? JsonPrimitive)?.doubleOrNull
+                    ?: (v[name] as? JsonPrimitive)?.contentOrNull?.toDoubleOrNull()
+                    ?: 0.0
+            TrafficStats(inGb = field("in"), outGb = field("out"), sumGb = field("sum"))
+        }
+    }
 }
+
+/** Traffic counts in GB. Hetzner Robot reports per IPv4. */
+data class TrafficStats(val inGb: Double = 0.0, val outGb: Double = 0.0, val sumGb: Double = 0.0)

@@ -152,6 +152,21 @@ interface RobotApi {
     @GET("traffic")
     suspend fun listTraffic(): de.kiefer_networks.falco.data.dto.RobotTrafficResponse
 
+    /**
+     * Hetzner Robot `/traffic` query. Per the official docs the endpoint is a
+     * form-encoded POST with `ip[]` repeated per address (`subnet[]` for v6
+     * subnets) plus a `type`+`from`+`to` window. Unparameterised GET returns
+     * a generic envelope without per-IP rows.
+     */
+    @FormUrlEncoded
+    @POST("traffic")
+    suspend fun queryTraffic(
+        @Field("type") type: String,
+        @Field("from") from: String,
+        @Field("to") to: String,
+        @Field("ip[]") ips: List<String>,
+    ): de.kiefer_networks.falco.data.dto.RobotTrafficResponse
+
     @GET("key")
     suspend fun listKeys(): List<de.kiefer_networks.falco.data.dto.RobotKeyEnvelope>
 

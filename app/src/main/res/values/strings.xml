@@ -271,6 +271,11 @@
     <string name="robot_field_paid_until">Paid until</string>
     <string name="robot_field_cancelled">Cancelled</string>
     <string name="robot_field_traffic">Traffic</string>
+    <string name="robot_section_traffic_month">Monthly traffic</string>
+    <string name="robot_traffic_in">Inbound</string>
+    <string name="robot_traffic_out">Outbound</string>
+    <string name="robot_traffic_sum">Total</string>
+    <string name="robot_traffic_gb_format">%1$.2f GB</string>
     <string name="robot_field_status">Status</string>
     <string name="robot_reset_title">Reset server</string>
     <string name="robot_reset_message">Choose reset type:</string>

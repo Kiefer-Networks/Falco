@@ -590,4 +590,9 @@
     <string name="wizard_verify_button">Vérifier les identifiants</string>
     <string name="wizard_verify_ok">Identifiants valides</string>
     <string name="wizard_verify_failed">Échec de la vérification : %1$s</string>
+    <string name="robot_section_traffic_month">Trafic mensuel</string>
+    <string name="robot_traffic_in">Entrant</string>
+    <string name="robot_traffic_out">Sortant</string>
+    <string name="robot_traffic_sum">Total</string>
+    <string name="robot_traffic_gb_format">%1$.2f GB</string>
 </resources>

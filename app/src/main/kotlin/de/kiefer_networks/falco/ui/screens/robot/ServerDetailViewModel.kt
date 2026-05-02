@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.data.dto.RobotServer
 import de.kiefer_networks.falco.data.repo.RobotRepo
+import de.kiefer_networks.falco.data.repo.TrafficStats
 import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.nav.Routes
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -26,6 +27,7 @@ data class ServerDetailUiState(
     val rescueActive: Boolean = false,
     val cancellationDate: String? = null,
     val cancellationCancelled: Boolean = false,
+    val traffic: TrafficStats? = null,
 )
 
 sealed interface ServerActionResult {
@@ -74,6 +76,12 @@ class ServerDetailViewModel @Inject constructor(
                     cancellationDate = c.cancellationDate,
                     cancellationCancelled = c.cancelled,
                 )
+            }
+            // Monthly traffic on the primary IPv4. Robot reports per-IP via
+            // /traffic — fan-out to a single IP and pick the matching row.
+            _state.value.server?.serverIp?.let { ip ->
+                runCatching { repo.monthlyTraffic(listOf(ip))[ip] }
+                    .onSuccess { stats -> _state.value = _state.value.copy(traffic = stats) }
             }
         }
     }
