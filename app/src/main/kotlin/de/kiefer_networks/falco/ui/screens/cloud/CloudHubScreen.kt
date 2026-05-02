@@ -90,6 +90,7 @@ fun CloudHubScreen(
     }
     val openLoadBalancerSwitch: (String?, Long) -> Unit = { pid, id ->
         viewModel.selectProjectThen(pid) { onOpenLoadBalancer(id) }
+    }
     val openPrimaryIpSwitch: (String?, Long) -> Unit = { pid, id ->
         viewModel.selectProjectThen(pid) { onOpenPrimaryIp(id) }
     }

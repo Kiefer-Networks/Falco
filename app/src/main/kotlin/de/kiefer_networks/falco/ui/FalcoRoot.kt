@@ -128,10 +128,18 @@ fun FalcoRoot(viewModel: FalcoRootViewModel, windowSizeClass: WindowSizeClass) {
                 arguments = listOf(navArgument(Routes.ARG_CLOUD_NETWORK_ID) { type = NavType.LongType }),
             ) {
                 de.kiefer_networks.falco.ui.screens.cloud.CloudNetworkDetailScreen(
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable(
                 route = Routes.CLOUD_LOAD_BALANCER_DETAIL,
                 arguments = listOf(navArgument(Routes.ARG_LOAD_BALANCER_ID) { type = NavType.LongType }),
             ) {
                 de.kiefer_networks.falco.ui.screens.cloud.CloudLoadBalancerDetailScreen(
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable(
                 route = Routes.CLOUD_PRIMARY_IP_DETAIL,
                 arguments = listOf(navArgument(Routes.ARG_PRIMARY_IP_ID) { type = NavType.LongType }),
             ) {
