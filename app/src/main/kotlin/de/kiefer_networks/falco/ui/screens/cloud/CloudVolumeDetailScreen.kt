@@ -62,6 +62,7 @@ import de.kiefer_networks.falco.ui.components.detail.KpiStrip
 import de.kiefer_networks.falco.ui.components.dialog.ActionsBottomSheetSections
 import de.kiefer_networks.falco.ui.components.dialog.SheetAction
 import de.kiefer_networks.falco.ui.components.dialog.SheetSection
+import de.kiefer_networks.falco.ui.components.dialog.TypeToConfirmDeleteDialog
 import de.kiefer_networks.falco.ui.theme.Spacing
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
@@ -268,21 +269,16 @@ fun CloudVolumeDetailScreen(
     }
 
     if (deleteOpen) {
-        AlertDialog(
-            onDismissRequest = { deleteOpen = false },
-            title = { Text(stringResource(R.string.cloud_volume_delete_title)) },
-            text = { Text(stringResource(R.string.cloud_volume_delete_warning, state.volume?.name.orEmpty())) },
-            confirmButton = {
-                TextButton(onClick = {
-                    deleteOpen = false
-                    viewModel.delete()
-                }) {
-                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
-                }
+        TypeToConfirmDeleteDialog(
+            title = stringResource(R.string.cloud_volume_delete_title),
+            warning = stringResource(R.string.cloud_volume_delete_warning, state.volume?.name.orEmpty()),
+            confirmName = state.volume?.name ?: "",
+            confirmButtonLabel = stringResource(R.string.delete),
+            onConfirm = {
+                deleteOpen = false
+                viewModel.delete()
             },
-            dismissButton = {
-                TextButton(onClick = { deleteOpen = false }) { Text(stringResource(R.string.cancel)) }
-            },
+            onDismiss = { deleteOpen = false },
         )
     }
 }

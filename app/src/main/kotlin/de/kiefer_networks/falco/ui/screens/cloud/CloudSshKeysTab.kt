@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.UploadFile
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -67,6 +66,7 @@ import de.kiefer_networks.falco.data.repo.CloudRepo
 import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.components.ErrorState
 import de.kiefer_networks.falco.ui.components.LoadingState
+import de.kiefer_networks.falco.ui.components.dialog.TypeToConfirmDeleteDialog
 import de.kiefer_networks.falco.ui.theme.Spacing
 import de.kiefer_networks.falco.ui.util.looksLikePrivateKey
 import de.kiefer_networks.falco.ui.util.looksLikePublicKey
@@ -224,21 +224,16 @@ fun CloudSshKeysTab(
     }
 
     pendingDelete?.let { key ->
-        AlertDialog(
-            onDismissRequest = { pendingDelete = null },
-            title = { Text(stringResource(R.string.robot_ssh_key_delete_title)) },
-            text = { Text(key.name) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.delete(key.id)
-                    pendingDelete = null
-                }) {
-                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
-                }
+        TypeToConfirmDeleteDialog(
+            title = stringResource(R.string.robot_ssh_key_delete_title),
+            warning = key.name,
+            confirmName = key.name,
+            confirmButtonLabel = stringResource(R.string.delete),
+            onConfirm = {
+                viewModel.delete(key.id)
+                pendingDelete = null
             },
-            dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) { Text(stringResource(R.string.cancel)) }
-            },
+            onDismiss = { pendingDelete = null },
         )
     }
 }

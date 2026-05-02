@@ -68,6 +68,7 @@ import de.kiefer_networks.falco.ui.components.LoadingState
 import de.kiefer_networks.falco.ui.components.dialog.ActionsBottomSheetSections
 import de.kiefer_networks.falco.ui.components.dialog.SheetAction
 import de.kiefer_networks.falco.ui.components.dialog.SheetSection
+import de.kiefer_networks.falco.ui.components.dialog.TypeToConfirmDeleteDialog
 import kotlinx.coroutines.launch
 
 @Composable
@@ -243,25 +244,16 @@ fun CloudFirewallDetailScreen(
     }
 
     if (deleteOpen) {
-        AlertDialog(
-            onDismissRequest = { deleteOpen = false },
-            title = { Text(stringResource(R.string.firewall_delete_title)) },
-            text = { Text(stringResource(R.string.firewall_delete_warning, state.firewall?.name.orEmpty())) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        deleteOpen = false
-                        viewModel.delete()
-                    },
-                ) {
-                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
-                }
+        TypeToConfirmDeleteDialog(
+            title = stringResource(R.string.firewall_delete_title),
+            warning = stringResource(R.string.firewall_delete_warning, state.firewall?.name.orEmpty()),
+            confirmName = state.firewall?.name ?: "",
+            confirmButtonLabel = stringResource(R.string.delete),
+            onConfirm = {
+                deleteOpen = false
+                viewModel.delete()
             },
-            dismissButton = {
-                TextButton(onClick = { deleteOpen = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
+            onDismiss = { deleteOpen = false },
         )
     }
 

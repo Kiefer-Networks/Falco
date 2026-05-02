@@ -60,6 +60,7 @@ import de.kiefer_networks.falco.ui.components.detail.KpiStrip
 import de.kiefer_networks.falco.ui.components.dialog.ActionsBottomSheetSections
 import de.kiefer_networks.falco.ui.components.dialog.SheetAction
 import de.kiefer_networks.falco.ui.components.dialog.SheetSection
+import de.kiefer_networks.falco.ui.components.dialog.TypeToConfirmDeleteDialog
 import de.kiefer_networks.falco.ui.theme.Spacing
 import kotlinx.coroutines.launch
 
@@ -308,18 +309,14 @@ fun CloudFloatingIpDetailScreen(
     }
 
     if (deleteOpen) {
-        AlertDialog(
-            onDismissRequest = { deleteOpen = false },
-            title = { Text(stringResource(R.string.cloud_volume_delete_title)) },
-            text = { Text(stringResource(R.string.cloud_volume_delete_warning, state.ip?.name ?: state.ip?.ip.orEmpty())) },
-            confirmButton = {
-                TextButton(onClick = {
-                    deleteOpen = false; viewModel.delete()
-                }) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { deleteOpen = false }) { Text(stringResource(R.string.cancel)) }
-            },
+        val confirmName = state.ip?.name ?: state.ip?.ip ?: ""
+        TypeToConfirmDeleteDialog(
+            title = stringResource(R.string.cloud_volume_delete_title),
+            warning = stringResource(R.string.cloud_volume_delete_warning, confirmName),
+            confirmName = confirmName,
+            confirmButtonLabel = stringResource(R.string.delete),
+            onConfirm = { deleteOpen = false; viewModel.delete() },
+            onDismiss = { deleteOpen = false },
         )
     }
 }
