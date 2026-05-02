@@ -127,11 +127,12 @@ fun AboutScreen(onBack: () -> Unit = {}) {
                         subtitle = "Liberapay",
                         onClick = { open("https://de.liberapay.com/beli3ver") },
                     )
+                    val repoSubtitle = stringResource(R.string.about_repo)
                     AboutTile(
                         icon = Icons.Filled.Code,
                         title = stringResource(R.string.about_source_code),
-                        subtitle = stringResource(R.string.about_repo),
-                        onClick = { open("https://${ctx.getString(R.string.about_repo)}") },
+                        subtitle = repoSubtitle,
+                        onClick = { open("https://$repoSubtitle") },
                     )
                 }
             }
