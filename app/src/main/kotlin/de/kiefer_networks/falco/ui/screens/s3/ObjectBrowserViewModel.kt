@@ -23,6 +23,18 @@ data class ObjectBrowserUiState(
     val error: String? = null,
 )
 
+/**
+ * Lightweight projection of [io.minio.StatObjectResponse] so the UI layer
+ * never imports MinIO types directly.
+ */
+data class ObjectStat(
+    val key: String,
+    val size: Long,
+    val lastModified: String?,
+    val contentType: String?,
+    val etag: String?,
+)
+
 sealed interface ObjectBrowserEvent {
     data class ShareLinkReady(val key: String, val url: String) : ObjectBrowserEvent
     data class ShareLinkFailed(val message: String) : ObjectBrowserEvent
@@ -30,6 +42,14 @@ sealed interface ObjectBrowserEvent {
     data class DeleteFailed(val message: String) : ObjectBrowserEvent
     data class DownloadSucceeded(val key: String) : ObjectBrowserEvent
     data class DownloadFailed(val message: String) : ObjectBrowserEvent
+    data class MultiDeleteSucceeded(val count: Int) : ObjectBrowserEvent
+    data class MultiDeleteFailed(val message: String) : ObjectBrowserEvent
+    data class CopySucceeded(val srcKey: String, val dstKey: String) : ObjectBrowserEvent
+    data class CopyFailed(val message: String) : ObjectBrowserEvent
+    data class MoveSucceeded(val srcKey: String, val dstKey: String) : ObjectBrowserEvent
+    data class MoveFailed(val message: String) : ObjectBrowserEvent
+    data class StatLoaded(val stat: ObjectStat) : ObjectBrowserEvent
+    data class StatFailed(val message: String) : ObjectBrowserEvent
 }
 
 @HiltViewModel
@@ -78,6 +98,19 @@ class ObjectBrowserViewModel @Inject constructor(
         }
     }
 
+    fun deleteMany(keys: Collection<String>) {
+        if (keys.isEmpty()) return
+        val keyList = keys.toList()
+        viewModelScope.launch {
+            runCatching { repo.deleteAll(bucket, keyList) }
+                .onSuccess { deleted ->
+                    _events.value = ObjectBrowserEvent.MultiDeleteSucceeded(deleted.size)
+                    refresh()
+                }
+                .onFailure { _events.value = ObjectBrowserEvent.MultiDeleteFailed(sanitizeError(it)) }
+        }
+    }
+
     fun share(key: String, hours: Int) {
         viewModelScope.launch {
             runCatching { repo.shareLink(bucket, key, hours) }
@@ -94,6 +127,56 @@ class ObjectBrowserViewModel @Inject constructor(
                 .onSuccess { _events.value = ObjectBrowserEvent.DownloadSucceeded(key) }
                 .onFailure { _events.value = ObjectBrowserEvent.DownloadFailed(sanitizeError(it)) }
             onComplete()
+        }
+    }
+
+    fun copyTo(srcKey: String, dstBucket: String, dstKey: String) {
+        viewModelScope.launch {
+            runCatching { repo.copy(bucket, srcKey, dstBucket, dstKey) }
+                .onSuccess {
+                    _events.value = ObjectBrowserEvent.CopySucceeded(srcKey, dstKey)
+                    if (dstBucket == bucket) refresh()
+                }
+                .onFailure { _events.value = ObjectBrowserEvent.CopyFailed(sanitizeError(it)) }
+        }
+    }
+
+    /**
+     * Move = server-side copy then source delete. We only delete the source
+     * after the copy succeeds; if the copy fails, the source is left intact.
+     * If the destination is in a different bucket, we still refresh because a
+     * deleted source could change the local listing.
+     */
+    fun moveTo(srcKey: String, dstBucket: String, dstKey: String) {
+        viewModelScope.launch {
+            val copy = runCatching { repo.copy(bucket, srcKey, dstBucket, dstKey) }
+            if (copy.isFailure) {
+                _events.value = ObjectBrowserEvent.MoveFailed(sanitizeError(copy.exceptionOrNull()!!))
+                return@launch
+            }
+            runCatching { repo.delete(bucket, srcKey) }
+                .onSuccess {
+                    _events.value = ObjectBrowserEvent.MoveSucceeded(srcKey, dstKey)
+                    refresh()
+                }
+                .onFailure { _events.value = ObjectBrowserEvent.MoveFailed(sanitizeError(it)) }
+        }
+    }
+
+    fun loadStat(key: String) {
+        viewModelScope.launch {
+            runCatching { repo.stat(bucket, key) }
+                .onSuccess { resp ->
+                    val stat = ObjectStat(
+                        key = key,
+                        size = runCatching { resp.size() }.getOrDefault(0L),
+                        lastModified = runCatching { resp.lastModified()?.toString() }.getOrNull(),
+                        contentType = runCatching { resp.contentType() }.getOrNull(),
+                        etag = runCatching { resp.etag() }.getOrNull(),
+                    )
+                    _events.value = ObjectBrowserEvent.StatLoaded(stat)
+                }
+                .onFailure { _events.value = ObjectBrowserEvent.StatFailed(sanitizeError(it)) }
         }
     }
 

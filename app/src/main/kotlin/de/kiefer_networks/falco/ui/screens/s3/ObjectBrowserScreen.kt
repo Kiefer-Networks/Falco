@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 package de.kiefer_networks.falco.ui.screens.s3
 
 import android.content.ContentValues
@@ -11,8 +12,9 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +26,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.UploadFile
@@ -43,6 +47,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,6 +62,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.api.S3Client
 import de.kiefer_networks.falco.data.s3.UploadService
+import de.kiefer_networks.falco.ui.components.dialog.TypeToConfirmDeleteDialog
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
@@ -76,6 +83,20 @@ fun ObjectBrowserScreen(
     var shareDialogKey by rememberSaveable { mutableStateOf<String?>(null) }
     var shareDialogUrl by rememberSaveable { mutableStateOf<String?>(null) }
     var deleteConfirmKey by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Multi-select state. Stored as a SnapshotStateList for cheap reads inside
+    // each row Composable (set membership read; hash-based contains).
+    val selected = remember { mutableStateListOf<String>() }
+    var multiDeleteOpen by rememberSaveable { mutableStateOf(false) }
+
+    // Copy / Move: picking destinations.
+    var copySourceKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var moveSourceKey by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Info sheet state.
+    var infoOpenForKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var infoStat by remember { mutableStateOf<ObjectStat?>(null) }
+    var infoError by remember { mutableStateOf<String?>(null) }
 
     val openDocLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
@@ -116,34 +137,92 @@ fun ObjectBrowserScreen(
                 Toast.makeText(context, context.getString(R.string.s3_download_saved), Toast.LENGTH_LONG).show()
             is ObjectBrowserEvent.DownloadFailed ->
                 Toast.makeText(context, context.getString(R.string.error) + ": " + e.message, Toast.LENGTH_LONG).show()
+            is ObjectBrowserEvent.MultiDeleteSucceeded -> {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.s3_multi_delete_succeeded, e.count),
+                    Toast.LENGTH_LONG,
+                ).show()
+                selected.clear()
+                multiDeleteOpen = false
+            }
+            is ObjectBrowserEvent.MultiDeleteFailed -> {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.s3_multi_delete_failed) + ": " + e.message,
+                    Toast.LENGTH_LONG,
+                ).show()
+                multiDeleteOpen = false
+            }
+            is ObjectBrowserEvent.CopySucceeded -> {
+                Toast.makeText(context, context.getString(R.string.s3_copy_succeeded), Toast.LENGTH_SHORT).show()
+                copySourceKey = null
+            }
+            is ObjectBrowserEvent.CopyFailed -> {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.s3_copy_failed) + ": " + e.message,
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
+            is ObjectBrowserEvent.MoveSucceeded -> {
+                Toast.makeText(context, context.getString(R.string.s3_move_succeeded), Toast.LENGTH_SHORT).show()
+                moveSourceKey = null
+            }
+            is ObjectBrowserEvent.MoveFailed -> {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.s3_move_failed) + ": " + e.message,
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
+            is ObjectBrowserEvent.StatLoaded -> {
+                if (e.stat.key == infoOpenForKey) {
+                    infoStat = e.stat
+                    infoError = null
+                }
+            }
+            is ObjectBrowserEvent.StatFailed -> {
+                infoError = e.message
+            }
             null -> Unit
         }
         if (event != null) viewModel.consumeEvent()
     }
 
+    val inSelectionMode = selected.isNotEmpty()
+
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                }
-                Column(Modifier.padding(start = 4.dp)) {
-                    Text(
-                        text = viewModel.bucket,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (viewModel.prefix.isNotBlank()) {
+            if (inSelectionMode) {
+                SelectionAppBar(
+                    count = selected.size,
+                    onClear = { selected.clear() },
+                    onDelete = { multiDeleteOpen = true },
+                )
+            } else {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                    Column(Modifier.padding(start = 4.dp)) {
                         Text(
-                            text = "/" + viewModel.prefix.trimEnd('/'),
-                            style = MaterialTheme.typography.bodySmall,
+                            text = viewModel.bucket,
+                            style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        if (viewModel.prefix.isNotBlank()) {
+                            Text(
+                                text = "/" + viewModel.prefix.trimEnd('/'),
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
             }
@@ -166,13 +245,30 @@ fun ObjectBrowserScreen(
                             DirRow(
                                 obj = obj,
                                 parentPrefix = viewModel.prefix,
-                                onClick = { onNavigateToPrefix(viewModel.bucket, obj.key) },
+                                onClick = {
+                                    if (inSelectionMode) {
+                                        // Directories aren't selectable — tap navigates as usual.
+                                        // We swallow long-press on dirs too via DirRow not exposing it.
+                                    }
+                                    onNavigateToPrefix(viewModel.bucket, obj.key)
+                                },
                             )
                         } else {
+                            val isSelected = selected.contains(obj.key)
                             FileRow(
                                 obj = obj,
                                 parentPrefix = viewModel.prefix,
+                                selected = isSelected,
+                                inSelectionMode = inSelectionMode,
                                 menuExpanded = menuOpenForKey == obj.key,
+                                onTap = {
+                                    if (inSelectionMode) {
+                                        if (isSelected) selected.remove(obj.key) else selected.add(obj.key)
+                                    }
+                                },
+                                onLongPress = {
+                                    if (!isSelected) selected.add(obj.key)
+                                },
                                 onMenuToggle = {
                                     menuOpenForKey = if (menuOpenForKey == obj.key) null else obj.key
                                 },
@@ -200,6 +296,21 @@ fun ObjectBrowserScreen(
                                     menuOpenForKey = null
                                     deleteConfirmKey = obj.key
                                 },
+                                onCopy = {
+                                    menuOpenForKey = null
+                                    copySourceKey = obj.key
+                                },
+                                onMove = {
+                                    menuOpenForKey = null
+                                    moveSourceKey = obj.key
+                                },
+                                onInfo = {
+                                    menuOpenForKey = null
+                                    infoOpenForKey = obj.key
+                                    infoStat = null
+                                    infoError = null
+                                    viewModel.loadStat(obj.key)
+                                },
                             )
                         }
                     }
@@ -207,12 +318,14 @@ fun ObjectBrowserScreen(
             }
         }
 
-        ExtendedFloatingActionButton(
-            onClick = { openDocLauncher.launch(arrayOf("*/*")) },
-            icon = { Icon(Icons.Filled.UploadFile, contentDescription = null) },
-            text = { Text(stringResource(R.string.s3_upload)) },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
-        )
+        if (!inSelectionMode) {
+            ExtendedFloatingActionButton(
+                onClick = { openDocLauncher.launch(arrayOf("*/*")) },
+                icon = { Icon(Icons.Filled.UploadFile, contentDescription = null) },
+                text = { Text(stringResource(R.string.s3_upload)) },
+                modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
+            )
+        }
     }
 
     val keyForDialog = shareDialogKey
@@ -249,6 +362,90 @@ fun ObjectBrowserScreen(
             },
         )
     }
+
+    if (multiDeleteOpen) {
+        val count = selected.size
+        // The confirm phrase is fixed and contains the live count; the dialog
+        // uses it both as the warning copy reference and as the text the user
+        // must type verbatim.
+        val phrase = stringResource(R.string.s3_multi_delete_confirm_phrase, count)
+        TypeToConfirmDeleteDialog(
+            title = stringResource(R.string.s3_multi_delete_title, count),
+            warning = stringResource(R.string.s3_multi_delete_warning, count),
+            confirmName = phrase,
+            confirmButtonLabel = stringResource(R.string.delete),
+            onConfirm = {
+                viewModel.deleteMany(selected.toList())
+            },
+            onDismiss = { multiDeleteOpen = false },
+        )
+    }
+
+    copySourceKey?.let { src ->
+        CopyMoveDialog(
+            titleRes = R.string.s3_copy_dest_title,
+            confirmLabelRes = R.string.s3_action_copy,
+            sourceBucket = viewModel.bucket,
+            sourceKey = src,
+            onDismiss = { copySourceKey = null },
+            onConfirm = { dstBucket, dstKey ->
+                viewModel.copyTo(src, dstBucket, dstKey)
+            },
+        )
+    }
+
+    moveSourceKey?.let { src ->
+        CopyMoveDialog(
+            titleRes = R.string.s3_move_dest_title,
+            confirmLabelRes = R.string.s3_action_move,
+            sourceBucket = viewModel.bucket,
+            sourceKey = src,
+            onDismiss = { moveSourceKey = null },
+            onConfirm = { dstBucket, dstKey ->
+                viewModel.moveTo(src, dstBucket, dstKey)
+            },
+        )
+    }
+
+    infoOpenForKey?.let { key ->
+        ObjectInfoSheet(
+            objectKey = key,
+            stat = infoStat?.takeIf { it.key == key },
+            error = infoError,
+            onDismiss = {
+                infoOpenForKey = null
+                infoStat = null
+                infoError = null
+            },
+        )
+    }
+}
+
+@Composable
+private fun SelectionAppBar(count: Int, onClear: () -> Unit, onDelete: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onClear) {
+            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.s3_action_clear_selection))
+        }
+        Text(
+            text = stringResource(R.string.s3_select_mode_title, count),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.weight(1f).padding(start = 4.dp),
+        )
+        IconButton(onClick = onDelete) {
+            Icon(
+                Icons.Filled.Delete,
+                contentDescription = stringResource(R.string.s3_action_delete_selected),
+                tint = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
 }
 
 @Composable
@@ -281,14 +478,35 @@ private fun DirRow(
 private fun FileRow(
     obj: S3Client.S3ObjectMeta,
     parentPrefix: String,
+    selected: Boolean,
+    inSelectionMode: Boolean,
     menuExpanded: Boolean,
+    onTap: () -> Unit,
+    onLongPress: () -> Unit,
     onMenuToggle: () -> Unit,
     onShare: () -> Unit,
     onDownload: () -> Unit,
     onDelete: () -> Unit,
+    onCopy: () -> Unit,
+    onMove: () -> Unit,
+    onInfo: () -> Unit,
 ) {
     val displayName = displayName(obj.key, parentPrefix).ifEmpty { obj.key }
-    Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    val rowModifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = 4.dp)
+        .combinedClickable(
+            onClick = onTap,
+            onLongClick = onLongPress,
+        )
+    val cardColors = if (selected) {
+        androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        )
+    } else {
+        androidx.compose.material3.CardDefaults.cardColors()
+    }
+    Card(modifier = rowModifier, colors = cardColors) {
         Row(
             Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -312,23 +530,39 @@ private fun FileRow(
                 }
                 Text(text = secondary, style = MaterialTheme.typography.bodySmall)
             }
-            Box {
-                IconButton(onClick = onMenuToggle) {
-                    Icon(Icons.Filled.MoreVert, contentDescription = null)
-                }
-                DropdownMenu(expanded = menuExpanded, onDismissRequest = onMenuToggle) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.s3_share_link)) },
-                        onClick = onShare,
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.s3_download)) },
-                        onClick = onDownload,
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.delete)) },
-                        onClick = onDelete,
-                    )
+            // The overflow menu is hidden in selection mode to keep the row's
+            // tap surface unambiguous (toggle vs. open menu).
+            if (!inSelectionMode) {
+                Box {
+                    IconButton(onClick = onMenuToggle) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = null)
+                    }
+                    DropdownMenu(expanded = menuExpanded, onDismissRequest = onMenuToggle) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.s3_action_info)) },
+                            onClick = onInfo,
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.s3_share_link)) },
+                            onClick = onShare,
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.s3_download)) },
+                            onClick = onDownload,
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.s3_action_copy_to)) },
+                            onClick = onCopy,
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.s3_action_move_to)) },
+                            onClick = onMove,
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.delete)) },
+                            onClick = onDelete,
+                        )
+                    }
                 }
             }
         }
