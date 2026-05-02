@@ -1,0 +1,21 @@
+Falco 2.1.1
+
+Bug-fix + UX-polish release.
+
+Fixed:
+- Account wizard now auto-activates the just-created account, so
+  adding a Robot-only account from a Cloud-active session no longer
+  routes to a tab whose backing creds are empty.
+
+New:
+- Monthly traffic tile on Robot server detail (in / out / total GB
+  for the current calendar month, queried via /traffic POST with
+  ip[]+type=month).
+- Permission-denied detection in the network layer. 401/403 on
+  mutating verbs surfaces a clear "Insufficient permissions for
+  this action" hint instead of a generic HTTP 403 toast — covers
+  read-only Cloud tokens, restricted Robot sub-users, and revoked
+  DNS tokens.
+
+Translations:
+- 5 new traffic keys localized in all 7 locales.

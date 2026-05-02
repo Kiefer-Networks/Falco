@@ -4,6 +4,51 @@ All notable changes to Falco are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] — 2026-05-02
+
+Bug-fix + UX-polish release. Three additions on top of v2.1.0.
+
+### Fixed
+- **Account wizard auto-activates the new account.** Previously, if you
+  had a Cloud-only account active and added a new Robot-only account
+  via the drawer, the post-wizard navigation routed to the Robot tab
+  while the Cloud account was still selected. `RobotRepo` then bailed
+  with `requireNotNull(robotUser) { "Robot user missing" }` and the
+  user saw an empty error toast. The wizard now calls
+  `accountManager.setActive(newAccount.id)` before exit, guaranteeing
+  the destination tab finds backing credentials.
+
+### Added
+- **Robot monthly-traffic tile** on the per-server detail screen.
+  Falco's `RobotApi` had `listTraffic()` wired since v0.1 but the UI
+  never consumed it. The tile now shows inbound / outbound / total
+  GB for the current calendar month on the server's primary IPv4.
+  Hetzner Robot's `/traffic` endpoint is a form-encoded POST with
+  `ip[]` + `type=month` + `from`/`to` — the previous unparameterised
+  GET was returning a generic envelope without per-IP rows.
+- **Permission-denied detection in the OkHttp interceptor chain.**
+  Hetzner Cloud tokens have a read-only / read-write scope split,
+  Robot supports sub-users with restricted rights, and DNS tokens
+  rotate. Falco now wraps 401 / 403 responses on POST / PUT / PATCH /
+  DELETE into a typed `PermissionDeniedException` (skipping responses
+  with a `Retry-After` header to avoid clashing with the rate-limit
+  interceptor). `sanitizeError` maps the exception to a clear
+  "Insufficient permissions for this action — credential is read-only
+  or scoped narrower than required." hint, replacing the generic
+  "HTTP 403" toast.
+
+### Translations
+- New `robot_section_traffic_month`, `robot_traffic_in`,
+  `robot_traffic_out`, `robot_traffic_sum`, `robot_traffic_gb_format`
+  added in all 7 supported locales.
+
+### Notes
+- Permission-denied detection is currently reactive only — the UI
+  doesn't pre-hide buttons based on a cached scope. Each action that
+  the credential lacks rights for surfaces the hint at click time.
+  Proactive button-hiding requires a per-action permission registry
+  and is tracked for v2.x.
+
 ## [2.1.0] — 2026-05-02
 
 Major-version sweep across the build toolchain and the network /
