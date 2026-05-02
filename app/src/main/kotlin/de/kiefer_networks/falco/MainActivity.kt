@@ -59,6 +59,11 @@ class MainActivity : FragmentActivity() {
         // Force re-auth on every cold start, including activity recreation after
         // process death — never persist `unlocked` across instances.
         unlocked.value = false
+        // Establish a meaningful baseline so the first onResume's
+        // (elapsedRealtime() - lastPausedAt) check doesn't compare against 0
+        // and force an extra biometric prompt on the very first foregrounding.
+        // Subsequent onPause() calls overwrite this naturally.
+        lastPausedAt = SystemClock.elapsedRealtime()
 
         setContent {
             val themeMode by securityPrefs.themeMode.collectAsState(initial = SecurityPreferences.THEME_LIGHT)
