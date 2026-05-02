@@ -260,10 +260,9 @@ private fun VolumePriceEstimate(sizeGb: Int, opts: CreateVolumeOptions) {
     val net = opts.pricePerGbMonthNet
     if (gross == null && net == null) return
     // Read locale from the Compose configuration so the price label re-formats
-    // when the user switches the in-app language at runtime — otherwise the
-    // Compose 1.11+ NonObservableLocale lint flags this call site.
+    // when the user switches the in-app language at runtime. Configuration.locales
+    // is guaranteed non-empty on API 24+ (minSdk 26), so locales[0] is safe.
     val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
-        ?: java.util.Locale.getDefault()
     val nf = java.text.NumberFormat.getCurrencyInstance(locale).apply {
         try { currency = java.util.Currency.getInstance(opts.currency) } catch (_: Throwable) {}
         minimumFractionDigits = 2
