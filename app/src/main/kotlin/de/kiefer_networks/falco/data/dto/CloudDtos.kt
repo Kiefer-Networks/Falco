@@ -302,7 +302,19 @@ import kotlinx.serialization.json.JsonElement
     @SerialName("start_after_create") val startAfterCreate: Boolean = true,
     val labels: Map<String, String>? = null,
     @SerialName("public_net") val publicNet: CreateServerPublicNet? = null,
-)
+) {
+    // user_data carries cloud-init scripts; users embed bootstrap secrets
+    // (deploy keys, SQL passwords, S3 creds for first-boot sync). Mask the
+    // body so any toString() consumer (future logger, error wrapper) cannot
+    // surface it. Keep a length hint so debugging stays useful.
+    override fun toString(): String =
+        "CreateServerRequest(name=$name, serverType=$serverType, image=$image, " +
+            "location=$location, datacenter=$datacenter, sshKeys=$sshKeys, " +
+            "userData=${userData?.let { "<${it.length} chars>" }}, " +
+            "firewalls=$firewalls, networks=$networks, volumes=$volumes, " +
+            "automount=$automount, startAfterCreate=$startAfterCreate, " +
+            "labels=$labels, publicNet=$publicNet)"
+}
 @Serializable data class CreateServerFirewallRef(val firewall: Long)
 @Serializable data class CreateServerPublicNet(
     @SerialName("enable_ipv4") val enableIpv4: Boolean = true,
@@ -746,7 +758,18 @@ import kotlinx.serialization.json.JsonElement
     @SerialName("private_key") val privateKey: String? = null,
     @SerialName("domain_names") val domainNames: List<String>? = null,
     val labels: Map<String, String> = emptyMap(),
-)
+) {
+    // privateKey is a TLS PEM; certificate is the public chain. Both must
+    // never reach a log line in raw form. Default Kotlin data-class toString()
+    // would echo the full PEM body to anyone who calls it (Throwable wrapping,
+    // future debug logger, crash reporter). Length hint preserved for
+    // diagnostics.
+    override fun toString(): String =
+        "CreateCertificateRequest(name=$name, type=$type, " +
+            "certificate=${certificate?.let { "<${it.length} chars>" }}, " +
+            "privateKey=${if (privateKey == null) "null" else "***"}, " +
+            "domainNames=$domainNames, labels=$labels)"
+}
 
 @Serializable data class UpdateCertificateRequest(
     val name: String? = null,
