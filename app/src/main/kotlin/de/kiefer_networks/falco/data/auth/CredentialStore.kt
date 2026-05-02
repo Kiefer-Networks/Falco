@@ -1,143 +1,212 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.data.auth
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.content.SharedPreferences
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import android.util.Base64
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.google.crypto.tink.Aead
+import com.google.crypto.tink.KeyTemplates
+import com.google.crypto.tink.aead.AeadConfig
+import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
+import de.kiefer_networks.falco.di.CredentialsPrefs
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
+import java.security.KeyStore
+import javax.crypto.KeyGenerator
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Encrypted persistent store for Hetzner credentials.
+ * Encrypted persistent store for Hetzner credentials (v2).
  *
- * Backed by [EncryptedSharedPreferences] with an AES-256 master key held in the
- * Android Keystore. On devices that support it (API 28+ with the StrongBox HAL),
- * the master key is bound to the StrongBox secure element. We attempt StrongBox
- * first and fall back to the regular Keystore-backed key if it isn't available
- * — without that fallback the app would fail to start on most devices.
+ * Architecture:
+ *   * Tink AEAD primitive (AES-256-GCM) for per-field encryption.
+ *   * Tink keyset itself is wrapped by an Android-Keystore-bound AES key
+ *     (`falco_master_v2`) — keyset bytes never leave Android Keystore in
+ *     plaintext.
+ *   * Ciphertext-per-field is persisted in a dedicated `DataStore<Preferences>`
+ *     (`falco_credentials_v2`). Plain (non-secret) account index continues to
+ *     live in the separate `falco_account_prefs` store the AccountManager
+ *     uses; the two stores never share a process-level keyspace.
  *
- * If [SecurityPreferences.hardwareBoundCredentials] is enabled, the master key
- * is additionally built with `setUserAuthenticationRequired(true, 60)` and
- * `setInvalidatedByBiometricEnrollment(true)` — a higher-assurance mode where
- * re-enrolling biometrics on the device invalidates the key and a pass-through
- * PIN unlock no longer suffices to read tokens. The toggle is read once per
- * process at first access; existing keys are not migrated.
+ * Hardware-bound mode (opt-in via [SecurityPreferences.hardwareBoundCredentials]):
+ * the master Keystore key is created with `setUserAuthenticationRequired(true)`
+ * (60-second validity) and `setInvalidatedByBiometricEnrollment(true)`. On a
+ * StrongBox-capable device the key is also `setIsStrongBoxBacked(true)`.
  *
- * Tokens are addressed by a stable per-account id; the [AccountManager] owns the
- * id-to-display-name mapping.
+ * Migration from the v1.x [androidx.security.crypto.EncryptedSharedPreferences]
+ * store happens lazily at first construction. Existing tokens are decrypted
+ * with the old MasterKey, re-encrypted with the new Tink AEAD, written to the
+ * new DataStore, and the legacy SharedPreferences file is wiped. The migration
+ * marker `__migration_v2_done` is committed atomically with the migrated
+ * payload so a process kill mid-migration is safe to retry.
+ *
+ * Recovery: if the master Keystore key has been invalidated (e.g. biometric
+ * re-enrollment in hardware-bound mode), the keyset cannot be unwrapped and
+ * the AEAD build throws. We catch that on construction, drop the old keyset
+ * + ciphertext store, recreate the master key, and rebuild from scratch — the
+ * user must re-enter their tokens. Without this dance the app would fail to
+ * start. The hardware-bound toggle is preserved across recovery.
  */
 @Singleton
 class CredentialStore @Inject constructor(
     @ApplicationContext context: Context,
     private val securityPrefs: SecurityPreferences,
+    @CredentialsPrefs private val dataStore: DataStore<Preferences>,
 ) {
 
-    private val prefs: SharedPreferences = run {
-        val ctx = context.applicationContext
+    private val ctx: Context = context.applicationContext
 
-        // One-shot blocking read at first access from Application scope. Acceptable
-        // because the store is built lazily and only once per process lifetime.
+    private val aead: Aead = run {
+        AeadConfig.register()
         val hardwareBound = runBlocking { securityPrefs.hardwareBoundCredentialsNow() }
-
-        val masterKey = buildMasterKey(ctx, hardwareBound)
-        EncryptedSharedPreferences.create(
-            ctx,
-            FILE_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
+        runCatching { ensureMasterKey(hardwareBound) }
+        val a = runCatching { buildAead() }.getOrElse {
+            // Master key invalidated or keyset corrupt. Wipe and rebuild.
+            recoverFromInvalidatedMaster()
+            runCatching { ensureMasterKey(hardwareBound) }
+            buildAead()
+        }
+        runBlocking { migrateFromLegacyIfNeeded(a) }
+        a
     }
 
-    @Suppress("DEPRECATION") // setUserAuthenticationValidityDurationSeconds is API 30+ deprecated but still works.
-    private fun buildMasterKey(ctx: Context, hardwareBound: Boolean): MasterKey {
-        if (hardwareBound) {
-            // Hardware-bound path: build a KeyGenParameterSpec with auth-required +
-            // invalidate-on-biometric-enrollment, since neither flag is exposed on
-            // MasterKey.Builder directly. setKeyGenParameterSpec is mutually
-            // exclusive with setKeyScheme — we replicate the AES256_GCM scheme.
-            val attempt = runCatching {
-                val specBuilder = KeyGenParameterSpec.Builder(
-                    MASTER_KEY_ALIAS,
-                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
-                )
-                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                    .setKeySize(256)
-                    .setUserAuthenticationRequired(true)
-                    // 60-second validity window: matches the user-visible auto-lock
-                    // default. setUserAuthenticationParameters supersedes this on
-                    // API 30+ but the legacy call still works at the OS level.
-                    .setUserAuthenticationValidityDurationSeconds(60)
-                    .setInvalidatedByBiometricEnrollment(true)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    runCatching { specBuilder.setIsStrongBoxBacked(true) }
-                }
-                MasterKey.Builder(ctx, MASTER_KEY_ALIAS)
-                    .setKeyGenParameterSpec(specBuilder.build())
-                    .build()
+    suspend fun put(accountId: String, field: Field, value: String) {
+        val k = stringPreferencesKey(key(accountId, field))
+        val ct = aead.encrypt(value.toByteArray(Charsets.UTF_8), AAD)
+        dataStore.edit { it[k] = Base64.encodeToString(ct, Base64.NO_WRAP) }
+    }
+
+    suspend fun get(accountId: String, field: Field): String? {
+        val k = stringPreferencesKey(key(accountId, field))
+        val b64 = dataStore.data.first()[k] ?: return null
+        return runCatching {
+            String(aead.decrypt(Base64.decode(b64, Base64.NO_WRAP), AAD), Charsets.UTF_8)
+        }.getOrNull()
+    }
+
+    suspend fun remove(accountId: String) {
+        dataStore.edit { prefs ->
+            Field.entries.forEach { prefs.remove(stringPreferencesKey(key(accountId, it))) }
+        }
+    }
+
+    suspend fun listAccountIds(): Set<String> {
+        val prefs = dataStore.data.first()
+        return prefs.asMap().keys
+            .map { it.name }
+            .mapNotNull { name ->
+                if (name.startsWith("__")) return@mapNotNull null
+                name.substringBefore('|', missingDelimiterValue = "").takeIf(String::isNotEmpty)
             }
-            attempt.getOrNull()?.let { return it }
-            // Fall through to the toggle-off path: KeyPermanentlyInvalidatedException
-            // (post biometric re-enrollment) or a missing StrongBox HAL would land here.
-        }
-        return buildDefaultMasterKey(ctx)
+            .toSet()
     }
 
-    private fun buildDefaultMasterKey(ctx: Context): MasterKey {
-        val builder = MasterKey.Builder(ctx)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            // Best-effort StrongBox; will throw on devices without HAL — caught below.
-            runCatching { builder.setRequestStrongBoxBacked(true) }
+    private fun buildAead(): Aead =
+        AndroidKeysetManager.Builder()
+            .withSharedPref(ctx, KEYSET_NAME, KEYSET_PREFS_FILE)
+            .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
+            .withMasterKeyUri(MASTER_KEY_URI)
+            .build()
+            .keysetHandle
+            .getPrimitive(Aead::class.java)
+
+    private fun ensureMasterKey(hardwareBound: Boolean) {
+        val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        if (ks.containsAlias(MASTER_KEY_ALIAS)) return
+        runCatching { generateMasterKey(hardwareBound = hardwareBound) }
+            .onFailure {
+                // Hardware-bound generation can fail on emulators / no StrongBox HAL;
+                // fall back to a soft-bound key so the app still starts.
+                if (hardwareBound) {
+                    runCatching { generateMasterKey(hardwareBound = false) }
+                }
+            }
+    }
+
+    @Suppress("DEPRECATION") // setUserAuthenticationValidityDurationSeconds is API 30+ deprecated but functional.
+    private fun generateMasterKey(hardwareBound: Boolean) {
+        val gen = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+        val spec = KeyGenParameterSpec.Builder(
+            MASTER_KEY_ALIAS,
+            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+        )
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setKeySize(256)
+            .apply {
+                if (hardwareBound) {
+                    setUserAuthenticationRequired(true)
+                    setUserAuthenticationValidityDurationSeconds(60)
+                    setInvalidatedByBiometricEnrollment(true)
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    runCatching { setIsStrongBoxBacked(true) }
+                }
+            }
+            .build()
+        gen.init(spec)
+        gen.generateKey()
+    }
+
+    private fun recoverFromInvalidatedMaster() {
+        runCatching {
+            val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+            if (ks.containsAlias(MASTER_KEY_ALIAS)) ks.deleteEntry(MASTER_KEY_ALIAS)
         }
-        return runCatching { builder.build() }.getOrElse {
-            MasterKey.Builder(ctx)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
+        ctx.deleteSharedPreferences(KEYSET_PREFS_FILE)
+        runBlocking {
+            dataStore.edit { it.clear() }
         }
     }
 
     /**
-     * Writes a credential and waits for it to hit disk before returning.
-     *
-     * `apply()` would queue the write asynchronously, which lets us race
-     * AccountManager: if the process dies between an `apply()` and the
-     * follow-up DataStore append for `ACCOUNT_IDS`, the next launch sees an
-     * id with no associated secrets — a "ghost account" that the UI can't
-     * authenticate. `commit()` from an IO dispatcher serialises with the
-     * subsequent DataStore write so the on-disk state is always consistent.
+     * One-time migration from v1 EncryptedSharedPreferences to Tink + DataStore.
+     * Idempotent — guarded by `__migration_v2_done` in the new DataStore. Failures
+     * leave the marker unset so we retry on the next launch; they do NOT crash.
      */
-    @SuppressLint("ApplySharedPref")
-    suspend fun put(accountId: String, field: Field, value: String) {
-        withContext(Dispatchers.IO) {
-            prefs.edit().putString(key(accountId, field), value).commit()
+    private suspend fun migrateFromLegacyIfNeeded(activeAead: Aead) {
+        if (dataStore.data.first()[MIGRATION_DONE] == true) return
+        val legacy = ctx.getSharedPreferences(LEGACY_FILE, Context.MODE_PRIVATE)
+        if (legacy.all.isEmpty()) {
+            dataStore.edit { it[MIGRATION_DONE] = true }
+            return
         }
-    }
-
-    fun get(accountId: String, field: Field): String? = prefs.getString(key(accountId, field), null)
-
-    @SuppressLint("ApplySharedPref")
-    suspend fun remove(accountId: String) {
-        withContext(Dispatchers.IO) {
-            prefs.edit().apply {
-                Field.entries.forEach { remove(key(accountId, it)) }
-            }.commit()
+        runCatching {
+            val masterKey = androidx.security.crypto.MasterKey.Builder(ctx)
+                .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            val esp = androidx.security.crypto.EncryptedSharedPreferences.create(
+                ctx,
+                LEGACY_FILE,
+                masterKey,
+                androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            )
+            val migrated = mutableMapOf<Preferences.Key<String>, String>()
+            esp.all.forEach { (k, v) ->
+                val plaintext = (v as? String) ?: return@forEach
+                val ct = activeAead.encrypt(plaintext.toByteArray(Charsets.UTF_8), AAD)
+                migrated[stringPreferencesKey(k)] = Base64.encodeToString(ct, Base64.NO_WRAP)
+            }
+            dataStore.edit { prefs ->
+                migrated.forEach { (k, v) -> prefs[k] = v }
+                prefs[MIGRATION_DONE] = true
+            }
+            esp.edit().clear().commit()
+            ctx.deleteSharedPreferences(LEGACY_FILE)
         }
+        // Failure path: marker not set, retry next launch. Caller sees an empty
+        // store; user re-enters tokens. Better than crashing the app shell.
     }
-
-    fun listAccountIds(): Set<String> = prefs.all.keys
-        .mapNotNull { it.substringBefore('|', missingDelimiterValue = "").takeIf(String::isNotEmpty) }
-        .toSet()
 
     private fun key(accountId: String, field: Field): String = "$accountId|${field.name}"
 
@@ -161,9 +230,12 @@ class CredentialStore @Inject constructor(
     }
 
     companion object {
-        private const val FILE_NAME = "falco_secure_v1"
-        private val MASTER_KEY_ALIAS: String = MasterKey.DEFAULT_MASTER_KEY_ALIAS
-        // Re-export to suppress unused warning on KeyProperties (kept for future hardware-bound keys).
-        @Suppress("unused") private val keyAlgo = KeyProperties.KEY_ALGORITHM_AES
+        private const val LEGACY_FILE = "falco_secure_v1"
+        private const val KEYSET_NAME = "falco_v2_keyset"
+        private const val KEYSET_PREFS_FILE = "falco_tink_meta"
+        private const val MASTER_KEY_ALIAS = "falco_master_v2"
+        private const val MASTER_KEY_URI = "android-keystore://falco_master_v2"
+        private val AAD = "falco_v2_creds".toByteArray(Charsets.UTF_8)
+        private val MIGRATION_DONE = booleanPreferencesKey("__migration_v2_done")
     }
 }

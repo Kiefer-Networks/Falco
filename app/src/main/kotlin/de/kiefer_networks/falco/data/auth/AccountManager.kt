@@ -51,7 +51,7 @@ data class AccountSecrets(
 @Singleton
 class AccountManager @Inject constructor(
     private val store: CredentialStore,
-    private val dataStore: DataStore<Preferences>,
+    @de.kiefer_networks.falco.di.AccountPrefs private val dataStore: DataStore<Preferences>,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 

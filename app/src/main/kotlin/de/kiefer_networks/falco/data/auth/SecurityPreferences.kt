@@ -27,7 +27,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class SecurityPreferences @Inject constructor(
-    private val dataStore: DataStore<Preferences>,
+    @de.kiefer_networks.falco.di.AccountPrefs private val dataStore: DataStore<Preferences>,
 ) {
     val autoLockTimeoutSeconds: Flow<Int> =
         dataStore.data.map {

@@ -82,24 +82,25 @@ F-Droid. SHA-256 dependency pinning is a known gap.
 A handful of items have been reviewed and consciously accepted rather
 than fixed. They are recorded here so the trail is reproducible.
 
-1. **Jetpack security/biometric library tracks.** Falco pins
-   `androidx.security:security-crypto:1.1.0` (stable since 2025-07-30,
-   used for `EncryptedSharedPreferences` / `MasterKey`) and
-   `androidx.biometric:biometric:1.2.0-alpha05` (used for
-   `BiometricPrompt` Class-3 / `DEVICE_CREDENTIAL`). *Why accepted:*
-   the `security-crypto` 1.1.0 stable APIs are deprecated as of
-   1.1.0-beta01 — long-term migration to direct Android Keystore +
-   Tink/DataStore is tracked as a v2.0 work item, but the deprecation
-   shim still works correctly today and the stable release is a
-   strict improvement over the prior 1.1.0-alpha06 pin. The `1.1.0`
-   biometric stable track from 2021 lacks the Class-3 +
-   DEVICE_CREDENTIAL gating Falco requires, so an alpha track remains
-   necessary; the newer `1.4.0-alpha07` exists but requires AGP 8.9.1+
-   and `compileSdk = 36`, which is a toolchain bump out of scope for a
-   security-only release. *Revisit:* every Falco release — bump
-   biometric and the AGP/compileSdk toolchain together when they're
-   ready; promote the `security-crypto` migration plan as a firm v2.0
-   deliverable.
+1. **`androidx.biometric:biometric` on the alpha track.** Falco pins
+   `androidx.biometric:biometric:1.4.0-alpha07` because the `1.1.0`
+   stable track from 2021 lacks the Class-3 + `DEVICE_CREDENTIAL`
+   authenticator gating the auth flow uses. The `1.2.x` line was
+   abandoned by AndroidX in favour of the active `1.4.x` track, which
+   is what we ship. *Why accepted:* no stable replacement exposes the
+   APIs we need. *Revisit:* every Falco release — bump alpha forward;
+   move to stable as soon as AndroidX promotes 1.4.x.
+
+2. **`androidx.security:security-crypto` as migration-only dep.** As
+   of v2.0 the runtime credential store is Tink + DataStore (see Build
+   supply chain below). `security-crypto` is retained in the
+   dependency graph **only** as a one-shot reader that reads the v1
+   `EncryptedSharedPreferences` file once at first launch, re-encrypts
+   every entry with the new Tink AEAD, writes to the new DataStore,
+   and wipes the legacy file. *Why accepted (transitional):* the
+   library is deprecated but functional, and the maintainer wants
+   existing users' tokens to migrate transparently. *Revisit:* drop
+   the dependency in v2.1, after the migration window has elapsed.
 
 2. **Two informational audit items (F-013 / F-017) accepted as
    known.** Both were flagged informational only — no exploit
