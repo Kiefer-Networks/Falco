@@ -67,6 +67,13 @@ object HttpClientFactory {
             // that's beyond this fix.)
             .retryOnConnectionFailure(false)
             .apply { extra.forEach(::addInterceptor) }
+            // Permission-denied detection runs LAST in the chain so it sees
+            // the response after the auth/header/idempotency layers have
+            // built the request — and after RobotRateLimitInterceptor has
+            // had its chance to flag throttling, since 403 + Retry-After is
+            // a rate-limit signal we must not mis-classify as a permission
+            // problem.
+            .addInterceptor(PermissionInterceptor)
             .build()
 
     fun cloudRetrofit(token: String): Retrofit = retrofit(
@@ -217,3 +224,32 @@ class RobotRateLimitException(val request: Request, val retryAfter: String? = nu
         if (retryAfter != null) "Hetzner Robot rate limit exceeded; retry after $retryAfter"
         else "Hetzner Robot rate limit exceeded",
     )
+
+/**
+ * Translates 401 / 403 on a mutating verb into a typed
+ * [PermissionDeniedException] the UI layer can map to a clear "your
+ * credential lacks rights for this action" hint via [sanitizeError].
+ *
+ * Skipped for GET because Hetzner returns 401/403 on read endpoints for
+ * different reasons (token typo, account locked) that should surface as
+ * generic auth errors, not permission hints. A permission problem only
+ * applies to write operations on a token / Robot sub-user that authenticated
+ * successfully but is denied this specific action.
+ *
+ * Also skipped when the response carries `Retry-After` — that's the rate-
+ * limit signal RobotRateLimitInterceptor already handled, so we never see
+ * it here, but the guard is cheap and defensive.
+ */
+private object PermissionInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
+        val request = chain.request()
+        val response = chain.proceed(request)
+        if (request.method !in MUTATING_METHODS) return response
+        if (response.code != 401 && response.code != 403) return response
+        if (response.header("Retry-After") != null) return response
+        response.close()
+        throw PermissionDeniedException(request, response.code)
+    }
+
+    private val MUTATING_METHODS = setOf("POST", "PUT", "PATCH", "DELETE")
+}
