@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Auto-merge non-breaking Dependabot PRs once required CI checks pass.
+#
+# Policy:
+#   * `version-update:semver-patch` and `version-update:semver-minor` ->
+#     `gh pr merge --auto --squash`. The merge fires only after every required
+#     status check on the PR has reported success, so a regression in `:app`
+#     compileDebugKotlin / lintDebug / testDebugUnitTest / assembleDebug blocks
+#     the merge and the PR stays open for human triage.
+#   * `version-update:semver-major` -> leave open, attach an `automerge-skipped`
+#     label, comment with the reason. Maintainer reviews manually.
+#
+# Author check: only PRs from `dependabot[bot]` are auto-mergeable. Forks and
+# human PRs go nowhere through this workflow.
+#
+# Permissions: scoped to the minimum needed (contents: write to merge,
+# pull-requests: write to label + comment). The repo's branch-protection rules
+# still gate the actual merge on required checks; this workflow just queues
+# the auto-merge.
+#
+# Untrusted-input note: every github.event.* string is bound through `env:`
+# and quoted in shell to prevent expression injection per GitHub's
+# workflow-injection guidance.
+
+name: Dependabot auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@d7267f607e9d3fb96fc2fbe83e0af444713e90b7  # v2.3.0
+
+      - name: Enable auto-merge for patch + minor
+        if: |
+          steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+          steps.meta.outputs.update-type == 'version-update:semver-minor'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"
+
+      - name: Skip + label majors
+        if: steps.meta.outputs.update-type == 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr edit "$PR_URL" --add-label automerge-skipped
+          gh pr comment "$PR_URL" --body "Auto-merge skipped: this is a major version bump. Falco's toolchain (AGP, Kotlin, AndroidX security, biometric, Compose BOM) regularly ships breaking changes inside majors — please review the upstream changelog, run a clean build locally, and merge manually."
