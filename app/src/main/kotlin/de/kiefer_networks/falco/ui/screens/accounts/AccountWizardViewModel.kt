@@ -157,10 +157,10 @@ class AccountWizardViewModel @Inject constructor(
         viewModelScope.launch {
             val secrets = buildSecrets(s)
             val result = runCatching { accountManager.probeCredentials(secrets) }
-            _state.update {
+            _state.update { current ->
                 result.fold(
-                    onSuccess = { it.copy(verifying = false, verified = true, verifyError = null) },
-                    onFailure = { e -> it.copy(verifying = false, verified = false, verifyError = sanitizeError(e)) },
+                    onSuccess = { current.copy(verifying = false, verified = true, verifyError = null) },
+                    onFailure = { e -> current.copy(verifying = false, verified = false, verifyError = sanitizeError(e)) },
                 )
             }
         }
