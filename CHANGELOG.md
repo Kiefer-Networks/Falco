@@ -49,8 +49,9 @@ zero High and zero Medium findings open at release.
   (stable). The library is deprecated in 1.1.0-beta01+; long-term
   migration to direct Android Keystore + Tink/DataStore tracked as a
   v2.0 work item.
-- `androidx.biometric:biometric` `1.2.0-alpha05` → `1.4.0-alpha07`.
-  The 1.2.x line was abandoned in favour of the active 1.4.x track.
+- `androidx.biometric:biometric` stays on `1.2.0-alpha05`. The newer
+  `1.4.0-alpha07` line exists but requires AGP 8.9.1+ and
+  `compileSdk = 36`; the toolchain bump is deferred to v2.0.
 - ProGuard: blanket `-keep class dagger.hilt.** { *; }` narrowed to
   the runtime SPI surface (entry points, generated components,
   modules, injectors, factory wrappers). R8 can now obfuscate the

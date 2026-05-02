@@ -21,5 +21,6 @@ Security:
 
 Changed:
 - androidx.security:security-crypto 1.1.0-alpha06 → 1.1.0 stable.
-- androidx.biometric:biometric 1.2.0-alpha05 → 1.4.0-alpha07.
+- androidx.biometric:biometric stays on 1.2.0-alpha05 (1.4.x needs
+  AGP 8.9+ / compileSdk 36 — deferred to v2.0).
 - ProGuard: narrowed Hilt -keep to runtime SPI surface.

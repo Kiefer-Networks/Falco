@@ -19,5 +19,6 @@ Falco 1.6.0
 
 更改：
 - androidx.security:security-crypto 1.1.0-alpha06 → 1.1.0 stable。
-- androidx.biometric:biometric 1.2.0-alpha05 → 1.4.0-alpha07。
+- androidx.biometric:biometric 保持 1.2.0-alpha05（1.4.x 需要
+  AGP 8.9+ / compileSdk 36 — 延后到 v2.0）。
 - ProGuard：将 Hilt -keep 收窄至运行时 SPI 范围。

@@ -85,8 +85,7 @@ than fixed. They are recorded here so the trail is reproducible.
 1. **Jetpack security/biometric library tracks.** Falco pins
    `androidx.security:security-crypto:1.1.0` (stable since 2025-07-30,
    used for `EncryptedSharedPreferences` / `MasterKey`) and
-   `androidx.biometric:biometric:1.4.0-alpha07` (active development
-   track since the `1.2.x` line was abandoned, used for
+   `androidx.biometric:biometric:1.2.0-alpha05` (used for
    `BiometricPrompt` Class-3 / `DEVICE_CREDENTIAL`). *Why accepted:*
    the `security-crypto` 1.1.0 stable APIs are deprecated as of
    1.1.0-beta01 — long-term migration to direct Android Keystore +
@@ -94,10 +93,13 @@ than fixed. They are recorded here so the trail is reproducible.
    shim still works correctly today and the stable release is a
    strict improvement over the prior 1.1.0-alpha06 pin. The `1.1.0`
    biometric stable track from 2021 lacks the Class-3 +
-   DEVICE_CREDENTIAL gating Falco requires, so the active alpha track
-   remains necessary. *Revisit:* every Falco release — bump biometric
-   alpha forward; promote the `security-crypto` migration plan as a
-   firm v2.0 deliverable.
+   DEVICE_CREDENTIAL gating Falco requires, so an alpha track remains
+   necessary; the newer `1.4.0-alpha07` exists but requires AGP 8.9.1+
+   and `compileSdk = 36`, which is a toolchain bump out of scope for a
+   security-only release. *Revisit:* every Falco release — bump
+   biometric and the AGP/compileSdk toolchain together when they're
+   ready; promote the `security-crypto` migration plan as a firm v2.0
+   deliverable.
 
 2. **Two informational audit items (F-013 / F-017) accepted as
    known.** Both were flagged informational only — no exploit
