@@ -142,6 +142,13 @@ android {
             // Re-enable case-by-case as the call sites are migrated.
             "LocalContextGetResourceValueCall",
             "NonObservableLocale",
+            // v2.2.0 ships ~150 new English strings for the API-coverage
+            // features (Cloud LB / Primary IP / Network detail, Robot
+            // vSwitch / RDNS, DNS bulk + import/export, S3 bucket mgmt).
+            // Translations ride a maintenance pass; locale fallback to
+            // English is the documented behaviour. Re-enable once the per-
+            // language translation pass lands.
+            "MissingTranslation",
         )
     }
 
