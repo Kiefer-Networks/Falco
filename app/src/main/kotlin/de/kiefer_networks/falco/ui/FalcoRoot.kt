@@ -172,12 +172,21 @@ fun FalcoRoot(viewModel: FalcoRootViewModel, windowSizeClass: WindowSizeClass) {
             composable(Routes.ROBOT) {
                 RobotScreen(
                     onServerClick = { number -> nav.navigate(Routes.robotServerDetail(number)) },
+                    onVSwitchClick = { id -> nav.navigate(Routes.robotVSwitchDetail(id)) },
                 )
             }
             composable(
                 route = Routes.ROBOT_SERVER_DETAIL,
                 arguments = listOf(navArgument(Routes.ARG_SERVER_NUMBER) { type = NavType.LongType }),
             ) { ServerDetailScreen(onBack = { nav.popBackStack() }) }
+            composable(
+                route = Routes.ROBOT_VSWITCH_DETAIL,
+                arguments = listOf(navArgument(Routes.ARG_VSWITCH_ID) { type = NavType.LongType }),
+            ) {
+                de.kiefer_networks.falco.ui.screens.robot.RobotVSwitchDetailScreen(
+                    onBack = { nav.popBackStack() },
+                )
+            }
             composable(Routes.DNS) {
                 DnsScreen(onZoneClick = { id -> nav.navigate(Routes.dnsZoneDetail(id)) })
             }

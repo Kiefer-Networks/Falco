@@ -823,4 +823,32 @@
     <string name="cloud_primary_ip_section_reverse_dns">Reverse DNS</string>
     <string name="cloud_primary_ip_delete_title">Delete Primary IP?</string>
     <string name="cloud_primary_ip_delete_warning">Primary IP \"%1$s\" will be permanently removed.</string>
+    <!-- Robot vSwitch CRUD -->
+    <string name="robot_vswitch_create">Create vSwitch</string>
+    <string name="robot_vswitch_create_action">Create</string>
+    <string name="robot_vswitch_name">Name</string>
+    <string name="robot_vswitch_vlan">VLAN ID</string>
+    <string name="robot_vswitch_vlan_hint">Integer between 4000 and 4091.</string>
+    <string name="robot_vswitch_edit">Edit vSwitch</string>
+    <string name="robot_vswitch_rename_action">Rename / change VLAN</string>
+    <string name="robot_vswitch_delete_title">Delete vSwitch?</string>
+    <string name="robot_vswitch_delete_warning">This permanently removes the vSwitch from your Robot account. The action cannot be undone.</string>
+    <string name="robot_vswitch_delete_cancellation_date">Cancellation date (optional, YYYY-MM-DD)</string>
+    <string name="robot_vswitch_section_overview">Overview</string>
+    <string name="robot_vswitch_section_servers">Attached servers</string>
+    <string name="robot_vswitch_no_servers">No servers attached.</string>
+    <string name="robot_vswitch_add_server">Attach server</string>
+    <string name="robot_vswitch_attach_title">Attach server to vSwitch</string>
+    <string name="robot_vswitch_attach_search">Search servers</string>
+    <string name="robot_vswitch_detach_title">Detach server?</string>
+    <string name="robot_vswitch_detach_warning">The server will be removed from this vSwitch.</string>
+    <string name="robot_vswitch_detach_action">Detach</string>
+    <string name="robot_vswitch_field_name">Name</string>
+    <string name="robot_vswitch_field_vlan">VLAN</string>
+    <string name="robot_vswitch_field_id">ID</string>
+    <string name="robot_vswitch_field_status">Status</string>
+    <string name="robot_vswitch_field_active">Active</string>
+    <string name="robot_vswitch_server_status_format">#%1$d · %2$s</string>
+    <string name="robot_vswitch_server_number_format">#%1$d</string>
+    <string name="robot_vswitch_invalid_vlan">Enter a VLAN between 4000 and 4091.</string>
 </resources>

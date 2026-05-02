@@ -8,6 +8,7 @@ object Routes {
     const val CLOUD = "cloud"
     const val ROBOT = "robot"
     const val ROBOT_SERVER_DETAIL = "robot/server/{number}"
+    const val ROBOT_VSWITCH_DETAIL = "robot_vswitch_detail/{id}"
     const val DNS = "dns"
     const val DNS_ZONE_DETAIL = "dns/zone/{id}"
     const val S3 = "s3"
@@ -20,6 +21,7 @@ object Routes {
     const val ABOUT = "about"
 
     fun robotServerDetail(number: Long) = "robot/server/$number"
+    fun robotVSwitchDetail(id: Long) = "robot_vswitch_detail/$id"
     fun dnsZoneDetail(id: String) = "dns/zone/$id"
     fun s3Browser(bucket: String, prefix: String = ""): String {
         val encodedBucket = java.net.URLEncoder.encode(bucket, "UTF-8")
@@ -62,6 +64,7 @@ object Routes {
     fun projectEdit(projectId: String) = "cloud/projects/edit/$projectId"
 
     const val ARG_SERVER_NUMBER = "number"
+    const val ARG_VSWITCH_ID = "id"
     const val ARG_STORAGE_BOX_ID = "id"
     const val ARG_ZONE_ID = "id"
     const val ARG_BUCKET = "bucket"

@@ -113,6 +113,7 @@ private val ROBOT_TABS = listOf(
 @Composable
 fun RobotScreen(
     onServerClick: (Long) -> Unit = {},
+    onVSwitchClick: (Long) -> Unit = {},
 ) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val drawer = LocalNavDrawer.current
@@ -156,6 +157,7 @@ fun RobotScreen(
                     1 -> FailoverTab()
                     2 -> VSwitchTab()
                     3 -> RobotRdnsTab()
+                    2 -> VSwitchTab(onVSwitchClick = onVSwitchClick)
                     else -> RobotSshKeysTab()
                 }
             }
