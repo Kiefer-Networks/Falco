@@ -108,6 +108,35 @@ class SecurityPreferences @Inject constructor(
     }
     suspend fun aggregateProjectsNow(): Boolean = dataStore.data.first()[KEY_AGGREGATE_PROJECTS] ?: false
 
+    /**
+     * Opt-in higher-assurance mode: when true, [CredentialStore] builds its
+     * EncryptedSharedPreferences master key with `setUserAuthenticationRequired`
+     * (60-second validity) and `setInvalidatedByBiometricEnrollment(true)`.
+     *
+     * Trade-offs:
+     *  * Re-enrolling biometrics on the device permanently invalidates the
+     *    master key — stored tokens become unreadable and must be re-entered.
+     *  * A pass-through PIN unlock no longer suffices to read tokens; the
+     *    user must have authenticated within the last 60 s.
+     *
+     * Default is false (existing user-presence model). The toggle takes
+     * effect on the next process start; existing master keys are not
+     * migrated.
+     */
+    val hardwareBoundCredentials: Flow<Boolean> =
+        dataStore.data.map { it[KEY_HARDWARE_BOUND_CREDENTIALS] ?: false }
+    suspend fun setHardwareBoundCredentials(value: Boolean) {
+        dataStore.edit { it[KEY_HARDWARE_BOUND_CREDENTIALS] = value }
+    }
+
+    /**
+     * Synchronous accessor read once at [CredentialStore] construction time
+     * (Application scope). The blocking call is acceptable there because the
+     * store is built lazily on first access and only once per process.
+     */
+    suspend fun hardwareBoundCredentialsNow(): Boolean =
+        dataStore.data.first()[KEY_HARDWARE_BOUND_CREDENTIALS] ?: false
+
     companion object {
         const val DEFAULT_LOCK_TIMEOUT = 60
         const val LOCK_IMMEDIATE = 0
@@ -131,5 +160,6 @@ class SecurityPreferences @Inject constructor(
         private val KEY_BLOCK_SCREENSHOTS = booleanPreferencesKey("block_screenshots")
         private val KEY_REQUIRE_UNLOCK_ON_LAUNCH = booleanPreferencesKey("require_unlock_on_launch")
         private val KEY_AGGREGATE_PROJECTS = booleanPreferencesKey("aggregate_projects")
+        private val KEY_HARDWARE_BOUND_CREDENTIALS = booleanPreferencesKey("hardware_bound_credentials")
     }
 }

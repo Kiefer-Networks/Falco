@@ -5,11 +5,13 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
+import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,25 +25,30 @@ import javax.inject.Singleton
  * first and fall back to the regular Keystore-backed key if it isn't available
  * — without that fallback the app would fail to start on most devices.
  *
+ * If [SecurityPreferences.hardwareBoundCredentials] is enabled, the master key
+ * is additionally built with `setUserAuthenticationRequired(true, 60)` and
+ * `setInvalidatedByBiometricEnrollment(true)` — a higher-assurance mode where
+ * re-enrolling biometrics on the device invalidates the key and a pass-through
+ * PIN unlock no longer suffices to read tokens. The toggle is read once per
+ * process at first access; existing keys are not migrated.
+ *
  * Tokens are addressed by a stable per-account id; the [AccountManager] owns the
  * id-to-display-name mapping.
  */
 @Singleton
-class CredentialStore @Inject constructor(@ApplicationContext context: Context) {
+class CredentialStore @Inject constructor(
+    @ApplicationContext context: Context,
+    private val securityPrefs: SecurityPreferences,
+) {
 
     private val prefs: SharedPreferences = run {
         val ctx = context.applicationContext
-        val builder = MasterKey.Builder(ctx)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            // Best-effort StrongBox; will throw on devices without HAL — caught below.
-            runCatching { builder.setRequestStrongBoxBacked(true) }
-        }
-        val masterKey = runCatching { builder.build() }.getOrElse {
-            MasterKey.Builder(ctx)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-        }
+
+        // One-shot blocking read at first access from Application scope. Acceptable
+        // because the store is built lazily and only once per process lifetime.
+        val hardwareBound = runBlocking { securityPrefs.hardwareBoundCredentialsNow() }
+
+        val masterKey = buildMasterKey(ctx, hardwareBound)
         EncryptedSharedPreferences.create(
             ctx,
             FILE_NAME,
@@ -49,6 +56,55 @@ class CredentialStore @Inject constructor(@ApplicationContext context: Context) 
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
+    }
+
+    @Suppress("DEPRECATION") // setUserAuthenticationValidityDurationSeconds is API 30+ deprecated but still works.
+    private fun buildMasterKey(ctx: Context, hardwareBound: Boolean): MasterKey {
+        if (hardwareBound) {
+            // Hardware-bound path: build a KeyGenParameterSpec with auth-required +
+            // invalidate-on-biometric-enrollment, since neither flag is exposed on
+            // MasterKey.Builder directly. setKeyGenParameterSpec is mutually
+            // exclusive with setKeyScheme — we replicate the AES256_GCM scheme.
+            val attempt = runCatching {
+                val specBuilder = KeyGenParameterSpec.Builder(
+                    MASTER_KEY_ALIAS,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+                )
+                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .setKeySize(256)
+                    .setUserAuthenticationRequired(true)
+                    // 60-second validity window: matches the user-visible auto-lock
+                    // default. setUserAuthenticationParameters supersedes this on
+                    // API 30+ but the legacy call still works at the OS level.
+                    .setUserAuthenticationValidityDurationSeconds(60)
+                    .setInvalidatedByBiometricEnrollment(true)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    runCatching { specBuilder.setIsStrongBoxBacked(true) }
+                }
+                MasterKey.Builder(ctx, MASTER_KEY_ALIAS)
+                    .setKeyGenParameterSpec(specBuilder.build())
+                    .build()
+            }
+            attempt.getOrNull()?.let { return it }
+            // Fall through to the toggle-off path: KeyPermanentlyInvalidatedException
+            // (post biometric re-enrollment) or a missing StrongBox HAL would land here.
+        }
+        return buildDefaultMasterKey(ctx)
+    }
+
+    private fun buildDefaultMasterKey(ctx: Context): MasterKey {
+        val builder = MasterKey.Builder(ctx)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            // Best-effort StrongBox; will throw on devices without HAL — caught below.
+            runCatching { builder.setRequestStrongBoxBacked(true) }
+        }
+        return runCatching { builder.build() }.getOrElse {
+            MasterKey.Builder(ctx)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+        }
     }
 
     /**
@@ -106,6 +162,7 @@ class CredentialStore @Inject constructor(@ApplicationContext context: Context) 
 
     companion object {
         private const val FILE_NAME = "falco_secure_v1"
+        private val MASTER_KEY_ALIAS: String = MasterKey.DEFAULT_MASTER_KEY_ALIAS
         // Re-export to suppress unused warning on KeyProperties (kept for future hardware-bound keys).
         @Suppress("unused") private val keyAlgo = KeyProperties.KEY_ALGORITHM_AES
     }

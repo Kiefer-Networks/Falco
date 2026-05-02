@@ -75,6 +75,7 @@ data class SettingsUiState(
     val blockScreenshots: Boolean = true,
     val requireUnlockOnLaunch: Boolean = true,
     val aggregateProjects: Boolean = false,
+    val hardwareBoundCredentials: Boolean = false,
 )
 
 @HiltViewModel
@@ -94,6 +95,7 @@ class SettingsViewModel @Inject constructor(
             prefs.requireUnlockOnLaunch,
             prefs.accentMode,
             prefs.aggregateProjects,
+            prefs.hardwareBoundCredentials,
         ),
     ) { values ->
         @Suppress("UNCHECKED_CAST")
@@ -108,6 +110,7 @@ class SettingsViewModel @Inject constructor(
             requireUnlockOnLaunch = values[6] as Boolean,
             accentMode = values[7] as Int,
             aggregateProjects = values[8] as Boolean,
+            hardwareBoundCredentials = values[9] as Boolean,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -118,6 +121,7 @@ class SettingsViewModel @Inject constructor(
     fun setBlockScreenshots(v: Boolean) = viewModelScope.launch { prefs.setBlockScreenshots(v) }
     fun setRequireUnlockOnLaunch(v: Boolean) = viewModelScope.launch { prefs.setRequireUnlockOnLaunch(v) }
     fun setAggregateProjects(v: Boolean) = viewModelScope.launch { prefs.setAggregateProjects(v) }
+    fun setHardwareBoundCredentials(v: Boolean) = viewModelScope.launch { prefs.setHardwareBoundCredentials(v) }
 }
 
 @Composable
@@ -279,6 +283,14 @@ fun SecuritySettingsScreen(
                     subtitle = stringResource(R.string.settings_block_screenshots_desc),
                     checked = state.blockScreenshots,
                     onChange = viewModel::setBlockScreenshots,
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                ToggleTile(
+                    icon = Icons.Filled.Lock,
+                    title = stringResource(R.string.settings_hardware_bound),
+                    subtitle = stringResource(R.string.settings_hardware_bound_desc),
+                    checked = state.hardwareBoundCredentials,
+                    onChange = viewModel::setHardwareBoundCredentials,
                 )
             }
         }
