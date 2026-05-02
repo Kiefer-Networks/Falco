@@ -3,7 +3,6 @@ package de.kiefer_networks.falco.data.api
 
 import io.minio.BucketExistsArgs
 import io.minio.CopyObjectArgs
-import io.minio.CopySource
 import io.minio.GetBucketVersioningArgs
 import io.minio.GetPresignedObjectUrlArgs
 import io.minio.Http
@@ -206,10 +205,12 @@ class S3Client(
         dstBucket: String,
         dstKey: String,
     ) = withContext(Dispatchers.IO) {
+        // MinIO 9 renamed CopySource -> SourceObject. The Args.source(...) call
+        // still accepts the new type via the same builder pattern.
         val args = CopyObjectArgs.builder()
             .bucket(dstBucket)
             .`object`(dstKey)
-            .source(CopySource.builder().bucket(srcBucket).`object`(srcKey).build())
+            .source(io.minio.messages.SourceObject.builder().bucket(srcBucket).`object`(srcKey).build())
             .build()
         client.copyObject(args)
     }
