@@ -326,6 +326,52 @@
     <string name="dns_record_save_error">Could not save record</string>
     <string name="dns_record_delete_error">Could not delete record</string>
 
+    <!-- DNS zone create/edit/delete -->
+    <string name="dns_zone_name">Zone name</string>
+    <string name="dns_zone_default_ttl">Default TTL (seconds, optional)</string>
+    <string name="dns_zone_create_title">New zone</string>
+    <string name="dns_zone_edit_title">Edit zone</string>
+    <string name="dns_zone_edit">Edit zone</string>
+    <string name="dns_zone_delete">Delete zone</string>
+    <string name="dns_zone_delete_title">Delete zone?</string>
+    <string name="dns_zone_delete_warning">Zone \"%1$s\" and all of its records will be permanently removed. This cannot be undone.</string>
+
+    <!-- DNS bulk record edit -->
+    <string name="dns_bulk_edit">Bulk edit records</string>
+    <string name="dns_bulk_apply">Apply</string>
+    <string name="dns_bulk_select_all">Select all</string>
+    <string name="dns_bulk_clear">Clear</string>
+    <string name="dns_bulk_selection_count">%1$d selected</string>
+    <string name="dns_bulk_apply_title">Apply changes to %1$d records</string>
+    <string name="dns_bulk_value_optional">New value (leave empty to keep)</string>
+    <string name="dns_bulk_ttl_optional">New TTL (leave empty to keep)</string>
+    <string name="dns_bulk_no_changes">Set TTL or value before applying.</string>
+    <string name="dns_bulk_failed">Some records could not be updated: %1$d.</string>
+    <string name="dns_bulk_succeeded">Records updated.</string>
+
+    <!-- DNS BIND import/export -->
+    <string name="dns_import">Import zone file</string>
+    <string name="dns_export">Export zone file</string>
+    <string name="dns_import_validate_title">Validate zone file</string>
+    <string name="dns_import_validate_summary">Parsed %1$d records · %2$d valid · %3$d invalid</string>
+    <string name="dns_import_invalid_records">Invalid records:</string>
+    <string name="dns_import_confirm">Import</string>
+    <string name="dns_import_too_large">Zone file is too large (max 1 MiB).</string>
+    <string name="dns_import_read_failed">Could not read file.</string>
+    <string name="dns_import_succeeded">Zone imported.</string>
+    <string name="dns_export_saved">Zone file saved.</string>
+    <string name="dns_export_write_failed">Could not write file.</string>
+
+    <!-- DNS primary servers -->
+    <string name="dns_primary_servers">Primary servers</string>
+    <string name="dns_primary_server_address">Address</string>
+    <string name="dns_primary_server_port">Port</string>
+    <string name="dns_primary_server_add">Add primary server</string>
+    <string name="dns_primary_server_edit">Edit primary server</string>
+    <string name="dns_primary_server_delete">Delete primary server</string>
+    <string name="dns_primary_server_delete_confirm">Remove primary server %1$s:%2$d?</string>
+    <string name="dns_primary_server_empty">No primary servers configured.</string>
+
     <!-- Object Storage -->
     <string name="s3_buckets">Buckets</string>
     <string name="s3_objects">Objects</string>
