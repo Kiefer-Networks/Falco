@@ -82,18 +82,22 @@ F-Droid. SHA-256 dependency pinning is a known gap.
 A handful of items have been reviewed and consciously accepted rather
 than fixed. They are recorded here so the trail is reproducible.
 
-1. **Alpha-track Jetpack security libraries.** Falco pins
-   `androidx.security:security-crypto:1.1.0-alpha06` (used for
-   `EncryptedSharedPreferences` / `MasterKey`) and
-   `androidx.biometric:biometric:1.2.0-alpha05` (used for
-   `BiometricPrompt` Class-3 / `DEVICE_CREDENTIAL`). These are the
-   most recent tracks AndroidX has shipped on these particular
-   libraries. *Why accepted:* the stable `1.0.x` tracks lack the
-   hardware-backed `MasterKey` API and the Class-3 biometric gate
-   Falco's threat model relies on; downgrading would weaken the
-   product. *Revisit:* on every Falco release — bump to the newest
-   alpha (or, ideally, a stable) track and re-run the audit before
-   tagging.
+1. **Jetpack security/biometric library tracks.** Falco pins
+   `androidx.security:security-crypto:1.1.0` (stable since 2025-07-30,
+   used for `EncryptedSharedPreferences` / `MasterKey`) and
+   `androidx.biometric:biometric:1.4.0-alpha07` (active development
+   track since the `1.2.x` line was abandoned, used for
+   `BiometricPrompt` Class-3 / `DEVICE_CREDENTIAL`). *Why accepted:*
+   the `security-crypto` 1.1.0 stable APIs are deprecated as of
+   1.1.0-beta01 — long-term migration to direct Android Keystore +
+   Tink/DataStore is tracked as a v2.0 work item, but the deprecation
+   shim still works correctly today and the stable release is a
+   strict improvement over the prior 1.1.0-alpha06 pin. The `1.1.0`
+   biometric stable track from 2021 lacks the Class-3 +
+   DEVICE_CREDENTIAL gating Falco requires, so the active alpha track
+   remains necessary. *Revisit:* every Falco release — bump biometric
+   alpha forward; promote the `security-crypto` migration plan as a
+   firm v2.0 deliverable.
 
 2. **Two informational audit items (F-013 / F-017) accepted as
    known.** Both were flagged informational only — no exploit
