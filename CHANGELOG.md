@@ -4,6 +4,65 @@ All notable changes to Falco are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] — 2026-05-02
+
+Major release: replaces the deprecated `androidx.security:security-crypto`
+EncryptedSharedPreferences credential store with a Tink-based AEAD store
+on top of DataStore, and lifts the build toolchain to current.
+
+### Changed (breaking — internal storage)
+- **Credential store rewritten** on top of Google Tink (AES-256-GCM AEAD)
+  with the keyset wrapped by an Android-Keystore-bound master key
+  (`falco_master_v2`). Per-field ciphertext is persisted in a dedicated
+  `falco_credentials_v2` DataStore, isolated from the plain account-index
+  DataStore. The opt-in hardware-bound mode (Settings → Security)
+  continues to work — the master Keystore key is created with
+  `setUserAuthenticationRequired(true, 60s)` +
+  `setInvalidatedByBiometricEnrollment(true)` when enabled.
+- **Migration is automatic and idempotent.** On first launch of v2.0 the
+  legacy v1 EncryptedSharedPreferences file (`falco_secure_v1.xml`) is
+  read with the old MasterKey, every entry is re-encrypted with Tink
+  AEAD, written to the new DataStore, and the legacy file is wiped. The
+  migration marker is committed atomically with the payload so a process
+  kill mid-migration is safe to retry.
+- **Recovery path**: if the master key was invalidated (biometric
+  re-enrollment in hardware-bound mode), the keyset is unwrapped-fail
+  on construction. v2.0 catches that, drops the orphaned keyset +
+  ciphertext, recreates the master key, and rebuilds — the user
+  re-enters their tokens. v1.x would have crashed.
+
+### Changed (toolchain)
+- AGP `8.7.3` → `8.13.0`.
+- Kotlin `2.1.0` → `2.2.21`; KSP `2.1.0-1.0.29` → `2.2.21-2.0.5`.
+- Gradle wrapper `8.11.1` → `8.14.4` (SHA-256 pinned).
+- `compileSdk` 35 → 36 (Android 16); `targetSdk` 35 → 36.
+- `androidx.compose:compose-bom` `2025.01.00` → `2026.05.01` (Compose
+  1.11.0, Material3 1.4.0).
+- `androidx.biometric:biometric` `1.2.0-alpha05` → `1.4.0-alpha07`
+  (now compatible with the bumped AGP/compileSdk).
+
+### Removed (runtime)
+- `androidx.security:security-crypto` is no longer on the runtime
+  hot-path. It remains in the dependency graph **only** as a one-shot
+  migration reader; it will be dropped entirely in v2.1 once the
+  migration window closes.
+
+### Security
+- Falco no longer depends on a deprecated cryptography library at
+  runtime. Tink 1.21.0 is the current Google-maintained crypto stack
+  and is what AndroidX docs recommend in place of the deprecated
+  EncryptedSharedPreferences.
+- The master Keystore key alias has been rotated from the legacy
+  `_androidx_security_master_key_` to `falco_master_v2` so previous
+  Keystore key material is no longer reachable from the running app.
+
+### Known caveats
+- `minSdk` stays at 26. Bumping is tracked for v2.x once telemetry
+  exists or maintainer policy changes.
+- v2.x roadmap: drop `androidx.security:security-crypto` migration
+  shim entirely; consider AGP 9.x once R8 9.x repackaging defaults are
+  audited.
+
 ## [1.6.0] — 2026-05-02
 
 Security hardening release. Two rounds of audit-driven remediation;

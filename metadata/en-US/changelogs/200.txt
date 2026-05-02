@@ -1,0 +1,25 @@
+Falco 2.0.0
+
+Major release. Replaces the deprecated AndroidX
+EncryptedSharedPreferences credential store with a Tink-based AEAD
+store on top of DataStore, and refreshes the build toolchain.
+
+Security:
+- Credential storage rewritten on Google Tink (AES-256-GCM) with
+  the keyset wrapped by an Android-Keystore-bound master key.
+- Migration from v1 EncryptedSharedPreferences runs automatically
+  and idempotently on first launch — no user action needed.
+- Recovery: if the master key has been invalidated (biometric
+  re-enrollment in hardware-bound mode), the orphaned keyset is
+  rebuilt instead of crashing. User re-enters tokens.
+- Falco no longer depends on a deprecated crypto library at runtime.
+
+Toolchain:
+- AGP 8.7.3 → 8.13.0; Kotlin 2.1.0 → 2.2.21.
+- Gradle 8.11.1 → 8.14.4. compileSdk/targetSdk 35 → 36.
+- Compose BOM 2025.01.00 → 2026.05.01.
+- biometric 1.2.0-alpha05 → 1.4.0-alpha07.
+
+Notes:
+- minSdk stays at 26 (Android 8.0).
+- security-crypto stays as one-shot migration reader; dropped in v2.1.

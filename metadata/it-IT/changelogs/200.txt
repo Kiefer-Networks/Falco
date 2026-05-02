@@ -1,0 +1,27 @@
+Falco 2.0.0
+
+Release maggiore. Sostituisce lo store delle credenziali basato su
+EncryptedSharedPreferences (deprecata) con uno store AEAD basato su
+Tink sopra DataStore, e aggiorna la toolchain di build.
+
+Sicurezza:
+- Store delle credenziali riscritto con Google Tink (AES-256-GCM).
+  Il keyset è avvolto da una chiave master legata al Keystore Android.
+- La migrazione da v1 EncryptedSharedPreferences avviene
+  automaticamente e in modo idempotente al primo avvio.
+- Ripristino: se la chiave master è stata invalidata (re-iscrizione
+  biometrica in modalità hardware), il keyset orfano viene
+  ricostruito invece di causare un crash. L'utente reinserisce i
+  token.
+- Falco non dipende più a runtime da una libreria crittografica
+  deprecata.
+
+Toolchain:
+- AGP 8.7.3 → 8.13.0; Kotlin 2.1.0 → 2.2.21.
+- Gradle 8.11.1 → 8.14.4. compileSdk/targetSdk 35 → 36.
+- Compose BOM 2025.01.00 → 2026.05.01.
+- biometric 1.2.0-alpha05 → 1.4.0-alpha07.
+
+Note:
+- minSdk resta a 26 (Android 8.0).
+- security-crypto resta come lettore di migrazione; rimosso in v2.1.

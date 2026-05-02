@@ -1,0 +1,23 @@
+Falco 2.0.0
+
+主要版本。将基于已弃用的 EncryptedSharedPreferences 的凭据存储替换为
+基于 Tink + DataStore 的 AEAD 存储，并更新构建工具链。
+
+安全：
+- 使用 Google Tink (AES-256-GCM) 重写凭据存储。Keyset 由
+  Android Keystore 绑定的主密钥保护。
+- 从 v1 EncryptedSharedPreferences 的迁移在首次启动时自动且
+  幂等地执行 — 无需用户操作。
+- 恢复：当硬件绑定模式下重新注册生物识别使主密钥失效时，
+  孤立的 keyset 将被重建而不是导致崩溃，用户需重新输入令牌。
+- Falco 在运行时不再依赖已弃用的加密库。
+
+工具链：
+- AGP 8.7.3 → 8.13.0；Kotlin 2.1.0 → 2.2.21。
+- Gradle 8.11.1 → 8.14.4。compileSdk/targetSdk 35 → 36。
+- Compose BOM 2025.01.00 → 2026.05.01。
+- biometric 1.2.0-alpha05 → 1.4.0-alpha07。
+
+备注：
+- minSdk 保持 26 (Android 8.0)。
+- security-crypto 保留为一次性迁移读取器；v2.1 中移除。
