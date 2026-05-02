@@ -53,9 +53,6 @@ jobs:
       - name: Unit tests (debug)
         run: ./gradlew testDebugUnitTest --no-daemon
 
-      - name: Unit tests (release)
-        run: ./gradlew :app:testReleaseUnitTest --no-daemon
-
   build-android:
     name: Android (APK + AAB)
     needs: preflight
