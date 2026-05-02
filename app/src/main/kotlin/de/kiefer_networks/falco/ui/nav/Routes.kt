@@ -52,6 +52,9 @@ object Routes {
     const val CLOUD_LOAD_BALANCER_DETAIL = "cloud/load_balancer/{id}"
     fun cloudLoadBalancerDetail(id: Long) = "cloud/load_balancer/$id"
     const val ARG_LOAD_BALANCER_ID = "id"
+    const val CLOUD_PRIMARY_IP_DETAIL = "cloud/primary_ip/{id}"
+    fun cloudPrimaryIpDetail(id: Long) = "cloud/primary_ip/$id"
+    const val ARG_PRIMARY_IP_ID = "id"
 
     const val PROJECTS = "cloud/projects"
     const val PROJECT_NEW = "cloud/projects/new"

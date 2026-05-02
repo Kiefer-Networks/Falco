@@ -61,19 +61,22 @@ import de.kiefer_networks.falco.data.dto.CloudFloatingIp
 import de.kiefer_networks.falco.data.dto.CloudLoadBalancer
 import de.kiefer_networks.falco.data.dto.CloudNetwork
 import de.kiefer_networks.falco.data.dto.CloudPlacementGroup
+import de.kiefer_networks.falco.data.dto.CloudPrimaryIp
 import de.kiefer_networks.falco.data.dto.CloudVolume
 import de.kiefer_networks.falco.ui.theme.Spacing
 
-private enum class PendingCreate { Volume, Network, FloatingIp, PlacementGroup, Certificate }
+private enum class PendingCreate { Volume, Network, FloatingIp, PrimaryIp, PlacementGroup, Certificate }
 
 @Composable
 fun CloudResourcesTab(
     onOpenVolume: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     onOpenFloatingIp: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     onOpenLoadBalancer: (projectId: String?, id: Long) -> Unit = { _, _ -> },
+    onOpenPrimaryIp: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     volumesViewModel: CloudVolumesViewModel = hiltViewModel(),
     networksViewModel: CloudNetworksViewModel = hiltViewModel(),
     floatingIpsViewModel: CloudFloatingIpsViewModel = hiltViewModel(),
+    primaryIpsViewModel: CloudPrimaryIpsViewModel = hiltViewModel(),
     loadBalancersViewModel: CloudLoadBalancersViewModel = hiltViewModel(),
     certificatesViewModel: CloudCertificatesViewModel = hiltViewModel(),
     placementGroupsViewModel: CloudPlacementGroupsViewModel = hiltViewModel(),
@@ -82,6 +85,7 @@ fun CloudResourcesTab(
     val v by volumesViewModel.state.collectAsState()
     val n by networksViewModel.state.collectAsState()
     val f by floatingIpsViewModel.state.collectAsState()
+    val p by primaryIpsViewModel.state.collectAsState()
     val lb by loadBalancersViewModel.state.collectAsState()
     val cert by certificatesViewModel.state.collectAsState()
     val pg by placementGroupsViewModel.state.collectAsState()
@@ -90,6 +94,7 @@ fun CloudResourcesTab(
     var createVolumeOpen by remember { mutableStateOf(false) }
     var createNetworkOpen by remember { mutableStateOf(false) }
     var createFloatingIpOpen by remember { mutableStateOf(false) }
+    var createPrimaryIpOpen by remember { mutableStateOf(false) }
     var createPlacementGroupOpen by remember { mutableStateOf(false) }
     var uploadCertOpen by remember { mutableStateOf(false) }
     var pendingCreate by remember { mutableStateOf<PendingCreate?>(null) }
@@ -105,6 +110,7 @@ fun CloudResourcesTab(
                 PendingCreate.Volume -> { volumesViewModel.loadCreateOptions(); createVolumeOpen = true }
                 PendingCreate.Network -> createNetworkOpen = true
                 PendingCreate.FloatingIp -> { floatingIpsViewModel.loadCreateOptions(); createFloatingIpOpen = true }
+                PendingCreate.PrimaryIp -> { primaryIpsViewModel.loadCreateOptions(); createPrimaryIpOpen = true }
                 PendingCreate.PlacementGroup -> createPlacementGroupOpen = true
                 PendingCreate.Certificate -> uploadCertOpen = true
             }
@@ -115,6 +121,7 @@ fun CloudResourcesTab(
         volumesViewModel.refresh()
         networksViewModel.refresh()
         floatingIpsViewModel.refresh()
+        primaryIpsViewModel.refresh()
         loadBalancersViewModel.refresh()
         certificatesViewModel.refresh()
         placementGroupsViewModel.refresh()
@@ -127,6 +134,9 @@ fun CloudResourcesTab(
     }
     LaunchedEffect(floatingIpsViewModel) {
         floatingIpsViewModel.events.collect { snackbarHostState.showSnackbar(it) }
+    }
+    LaunchedEffect(primaryIpsViewModel) {
+        primaryIpsViewModel.events.collect { snackbarHostState.showSnackbar(it) }
     }
     LaunchedEffect(loadBalancersViewModel) {
         loadBalancersViewModel.events.collect { snackbarHostState.showSnackbar(it) }
@@ -195,6 +205,26 @@ fun CloudResourcesTab(
             ResourceFloatingIpCard(
                 entry.item,
                 onClick = { onOpenFloatingIp(entry.projectId, entry.item.id) },
+            )
+        }
+
+        item {
+            SectionHeader(
+                stringResource(R.string.cloud_primary_ips),
+                p.data.size,
+                addContentDescription = stringResource(R.string.cloud_primary_ip_create),
+                onAdd = { launchCreate(PendingCreate.PrimaryIp) },
+            )
+        }
+        if (p.loading) item { LoadingRow() }
+        else if (p.data.isEmpty()) item { EmptyRow() }
+        else items(
+            p.data,
+            key = { "pip-${it.projectId.orEmpty()}-${it.item.id}" },
+        ) { entry ->
+            ResourcePrimaryIpCard(
+                entry.item,
+                onClick = { onOpenPrimaryIp(entry.projectId, entry.item.id) },
             )
         }
 
@@ -283,6 +313,13 @@ fun CloudResourcesTab(
             projectId = pickedProjectId,
         )
     }
+    if (createPrimaryIpOpen) {
+        CreatePrimaryIpWizard(
+            viewModel = primaryIpsViewModel,
+            onDismiss = { createPrimaryIpOpen = false; pickedProjectId = null },
+            onCreated = { createPrimaryIpOpen = false; pickedProjectId = null },
+        )
+    }
 
     pendingCreate?.let { kind ->
         de.kiefer_networks.falco.ui.components.dialog.ProjectChooserDialog(
@@ -295,6 +332,7 @@ fun CloudResourcesTab(
                     PendingCreate.Volume -> { volumesViewModel.loadCreateOptions(); createVolumeOpen = true }
                     PendingCreate.Network -> createNetworkOpen = true
                     PendingCreate.FloatingIp -> { floatingIpsViewModel.loadCreateOptions(); createFloatingIpOpen = true }
+                    PendingCreate.PrimaryIp -> { primaryIpsViewModel.loadCreateOptions(); createPrimaryIpOpen = true }
                     PendingCreate.PlacementGroup -> createPlacementGroupOpen = true
                     PendingCreate.Certificate -> uploadCertOpen = true
                 }
@@ -407,6 +445,26 @@ private fun ResourceFloatingIpCard(fip: CloudFloatingIp, onClick: () -> Unit = {
         StatChip(Icons.Filled.Public, fip.type.uppercase())
         if (active) StatChip(Icons.Filled.Link, "#${fip.server}")
         fip.homeLocation?.let { loc -> StatChip(Icons.Filled.LocationOn, loc.city ?: loc.name) }
+    }
+}
+
+@Composable
+private fun ResourcePrimaryIpCard(ip: CloudPrimaryIp, onClick: () -> Unit = {}) {
+    val active = ip.assigneeId != null
+    ResourceCardShell(
+        icon = Icons.Filled.Public,
+        title = ip.name.ifBlank { ip.ip },
+        statusLabel = if (active) {
+            stringResource(R.string.cloud_primary_ip_assigned)
+        } else {
+            stringResource(R.string.cloud_primary_ip_unassigned)
+        },
+        statusColor = if (active) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant,
+        onClick = onClick,
+    ) {
+        StatChip(Icons.Filled.Public, ip.type.uppercase())
+        if (active) StatChip(Icons.Filled.Link, "#${ip.assigneeId}")
+        ip.datacenter?.let { dc -> StatChip(Icons.Filled.LocationOn, dc.name) }
     }
 }
 

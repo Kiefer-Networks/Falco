@@ -807,4 +807,20 @@
     <string name="cloud_lb_target_label_selector">Selector</string>
     <string name="cloud_lb_target_label_selector_hint">e.g. role=web,env=prod</string>
     <string name="cloud_lb_target_ip_address">IP address</string>
+    <!-- Primary IPs -->
+    <string name="cloud_primary_ips">Primary IPs</string>
+    <string name="cloud_primary_ip_create">Create Primary IP</string>
+    <string name="cloud_primary_ip_create_action">Create</string>
+    <string name="cloud_primary_ip_type">Type: %1$s</string>
+    <string name="cloud_primary_ip_type_label">Type</string>
+    <string name="cloud_primary_ip_type_ipv4">IPv4</string>
+    <string name="cloud_primary_ip_type_ipv6">IPv6</string>
+    <string name="cloud_primary_ip_name">Name</string>
+    <string name="cloud_primary_ip_datacenter">Datacenter: %1$s</string>
+    <string name="cloud_primary_ip_assigned">Assigned</string>
+    <string name="cloud_primary_ip_unassigned">Unassigned</string>
+    <string name="cloud_primary_ip_section_assignment">Assignment</string>
+    <string name="cloud_primary_ip_section_reverse_dns">Reverse DNS</string>
+    <string name="cloud_primary_ip_delete_title">Delete Primary IP?</string>
+    <string name="cloud_primary_ip_delete_warning">Primary IP \"%1$s\" will be permanently removed.</string>
 </resources>
