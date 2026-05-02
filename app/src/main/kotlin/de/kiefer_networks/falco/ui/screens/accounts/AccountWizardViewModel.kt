@@ -144,7 +144,14 @@ class AccountWizardViewModel @Inject constructor(
         _state.update { it.copy(saving = true) }
         viewModelScope.launch {
             val secrets = buildSecrets(s)
-            accountManager.create(displayName = s.name, secrets = secrets)
+            val account = accountManager.create(displayName = s.name, secrets = secrets)
+            // Always activate the just-created account so the post-wizard
+            // navigation lands on a tab whose backing creds actually exist.
+            // Otherwise: existing Cloud account stays active, wizard exits to
+            // the Robot tab with the Cloud-only secrets selected, RobotRepo's
+            // requireNotNull(robotUser) throws "Robot user missing", and the
+            // user sees an empty error toast instead of their new server list.
+            accountManager.setActive(account.id)
             _state.update { it.copy(saving = false, saved = true) }
             next()
         }
