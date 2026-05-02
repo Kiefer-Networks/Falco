@@ -36,8 +36,9 @@ on top of DataStore, and lifts the build toolchain to current.
 - Kotlin `2.1.0` → `2.2.21`; KSP `2.1.0-1.0.29` → `2.2.21-2.0.5`.
 - Gradle wrapper `8.11.1` → `8.14.4` (SHA-256 pinned).
 - `compileSdk` 35 → 36 (Android 16); `targetSdk` 35 → 36.
-- `androidx.compose:compose-bom` `2025.01.00` → `2026.05.01` (Compose
-  1.11.0, Material3 1.4.0).
+- `androidx.compose:compose-bom` `2025.01.00` → `2026.04.01`. Explicit
+  Material3 version pin dropped — BOM is now the single source of
+  truth for Compose-managed artefact versions.
 - `androidx.biometric:biometric` `1.2.0-alpha05` → `1.4.0-alpha07`
   (now compatible with the bumped AGP/compileSdk).
 
