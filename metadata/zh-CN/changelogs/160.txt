@@ -1,0 +1,23 @@
+Falco 1.6.0
+
+安全加固版本。完成两轮审计 — 无遗留高/中危险等级问题。
+
+新增：
+- 可选「硬件绑定凭据」模式（设置 → 安全）。重新注册生物识别
+  将使存储的令牌失效。
+- 输入确认 + 防 tapjacking 守护：覆盖 Robot SSH 密钥、Cloud
+  SSH 密钥、防火墙、卷、浮动 IP 删除流程。
+- 账户向导最终步骤新增「验证凭据」按钮。
+- Android < 13 系统的剪贴板提示横幅。
+
+安全：
+- 刷新 TLS 证书指纹：为 hel1/nbg1 Object Storage 增加
+  Let's Encrypt E8。防止后续中间证书轮换造成强制锁定。
+- Cloud 证书 privateKey + cloud-init user_data 在 toString()
+  中现已遮蔽。
+- 移除首次返回前台时多余的生物识别提示。
+
+更改：
+- androidx.security:security-crypto 1.1.0-alpha06 → 1.1.0 stable。
+- androidx.biometric:biometric 1.2.0-alpha05 → 1.4.0-alpha07。
+- ProGuard：将 Hilt -keep 收窄至运行时 SPI 范围。

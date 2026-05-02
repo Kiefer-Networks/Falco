@@ -4,6 +4,63 @@ All notable changes to Falco are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] — 2026-05-02
+
+Security hardening release. Two rounds of audit-driven remediation;
+zero High and zero Medium findings open at release.
+
+### Added
+- **Opt-in hardware-bound credentials mode** (Settings → Security):
+  binds the EncryptedSharedPreferences master key with
+  `setUserAuthenticationRequired(true, 60s)` and
+  `setInvalidatedByBiometricEnrollment(true)`. Higher-assurance mode
+  for users who want re-enrollment of biometrics to invalidate stored
+  tokens. Default OFF — preserves the existing PIN-equivalence gate.
+- **Tapjacking-resistant `TypeToConfirmDeleteDialog`**: type-to-match
+  + FLAG_SECURE + `MotionEvent.FLAG_WINDOW_IS_OBSCURED` event-drop
+  guard. Wired into Robot SSH key, Cloud SSH key, Cloud Firewall,
+  Cloud Volume, and Cloud Floating IP delete flows.
+- **Pre-storage credential probe**: opt-in "Verify credentials"
+  button in the AccountWizard final step calls
+  `AccountManager.probeCredentials` to surface bad tokens before
+  persistence (Cloud `listLocations`, DNS `listZones`, Robot
+  `listFailoverIps`).
+- **Pre-Android-13 clipboard caveat banner** in `SecureRevealDialog`:
+  on API < 33 where `EXTRA_IS_SENSITIVE` is a no-op, surfaces the
+  residual exposure to the user. Localised in 7 languages.
+
+### Security
+- **TLS pin refresh**: added Let's Encrypt **E8** intermediate to the
+  Object Storage and Cloud pin sets. `hel1` and `nbg1` had migrated to
+  E8 ahead of the rest of the chain; on API 26-30 devices that lack
+  ISRG Root X2 in the system trust store, the next intermediate
+  rotation would have hard-locked S3 access. Re-verified against the
+  live chain on every host.
+- **DTO redaction**: `CreateCertificateRequest.privateKey` and
+  `CreateServerRequest.userData` (cloud-init) now mask in `toString()`
+  matching the existing pattern used by rescue/console password and
+  Storage Box password DTOs.
+- **MainActivity** stamps `lastPausedAt` in `onCreate` to avoid a
+  spurious extra biometric prompt on first foreground after cold
+  start.
+
+### Changed
+- `androidx.security:security-crypto` `1.1.0-alpha06` → `1.1.0`
+  (stable). The library is deprecated in 1.1.0-beta01+; long-term
+  migration to direct Android Keystore + Tink/DataStore tracked as a
+  v2.0 work item.
+- `androidx.biometric:biometric` `1.2.0-alpha05` → `1.4.0-alpha07`.
+  The 1.2.x line was abandoned in favour of the active 1.4.x track.
+- ProGuard: blanket `-keep class dagger.hilt.** { *; }` narrowed to
+  the runtime SPI surface (entry points, generated components,
+  modules, injectors, factory wrappers). R8 can now obfuscate the
+  rest, reducing reverse-engineering surface in installed APKs.
+
+### Fixed
+- Clipboard / SecureRevealDialog flows now disclose the pre-API-33
+  `EXTRA_IS_SENSITIVE` no-op behaviour to the user instead of relying
+  on the silent 60s auto-wipe alone.
+
 ## [1.5.1] — 2026-05-01
 
 Hotfix release. The 1.5.0 APK published to the GitHub release was

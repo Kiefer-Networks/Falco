@@ -1,0 +1,28 @@
+Falco 1.6.0
+
+Release di hardening di sicurezza. Due cicli di audit — nessuna
+finding aperta di severità Alta o Media.
+
+Novità:
+- Modalità opzionale "credenziali legate all'hardware" (Impostazioni
+  → Sicurezza). La nuova registrazione biometrica invalida i token
+  salvati.
+- Conferma tramite digitazione + protezione anti-tapjacking sui
+  flussi di eliminazione (chiavi SSH Robot/Cloud, firewall, volume,
+  IP flottante).
+- Pulsante "Verifica credenziali" sull'ultimo passo del wizard.
+- Banner di avviso appunti su Android < 13.
+
+Sicurezza:
+- Pin TLS aggiornati: aggiunto Let's Encrypt E8 per hel1/nbg1
+  Object Storage. Previene il blocco totale alla prossima rotazione
+  dell'intermediario.
+- privateKey dei certificati Cloud + user_data di cloud-init ora
+  oscurati in toString().
+- Rimosso prompt biometrico superfluo al primo passaggio in
+  primo piano.
+
+Modifiche:
+- androidx.security:security-crypto 1.1.0-alpha06 → 1.1.0 stable.
+- androidx.biometric:biometric 1.2.0-alpha05 → 1.4.0-alpha07.
+- ProGuard: -keep di Hilt ristretto alla superficie SPI runtime.

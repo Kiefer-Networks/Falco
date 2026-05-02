@@ -1,0 +1,25 @@
+Falco 1.6.0
+
+Security hardening release. Two rounds of audit-driven fixes —
+zero High and zero Medium findings open.
+
+New:
+- Opt-in hardware-bound credentials mode (Settings → Security).
+  Re-enrolling biometrics invalidates stored tokens.
+- Type-to-confirm + tapjacking guard on Robot SSH key, Cloud SSH
+  key, Firewall, Volume and Floating IP delete flows.
+- Verify-credentials button on the Account wizard final step.
+- Pre-Android-13 clipboard caveat banner.
+
+Security:
+- TLS pins refreshed: Let's Encrypt E8 added for hel1/nbg1 Object
+  Storage. Prevents future intermediate rotation from hard-locking
+  S3 access on older devices.
+- Cloud cert privateKey + cloud-init user_data now redacted in
+  toString().
+- Spurious cold-start biometric prompt removed.
+
+Changed:
+- androidx.security:security-crypto 1.1.0-alpha06 → 1.1.0 stable.
+- androidx.biometric:biometric 1.2.0-alpha05 → 1.4.0-alpha07.
+- ProGuard: narrowed Hilt -keep to runtime SPI surface.
