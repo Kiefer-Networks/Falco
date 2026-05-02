@@ -728,4 +728,39 @@
     <string name="cloud_network_subnet_ip_range">Subnet IP range (optional)</string>
     <string name="cloud_network_subnet_ip_range_hint">Must be inside the network range. Leave empty to let Hetzner pick.</string>
     <string name="wizard_step_subnet">Subnet</string>
+
+    <!-- Network detail -->
+    <string name="cloud_network_section_protection">Protection</string>
+    <string name="cloud_network_section_subnets">Subnets</string>
+    <string name="cloud_network_section_routes">Routes</string>
+    <string name="cloud_network_delete_protection">Delete protection</string>
+    <string name="cloud_network_no_subnets">No subnets attached.</string>
+    <string name="cloud_network_no_routes">No custom routes.</string>
+    <string name="cloud_network_subnet_add">Add subnet</string>
+    <string name="cloud_network_route_add">Add route</string>
+    <string name="cloud_network_subnet_gateway">Gateway: %1$s</string>
+    <string name="cloud_network_subnet_vswitch">vSwitch: %1$d</string>
+    <string name="cloud_network_route_destination">To %1$s</string>
+    <string name="cloud_network_route_gateway">via %1$s</string>
+    <string name="cloud_network_route_destination_label">Destination (CIDR)</string>
+    <string name="cloud_network_route_destination_hint">e.g. 10.100.0.0/24</string>
+    <string name="cloud_network_route_gateway_label">Gateway</string>
+    <string name="cloud_network_route_gateway_hint">Must be inside the network IP range.</string>
+    <string name="cloud_network_subnet_delete_title">Delete subnet?</string>
+    <string name="cloud_network_subnet_delete_warning">Subnet %1$s will be removed from this network.</string>
+    <string name="cloud_network_route_delete_title">Delete route?</string>
+    <string name="cloud_network_route_delete_warning">Route %1$s via %2$s will be removed.</string>
+    <string name="cloud_network_action_rename">Rename</string>
+    <string name="cloud_network_action_change_ip_range">Change IP range</string>
+    <string name="cloud_network_action_expose_vswitch">Expose to vSwitch</string>
+    <string name="cloud_network_change_ip_range_warning">Hetzner: changing the IP range is irreversible. Existing subnets must stay inside the new range.</string>
+    <string name="cloud_network_expose_vswitch_id">vSwitch ID</string>
+    <string name="cloud_network_expose_vswitch_toggle">Expose routes</string>
+    <string name="cloud_network_expose_vswitch_hint">Exposes this network\'s routes to the connected Robot vSwitch. Toggle off to revoke.</string>
+    <string name="cloud_network_delete_title">Delete network?</string>
+    <string name="cloud_network_delete_warning">Network \"%1$s\" and all of its subnets will be permanently removed. This cannot be undone.</string>
+    <string name="cloud_network_kpi_ip_range">IP range</string>
+    <string name="cloud_network_kpi_subnets">Subnets</string>
+    <string name="cloud_network_kpi_routes">Routes</string>
+    <string name="cloud_network_kpi_vswitch">vSwitch</string>
 </resources>

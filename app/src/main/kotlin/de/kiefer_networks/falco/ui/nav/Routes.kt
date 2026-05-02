@@ -46,6 +46,10 @@ object Routes {
     fun cloudFloatingIpDetail(id: Long) = "cloud/floating_ip/$id"
     const val ARG_FLOATING_IP_ID = "id"
 
+    const val CLOUD_NETWORK_DETAIL = "cloud_network_detail/{id}"
+    fun cloudNetworkDetail(id: Long) = "cloud_network_detail/$id"
+    const val ARG_CLOUD_NETWORK_ID = "id"
+
     const val PROJECTS = "cloud/projects"
     const val PROJECT_NEW = "cloud/projects/new"
     const val PROJECT_EDIT = "cloud/projects/edit/{projectId}"

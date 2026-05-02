@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+)
 package de.kiefer_networks.falco.ui.screens.cloud
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -127,7 +131,10 @@ class CloudNetworksViewModel @Inject constructor(private val repo: CloudRepo) : 
 }
 
 @Composable
-fun CloudNetworksTab(viewModel: CloudNetworksViewModel = hiltViewModel()) {
+fun CloudNetworksTab(
+    onOpen: (Long) -> Unit = {},
+    viewModel: CloudNetworksViewModel = hiltViewModel(),
+) {
     val s by viewModel.state.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.refresh() }
@@ -149,7 +156,9 @@ fun CloudNetworksTab(viewModel: CloudNetworksViewModel = hiltViewModel()) {
                 Text(stringResource(R.string.empty_list))
             }
             else -> LazyColumn(Modifier.fillMaxSize().padding(12.dp)) {
-                items(s.data, key = { it.id }) { network -> NetworkCard(network) }
+                items(s.data, key = { it.id }) { network ->
+                    NetworkCard(network = network, onOpen = { onOpen(network.id) })
+                }
             }
         }
         FloatingActionButton(
@@ -170,8 +179,16 @@ fun CloudNetworksTab(viewModel: CloudNetworksViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun NetworkCard(network: CloudNetwork) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+private fun NetworkCard(network: CloudNetwork, onOpen: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .combinedClickable(
+                onClick = onOpen,
+                onLongClick = onOpen,
+            ),
+    ) {
         Column(Modifier.padding(12.dp)) {
             Text(network.name, style = MaterialTheme.typography.titleMedium)
             Text(

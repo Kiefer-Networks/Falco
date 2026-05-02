@@ -121,6 +121,14 @@ fun FalcoRoot(viewModel: FalcoRootViewModel, windowSizeClass: WindowSizeClass) {
                     onBack = { nav.popBackStack() },
                 )
             }
+            composable(
+                route = Routes.CLOUD_NETWORK_DETAIL,
+                arguments = listOf(navArgument(Routes.ARG_CLOUD_NETWORK_ID) { type = NavType.LongType }),
+            ) {
+                de.kiefer_networks.falco.ui.screens.cloud.CloudNetworkDetailScreen(
+                    onBack = { nav.popBackStack() },
+                )
+            }
             composable(Routes.PROJECTS) {
                 de.kiefer_networks.falco.ui.screens.cloud.ProjectManageScreen(
                     onBack = { nav.popBackStack() },
