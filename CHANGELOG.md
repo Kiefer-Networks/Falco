@@ -4,6 +4,73 @@ All notable changes to Falco are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] — 2026-05-02
+
+Major-version sweep across the build toolchain and the network /
+storage stack. Five separate audit passes informed each bump; no
+behavioural changes for the user.
+
+### Changed (toolchain)
+- AGP `8.13.2` → `9.2.0`. The `applicationVariants.all { ... }` block
+  was removed by AGP 9; APK / AAB output naming moved to the
+  `androidComponents.onVariants` block that already manages the
+  F-Droid reproducibility settings.
+- Hilt `2.58` → `2.59.2` (was held back in v2.0 because 2.59 requires
+  AGP 9.0+).
+- Gradle wrapper `8.14.4` → `9.5.0` (SHA-256 pinned).
+
+### Changed (network)
+- `com.squareup.retrofit2:retrofit` `2.11.0` → `3.0.0`. Forward
+  binary-compatibility per upstream — no service-interface changes.
+- `com.squareup.okhttp3:okhttp` `4.12.0` → `5.3.2`. Every
+  `HttpClientFactory` interceptor + `CertificatePinner` +
+  `ConnectionSpec.RESTRICTED_TLS` API used is preserved verbatim
+  in 5.x. `mockwebserver` test artefact stays at `4.12.0` for now —
+  Square supports the overlap; full migration to `mockwebserver3`
+  follows in a maintenance pass.
+
+### Changed (storage)
+- `io.minio:minio` `8.5.14` → `9.0.0`. The 9.0 refactor renamed two
+  classes Falco depended on:
+  - `io.minio.http.Method` → `io.minio.Http.Method`
+  - `io.minio.messages.DeleteObject` → `io.minio.messages.DeleteRequest.Object`
+  - `MinioClient.removeObjects(...)` semantics inverted: the returned
+    iterable now yields **failures** instead of successes. `S3Client`
+    now computes the success list as `input - failures` so the
+    contract callers see is preserved.
+
+### Changed (R8)
+- ProGuard `-keepattributes` rule expanded from the bare `*Annotation*`
+  wildcard to an explicit list (`RuntimeVisibleAnnotations`,
+  `RuntimeVisibleParameterAnnotations`, `RuntimeVisibleTypeAnnotations`,
+  `RuntimeInvisibleAnnotations`, `RuntimeInvisibleParameterAnnotations`,
+  `RuntimeInvisibleTypeAnnotations`, `AnnotationDefault`,
+  `InnerClasses`, `Signature`, `Exceptions`, `EnclosingMethod`). R8 9.x
+  in AGP 9.0+ no longer treats `*Annotation*` as covering
+  RuntimeInvisible annotations; the explicit list keeps Hilt /
+  Retrofit / kotlinx-serialization shrink-safe across both R8 8.x and
+  R8 9.x.
+
+### CI
+- All five GitHub Actions Dependabot major bumps merged in a separate
+  pass: `actions/checkout@4 → 6`, `actions/setup-java@4 → 5`,
+  `actions/download-artifact@4 → 8`, `softprops/action-gh-release@2 → 3`,
+  `gradle/actions` SHA refresh.
+
+### Tests
+- `PasswordRedactionTest` extended to cover the
+  `CreateCertificateRequest.privateKey` and
+  `CreateServerRequest.userData` redactions added in v1.6.0 (F-002 +
+  F-008). Both are negative-assertion tests — they refuse to allow
+  the secret OR its surrounding metadata marker (`-----BEGIN PRIVATE
+  KEY-----`, `#cloud-config`) to appear in `toString()`.
+
+### Open follow-ups
+- v2.2 candidate: drop `androidx.security:security-crypto` migration
+  shim entirely.
+- v2.x maintenance: migrate test fixtures to `mockwebserver3` package
+  and tighten the Compose 1.11 lint rules that v2.0 disabled.
+
 ## [2.0.0] — 2026-05-02
 
 Major release: replaces the deprecated `androidx.security:security-crypto`

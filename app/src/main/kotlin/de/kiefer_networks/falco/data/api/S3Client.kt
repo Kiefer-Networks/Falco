@@ -6,6 +6,7 @@ import io.minio.CopyObjectArgs
 import io.minio.CopySource
 import io.minio.GetBucketVersioningArgs
 import io.minio.GetPresignedObjectUrlArgs
+import io.minio.Http
 import io.minio.ListObjectsArgs
 import io.minio.MakeBucketArgs
 import io.minio.MinioClient
@@ -15,8 +16,7 @@ import io.minio.RemoveObjectArgs
 import io.minio.RemoveObjectsArgs
 import io.minio.SetBucketVersioningArgs
 import io.minio.StatObjectArgs
-import io.minio.http.Method
-import io.minio.messages.DeleteObject
+import io.minio.messages.DeleteRequest
 import io.minio.messages.VersioningConfiguration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -142,7 +142,7 @@ class S3Client(
         withContext(Dispatchers.IO) {
             client.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
-                    .method(Method.GET)
+                    .method(Http.Method.GET)
                     .bucket(bucket)
                     .`object`(key)
                     .expiry(expirySeconds, TimeUnit.SECONDS)
@@ -154,7 +154,7 @@ class S3Client(
         withContext(Dispatchers.IO) {
             client.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
-                    .method(Method.PUT)
+                    .method(Http.Method.PUT)
                     .bucket(bucket)
                     .`object`(key)
                     .expiry(expirySeconds, TimeUnit.SECONDS)
@@ -176,16 +176,28 @@ class S3Client(
         client.removeBucket(RemoveBucketArgs.builder().bucket(bucket).build())
     }
 
+    /**
+     * Bulk-delete the given object keys. Returns the keys that were deleted
+     * successfully (input minus errors).
+     *
+     * MinIO 9 changed `removeObjects` semantics: the returned iterable now
+     * yields only the FAILURE entries (`DeleteResult.Error`), not successes.
+     * The 8.x contract was the opposite. We compute the success list as
+     * `input - failures` so callers see the same return value across both
+     * SDK versions and the bug doesn't silently invert if a future caller
+     * actually reads it.
+     */
     suspend fun deleteObjects(bucket: String, keys: List<String>): List<String> =
         withContext(Dispatchers.IO) {
             if (keys.isEmpty()) return@withContext emptyList()
             val args = RemoveObjectsArgs.builder()
                 .bucket(bucket)
-                .objects(keys.map { DeleteObject(it) })
+                .objects(keys.map { DeleteRequest.Object(it) })
                 .build()
-            client.removeObjects(args).mapNotNull {
+            val failed = client.removeObjects(args).mapNotNull {
                 runCatching { it.get().objectName() }.getOrNull()
-            }
+            }.toSet()
+            keys.filterNot { it in failed }
         }
 
     suspend fun copyObject(

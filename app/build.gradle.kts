@@ -25,8 +25,8 @@ android {
         applicationId = "de.kiefer_networks.falco"
         minSdk = 26
         targetSdk = 36
-        versionCode = 200
-        versionName = "2.0.0"
+        versionCode = 210
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -64,16 +64,6 @@ android {
             isDebuggable = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (signingProps.isNotEmpty()) signingConfig = signingConfigs.getByName("release")
-        }
-    }
-
-    // Disambiguate APK / AAB names so multi-app repositories (F-Droid mirror,
-    // GitHub release bundles) never collide on the generic `app-release.apk`.
-    applicationVariants.all {
-        val variant = this
-        outputs.all {
-            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            output.outputFileName = "Falco-${variant.versionName}-${variant.buildType.name}.apk"
         }
     }
 
@@ -117,8 +107,21 @@ android {
         }
     }
 
-    // F-Droid reproducibility: deterministic outputs.
+    // F-Droid reproducibility: deterministic outputs + APK / AAB naming so
+    // multi-app repositories (F-Droid mirror, GitHub release bundles) never
+    // collide on the generic `app-release.apk`. AGP 9 removed
+    // `applicationVariants.all { ... BaseVariantOutputImpl ... outputFileName }`;
+    // the new variants API on `androidComponents.onVariants` is the supported
+    // path.
     androidComponents {
+        onVariants { variant ->
+            variant.outputs.forEach { output ->
+                val versionName = variant.outputs.first().versionName.orNull ?: ""
+                output.outputFileName.set(
+                    "Falco-$versionName-${variant.buildType}.apk",
+                )
+            }
+        }
         onVariants(selector().withBuildType("release")) { variant ->
             variant.packaging.jniLibs.useLegacyPackaging.set(false)
         }

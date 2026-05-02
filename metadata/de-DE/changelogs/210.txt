@@ -1,0 +1,30 @@
+Falco 2.1.0
+
+Großer Major-Bump im Build-Toolchain + Network/Storage-Stack.
+Keine Verhaltensänderungen für den Nutzer.
+
+Toolchain:
+- AGP 8.13.2 → 9.2.0; Hilt 2.58 → 2.59.2; Gradle 8.14.4 → 9.5.0.
+- ProGuard `-keepattributes` auf explizite Runtime-Annotation-Liste
+  erweitert (R8 9.x).
+
+Netzwerk:
+- Retrofit 2.11.0 → 3.0.0 (forward binary-kompatibel).
+- OkHttp 4.12.0 → 5.3.2. Jede CertificatePinner-/ConnectionSpec-/
+  Interceptor-API unverändert.
+
+Storage (S3):
+- MinIO 8.5.14 → 9.0.0. Refactor benannte zwei Klassen um
+  (Http.Method, DeleteRequest.Object) und drehte die
+  `removeObjects`-Semantik um (Fehler statt Erfolge) — S3Client
+  rechnet success-Liste = input - failures, damit Aufrufer dasselbe
+  Contract sehen.
+
+CI:
+- Alle 5 Actions-Major-Dependabot-PRs gemergt
+  (actions/checkout, setup-java, download-artifact,
+  softprops/action-gh-release, gradle/actions).
+
+Tests:
+- PasswordRedactionTest erweitert für privateKey- + userData-
+  Redaktionen aus v1.6.0.

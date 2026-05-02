@@ -4,7 +4,14 @@
 # DTOs are covered by the kotlinx-serialization rules below; the explicit
 # `-keep class data.dto.**` we used to ship was redundant and prevented R8
 # from shrinking unused fields on those classes.
--keepattributes *Annotation*, InnerClasses, Signature, Exceptions, EnclosingMethod
+#
+# R8 9.x (AGP 9.0+) tightened -keepattributes wildcard semantics: bare
+# `*Annotation*` no longer matches RuntimeInvisible* annotations. Enumerate
+# every annotation attribute we depend on explicitly so kotlinx-serialization,
+# Retrofit, and Hilt all keep their generators' annotations after shrink.
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations, RuntimeVisibleTypeAnnotations
+-keepattributes RuntimeInvisibleAnnotations, RuntimeInvisibleParameterAnnotations, RuntimeInvisibleTypeAnnotations
+-keepattributes AnnotationDefault, InnerClasses, Signature, Exceptions, EnclosingMethod
 -keepclassmembers class **$Companion { *; }
 
 # kotlinx.serialization
