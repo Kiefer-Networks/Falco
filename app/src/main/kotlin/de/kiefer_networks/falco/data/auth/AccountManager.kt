@@ -4,6 +4,7 @@ package de.kiefer_networks.falco.data.auth
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import de.kiefer_networks.falco.data.api.CloudApi
 import de.kiefer_networks.falco.data.api.DnsApi
@@ -130,12 +131,12 @@ class AccountManager @Inject constructor(
 
     suspend fun updateDisplayName(id: String, name: String) {
         store.put(id, CredentialStore.Field.DISPLAY_NAME, name)
-        dataStore.edit { /* trigger flow */ }
+        bumpRevision()
     }
 
     suspend fun updateDescription(id: String, description: String) {
         store.put(id, CredentialStore.Field.DESCRIPTION, description)
-        dataStore.edit { /* trigger flow */ }
+        bumpRevision()
     }
 
     suspend fun remove(id: String) {
@@ -161,11 +162,13 @@ class AccountManager @Inject constructor(
         if (current.isEmpty()) {
             store.put(accountId, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID, withId.id)
         }
+        bumpRevision()
     }
 
     suspend fun updateCloudProject(accountId: String, project: CloudProject) {
         val current = readCloudProjects(accountId)
         writeCloudProjects(accountId, current.map { if (it.id == project.id) project else it })
+        bumpRevision()
     }
 
     suspend fun removeCloudProject(accountId: String, projectId: String) {
@@ -177,6 +180,15 @@ class AccountManager @Inject constructor(
             val next = remaining.firstOrNull()?.id.orEmpty()
             store.put(accountId, CredentialStore.Field.ACTIVE_CLOUD_PROJECT_ID, next)
         }
+        bumpRevision()
+    }
+
+    /**
+     * Credentials live outside DataStore, so a write there alone never makes
+     * [accounts] or [activeCloudProject] emit. A real value change does.
+     */
+    private suspend fun bumpRevision() {
+        dataStore.edit { it[REVISION] = (it[REVISION] ?: 0L) + 1 }
     }
 
     suspend fun setActiveCloudProject(accountId: String, projectId: String) {
@@ -275,5 +287,6 @@ class AccountManager @Inject constructor(
         private val ACTIVE_ID = stringPreferencesKey("active_id")
         private val DEFAULT_ID = stringPreferencesKey("default_id")
         private val ACTIVE_PROJECT_TICK = stringPreferencesKey("active_project_tick")
+        private val REVISION = longPreferencesKey("credentials_revision")
     }
 }

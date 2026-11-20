@@ -57,7 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.dto.CloudFirewall
 import de.kiefer_networks.falco.data.dto.CloudServer
@@ -410,7 +410,7 @@ private fun RuleCard(
                 Text(ruleHeader(rule), style = MaterialTheme.typography.titleSmall)
                 if (!rule.description.isNullOrBlank()) {
                     Text(
-                        rule.description!!,
+                        rule.description.orEmpty(),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

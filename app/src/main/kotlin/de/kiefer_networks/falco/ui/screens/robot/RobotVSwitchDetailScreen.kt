@@ -56,7 +56,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.selection.selectable
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.dto.RobotServer
 import de.kiefer_networks.falco.data.dto.RobotVSwitch

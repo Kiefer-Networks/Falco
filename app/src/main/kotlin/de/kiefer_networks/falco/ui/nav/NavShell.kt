@@ -55,9 +55,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -131,20 +133,24 @@ fun NavShell(
 ) {
     val isTopLevel = currentRoute in TAB_ROUTES
     val visibleServices = servicesFor(activeAccount)
+    // Each shell calls content() from a different call site; without a movable
+    // wrapper a rotation or unfold would dispose the NavHost and its state.
+    val latestContent by rememberUpdatedState(content)
+    val movable = remember { movableContentOf { latestContent() } }
     when (windowSizeClass.widthSizeClass) {
         WindowWidthSizeClass.Compact -> CompactShell(
             currentRoute, onSelect, isTopLevel,
             accounts, activeAccount, onSelectAccount, onAddAccount,
-            visibleServices, content,
+            visibleServices, movable,
         )
         WindowWidthSizeClass.Medium -> MediumShell(
             currentRoute, onSelect, isTopLevel,
-            visibleServices, content,
+            visibleServices, movable,
         )
         else -> ExpandedShell(
             currentRoute, onSelect,
             accounts, activeAccount, onSelectAccount, onAddAccount,
-            visibleServices, content,
+            visibleServices, movable,
         )
     }
 }

@@ -47,7 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.ui.theme.Spacing
 
@@ -59,6 +59,9 @@ fun SearchScreen(
     onOpenFloatingIp: (Long) -> Unit = {},
     onOpenFirewall: (Long) -> Unit = {},
     onOpenStorageBox: (Long) -> Unit = {},
+    onOpenNetwork: (Long) -> Unit = {},
+    onOpenLoadBalancer: (Long) -> Unit = {},
+    onOpenPrimaryIp: (Long) -> Unit = {},
     onOpenRobot: (Long) -> Unit = {},
     onOpenDnsZone: (String) -> Unit = {},
     onBack: () -> Unit = {},
@@ -125,6 +128,9 @@ fun SearchScreen(
             LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 items(state.results, key = { "${it.kind}-${it.projectId.orEmpty()}-${it.id}" }) { hit ->
                     ResultRow(hit) {
+                        // Kinds without a detail screen must not switch the
+                        // active project as a side effect of a tap.
+                        if (!hit.kind.hasDetailScreen) return@ResultRow
                         val nav: () -> Unit = {
                             when (hit.kind) {
                                 ResultKind.CloudServer -> onOpenServer(hit.id.toLong())
@@ -132,6 +138,9 @@ fun SearchScreen(
                                 ResultKind.FloatingIp -> onOpenFloatingIp(hit.id.toLong())
                                 ResultKind.Firewall -> onOpenFirewall(hit.id.toLong())
                                 ResultKind.StorageBox -> onOpenStorageBox(hit.id.toLong())
+                                ResultKind.Network -> onOpenNetwork(hit.id.toLong())
+                                ResultKind.LoadBalancer -> onOpenLoadBalancer(hit.id.toLong())
+                                ResultKind.PrimaryIp -> onOpenPrimaryIp(hit.id.toLong())
                                 ResultKind.RobotServer -> onOpenRobot(hit.id.toLong())
                                 ResultKind.DnsZone -> onOpenDnsZone(hit.id)
                                 else -> Unit

@@ -38,6 +38,16 @@ enum class ResultKind {
     CloudServer, RobotServer, Volume, Network, FloatingIp, Firewall,
     StorageBox, DnsZone, SshKey, LoadBalancer, Certificate, PlacementGroup,
     PrimaryIp, Computer,
+    ;
+
+    /** True when a tap on a hit of this kind opens a detail screen. */
+    val hasDetailScreen: Boolean
+        get() = when (this) {
+            CloudServer, RobotServer, Volume, Network, FloatingIp, Firewall,
+            StorageBox, DnsZone, LoadBalancer, PrimaryIp,
+            -> true
+            SshKey, Certificate, PlacementGroup, Computer -> false
+        }
 }
 
 data class SearchHit(
@@ -114,9 +124,14 @@ class SearchViewModel @Inject constructor(
     fun selectProjectThen(projectId: String, onCommitted: () -> Unit) {
         viewModelScope.launch {
             val accountId = accounts.activeAccountId.first()
-            if (accountId != null) {
-                accounts.setActiveCloudProject(accountId, projectId)
+            // A stale hit from a previous account must never write its project
+            // id into the now active account.
+            if (accountId.isNullOrBlank() ||
+                accounts.cloudProjects(accountId).none { it.id == projectId }
+            ) {
+                return@launch
             }
+            accounts.setActiveCloudProject(accountId, projectId)
             onCommitted()
         }
     }

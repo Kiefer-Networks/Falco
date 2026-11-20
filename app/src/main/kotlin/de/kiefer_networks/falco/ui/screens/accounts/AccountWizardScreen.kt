@@ -6,6 +6,7 @@
 package de.kiefer_networks.falco.ui.screens.accounts
 
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,7 +32,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -68,7 +69,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 
 @Composable
@@ -82,6 +83,9 @@ fun AccountWizardScreen(
     val current = steps[state.stepIndex.coerceIn(0, steps.lastIndex)]
     val stepNumber = state.stepIndex + 1
 
+    // System back after saving closes the wizard like Finish instead of
+    // returning to Review.
+    BackHandler(enabled = state.saved) { onClose(state.services.firstOrNull()) }
     Scaffold(
         topBar = {
             Column {
@@ -94,7 +98,11 @@ fun AccountWizardScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = {
-                            if (state.stepIndex == 0) onClose(null) else viewModel.back()
+                            when {
+                                state.saved -> onClose(state.services.firstOrNull())
+                                state.stepIndex == 0 -> onClose(null)
+                                else -> viewModel.back()
+                            }
                         }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                         }
@@ -188,7 +196,7 @@ private fun ConsoleLink(label: String, url: String) {
             .padding(vertical = 8.dp),
     ) {
         Icon(
-            Icons.Filled.OpenInNew,
+            Icons.AutoMirrored.Filled.OpenInNew,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(20.dp),

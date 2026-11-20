@@ -130,6 +130,8 @@ class AccountWizardViewModel @Inject constructor(
     }
 
     fun back() {
+        // Once saved there is nothing to go back to: Review would offer a second save.
+        if (_state.value.saved) return
         _state.update { s -> s.copy(stepIndex = (s.stepIndex - 1).coerceAtLeast(0)) }
     }
 
@@ -139,7 +141,7 @@ class AccountWizardViewModel @Inject constructor(
     }
 
     fun save() {
-        if (_state.value.saving) return
+        if (_state.value.saving || _state.value.saved) return
         val s = _state.value
         _state.update { it.copy(saving = true) }
         viewModelScope.launch {

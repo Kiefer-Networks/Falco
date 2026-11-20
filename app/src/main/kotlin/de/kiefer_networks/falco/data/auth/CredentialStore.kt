@@ -143,6 +143,8 @@ class CredentialStore @Inject constructor(
 
     private fun ensureMasterKey(hardwareBound: Boolean) {
         val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        // Deliberately no rotation: the hardware bound flag only applies to a
+        // newly generated key (see SecurityPreferences.hardwareBoundCredentials).
         if (ks.containsAlias(MASTER_KEY_ALIAS)) return
         runCatching { generateMasterKey(hardwareBound = hardwareBound) }
             .onFailure {

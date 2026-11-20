@@ -26,7 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -41,7 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.ui.components.EmptyState
 import de.kiefer_networks.falco.ui.nav.LocalNavDrawer
@@ -68,6 +68,7 @@ fun CloudHubScreen(
     onOpenFloatingIp: (Long) -> Unit = {},
     onOpenLoadBalancer: (Long) -> Unit = {},
     onOpenPrimaryIp: (Long) -> Unit = {},
+    onOpenNetwork: (Long) -> Unit = {},
     viewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     // R-006: in aggregate-projects mode the hub lists span every project, but
@@ -95,6 +96,9 @@ fun CloudHubScreen(
     }
     val openPrimaryIpSwitch: (String?, Long) -> Unit = { pid, id ->
         viewModel.selectProjectThen(pid) { onOpenPrimaryIp(id) }
+    }
+    val openNetworkSwitch: (String?, Long) -> Unit = { pid, id ->
+        viewModel.selectProjectThen(pid) { onOpenNetwork(id) }
     }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var pickerOpen by remember { mutableStateOf(false) }
@@ -165,7 +169,7 @@ fun CloudHubScreen(
                 )
                 return@Column
             }
-            TabRow(selectedTabIndex = selected) {
+            PrimaryTabRow(selectedTabIndex = selected) {
                 CLOUD_TABS.forEachIndexed { index, tab ->
                     Tab(
                         selected = selected == index,
@@ -190,6 +194,7 @@ fun CloudHubScreen(
                             onOpenFloatingIp = openFloatingIpSwitch,
                             onOpenLoadBalancer = openLoadBalancerSwitch,
                             onOpenPrimaryIp = openPrimaryIpSwitch,
+                            onOpenNetwork = openNetworkSwitch,
                         )
                         4 -> CloudSshKeysTab()
                     }
