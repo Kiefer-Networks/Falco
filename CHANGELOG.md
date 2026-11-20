@@ -4,6 +4,38 @@ All notable changes to Falco are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] — 2026-11-20
+
+Stability and safety release based on a full code review.
+
+### Fixed
+- Interceptor exceptions crashed the app on 401/403 writes and Robot
+  rate limits; they are now regular network errors.
+- App lock unusable on Android 9/10 (unsupported authenticator combo).
+- Credential store wiped all tokens on any Keystore error; now only on
+  an invalidated key or corrupt keyset.
+- Certificate pins for api.hetzner.com (Let's Encrypt chain).
+- Storage Box: snapshot rollback endpoint, locations source, action
+  completion and error reporting, status field, required create
+  password, paginated types, duplicate list keys.
+- Primary IPs use locations (datacenters API removed by Hetzner).
+- Required request fields (assignee_type, upgrade_disk, ssh_enabled,
+  explicit dns_ptr null) and the change_algorithm body.
+- Decoding of nullable fields (Robot reset type, unrouted failover IP,
+  private ISOs, subaccount create).
+- Pagination for all list endpoints.
+- Root password from rebuild and server create is shown.
+
+### Added
+- Confirmation for all server power actions, disabling backups, volume
+  detach, LB listener/target removal and DNS record deletion.
+- Project activity feed across all resource types and storage boxes.
+- Server activity in the detail top bar; scrollable action sheets.
+
+### CI
+- Hardened workflows, dependency review with Gradle snapshots,
+  pinned zizmor, Dependabot cooldown.
+
 ## [2.2.0] — 2026-05-02
 
 API-coverage release. The repository layer has long exposed Hetzner
