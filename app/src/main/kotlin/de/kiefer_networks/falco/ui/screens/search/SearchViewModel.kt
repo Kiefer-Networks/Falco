@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.data.api.CloudApi
 import de.kiefer_networks.falco.data.api.HttpClientFactory
 import de.kiefer_networks.falco.data.api.StorageBoxApi
+import de.kiefer_networks.falco.data.api.fetchAllPages
 import de.kiefer_networks.falco.data.auth.AccountManager
 import de.kiefer_networks.falco.data.dto.CloudCertificate
 import de.kiefer_networks.falco.data.dto.CloudFirewall
@@ -23,6 +24,7 @@ import de.kiefer_networks.falco.data.dto.DnsZone
 import de.kiefer_networks.falco.data.dto.RobotServer
 import de.kiefer_networks.falco.data.repo.DnsRepo
 import de.kiefer_networks.falco.data.repo.RobotRepo
+import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -31,7 +33,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 enum class ResultKind {
     CloudServer, RobotServer, Volume, Network, FloatingIp, Firewall,
@@ -140,7 +141,7 @@ class SearchViewModel @Inject constructor(
                         title = s.name,
                         subtitle = listOfNotNull(
                             s.serverType?.name,
-                            s.datacenter?.location?.city ?: s.datacenter?.location?.name,
+                            (s.location ?: s.datacenter?.location)?.let { it.city ?: it.name },
                             s.publicNet?.ipv4?.ip,
                         ).joinToString(" · "),
                         projectId = idx.projectId,
@@ -271,17 +272,17 @@ class SearchViewModel @Inject constructor(
                 val sbApi = HttpClientFactory.storageBoxRetrofit(p.cloudToken).create(StorageBoxApi::class.java)
                 ProjectIndex(
                     projectId = p.id,
-                    cloudServers = runCatching { api.listServers().servers }.getOrDefault(emptyList()),
-                    volumes = runCatching { api.listVolumes().volumes }.getOrDefault(emptyList()),
-                    networks = runCatching { api.listNetworks().networks }.getOrDefault(emptyList()),
-                    floatingIps = runCatching { api.listFloatingIps().floatingIps }.getOrDefault(emptyList()),
-                    firewalls = runCatching { api.listFirewalls().firewalls }.getOrDefault(emptyList()),
-                    storageBoxes = runCatching { sbApi.listStorageBoxes().storageBoxes }.getOrDefault(emptyList()),
-                    sshKeys = runCatching { api.listSshKeys().sshKeys }.getOrDefault(emptyList()),
-                    loadBalancers = runCatching { api.listLoadBalancers().loadBalancers }.getOrDefault(emptyList()),
-                    certificates = runCatching { api.listCertificates().certificates }.getOrDefault(emptyList()),
-                    placementGroups = runCatching { api.listPlacementGroups().placementGroups }.getOrDefault(emptyList()),
-                    primaryIps = runCatching { api.listPrimaryIps().primaryIps }.getOrDefault(emptyList()),
+                    cloudServers = runCatching { fetchAllPages { p -> api.listServers(page = p).let { r -> r.servers to r.meta } } }.getOrDefault(emptyList()),
+                    volumes = runCatching { fetchAllPages { p -> api.listVolumes(page = p).let { r -> r.volumes to r.meta } } }.getOrDefault(emptyList()),
+                    networks = runCatching { fetchAllPages { p -> api.listNetworks(page = p).let { r -> r.networks to r.meta } } }.getOrDefault(emptyList()),
+                    floatingIps = runCatching { fetchAllPages { p -> api.listFloatingIps(page = p).let { r -> r.floatingIps to r.meta } } }.getOrDefault(emptyList()),
+                    firewalls = runCatching { fetchAllPages { p -> api.listFirewalls(page = p).let { r -> r.firewalls to r.meta } } }.getOrDefault(emptyList()),
+                    storageBoxes = runCatching { fetchAllPages { p -> sbApi.listStorageBoxes(page = p).let { r -> r.storageBoxes to r.meta } } }.getOrDefault(emptyList()),
+                    sshKeys = runCatching { fetchAllPages { p -> api.listSshKeys(page = p).let { r -> r.sshKeys to r.meta } } }.getOrDefault(emptyList()),
+                    loadBalancers = runCatching { fetchAllPages { p -> api.listLoadBalancers(page = p).let { r -> r.loadBalancers to r.meta } } }.getOrDefault(emptyList()),
+                    certificates = runCatching { fetchAllPages { p -> api.listCertificates(page = p).let { r -> r.certificates to r.meta } } }.getOrDefault(emptyList()),
+                    placementGroups = runCatching { fetchAllPages { p -> api.listPlacementGroups(page = p).let { r -> r.placementGroups to r.meta } } }.getOrDefault(emptyList()),
+                    primaryIps = runCatching { fetchAllPages { p -> api.listPrimaryIps(page = p).let { r -> r.primaryIps to r.meta } } }.getOrDefault(emptyList()),
                 )
             }
         }

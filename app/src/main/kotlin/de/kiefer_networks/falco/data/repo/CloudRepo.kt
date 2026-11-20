@@ -4,20 +4,15 @@ package de.kiefer_networks.falco.data.repo
 import de.kiefer_networks.falco.data.api.CloudApi
 import de.kiefer_networks.falco.data.api.HttpClientFactory
 import de.kiefer_networks.falco.data.api.StorageBoxApi
+import de.kiefer_networks.falco.data.api.fetchAllPages
 import de.kiefer_networks.falco.data.auth.AccountManager
 import de.kiefer_networks.falco.data.auth.SecurityPreferences
 import de.kiefer_networks.falco.data.dto.ActionEnvelope
+import de.kiefer_networks.falco.data.dto.ApplyFirewallRequest
 import de.kiefer_networks.falco.data.dto.AttachIsoRequest
 import de.kiefer_networks.falco.data.dto.ChangeProtectionRequest
 import de.kiefer_networks.falco.data.dto.ChangeServerTypeRequest
-import de.kiefer_networks.falco.data.dto.ApplyFirewallRequest
 import de.kiefer_networks.falco.data.dto.CloudFirewall
-import de.kiefer_networks.falco.data.dto.FirewallApplyTarget
-import de.kiefer_networks.falco.data.dto.FirewallRule
-import de.kiefer_networks.falco.data.dto.RemoveFirewallRequest
-import de.kiefer_networks.falco.data.dto.ResourceRef
-import de.kiefer_networks.falco.data.dto.SetFirewallRulesRequest
-import de.kiefer_networks.falco.data.dto.UpdateFirewallRequest
 import de.kiefer_networks.falco.data.dto.CloudFloatingIp
 import de.kiefer_networks.falco.data.dto.CloudImage
 import de.kiefer_networks.falco.data.dto.CloudIso
@@ -25,25 +20,31 @@ import de.kiefer_networks.falco.data.dto.CloudNetwork
 import de.kiefer_networks.falco.data.dto.CloudServer
 import de.kiefer_networks.falco.data.dto.CloudServerType
 import de.kiefer_networks.falco.data.dto.CloudStorageBox
-import de.kiefer_networks.falco.data.dto.EnableRescueRequest
-import de.kiefer_networks.falco.data.dto.RebuildServerRequest
-import de.kiefer_networks.falco.data.dto.UpdateServerRequest
 import de.kiefer_networks.falco.data.dto.CloudStorageBoxSnapshot
 import de.kiefer_networks.falco.data.dto.CloudStorageBoxSubaccount
 import de.kiefer_networks.falco.data.dto.CloudSubaccountAccessSettings
 import de.kiefer_networks.falco.data.dto.CloudVolume
 import de.kiefer_networks.falco.data.dto.CreateStorageBoxSnapshot
 import de.kiefer_networks.falco.data.dto.CreateStorageBoxSubaccount
+import de.kiefer_networks.falco.data.dto.EnableRescueRequest
+import de.kiefer_networks.falco.data.dto.FirewallApplyTarget
+import de.kiefer_networks.falco.data.dto.FirewallRule
+import de.kiefer_networks.falco.data.dto.RebuildServerRequest
+import de.kiefer_networks.falco.data.dto.RemoveFirewallRequest
 import de.kiefer_networks.falco.data.dto.ResetStorageBoxPasswordRequest
 import de.kiefer_networks.falco.data.dto.ResetSubaccountPasswordRequest
+import de.kiefer_networks.falco.data.dto.ResourceRef
+import de.kiefer_networks.falco.data.dto.SetFirewallRulesRequest
+import de.kiefer_networks.falco.data.dto.UpdateFirewallRequest
+import de.kiefer_networks.falco.data.dto.UpdateServerRequest
 import de.kiefer_networks.falco.data.dto.UpdateStorageBoxAccessSettings
 import de.kiefer_networks.falco.data.dto.UpdateStorageBoxSubaccount
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
-import javax.inject.Inject
-import javax.inject.Singleton
 
 enum class MetricType(val apiKey: String) { Cpu("cpu"), Disk("disk"), Network("network") }
 enum class MetricPeriod(val secondsBack: Long, val step: Int) {
@@ -139,7 +140,7 @@ class CloudRepo @Inject constructor(
     }
 
 
-    suspend fun listServers(): List<CloudServer> = apis().flatMap { it.listServers().servers }
+    suspend fun listServers(): List<CloudServer> = apis().flatMap { fetchAllPages { p -> it.listServers(page = p).let { r -> r.servers to r.meta } } }
 
     /**
      * Like [listServers] but tags every server with the project id it came
@@ -149,7 +150,7 @@ class CloudRepo @Inject constructor(
      */
     suspend fun listServersAware(): List<Pair<String?, CloudServer>> =
         apisWithProjectIds().flatMap { (pid, api) ->
-            api.listServers().servers.map { pid to it }
+            fetchAllPages { p -> api.listServers(page = p).let { r -> r.servers to r.meta } }.map { pid to it }
         }
 
     suspend fun createServer(
@@ -191,10 +192,10 @@ class CloudRepo @Inject constructor(
         return api(projectId).createServer(body)
     }
 
-    suspend fun listVolumes(): List<CloudVolume> = apis().flatMap { it.listVolumes().volumes }
+    suspend fun listVolumes(): List<CloudVolume> = apis().flatMap { fetchAllPages { p -> it.listVolumes(page = p).let { r -> r.volumes to r.meta } } }
     suspend fun listVolumesAware(): List<Pair<String?, CloudVolume>> =
         apisWithProjectIds().flatMap { (pid, api) ->
-            api.listVolumes().volumes.map { pid to it }
+            fetchAllPages { p -> api.listVolumes(page = p).let { r -> r.volumes to r.meta } }.map { pid to it }
         }
     suspend fun getVolume(id: Long): CloudVolume = api().getVolume(id).volume
 
@@ -231,10 +232,10 @@ class CloudRepo @Inject constructor(
 
     suspend fun setVolumeProtection(id: Long, delete: Boolean? = null) =
         api().changeVolumeProtection(id, ChangeProtectionRequest(delete = delete))
-    suspend fun listFirewalls(): List<CloudFirewall> = apis().flatMap { it.listFirewalls().firewalls }
+    suspend fun listFirewalls(): List<CloudFirewall> = apis().flatMap { fetchAllPages { p -> it.listFirewalls(page = p).let { r -> r.firewalls to r.meta } } }
     suspend fun listFirewallsAware(): List<Pair<String?, CloudFirewall>> =
         apisWithProjectIds().flatMap { (pid, api) ->
-            api.listFirewalls().firewalls.map { pid to it }
+            fetchAllPages { p -> api.listFirewalls(page = p).let { r -> r.firewalls to r.meta } }.map { pid to it }
         }
 
     suspend fun createFirewall(name: String, projectId: String? = null): CloudFirewall =
@@ -256,10 +257,10 @@ class CloudRepo @Inject constructor(
             id,
             RemoveFirewallRequest(listOf(FirewallApplyTarget("server", ResourceRef(serverId)))),
         )
-    suspend fun listFloatingIps(): List<CloudFloatingIp> = apis().flatMap { it.listFloatingIps().floatingIps }
+    suspend fun listFloatingIps(): List<CloudFloatingIp> = apis().flatMap { fetchAllPages { p -> it.listFloatingIps(page = p).let { r -> r.floatingIps to r.meta } } }
     suspend fun listFloatingIpsAware(): List<Pair<String?, CloudFloatingIp>> =
         apisWithProjectIds().flatMap { (pid, api) ->
-            api.listFloatingIps().floatingIps.map { pid to it }
+            fetchAllPages { p -> api.listFloatingIps(page = p).let { r -> r.floatingIps to r.meta } }.map { pid to it }
         }
     suspend fun getFloatingIp(id: Long): CloudFloatingIp = api().getFloatingIp(id).floatingIp
     suspend fun createFloatingIp(
@@ -289,7 +290,7 @@ class CloudRepo @Inject constructor(
     suspend fun setFloatingIpProtection(id: Long, delete: Boolean? = null) =
         api().changeFloatingIpProtection(id, ChangeProtectionRequest(delete = delete))
 
-    suspend fun listNetworks(): List<CloudNetwork> = apis().flatMap { it.listNetworks().networks }
+    suspend fun listNetworks(): List<CloudNetwork> = apis().flatMap { fetchAllPages { p -> it.listNetworks(page = p).let { r -> r.networks to r.meta } } }
     suspend fun getNetwork(id: Long): CloudNetwork = api().getNetwork(id).network
     suspend fun createNetwork(name: String, ipRange: String, projectId: String? = null): CloudNetwork =
         api(projectId).createNetwork(
@@ -357,7 +358,7 @@ class CloudRepo @Inject constructor(
     // ---- SSH Keys ---------------------------------------------------------
 
     suspend fun listSshKeys(): List<de.kiefer_networks.falco.data.dto.CloudSshKey> =
-        apis().flatMap { it.listSshKeys().sshKeys }
+        apis().flatMap { fetchAllPages { p -> it.listSshKeys(page = p).let { r -> r.sshKeys to r.meta } } }
     suspend fun createSshKey(
         name: String,
         publicKey: String,
@@ -376,17 +377,17 @@ class CloudRepo @Inject constructor(
     // ---- Primary IPs ------------------------------------------------------
 
     suspend fun listPrimaryIps(): List<de.kiefer_networks.falco.data.dto.CloudPrimaryIp> =
-        apis().flatMap { it.listPrimaryIps().primaryIps }
+        apis().flatMap { fetchAllPages { p -> it.listPrimaryIps(page = p).let { r -> r.primaryIps to r.meta } } }
     suspend fun getPrimaryIp(id: Long): de.kiefer_networks.falco.data.dto.CloudPrimaryIp =
         api().getPrimaryIp(id).primaryIp
     suspend fun createPrimaryIp(
         name: String,
         type: String,
         assigneeType: String,
-        datacenter: String? = null,
+        location: String? = null,
     ): de.kiefer_networks.falco.data.dto.CloudPrimaryIp = api().createPrimaryIp(
         de.kiefer_networks.falco.data.dto.CreatePrimaryIpRequest(
-            name = name, type = type, assigneeType = assigneeType, datacenter = datacenter,
+            name = name, type = type, assigneeType = assigneeType, location = location,
         ),
     ).primaryIp
     suspend fun deletePrimaryIp(id: Long) = api().deletePrimaryIp(id)
@@ -403,10 +404,10 @@ class CloudRepo @Inject constructor(
     suspend fun getPricing(): de.kiefer_networks.falco.data.dto.CloudPricing = api().getPricing().pricing
     suspend fun getAction(id: Long): de.kiefer_networks.falco.data.dto.ActionEnvelope =
         api().getAction(id).action
-    suspend fun listStorageBoxes(): List<CloudStorageBox> = storageBoxApis().flatMap { it.listStorageBoxes().storageBoxes }
+    suspend fun listStorageBoxes(): List<CloudStorageBox> = storageBoxApis().flatMap { fetchAllPages { p -> it.listStorageBoxes(page = p).let { r -> r.storageBoxes to r.meta } } }
     suspend fun listStorageBoxesAware(): List<Pair<String?, CloudStorageBox>> =
         storageBoxApisWithProjectIds().flatMap { (pid, api) ->
-            api.listStorageBoxes().storageBoxes.map { pid to it }
+            fetchAllPages { p -> api.listStorageBoxes(page = p).let { r -> r.storageBoxes to r.meta } }.map { pid to it }
         }
 
     suspend fun listStorageBoxTypes(): List<de.kiefer_networks.falco.data.dto.CloudStorageBoxType> =
@@ -546,11 +547,11 @@ class CloudRepo @Inject constructor(
     suspend fun requestServerConsole(id: Long) = api().requestServerConsole(id)
 
     suspend fun listImages(type: String = "system"): List<CloudImage> =
-        api().listImages(type = type).images
+        fetchAllPages { p -> api().listImages(type = type, page = p).let { r -> r.images to r.meta } }
 
-    suspend fun listServerTypes(): List<CloudServerType> = api().listServerTypes().serverTypes
+    suspend fun listServerTypes(): List<CloudServerType> = fetchAllPages { p -> api().listServerTypes(page = p).let { r -> r.serverTypes to r.meta } }
 
-    suspend fun listIsos(): List<CloudIso> = api().listIsos().isos
+    suspend fun listIsos(): List<CloudIso> = fetchAllPages { p -> api().listIsos(page = p).let { r -> r.isos to r.meta } }
 
     /** Hetzner Cloud `/servers/{id}/metrics`. Coerces JSON `[ts, "value"]` into
      *  `(epochSeconds, value)`-pairs grouped by series name. */
@@ -584,7 +585,7 @@ class CloudRepo @Inject constructor(
     // ---- Load Balancers ----------------------------------------------------
 
     suspend fun listLoadBalancers(): List<de.kiefer_networks.falco.data.dto.CloudLoadBalancer> =
-        apis().flatMap { it.listLoadBalancers().loadBalancers }
+        apis().flatMap { fetchAllPages { p -> it.listLoadBalancers(page = p).let { r -> r.loadBalancers to r.meta } } }
 
     suspend fun getLoadBalancer(id: Long): de.kiefer_networks.falco.data.dto.CloudLoadBalancer =
         api().getLoadBalancer(id).loadBalancer
@@ -646,7 +647,7 @@ class CloudRepo @Inject constructor(
 
     suspend fun changeLoadBalancerAlgorithm(id: Long, algorithm: String) = api().changeLoadBalancerAlgorithm(
         id,
-        de.kiefer_networks.falco.data.dto.ChangeLbAlgorithmRequest(de.kiefer_networks.falco.data.dto.LoadBalancerAlgorithm(algorithm)),
+        de.kiefer_networks.falco.data.dto.ChangeLbAlgorithmRequest(type = algorithm),
     )
 
     suspend fun changeLoadBalancerType(id: Long, type: String) = api().changeLoadBalancerType(
@@ -675,7 +676,7 @@ class CloudRepo @Inject constructor(
     suspend fun changeLoadBalancerDnsPtr(id: Long, ip: String, dnsPtr: String?) =
         api().changeLoadBalancerDnsPtr(
             id,
-            de.kiefer_networks.falco.data.dto.ChangeDnsPtrRequest(ip = ip, dnsPtr = dnsPtr),
+            de.kiefer_networks.falco.data.dto.ChangeDnsPtrRequest(ip = ip, dnsPtr = dnsPtr?.takeIf { it.isNotBlank() }),
         )
 
     suspend fun listLoadBalancerTypes(): List<de.kiefer_networks.falco.data.dto.CloudLoadBalancerType> =
@@ -684,7 +685,7 @@ class CloudRepo @Inject constructor(
     // ---- Certificates ------------------------------------------------------
 
     suspend fun listCertificates(): List<de.kiefer_networks.falco.data.dto.CloudCertificate> =
-        apis().flatMap { it.listCertificates().certificates }
+        apis().flatMap { fetchAllPages { p -> it.listCertificates(page = p).let { r -> r.certificates to r.meta } } }
 
     suspend fun getCertificate(id: Long): de.kiefer_networks.falco.data.dto.CloudCertificate =
         api().getCertificate(id).certificate
@@ -728,7 +729,7 @@ class CloudRepo @Inject constructor(
     // ---- Placement Groups --------------------------------------------------
 
     suspend fun listPlacementGroups(): List<de.kiefer_networks.falco.data.dto.CloudPlacementGroup> =
-        apis().flatMap { it.listPlacementGroups().placementGroups }
+        apis().flatMap { fetchAllPages { p -> it.listPlacementGroups(page = p).let { r -> r.placementGroups to r.meta } } }
 
     suspend fun getPlacementGroup(id: Long): de.kiefer_networks.falco.data.dto.CloudPlacementGroup =
         api().getPlacementGroup(id).placementGroup

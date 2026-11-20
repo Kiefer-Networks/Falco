@@ -112,6 +112,8 @@ fun CloudLoadBalancerDetailScreen(
     var addServiceOpen by remember { mutableStateOf(false) }
     var editServiceOpen by remember { mutableStateOf<LoadBalancerService?>(null) }
     var addTargetOpen by remember { mutableStateOf(false) }
+    // Removing a listener or target changes live traffic: confirm first.
+    var pendingConfirm by remember { mutableStateOf<(() -> Unit)?>(null) }
 
     Scaffold(
         topBar = {
@@ -209,7 +211,7 @@ fun CloudLoadBalancerDetailScreen(
                             ServiceRow(
                                 service = svc,
                                 onEdit = { editServiceOpen = svc },
-                                onDelete = { viewModel.deleteService(svc.listenPort) },
+                                onDelete = { pendingConfirm = { viewModel.deleteService(svc.listenPort) } },
                             )
                         }
                     }
@@ -233,7 +235,7 @@ fun CloudLoadBalancerDetailScreen(
                     } else {
                         items(lb.targets.size) { idx ->
                             val tgt = lb.targets[idx]
-                            TargetRow(target = tgt, onDelete = { viewModel.removeTarget(tgt) })
+                            TargetRow(target = tgt, onDelete = { pendingConfirm = { viewModel.removeTarget(tgt) } })
                         }
                     }
 
@@ -395,6 +397,13 @@ fun CloudLoadBalancerDetailScreen(
         )
     }
 
+    pendingConfirm?.let { action ->
+        de.kiefer_networks.falco.ui.components.dialog.ConfirmDestructiveDialog(
+            actionLabel = stringResource(R.string.delete),
+            onConfirm = action,
+            onDismiss = { pendingConfirm = null },
+        )
+    }
     if (addTargetOpen) {
         AddTargetDialog(
             onDismiss = { addTargetOpen = false },

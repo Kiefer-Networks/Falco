@@ -64,7 +64,8 @@ fun IsoPickerDialog(
                         actions = {
                             TextButton(
                                 enabled = selected != null,
-                                onClick = { selected?.let { onAttach(it.name) } },
+                                // attach_iso takes ID or name; private ISOs have no name.
+                                onClick = { selected?.let { onAttach(it.name.ifBlank { it.id.toString() }) } },
                             ) { Text(stringResource(R.string.save)) }
                         },
                     )
@@ -106,7 +107,7 @@ private fun IsoRow(iso: CloudIso, selected: Boolean, onClick: () -> Unit) {
         ),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text(iso.name, style = MaterialTheme.typography.titleSmall)
+            Text(iso.name.ifBlank { "#${iso.id}" }, style = MaterialTheme.typography.titleSmall)
             iso.description?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             iso.deprecated?.let {
                 Text(

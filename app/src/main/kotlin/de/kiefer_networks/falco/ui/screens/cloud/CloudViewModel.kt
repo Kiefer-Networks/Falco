@@ -41,6 +41,13 @@ class CloudViewModel @Inject constructor(
     private val _events = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val events: SharedFlow<String> = _events.asSharedFlow()
 
+    /** Root password returned by server create when no SSH key was chosen.
+     *  Held in state (not a one-shot event) so it survives recomposition. */
+    private val _rootPassword = MutableStateFlow<String?>(null)
+    val rootPassword: StateFlow<String?> = _rootPassword.asStateFlow()
+
+    fun dismissRootPassword() { _rootPassword.value = null }
+
     data class CreateOptions(
         val loading: Boolean = false,
         val running: Boolean = false,
@@ -101,7 +108,8 @@ class CloudViewModel @Inject constructor(
                 )
             }
             _create.update { it.copy(running = false) }
-            res.onSuccess {
+            res.onSuccess { created ->
+                created.rootPassword?.let { _rootPassword.value = it }
                 refresh()
                 onDone(true)
             }.onFailure { e ->

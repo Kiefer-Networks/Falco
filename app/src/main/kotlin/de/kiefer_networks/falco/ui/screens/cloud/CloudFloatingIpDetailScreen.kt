@@ -268,7 +268,16 @@ fun CloudFloatingIpDetailScreen(
     }
 
     if (ptrOpen) {
-        var ptrIp by remember { mutableStateOf(state.ip?.ip.orEmpty()) }
+        // change_dns_ptr needs a single address. IPv6 Floating IPs carry a /64
+        // network, so prefill with an existing PTR address or the first host.
+        var ptrIp by remember {
+            mutableStateOf(
+                state.ip?.dnsPtr?.firstOrNull()?.ip
+                    ?: state.ip?.ip.orEmpty().substringBefore('/').let {
+                        if (it.endsWith("::")) it + "1" else it
+                    },
+            )
+        }
         var ptrValue by remember { mutableStateOf(state.ip?.dnsPtr?.firstOrNull()?.dnsPtr.orEmpty()) }
         AlertDialog(
             onDismissRequest = { ptrOpen = false },

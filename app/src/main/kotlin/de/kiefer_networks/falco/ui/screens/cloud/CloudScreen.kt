@@ -100,6 +100,17 @@ fun CloudScreen(
             onCreated = { createOpen = false },
         )
     }
+    val rootPassword by viewModel.rootPassword.collectAsState()
+    rootPassword?.let { pw ->
+        val ctx = androidx.compose.ui.platform.LocalContext.current
+        de.kiefer_networks.falco.ui.components.dialog.SecureRevealDialog(
+            title = stringResource(R.string.server_root_password_title),
+            secret = pw,
+            warning = stringResource(R.string.server_root_password_warning),
+            onCopy = { copyToClipboard(ctx, "root password", pw) },
+            onDismiss = viewModel::dismissRootPassword,
+        )
+    }
 }
 
 @Composable
@@ -195,9 +206,9 @@ private fun ServerCard(
                     )
                 }
                 val locationLine = listOfNotNull(
-                    server.datacenter?.name,
-                    server.datacenter?.location?.city,
-                    server.datacenter?.location?.country,
+                    server.datacenter?.name ?: server.location?.name,
+                    (server.location ?: server.datacenter?.location)?.city,
+                    (server.location ?: server.datacenter?.location)?.country,
                 ).joinToString(" · ")
                 if (locationLine.isNotBlank()) {
                     PropertyRow(

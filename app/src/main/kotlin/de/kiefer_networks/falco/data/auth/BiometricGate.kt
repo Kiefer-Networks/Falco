@@ -26,12 +26,27 @@ class BiometricGate(private val activity: FragmentActivity) {
 
     enum class Availability { AVAILABLE, NO_HARDWARE, NONE_ENROLLED, UNAVAILABLE }
 
+    private companion object {
+        /**
+         * androidx.biometric rejects BIOMETRIC_STRONG | DEVICE_CREDENTIAL on
+         * API 28 and 29 (BIOMETRIC_ERROR_UNSUPPORTED, and PromptInfo.build()
+         * throws). Those releases only support BIOMETRIC_WEAK together with
+         * the device credential, so use that combination there.
+         */
+        val ALLOWED_AUTHENTICATORS: Int =
+            if (android.os.Build.VERSION.SDK_INT in 28..29) {
+                BiometricManager.Authenticators.BIOMETRIC_WEAK or
+                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            } else {
+                BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            }
+    }
+
     fun availability(): Availability {
         val mgr = BiometricManager.from(activity)
-        // Either Class-3 biometric or the device credential satisfies the gate.
-        val combined = BiometricManager.Authenticators.BIOMETRIC_STRONG or
-            BiometricManager.Authenticators.DEVICE_CREDENTIAL
-        return when (mgr.canAuthenticate(combined)) {
+        // Either a biometric or the device credential satisfies the gate.
+        return when (mgr.canAuthenticate(ALLOWED_AUTHENTICATORS)) {
             BiometricManager.BIOMETRIC_SUCCESS -> Availability.AVAILABLE
             BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE,
             BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> {
@@ -69,10 +84,7 @@ class BiometricGate(private val activity: FragmentActivity) {
             val info = BiometricPrompt.PromptInfo.Builder()
                 .setTitle(title)
                 .setSubtitle(subtitle)
-                .setAllowedAuthenticators(
-                    BiometricManager.Authenticators.BIOMETRIC_STRONG or
-                        BiometricManager.Authenticators.DEVICE_CREDENTIAL,
-                )
+                .setAllowedAuthenticators(ALLOWED_AUTHENTICATORS)
                 .setConfirmationRequired(true)
                 .build()
 

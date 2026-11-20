@@ -13,12 +13,15 @@ package de.kiefer_networks.falco.data.api
  *   - api.hetzner.cloud, fsn1.your-objectstorage.com  → Let's Encrypt E7  (ECDSA → ISRG Root X2)
  *   - hel1.your-objectstorage.com, nbg1.your-objectstorage.com → Let's Encrypt E8 (ECDSA → ISRG Root X2)
  *   - dns.hetzner.com                                 → Let's Encrypt R13 (RSA   → ISRG Root X1)
- *   - api.hetzner.com, robot-ws.your-server.de        → Thawte TLS RSA CA G1 (DigiCert chain)
+ *   - api.hetzner.cloud                               → Let's Encrypt YE2 (ECDSA → ISRG Root YE → X2)
+ *   - api.hetzner.com                                 → Let's Encrypt YE1 (ECDSA → ISRG Root YE → X2)
+ *   - robot-ws.your-server.de                         → Thawte TLS RSA CA G1 (DigiCert chain)
  */
 internal object Pins {
     // Long-lived roots — primary trust anchors.
     private const val ISRG_ROOT_X1 = "C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M="
     private const val ISRG_ROOT_X2 = "diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI="
+    private const val ISRG_ROOT_YE = "sCkq5UWXjg+7mKu9lMhhYF5bGLsy7VI/UNW3tccdR7w="
     private const val DIGICERT_GLOBAL_ROOT_CA = "r/mIkG3eEpVdm+u/ko/cwxzOMo1bk4TyHIlByibiA5E="
 
     // Live issuing intermediates — pinned because the server may omit the root
@@ -32,15 +35,18 @@ internal object Pins {
     // gives us an overlap window when LE rolls the next intermediate.
     private const val LE_E7 = "y7xVm0TVJNahMr2sZydE2jQH8SquXV9yLF9seROHHHU="
     private const val LE_E8 = "iFvwVyJSxnQdyaUvUERIf+8qk7gRze3612JMwoO3zdU="
+    private const val LE_YE1 = "brzvtCELCIZUo4sD/qPX0ccRtPsd3DY6RfmxpOU9oB4="
+    private const val LE_YE2 = "s/tdAOmUzd8syaTuqfgGvFcn6DzA5Cmb+Vby1ST+U3Y="
     private const val LE_R13 = "AlSQhgtJirc8ahLyekmtX+Iw+v46yPYRLJt9Cq1GlB0="
     private const val THAWTE_TLS_RSA_CA_G1 = "42b9RNOnyb3tlC0KYtNPA3KKpJluskyU6aG+CipUmaM="
 
-    private val letsEncryptRoots = listOf(ISRG_ROOT_X1, ISRG_ROOT_X2)
-    private val letsEncryptIntermediates = listOf(LE_E7, LE_E8)
+    private val letsEncryptRoots = listOf(ISRG_ROOT_X1, ISRG_ROOT_X2, ISRG_ROOT_YE)
+    private val letsEncryptIntermediates = listOf(LE_E7, LE_E8, LE_YE1, LE_YE2)
     private val digiCertChain = listOf(DIGICERT_GLOBAL_ROOT_CA, THAWTE_TLS_RSA_CA_G1)
 
     val cloud: List<String> = letsEncryptRoots + letsEncryptIntermediates  // api.hetzner.cloud
-    val hetznerApi: List<String> = digiCertChain                           // api.hetzner.com (Storage Box)
+    // api.hetzner.com (Storage Box) moved to Let's Encrypt; DigiCert stays as overlap.
+    val hetznerApi: List<String> = letsEncryptRoots + letsEncryptIntermediates + digiCertChain
     val robot: List<String> = digiCertChain                                // robot-ws.your-server.de
     val dns: List<String> = letsEncryptRoots + LE_R13                      // dns.hetzner.com
     val objectStorage: List<String> = letsEncryptRoots + letsEncryptIntermediates  // *.your-objectstorage.com (fsn1/hel1/nbg1)

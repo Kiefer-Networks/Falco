@@ -139,8 +139,8 @@ fun CloudPrimaryIpDetailScreen(
                             items = buildList {
                                 add(Kpi(Icons.Filled.Public, stringResource(R.string.cloud_primary_ip_type, ip.type), ip.ip))
                                 add(Kpi(Icons.Filled.Tag, "ID", ip.id.toString()))
-                                ip.datacenter?.let { dc ->
-                                    add(Kpi(Icons.Filled.LocationOn, stringResource(R.string.server_label_location), dc.name))
+                                (ip.location?.name ?: ip.datacenter?.name)?.let { loc ->
+                                    add(Kpi(Icons.Filled.LocationOn, stringResource(R.string.server_label_location), loc))
                                 }
                             },
                         )

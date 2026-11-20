@@ -167,7 +167,10 @@ class CloudServerDetailViewModel @Inject constructor(
     fun snapshot() = wrap { repo.snapshot(serverId) }
 
     fun rebuild(imageIdOrName: String) = wrap(refreshAfter = true) {
-        repo.rebuildServer(serverId, imageIdOrName)
+        // Rebuild returns a fresh root password when the image has no SSH key;
+        // dropping it would lock the user out of the wiped server.
+        val response = repo.rebuildServer(serverId, imageIdOrName)
+        response.rootPassword?.let { _events.emit(CloudServerEvent.RootPasswordRevealed(it)) }
     }
 
     fun rename(newName: String) = wrap(refreshAfter = true) {

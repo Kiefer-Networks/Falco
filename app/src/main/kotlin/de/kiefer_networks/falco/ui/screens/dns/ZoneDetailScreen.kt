@@ -75,6 +75,8 @@ fun ZoneDetailScreen(
     val scope = rememberCoroutineScope()
 
     var dialogRecord by remember { mutableStateOf<DnsRecord?>(null) }
+    // Deleting a record (e.g. the apex MX) takes effect immediately: confirm.
+    var deleteCandidate by remember { mutableStateOf<String?>(null) }
     var creating by remember { mutableStateOf(false) }
     var overflowOpen by remember { mutableStateOf(false) }
 
@@ -286,10 +288,18 @@ fun ZoneDetailScreen(
                     },
                     onClearSelection = { selectedIds = emptySet() },
                     onEdit = { dialogRecord = it },
-                    onDelete = { rec -> rec.id?.let { viewModel.deleteRecord(it) } },
+                    onDelete = { rec -> rec.id?.let { deleteCandidate = it } },
                 )
             }
         }
+    }
+
+    deleteCandidate?.let { id ->
+        de.kiefer_networks.falco.ui.components.dialog.ConfirmDestructiveDialog(
+            actionLabel = stringResource(R.string.delete),
+            onConfirm = { viewModel.deleteRecord(id) },
+            onDismiss = { deleteCandidate = null },
+        )
     }
 
     if (creating) {

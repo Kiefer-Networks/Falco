@@ -136,6 +136,9 @@ fun CloudServerDetailScreen(
 
     var sheetOpen by remember { mutableStateOf(false) }
     var showRebuild by remember { mutableStateOf(false) }
+    // Disruptive actions (power off, reset, reset password) wait for this
+    // confirmation instead of firing on a single tap in the action sheet.
+    var pendingConfirm by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
     var showChangeType by remember { mutableStateOf(false) }
     var showIso by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
@@ -285,16 +288,18 @@ fun CloudServerDetailScreen(
                             add(SheetAction(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_shutdown)) {
                                 sheetOpen = false; viewModel.shutdown()
                             })
-                            add(SheetAction(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_power_off)) {
-                                sheetOpen = false; viewModel.powerOff()
+                            val powerOffLabel = stringResource(R.string.action_power_off)
+                            add(SheetAction(Icons.Filled.PowerSettingsNew, powerOffLabel) {
+                                sheetOpen = false; pendingConfirm = powerOffLabel to { viewModel.powerOff() }
                             })
                         } else {
                             add(SheetAction(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_power_on)) {
                                 sheetOpen = false; viewModel.powerOn()
                             })
                         }
-                        add(SheetAction(Icons.Filled.RestartAlt, stringResource(R.string.action_reset)) {
-                            sheetOpen = false; viewModel.reset()
+                        val resetLabel = stringResource(R.string.action_reset)
+                        add(SheetAction(Icons.Filled.RestartAlt, resetLabel) {
+                            sheetOpen = false; pendingConfirm = resetLabel to { viewModel.reset() }
                         })
                     },
                 ),
@@ -307,8 +312,10 @@ fun CloudServerDetailScreen(
                         SheetAction(Icons.Filled.PhotoCamera, stringResource(R.string.action_snapshot)) {
                             sheetOpen = false; viewModel.snapshot()
                         },
-                        SheetAction(Icons.Filled.VpnKey, stringResource(R.string.server_action_reset_password)) {
-                            sheetOpen = false; viewModel.resetRootPassword()
+                        stringResource(R.string.server_action_reset_password).let { label ->
+                            SheetAction(Icons.Filled.VpnKey, label) {
+                                sheetOpen = false; pendingConfirm = label to { viewModel.resetRootPassword() }
+                            }
                         },
                         SheetAction(Icons.Filled.Build, stringResource(R.string.server_action_rebuild)) {
                             sheetOpen = false; viewModel.loadImages(); showRebuild = true
@@ -493,6 +500,13 @@ fun CloudServerDetailScreen(
                 viewModel.setProtection(delete = del, rebuild = reb)
                 showProtection = false
             },
+        )
+    }
+    pendingConfirm?.let { (label, action) ->
+        de.kiefer_networks.falco.ui.components.dialog.ConfirmDestructiveDialog(
+            actionLabel = label,
+            onConfirm = action,
+            onDismiss = { pendingConfirm = null },
         )
     }
     if (showDeleteFirst) {
@@ -862,6 +876,15 @@ private fun AttachedRow(icon: ImageVector, label: String, value: String) {
 
 @Composable
 private fun ToggleSettingsCard(server: CloudServer, vm: CloudServerDetailViewModel) {
+    // Disabling backups deletes every existing backup at Hetzner: confirm first.
+    var confirmBackupOff by remember { mutableStateOf(false) }
+    if (confirmBackupOff) {
+        de.kiefer_networks.falco.ui.components.dialog.ConfirmDestructiveDialog(
+            actionLabel = stringResource(R.string.server_action_backup_disable),
+            onConfirm = { vm.setBackup(false) },
+            onDismiss = { confirmBackupOff = false },
+        )
+    }
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             ToggleRow(
@@ -871,7 +894,7 @@ private fun ToggleSettingsCard(server: CloudServer, vm: CloudServerDetailViewMod
                     stringResource(R.string.server_action_backup_enable)
                 },
                 checked = server.backupWindow != null,
-                onCheckedChange = vm::setBackup,
+                onCheckedChange = { enable -> if (enable) vm.setBackup(true) else confirmBackupOff = true },
             )
             ToggleRow(
                 label = if (server.rescueEnabled) {
@@ -1078,7 +1101,7 @@ private fun IsoTile(iso: CloudIso, loading: Boolean) {
                 )
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(iso.name, style = MaterialTheme.typography.titleSmall)
+                    Text(iso.name.ifBlank { "#${iso.id}" }, style = MaterialTheme.typography.titleSmall)
                     val description = iso.description
                     if (!description.isNullOrBlank()) {
                         Text(

@@ -464,7 +464,7 @@ private fun ResourcePrimaryIpCard(ip: CloudPrimaryIp, onClick: () -> Unit = {}) 
     ) {
         StatChip(Icons.Filled.Public, ip.type.uppercase())
         if (active) StatChip(Icons.Filled.Link, "#${ip.assigneeId}")
-        ip.datacenter?.let { dc -> StatChip(Icons.Filled.LocationOn, dc.name) }
+        (ip.location?.name ?: ip.datacenter?.name)?.let { loc -> StatChip(Icons.Filled.LocationOn, loc) }
     }
 }
 

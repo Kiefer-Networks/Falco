@@ -4,6 +4,11 @@ package de.kiefer_networks.falco.data.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonTransformingSerializer
 
 // Hetzner Robot wraps each entity in a single-key envelope, e.g.
 // `[{"server": {...}}, {"server": {...}}]`. We model the envelope explicitly.
@@ -67,6 +72,10 @@ import kotlinx.serialization.Serializable
 @Serializable data class RobotReset(
     @SerialName("server_ip") val serverIp: String? = null,
     @SerialName("server_number") val serverNumber: Long? = null,
+    // GET /reset/{n} returns a list of options, POST /reset/{n} the single
+    // executed type as a string. Accept both so a successful reset never
+    // fails to decode (which made users retry and reset twice).
+    @Serializable(with = StringOrListSerializer::class)
     val type: List<String> = emptyList(),
     @SerialName("operating_status") val operatingStatus: String? = null,
 )
@@ -76,7 +85,8 @@ import kotlinx.serialization.Serializable
     val ip: String,
     @SerialName("server_ip") val serverIp: String,
     @SerialName("server_number") val serverNumber: Long,
-    @SerialName("active_server_ip") val activeServerIp: String,
+    // null while the failover IP is not routed to any server.
+    @SerialName("active_server_ip") val activeServerIp: String? = null,
     val netmask: String? = null,
 )
 
@@ -144,3 +154,10 @@ import kotlinx.serialization.Serializable
 @Serializable data class RobotTrafficResponse(
     val traffic: kotlinx.serialization.json.JsonElement? = null,
 )
+
+/** Decodes a JSON string or an array of strings into a list. */
+internal object StringOrListSerializer :
+    JsonTransformingSerializer<List<String>>(ListSerializer(String.serializer())) {
+    override fun transformDeserialize(element: JsonElement): JsonElement =
+        element as? JsonArray ?: JsonArray(listOf(element))
+}

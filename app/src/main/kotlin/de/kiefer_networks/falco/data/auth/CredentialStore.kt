@@ -69,12 +69,21 @@ class CredentialStore @Inject constructor(
         AeadConfig.register()
         val hardwareBound = runBlocking { securityPrefs.hardwareBoundCredentialsNow() }
         runCatching { ensureMasterKey(hardwareBound) }
-        val a = runCatching { buildAead() }.getOrElse {
-            // Master key invalidated or keyset corrupt. Wipe and rebuild.
-            recoverFromInvalidatedMaster()
-            runCatching { ensureMasterKey(hardwareBound) }
-            buildAead()
-        }
+        val a = runCatching { buildAead() }
+            // One retry absorbs transient Keystore daemon / StrongBox hiccups.
+            .recoverCatching { first ->
+                if (isUnrecoverable(first)) throw first
+                buildAead()
+            }
+            .getOrElse { failure ->
+                // Only a permanently invalidated master key or a corrupt keyset
+                // justifies dropping every stored credential. Anything else is
+                // rethrown so a transient error can never wipe the user's tokens.
+                if (!isUnrecoverable(failure)) throw failure
+                recoverFromInvalidatedMaster()
+                runCatching { ensureMasterKey(hardwareBound) }
+                buildAead()
+            }
         runBlocking { migrateFromLegacyIfNeeded(a) }
         a
     }
@@ -109,6 +118,19 @@ class CredentialStore @Inject constructor(
             }
             .toSet()
     }
+
+    /**
+     * True when the master key or keyset can never be used again: the key was
+     * invalidated (biometric re-enrollment, lock screen removed), the key
+     * entry is unreadable, or the stored keyset is corrupt.
+     */
+    private fun isUnrecoverable(t: Throwable): Boolean =
+        generateSequence(t) { it.cause }.take(10).any {
+            it is android.security.keystore.KeyPermanentlyInvalidatedException ||
+                it is java.security.UnrecoverableKeyException ||
+                // Matched by name: protobuf-lite is only a transitive Tink dependency.
+                it.javaClass.name == "com.google.protobuf.InvalidProtocolBufferException"
+        }
 
     private fun buildAead(): Aead =
         AndroidKeysetManager.Builder()

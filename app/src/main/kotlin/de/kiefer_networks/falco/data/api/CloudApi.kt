@@ -58,7 +58,7 @@ interface CloudApi {
     suspend fun snapshot(@Path("id") id: Long): ServerAction
 
     @GET("volumes")
-    suspend fun listVolumes(): CloudVolumeList
+    suspend fun listVolumes(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): CloudVolumeList
 
     @GET("volumes/{id}")
     suspend fun getVolume(@Path("id") id: Long): de.kiefer_networks.falco.data.dto.CloudVolumeEnvelope
@@ -99,7 +99,7 @@ interface CloudApi {
     ): CloudServerActionResponse
 
     @GET("firewalls")
-    suspend fun listFirewalls(): CloudFirewallList
+    suspend fun listFirewalls(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): CloudFirewallList
 
     @POST("firewalls")
     suspend fun createFirewall(
@@ -107,10 +107,10 @@ interface CloudApi {
     ): de.kiefer_networks.falco.data.dto.CreateFirewallResponse
 
     @GET("floating_ips")
-    suspend fun listFloatingIps(): CloudFloatingIpList
+    suspend fun listFloatingIps(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): CloudFloatingIpList
 
     @GET("networks")
-    suspend fun listNetworks(): CloudNetworkList
+    suspend fun listNetworks(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): CloudNetworkList
 
     @GET("servers/{id}")
     suspend fun getServer(@Path("id") id: Long): CloudServerEnvelope
@@ -228,14 +228,16 @@ interface CloudApi {
         @Query("type") type: String = "system",
         @Query("architecture") architecture: String? = null,
         @Query("sort") sort: String = "name",
-        @Query("per_page") perPage: Int = 100,
+        @Query("page") page: Int = 1,
+        // Documented maximum is 50.
+        @Query("per_page") perPage: Int = 50,
     ): CloudImageList
 
     @GET("server_types")
-    suspend fun listServerTypes(@Query("per_page") perPage: Int = 100): CloudServerTypeList
+    suspend fun listServerTypes(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): CloudServerTypeList
 
     @GET("isos")
-    suspend fun listIsos(@Query("per_page") perPage: Int = 100): CloudIsoList
+    suspend fun listIsos(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): CloudIsoList
 
     @GET("firewalls/{id}")
     suspend fun getFirewall(@Path("id") id: Long): de.kiefer_networks.falco.data.dto.CloudFirewallEnvelope
@@ -270,7 +272,7 @@ interface CloudApi {
     // ---- SSH Keys ----------------------------------------------------------
 
     @GET("ssh_keys")
-    suspend fun listSshKeys(@Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudSshKeyList
+    suspend fun listSshKeys(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudSshKeyList
 
     @POST("ssh_keys")
     suspend fun createSshKey(
@@ -397,7 +399,7 @@ interface CloudApi {
     // ---- Primary IPs -------------------------------------------------------
 
     @GET("primary_ips")
-    suspend fun listPrimaryIps(@Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudPrimaryIpList
+    suspend fun listPrimaryIps(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudPrimaryIpList
 
     @GET("primary_ips/{id}")
     suspend fun getPrimaryIp(@Path("id") id: Long): de.kiefer_networks.falco.data.dto.CloudPrimaryIpEnvelope
@@ -441,7 +443,7 @@ interface CloudApi {
     // ---- Load Balancers ---------------------------------------------------
 
     @GET("load_balancers")
-    suspend fun listLoadBalancers(@Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudLoadBalancerList
+    suspend fun listLoadBalancers(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudLoadBalancerList
 
     @GET("load_balancers/{id}")
     suspend fun getLoadBalancer(@Path("id") id: Long): de.kiefer_networks.falco.data.dto.CloudLoadBalancerEnvelope
@@ -547,7 +549,7 @@ interface CloudApi {
     // ---- Certificates -----------------------------------------------------
 
     @GET("certificates")
-    suspend fun listCertificates(@Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudCertificateList
+    suspend fun listCertificates(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudCertificateList
 
     @GET("certificates/{id}")
     suspend fun getCertificate(@Path("id") id: Long): de.kiefer_networks.falco.data.dto.CloudCertificateEnvelope
@@ -572,7 +574,7 @@ interface CloudApi {
     // ---- Placement Groups -------------------------------------------------
 
     @GET("placement_groups")
-    suspend fun listPlacementGroups(@Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudPlacementGroupList
+    suspend fun listPlacementGroups(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudPlacementGroupList
 
     @GET("placement_groups/{id}")
     suspend fun getPlacementGroup(@Path("id") id: Long): de.kiefer_networks.falco.data.dto.CloudPlacementGroupEnvelope
@@ -610,7 +612,7 @@ interface CloudApi {
  */
 interface StorageBoxApi {
     @GET("storage_boxes")
-    suspend fun listStorageBoxes(): de.kiefer_networks.falco.data.dto.CloudStorageBoxList
+    suspend fun listStorageBoxes(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudStorageBoxList
 
     @GET("storage_boxes/{id}")
     suspend fun getStorageBox(@Path("id") id: Long): de.kiefer_networks.falco.data.dto.CloudStorageBoxEnvelope
