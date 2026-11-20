@@ -19,10 +19,9 @@ val signingProps = Properties().apply {
 
 android {
     namespace = "de.kiefer_networks.falco"
-    compileSdk = 36
-    // AGP 9 minor-SDK syntax. biometric 1.4.0-alpha07 requires compileSdk
-    // of at least 36.1 (Android 16.1 / Baklava QPR).
-    compileSdkMinor = 1
+    // Compose BOM 2026.09, AndroidX core 1.19, Hilt navigation 1.4 and
+    // OkHttp 5.5 require compiling against API 37.
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "de.kiefer_networks.falco"
