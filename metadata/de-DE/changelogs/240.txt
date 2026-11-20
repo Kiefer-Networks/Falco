@@ -1,0 +1,31 @@
+Falco 2.4.0
+
+DNS:
+- DNS läuft jetzt über die Hetzner Cloud DNS API (die alte DNS Console
+  API wurde abgeschaltet). DNS nutzt den Cloud Projekt Token, ein
+  eigener DNS Token ist nicht mehr nötig.
+- Zonen, Records (RRSets), Zonendatei Import und Export sowie primäre
+  Nameserver für sekundäre Zonen.
+
+Cloud:
+- Modus "Alle Projekte": Aktionen, Detailansichten und Auswahllisten
+  nutzen das richtige Projekt.
+- Netzwerke werden mit Subnetz in einem Schritt angelegt, vSwitch
+  Subnetze werden unterstützt.
+- Metriken zeigen Lese und Schreib sowie Ein und Ausgangs Bandbreite
+  mit passenden Einheiten.
+
+Robot:
+- Reverse DNS Änderungen, Server Kündigung, Rescue mit gespeicherten
+  SSH Keys und vSwitches funktionieren wieder.
+
+S3:
+- Ordner mit Leerzeichen, Downloads auf allen Android Versionen,
+  parallele Uploads mit Benachrichtigung, ehrliche Ergebnisse beim
+  Mehrfach Löschen.
+
+App:
+- Ein Account Wechsel zeigt nie Daten des vorherigen Accounts.
+- Die Sprachwahl funktioniert auf Android 8 bis 12.
+- Kopierte Geheimnisse werden zuverlässig gelöscht, Dialoge überstehen
+  das Drehen.
