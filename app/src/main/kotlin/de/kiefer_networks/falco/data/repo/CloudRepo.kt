@@ -34,6 +34,7 @@ import de.kiefer_networks.falco.data.dto.RemoveFirewallRequest
 import de.kiefer_networks.falco.data.dto.ResetStorageBoxPasswordRequest
 import de.kiefer_networks.falco.data.dto.ResetSubaccountPasswordRequest
 import de.kiefer_networks.falco.data.dto.ResourceRef
+import de.kiefer_networks.falco.data.dto.RollbackStorageBoxSnapshotRequest
 import de.kiefer_networks.falco.data.dto.SetFirewallRulesRequest
 import de.kiefer_networks.falco.data.dto.UpdateFirewallRequest
 import de.kiefer_networks.falco.data.dto.UpdateServerRequest
@@ -41,7 +42,11 @@ import de.kiefer_networks.falco.data.dto.UpdateStorageBoxAccessSettings
 import de.kiefer_networks.falco.data.dto.UpdateStorageBoxSubaccount
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
@@ -349,6 +354,35 @@ class CloudRepo @Inject constructor(
 
     // ---- Action history ----------------------------------------------------
 
+    /**
+     * Project wide activity: the newest actions of every Cloud resource
+     * collection plus storage boxes, for the active project or every project
+     * in aggregate mode, newest first. A collection the token may not read
+     * is skipped; only if every request fails is the first error thrown.
+     */
+    suspend fun listProjectActivity(limit: Int = 150): List<de.kiefer_networks.falco.data.model.ProjectAction> =
+        kotlinx.coroutines.coroutineScope {
+            val accountId = accounts.activeAccountId.first()
+            val names = accountId?.let { id -> accounts.cloudProjects(id).associate { it.id to it.name } }.orEmpty()
+            val cloudJobs = apisWithProjectIds().flatMap { (pid, api) ->
+                ACTIVITY_COLLECTIONS.map { collection ->
+                    async { runCatching { api.listCollectionActions(collection).actions }.map { Triple(pid, collection, it) } }
+                }
+            }
+            val boxJobs = storageBoxApisWithProjectIds().map { (pid, api) ->
+                async { runCatching { api.listStorageBoxActions().actions }.map { Triple(pid, "storage_boxes", it) } }
+            }
+            val results = (cloudJobs + boxJobs).awaitAll()
+            results.forEach { r -> r.exceptionOrNull()?.let { if (it is CancellationException) throw it } }
+            if (results.none { it.isSuccess }) throw results.first().exceptionOrNull()!!
+            results.mapNotNull { it.getOrNull() }
+                .flatMap { (pid, collection, actions) ->
+                    actions.map { de.kiefer_networks.falco.data.model.ProjectAction(pid, names[pid], collection, it) }
+                }
+                .sortedByDescending { it.action.started.orEmpty() }
+                .take(limit)
+        }
+
     suspend fun listServerActions(serverId: Long): List<de.kiefer_networks.falco.data.dto.ActionEnvelope> =
         api().listServerActions(serverId).actions
 
@@ -410,17 +444,33 @@ class CloudRepo @Inject constructor(
             fetchAllPages { p -> api.listStorageBoxes(page = p).let { r -> r.storageBoxes to r.meta } }.map { pid to it }
         }
 
-    suspend fun listStorageBoxTypes(): List<de.kiefer_networks.falco.data.dto.CloudStorageBoxType> =
-        storageBoxApi().listStorageBoxTypes().storageBoxTypes
+    suspend fun listStorageBoxTypes(): List<de.kiefer_networks.falco.data.dto.CloudStorageBoxType> {
+        val api = storageBoxApi()
+        return fetchAllPages { p -> api.listStorageBoxTypes(page = p).let { r -> r.storageBoxTypes to r.meta } }
+    }
 
-    suspend fun listStorageBoxLocations(): List<de.kiefer_networks.falco.data.dto.Location> =
-        storageBoxApi().listStorageBoxLocations().locations
+    /**
+     * api.hetzner.com has no `/locations`; a type's `prices` list the
+     * locations it can be ordered in. City and country come from the Cloud
+     * `/locations` (same names), falling back to the bare name.
+     */
+    suspend fun listStorageBoxLocations(
+        types: List<de.kiefer_networks.falco.data.dto.CloudStorageBoxType>,
+    ): List<de.kiefer_networks.falco.data.dto.Location> {
+        val details = runCatching { listLocations() }
+            .onFailure { if (it is CancellationException) throw it }
+            .getOrDefault(emptyList())
+            .associateBy { it.name }
+        return types.flatMap { t -> t.prices.map { it.location } }
+            .distinct()
+            .map { details[it] ?: de.kiefer_networks.falco.data.dto.Location(id = 0, name = it) }
+    }
 
     suspend fun createStorageBox(
         name: String,
         storageBoxType: String,
         location: String,
-        password: String? = null,
+        password: String,
         sshKeys: List<String>? = null,
     ): de.kiefer_networks.falco.data.dto.CreateStorageBoxResponse =
         storageBoxApi().createStorageBox(
@@ -436,8 +486,32 @@ class CloudRepo @Inject constructor(
     suspend fun getStorageBox(id: Long): CloudStorageBox =
         storageBoxApi().getStorageBox(id).storageBox
 
-    suspend fun resetStorageBoxPassword(id: Long, password: String) =
-        storageBoxApi().resetStorageBoxPassword(id, ResetStorageBoxPasswordRequest(password))
+    /**
+     * Storage Box writes are asynchronous. Wait for the action so the
+     * following refresh shows the result and a failed action is reported
+     * instead of a silent "done".
+     */
+    private suspend fun StorageBoxApi.awaitAction(action: ActionEnvelope?) {
+        var a = action ?: return
+        // Fixed 1 s poll for at most ~60 s; on timeout the caller refreshes anyway.
+        repeat(60) {
+            when (a.status) {
+                "success" -> return
+                "error" -> error("Storage Box action ${a.command} failed")
+            }
+            delay(1_000)
+            a = getStorageBoxAction(a.id).action
+        }
+    }
+
+    private suspend fun storageBoxAction(block: suspend (StorageBoxApi) -> ActionEnvelope?) {
+        val api = storageBoxApi()
+        api.awaitAction(block(api))
+    }
+
+    suspend fun resetStorageBoxPassword(id: Long, password: String) = storageBoxAction {
+        it.resetStorageBoxPassword(id, ResetStorageBoxPasswordRequest(password)).action
+    }
 
     suspend fun updateStorageBoxAccessSettings(
         id: Long,
@@ -446,50 +520,62 @@ class CloudRepo @Inject constructor(
         webdavEnabled: Boolean? = null,
         zfsEnabled: Boolean? = null,
         reachableExternally: Boolean? = null,
-    ) = storageBoxApi().updateStorageBoxAccessSettings(
-        id,
-        UpdateStorageBoxAccessSettings(
-            sambaEnabled = sambaEnabled,
-            sshEnabled = sshEnabled,
-            webdavEnabled = webdavEnabled,
-            zfsEnabled = zfsEnabled,
-            reachableExternally = reachableExternally,
-        ),
-    )
+    ) = storageBoxAction {
+        it.updateStorageBoxAccessSettings(
+            id,
+            UpdateStorageBoxAccessSettings(
+                sambaEnabled = sambaEnabled,
+                sshEnabled = sshEnabled,
+                webdavEnabled = webdavEnabled,
+                zfsEnabled = zfsEnabled,
+                reachableExternally = reachableExternally,
+            ),
+        ).action
+    }
 
+    // Not paginated by the API.
     suspend fun listStorageBoxSnapshots(id: Long): List<CloudStorageBoxSnapshot> =
         storageBoxApi().listStorageBoxSnapshots(id).snapshots
 
-    suspend fun createStorageBoxSnapshot(id: Long, description: String? = null): CloudStorageBoxSnapshot =
-        storageBoxApi().createStorageBoxSnapshot(id, CreateStorageBoxSnapshot(description)).snapshot
+    suspend fun createStorageBoxSnapshot(id: Long, description: String? = null) = storageBoxAction {
+        it.createStorageBoxSnapshot(id, CreateStorageBoxSnapshot(description)).action
+    }
 
-    suspend fun deleteStorageBoxSnapshot(id: Long, snapshotId: Long) =
-        storageBoxApi().deleteStorageBoxSnapshot(id, snapshotId)
+    suspend fun deleteStorageBoxSnapshot(id: Long, snapshotId: Long) = storageBoxAction {
+        it.deleteStorageBoxSnapshot(id, snapshotId).action
+    }
 
-    suspend fun rollbackStorageBoxSnapshot(id: Long, snapshotId: Long) =
-        storageBoxApi().rollbackStorageBoxSnapshot(id, snapshotId)
+    /** [snapshot] is the snapshot ID or name. */
+    suspend fun rollbackStorageBoxSnapshot(id: Long, snapshot: String) = storageBoxAction {
+        it.rollbackStorageBoxSnapshot(id, RollbackStorageBoxSnapshotRequest(snapshot)).action
+    }
 
+    // Not paginated by the API.
     suspend fun listStorageBoxSubaccounts(id: Long): List<CloudStorageBoxSubaccount> =
         storageBoxApi().listStorageBoxSubaccounts(id).subaccounts
 
+    /** The create response has no username; callers refresh the list afterwards. */
     suspend fun createStorageBoxSubaccount(
         id: Long,
         password: String,
         homeDirectory: String,
         access: CloudSubaccountAccessSettings,
         description: String? = null,
-    ): CloudStorageBoxSubaccount = storageBoxApi().createStorageBoxSubaccount(
-        id,
-        CreateStorageBoxSubaccount(
-            password = password,
-            homeDirectory = homeDirectory,
-            accessSettings = access,
-            description = description,
-        ),
-    ).subaccount
+    ) = storageBoxAction {
+        it.createStorageBoxSubaccount(
+            id,
+            CreateStorageBoxSubaccount(
+                password = password,
+                homeDirectory = homeDirectory,
+                accessSettings = access,
+                description = description,
+            ),
+        ).action
+    }
 
-    suspend fun deleteStorageBoxSubaccount(id: Long, subaccountId: Long) =
-        storageBoxApi().deleteStorageBoxSubaccount(id, subaccountId)
+    suspend fun deleteStorageBoxSubaccount(id: Long, subaccountId: Long) = storageBoxAction {
+        it.deleteStorageBoxSubaccount(id, subaccountId).action
+    }
 
     suspend fun updateStorageBoxSubaccount(
         id: Long,
@@ -499,8 +585,9 @@ class CloudRepo @Inject constructor(
         id, subaccountId, UpdateStorageBoxSubaccount(description = description),
     ).subaccount
 
-    suspend fun resetSubaccountPassword(id: Long, subaccountId: Long, password: String) =
-        storageBoxApi().resetSubaccountPassword(id, subaccountId, ResetSubaccountPasswordRequest(password))
+    suspend fun resetSubaccountPassword(id: Long, subaccountId: Long, password: String) = storageBoxAction {
+        it.resetSubaccountPassword(id, subaccountId, ResetSubaccountPasswordRequest(password)).action
+    }
 
     suspend fun powerOn(id: Long) = api().powerOn(id)
     suspend fun powerOff(id: Long) = api().powerOff(id)
@@ -753,4 +840,12 @@ class CloudRepo @Inject constructor(
     // ---- ISO detail --------------------------------------------------------
 
     suspend fun getIso(id: Long): de.kiefer_networks.falco.data.dto.CloudIso = api().getIso(id).iso
+
+    private companion object {
+        val ACTIVITY_COLLECTIONS = listOf(
+            "servers", "volumes", "networks", "firewalls", "floating_ips",
+            "primary_ips", "load_balancers", "certificates", "images",
+        )
+    }
+
 }

@@ -3,6 +3,8 @@
 package de.kiefer_networks.falco.ui.components.dialog
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -55,7 +57,14 @@ fun ActionsBottomSheetSections(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.md)) {
+        // Scrollable: long sheets (the Cloud server sheet has 20+ actions)
+        // are taller than a phone screen and would clip the lower sections.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = Spacing.md),
+        ) {
             if (!title.isNullOrBlank()) {
                 Text(
                     title,

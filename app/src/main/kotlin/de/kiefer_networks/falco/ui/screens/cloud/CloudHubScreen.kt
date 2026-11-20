@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Menu
@@ -59,6 +60,7 @@ private val CLOUD_TABS = listOf(
 fun CloudHubScreen(
     onAddProject: () -> Unit,
     onManageProjects: () -> Unit,
+    onOpenActivity: () -> Unit = {},
     onOpenStorageBox: (Long) -> Unit = {},
     onOpenServer: (Long) -> Unit = {},
     onOpenFirewall: (Long) -> Unit = {},
@@ -112,7 +114,15 @@ fun CloudHubScreen(
                     }
                 },
                 actions = {
-                    if (drawer.isCompact) {
+                    // Project wide activity feed (all resource types).
+                    if (hasProjects) {
+                        IconButton(onClick = onOpenActivity) {
+                            Icon(
+                                Icons.Filled.History,
+                                contentDescription = stringResource(R.string.cloud_activity_title),
+                            )
+                        }
+                    } else if (drawer.isCompact) {
                         Spacer(modifier = Modifier.size(48.dp))
                     }
                 },

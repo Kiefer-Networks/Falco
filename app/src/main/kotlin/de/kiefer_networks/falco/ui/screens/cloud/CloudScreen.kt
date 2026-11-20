@@ -72,14 +72,25 @@ fun CloudScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
+    // Power actions from the list cards always ask before running.
+    var pendingAction by remember { mutableStateOf<Pair<CloudViewModel.ServerAction, Long>?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
     androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.refresh() }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.events.collect { msg ->
+            android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         when (val s = state) {
             is CloudUiState.Loading -> LoadingState()
             is CloudUiState.Failed -> ErrorState(message = s.message, onRetry = viewModel::refresh)
             is CloudUiState.Loaded -> ServerList(
                 servers = s.servers,
-                onAction = { action, id -> viewModel.action(action, id) },
+                onAction = { action, id ->
+                    if (action == CloudViewModel.ServerAction.Snapshot) viewModel.action(action, id)
+                    else pendingAction = action to id
+                },
                 onOpen = onOpenServer,
             )
         }
@@ -98,6 +109,22 @@ fun CloudScreen(
             viewModel = viewModel,
             onDismiss = { createOpen = false },
             onCreated = { createOpen = false },
+        )
+    }
+    pendingAction?.let { (action, id) ->
+        val label = when (action) {
+            CloudViewModel.ServerAction.PowerOn -> stringResource(R.string.action_power_on)
+            CloudViewModel.ServerAction.PowerOff -> stringResource(R.string.action_power_off)
+            CloudViewModel.ServerAction.Reboot -> stringResource(R.string.action_reboot)
+            CloudViewModel.ServerAction.Shutdown -> stringResource(R.string.action_shutdown)
+            CloudViewModel.ServerAction.Reset -> stringResource(R.string.action_reset)
+            CloudViewModel.ServerAction.Snapshot -> stringResource(R.string.action_snapshot)
+        }
+        de.kiefer_networks.falco.ui.components.dialog.ConfirmDestructiveDialog(
+            actionLabel = label,
+            message = stringResource(R.string.confirm_server_action_msg, label),
+            onConfirm = { viewModel.action(action, id) },
+            onDismiss = { pendingAction = null },
         )
     }
     val rootPassword by viewModel.rootPassword.collectAsState()

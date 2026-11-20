@@ -59,11 +59,8 @@ import de.kiefer_networks.falco.data.repo.CloudRepo
 import de.kiefer_networks.falco.ui.components.EmptyState
 import de.kiefer_networks.falco.ui.components.ErrorState
 import de.kiefer_networks.falco.ui.components.LoadingState
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -81,6 +78,8 @@ data class CreateStorageBoxOptions(
     val running: Boolean = false,
     val types: List<CloudStorageBoxType> = emptyList(),
     val locations: List<Location> = emptyList(),
+    // Shown inside the full screen wizard, where a snackbar would be hidden.
+    val error: String? = null,
 )
 
 @HiltViewModel
@@ -90,9 +89,6 @@ class CloudStorageBoxesViewModel @Inject constructor(private val repo: CloudRepo
 
     private val _create = MutableStateFlow(CreateStorageBoxOptions())
     val createOptions: StateFlow<CreateStorageBoxOptions> = _create.asStateFlow()
-
-    private val _events = MutableSharedFlow<String>(extraBufferCapacity = 4)
-    val events: SharedFlow<String> = _events.asSharedFlow()
 
     init { refresh() }
 
@@ -109,14 +105,13 @@ class CloudStorageBoxesViewModel @Inject constructor(private val repo: CloudRepo
     }
 
     fun loadCreateOptions() = viewModelScope.launch {
-        _create.update { it.copy(loading = true) }
+        _create.update { it.copy(loading = true, error = null) }
         runCatching {
             val types = repo.listStorageBoxTypes()
-            val locs = repo.listStorageBoxLocations()
+            val locs = repo.listStorageBoxLocations(types)
             _create.update { it.copy(loading = false, types = types, locations = locs) }
         }.onFailure { e ->
-            _create.update { it.copy(loading = false) }
-            _events.emit(sanitizeError(e))
+            _create.update { it.copy(loading = false, error = sanitizeError(e)) }
         }
     }
 
@@ -124,12 +119,12 @@ class CloudStorageBoxesViewModel @Inject constructor(private val repo: CloudRepo
         name: String,
         storageBoxType: String,
         location: String,
-        password: String?,
+        password: String,
         onDone: (Boolean) -> Unit,
     ) {
         if (_create.value.running) return
         viewModelScope.launch {
-            _create.update { it.copy(running = true) }
+            _create.update { it.copy(running = true, error = null) }
             val res = runCatching {
                 repo.createStorageBox(
                     name = name,
@@ -138,12 +133,12 @@ class CloudStorageBoxesViewModel @Inject constructor(private val repo: CloudRepo
                     password = password,
                 )
             }
-            _create.update { it.copy(running = false) }
             res.onSuccess {
+                _create.update { it.copy(running = false) }
                 refresh()
                 onDone(true)
             }.onFailure { e ->
-                _events.emit(sanitizeError(e))
+                _create.update { it.copy(running = false, error = sanitizeError(e)) }
                 onDone(false)
             }
         }
@@ -258,59 +253,79 @@ private fun CreateStorageBoxSheet(
             }
             return@WizardScaffold
         }
-        when (step) {
-            0 -> LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(opts.locations, key = { it.name }) { loc ->
-                    de.kiefer_networks.falco.ui.components.wizard.PickCard(
-                        title = loc.city ?: loc.name,
-                        subtitle = listOfNotNull(loc.country, loc.name).joinToString(" · "),
-                        icon = Icons.Filled.LocationOn,
-                        selected = location == loc.name,
-                        onClick = { location = loc.name },
-                    )
-                }
-            }
-            1 -> LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(opts.types, key = { it.name }) { t ->
-                    val sizeLabel = t.size?.let { de.kiefer_networks.falco.ui.util.formatBytes(it) }.orEmpty()
-                    de.kiefer_networks.falco.ui.components.wizard.PickCard(
-                        title = t.name,
-                        subtitle = listOfNotNull(t.description, sizeLabel.ifBlank { null }).joinToString(" · "),
-                        icon = Icons.Filled.Inventory2,
-                        selected = typeName == t.name,
-                        onClick = { typeName = t.name },
-                    )
-                }
-            }
-            2 -> Column(
-                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.cloud_storage_box_create_name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text(stringResource(R.string.cloud_storage_box_create_password)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+        Column(modifier = Modifier.fillMaxSize()) {
+            opts.error?.let { err ->
                 Text(
-                    stringResource(R.string.cloud_storage_box_create_password_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    err,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 )
+                if (opts.types.isEmpty()) {
+                    TextButton(
+                        onClick = { viewModel.loadCreateOptions() },
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    ) { Text(stringResource(R.string.retry)) }
+                }
+            }
+            when (step) {
+                0 -> LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(opts.locations, key = { it.name }) { loc ->
+                        de.kiefer_networks.falco.ui.components.wizard.PickCard(
+                            title = loc.city ?: loc.name,
+                            subtitle = listOfNotNull(loc.country, loc.name).joinToString(" · "),
+                            icon = Icons.Filled.LocationOn,
+                            selected = location == loc.name,
+                            onClick = {
+                                if (location != loc.name) typeName = null
+                                location = loc.name
+                            },
+                        )
+                    }
+                }
+                1 -> LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    // Only types orderable in the chosen location.
+                    items(opts.types.filter { t -> t.prices.any { it.location == location } }, key = { it.name }) { t ->
+                        val sizeLabel = t.size?.let { de.kiefer_networks.falco.ui.util.formatBytes(it) }.orEmpty()
+                        de.kiefer_networks.falco.ui.components.wizard.PickCard(
+                            title = t.name,
+                            subtitle = listOfNotNull(t.description, sizeLabel.ifBlank { null }).joinToString(" · "),
+                            icon = Icons.Filled.Inventory2,
+                            selected = typeName == t.name,
+                            onClick = { typeName = t.name },
+                        )
+                    }
+                }
+                2 -> Column(
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text(stringResource(R.string.cloud_storage_box_create_name)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text(stringResource(R.string.cloud_storage_box_create_password)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        stringResource(R.string.cloud_storage_box_create_password_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -327,18 +342,15 @@ private fun StorageBoxCard(box: CloudStorageBox, onClick: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                StatusDotColor(active = box.accessible)
+                val active = box.status == "active"
+                StatusDotColor(active = active)
                 Spacer(Modifier.size(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(box.name, style = MaterialTheme.typography.titleMedium)
                     Text(
-                        text = if (box.accessible) {
-                            stringResource(R.string.cloud_storage_box_status_active)
-                        } else {
-                            stringResource(R.string.cloud_storage_box_status_inactive)
-                        },
+                        text = storageBoxStatusLabel(box.status),
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (box.accessible) {
+                        color = if (active) {
                             MaterialTheme.colorScheme.primary
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
@@ -386,18 +398,17 @@ private fun StorageBoxCard(box: CloudStorageBox, onClick: () -> Unit) {
                     )
                 }
             }
-            val linkedCount = box.linkedResources.size
-            Text(
-                text = if (linkedCount == 0) {
-                    stringResource(R.string.cloud_storage_box_unlinked)
-                } else {
-                    stringResource(R.string.cloud_storage_box_linked_resources, linkedCount)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
+}
+
+/** Maps the API `status` ("active" | "initializing" | "locked") to a label. */
+@Composable
+internal fun storageBoxStatusLabel(status: String?): String = when (status) {
+    "active" -> stringResource(R.string.cloud_storage_box_status_active)
+    "initializing" -> stringResource(R.string.cloud_storage_box_status_initializing)
+    "locked" -> stringResource(R.string.cloud_storage_box_status_locked)
+    else -> stringResource(R.string.cloud_storage_box_status_inactive)
 }
 
 @Composable

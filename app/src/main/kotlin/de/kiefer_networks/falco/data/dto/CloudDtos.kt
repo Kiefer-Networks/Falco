@@ -77,7 +77,11 @@ import kotlinx.serialization.json.put
     val progress: Int = 0,
     val started: String? = null,
     val finished: String? = null,
+    val resources: List<ActionResource> = emptyList(),
+    val error: ActionError? = null,
 )
+@Serializable data class ActionResource(val id: Long, val type: String)
+@Serializable data class ActionError(val code: String? = null, val message: String? = null)
 
 @Serializable data class CloudVolumeList(val volumes: List<CloudVolume>, val meta: Meta? = null)
 @Serializable data class CloudVolume(
@@ -438,13 +442,12 @@ internal object ChangeDnsPtrRequestSerializer : KSerializer<ChangeDnsPtrRequest>
     val id: Long,
     val name: String,
     val username: String? = null,
+    // "active" | "initializing" | "locked"
     val status: String? = null,
     val created: String? = null,
     @SerialName("storage_box_type") val storageBoxType: CloudStorageBoxType? = null,
     val location: Location? = null,
-    val accessible: Boolean = true,
     val protection: CloudStorageBoxProtection? = null,
-    @SerialName("linked_resources") val linkedResources: List<CloudLinkedResource> = emptyList(),
     val labels: Map<String, String> = emptyMap(),
     @SerialName("access_settings") val accessSettings: CloudStorageBoxAccessSettings? = null,
     val stats: CloudStorageBoxStats? = null,
@@ -486,26 +489,30 @@ internal object ChangeDnsPtrRequestSerializer : KSerializer<ChangeDnsPtrRequest>
     @SerialName("snapshot_limit") val snapshotLimit: Int? = null,
     @SerialName("automatic_snapshot_limit") val automaticSnapshotLimit: Int? = null,
     @SerialName("subaccounts_limit") val subaccountsLimit: Int? = null,
+    // One entry per location the type can be ordered in.
+    val prices: List<CloudStorageBoxTypePrice> = emptyList(),
 )
+@Serializable data class CloudStorageBoxTypePrice(val location: String)
 
 @Serializable data class CloudStorageBoxProtection(val delete: Boolean = false)
 
 @Serializable data class CloudStorageBoxTypeList(
     @SerialName("storage_box_types") val storageBoxTypes: List<CloudStorageBoxType> = emptyList(),
+    val meta: Meta? = null,
 )
 
 @Serializable data class CreateStorageBoxRequest(
     val name: String,
     @SerialName("storage_box_type") val storageBoxType: String,
     val location: String,
-    val password: String? = null,
+    val password: String,
     @SerialName("ssh_keys") val sshKeys: List<String>? = null,
     @SerialName("access_settings") val accessSettings: UpdateStorageBoxAccessSettings? = null,
     val labels: Map<String, String>? = null,
 ) {
     override fun toString(): String =
         "CreateStorageBoxRequest(name=$name, storageBoxType=$storageBoxType, location=$location, " +
-            "password=${if (password == null) "null" else "***"}, sshKeys=$sshKeys, " +
+            "password=***, sshKeys=$sshKeys, " +
             "accessSettings=$accessSettings, labels=$labels)"
 }
 @Serializable data class CreateStorageBoxResponse(
@@ -513,17 +520,13 @@ internal object ChangeDnsPtrRequestSerializer : KSerializer<ChangeDnsPtrRequest>
     val action: ActionEnvelope? = null,
 )
 
-@Serializable data class CloudLinkedResource(
-    val type: String,
-    val id: Long? = null,
-)
-
 // Single-entity envelopes returned by the Hetzner Storage Box API.
 @Serializable data class CloudStorageBoxEnvelope(@SerialName("storage_box") val storageBox: CloudStorageBox)
 @Serializable data class CloudStorageBoxActionResponse(val action: ActionEnvelope)
 
 @Serializable data class CloudStorageBoxSnapshotList(val snapshots: List<CloudStorageBoxSnapshot>, val meta: Meta? = null)
-@Serializable data class CloudStorageBoxSnapshotEnvelope(val snapshot: CloudStorageBoxSnapshot)
+// The create response only carries id + storage_box plus the running action.
+@Serializable data class CloudStorageBoxSnapshotEnvelope(val snapshot: CloudStorageBoxSnapshot, val action: ActionEnvelope? = null)
 @Serializable data class CloudStorageBoxSnapshot(
     val id: Long,
     val name: String? = null,
@@ -541,7 +544,7 @@ internal object ChangeDnsPtrRequestSerializer : KSerializer<ChangeDnsPtrRequest>
 @Serializable data class CreateStorageBoxSnapshot(val description: String? = null)
 
 @Serializable data class CloudStorageBoxSubaccountList(val subaccounts: List<CloudStorageBoxSubaccount>, val meta: Meta? = null)
-@Serializable data class CloudStorageBoxSubaccountEnvelope(val subaccount: CloudStorageBoxSubaccount)
+@Serializable data class CloudStorageBoxSubaccountEnvelope(val subaccount: CloudStorageBoxSubaccount, val action: ActionEnvelope? = null)
 @Serializable data class CloudStorageBoxSubaccount(
     val id: Long,
     // Absent in the create response, which only returns id + storage_box.
@@ -581,6 +584,8 @@ internal object ChangeDnsPtrRequestSerializer : KSerializer<ChangeDnsPtrRequest>
 @Serializable data class ResetSubaccountPasswordRequest(val password: String) {
     override fun toString(): String = "ResetSubaccountPasswordRequest(password=***)"
 }
+// `snapshot` is the snapshot ID or name, typed as a string by the API.
+@Serializable data class RollbackStorageBoxSnapshotRequest(val snapshot: String)
 @Serializable data class ResetStorageBoxPasswordRequest(val password: String) {
     override fun toString(): String = "ResetStorageBoxPasswordRequest(password=***)"
 }

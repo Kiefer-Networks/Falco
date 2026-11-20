@@ -168,6 +168,10 @@ fun CloudServerDetailScreen(
                         }
                     },
                     actions = {
+                        // Activity history is one tap away, not buried in the action sheet.
+                        IconButton(onClick = { viewModel.loadActions(); showActivity = true }) {
+                            Icon(Icons.Filled.History, contentDescription = stringResource(R.string.cloud_server_activity_title))
+                        }
                         IconButton(onClick = viewModel::refresh) {
                             Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.refresh))
                         }
@@ -282,19 +286,22 @@ fun CloudServerDetailScreen(
                     title = stringResource(R.string.server_section_power),
                     actions = buildList {
                         if (running) {
-                            add(SheetAction(Icons.Filled.RestartAlt, stringResource(R.string.action_reboot)) {
-                                sheetOpen = false; viewModel.reboot()
+                            val rebootLabel = stringResource(R.string.action_reboot)
+                            add(SheetAction(Icons.Filled.RestartAlt, rebootLabel) {
+                                sheetOpen = false; pendingConfirm = rebootLabel to { viewModel.reboot() }
                             })
-                            add(SheetAction(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_shutdown)) {
-                                sheetOpen = false; viewModel.shutdown()
+                            val shutdownLabel = stringResource(R.string.action_shutdown)
+                            add(SheetAction(Icons.Filled.PowerSettingsNew, shutdownLabel) {
+                                sheetOpen = false; pendingConfirm = shutdownLabel to { viewModel.shutdown() }
                             })
                             val powerOffLabel = stringResource(R.string.action_power_off)
                             add(SheetAction(Icons.Filled.PowerSettingsNew, powerOffLabel) {
                                 sheetOpen = false; pendingConfirm = powerOffLabel to { viewModel.powerOff() }
                             })
                         } else {
-                            add(SheetAction(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_power_on)) {
-                                sheetOpen = false; viewModel.powerOn()
+                            val powerOnLabel = stringResource(R.string.action_power_on)
+                            add(SheetAction(Icons.Filled.PowerSettingsNew, powerOnLabel) {
+                                sheetOpen = false; pendingConfirm = powerOnLabel to { viewModel.powerOn() }
                             })
                         }
                         val resetLabel = stringResource(R.string.action_reset)
@@ -505,6 +512,7 @@ fun CloudServerDetailScreen(
     pendingConfirm?.let { (label, action) ->
         de.kiefer_networks.falco.ui.components.dialog.ConfirmDestructiveDialog(
             actionLabel = label,
+            message = stringResource(R.string.confirm_server_action_msg, label),
             onConfirm = action,
             onDismiss = { pendingConfirm = null },
         )
@@ -1280,58 +1288,18 @@ private fun ActivitySheet(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    actions.forEach { action -> ActivityRow(action) }
+                    actions.forEach { action ->
+                        de.kiefer_networks.falco.ui.components.ActivityRow(
+                            command = action.command,
+                            status = action.status,
+                            started = action.started,
+                            finished = action.finished,
+                        )
+                    }
                 }
             }
         }
     }
-}
-
-@Composable
-private fun ActivityRow(action: ActionEnvelope) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                shape = CircleShape,
-                color = activityStatusColor(action.status),
-                modifier = Modifier.size(8.dp),
-            ) {}
-            Spacer(Modifier.width(8.dp))
-            Text(action.command, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-            Text(
-                action.status,
-                style = MaterialTheme.typography.labelSmall,
-                color = activityStatusColor(action.status),
-            )
-        }
-        val started = action.started
-        val finished = action.finished
-        if (!started.isNullOrBlank() || !finished.isNullOrBlank()) {
-            Text(
-                listOfNotNull(
-                    started?.takeIf { it.isNotBlank() }?.let {
-                        "${stringResource(R.string.cloud_server_activity_started)} $it"
-                    },
-                    finished?.takeIf { it.isNotBlank() }?.let {
-                        "${stringResource(R.string.cloud_server_activity_finished)} $it"
-                    },
-                ).joinToString("  •  "),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontFamily = FontFamily.Monospace,
-            )
-        }
-    }
-}
-
-private fun activityStatusColor(status: String): Color = when (status.lowercase()) {
-    "success" -> Color(0xFF2E7D32)
-    "running" -> Color(0xFFEF6C00)
-    "error" -> Color(0xFFC62828)
-    else -> Color(0xFF9E9E9E)
 }
 
 private fun copyToClipboard(context: Context, label: String, value: String) {
