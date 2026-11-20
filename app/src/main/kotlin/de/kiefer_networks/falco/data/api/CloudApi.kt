@@ -196,6 +196,15 @@ interface CloudApi {
     @POST("servers/{id}/actions/remove_from_placement_group")
     suspend fun removeServerFromPlacementGroup(@Path("id") id: Long): CloudServerActionResponse
 
+    /** Newest actions of one resource collection, e.g. `servers` or `volumes`
+     *  (`GET /{collection}/actions`). The global `GET /actions` list was removed. */
+    @GET("{collection}/actions")
+    suspend fun listCollectionActions(
+        @Path("collection") collection: String,
+        @Query("sort") sort: String = "started:desc",
+        @Query("per_page") perPage: Int = 25,
+    ): de.kiefer_networks.falco.data.dto.ActionListResponse
+
     @GET("servers/{id}/actions")
     suspend fun listServerActions(
         @Path("id") id: Long,
@@ -611,6 +620,12 @@ interface CloudApi {
  * a dedicated client.
  */
 interface StorageBoxApi {
+    @GET("storage_boxes/actions")
+    suspend fun listStorageBoxActions(
+        @Query("sort") sort: String = "started:desc",
+        @Query("per_page") perPage: Int = 25,
+    ): de.kiefer_networks.falco.data.dto.ActionListResponse
+
     @GET("storage_boxes")
     suspend fun listStorageBoxes(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudStorageBoxList
 
@@ -623,10 +638,10 @@ interface StorageBoxApi {
     ): de.kiefer_networks.falco.data.dto.CreateStorageBoxResponse
 
     @GET("storage_box_types")
-    suspend fun listStorageBoxTypes(): de.kiefer_networks.falco.data.dto.CloudStorageBoxTypeList
+    suspend fun listStorageBoxTypes(@Query("page") page: Int = 1, @Query("per_page") perPage: Int = 50): de.kiefer_networks.falco.data.dto.CloudStorageBoxTypeList
 
-    @GET("locations")
-    suspend fun listStorageBoxLocations(): de.kiefer_networks.falco.data.dto.CloudLocationList
+    @GET("storage_boxes/actions/{id}")
+    suspend fun getStorageBoxAction(@Path("id") id: Long): de.kiefer_networks.falco.data.dto.CloudStorageBoxActionResponse
 
     @retrofit2.http.POST("storage_boxes/{id}/actions/reset_password")
     suspend fun resetStorageBoxPassword(
@@ -655,10 +670,10 @@ interface StorageBoxApi {
         @Path("snap") snapshotId: Long,
     ): de.kiefer_networks.falco.data.dto.CloudStorageBoxActionResponse
 
-    @retrofit2.http.POST("storage_boxes/{id}/snapshots/{snap}/actions/rollback")
+    @retrofit2.http.POST("storage_boxes/{id}/actions/rollback_snapshot")
     suspend fun rollbackStorageBoxSnapshot(
         @Path("id") id: Long,
-        @Path("snap") snapshotId: Long,
+        @retrofit2.http.Body body: de.kiefer_networks.falco.data.dto.RollbackStorageBoxSnapshotRequest,
     ): de.kiefer_networks.falco.data.dto.CloudStorageBoxActionResponse
 
     @GET("storage_boxes/{id}/subaccounts")

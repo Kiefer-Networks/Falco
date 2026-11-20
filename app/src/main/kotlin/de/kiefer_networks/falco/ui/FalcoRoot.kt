@@ -82,6 +82,7 @@ fun FalcoRoot(viewModel: FalcoRootViewModel, windowSizeClass: WindowSizeClass) {
                 CloudHubScreen(
                     onAddProject = { nav.navigate(Routes.PROJECT_NEW) },
                     onManageProjects = { nav.navigate(Routes.PROJECTS) },
+                    onOpenActivity = { nav.navigate(Routes.CLOUD_ACTIVITY) },
                     onOpenStorageBox = { id -> nav.navigate(Routes.cloudStorageBoxDetail(id)) },
                     onOpenServer = { id -> nav.navigate(Routes.cloudServerDetail(id)) },
                     onOpenFirewall = { id -> nav.navigate(Routes.cloudFirewallDetail(id)) },
@@ -146,6 +147,9 @@ fun FalcoRoot(viewModel: FalcoRootViewModel, windowSizeClass: WindowSizeClass) {
                 de.kiefer_networks.falco.ui.screens.cloud.CloudPrimaryIpDetailScreen(
                     onBack = { nav.popBackStack() },
                 )
+            }
+            composable(Routes.CLOUD_ACTIVITY) {
+                de.kiefer_networks.falco.ui.screens.cloud.CloudActivityScreen(onBack = { nav.popBackStack() })
             }
             composable(Routes.PROJECTS) {
                 de.kiefer_networks.falco.ui.screens.cloud.ProjectManageScreen(

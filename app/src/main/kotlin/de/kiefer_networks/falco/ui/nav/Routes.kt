@@ -59,6 +59,7 @@ object Routes {
     const val ARG_PRIMARY_IP_ID = "id"
 
     const val PROJECTS = "cloud/projects"
+    const val CLOUD_ACTIVITY = "cloud/activity"
     const val PROJECT_NEW = "cloud/projects/new"
     const val PROJECT_EDIT = "cloud/projects/edit/{projectId}"
     fun projectEdit(projectId: String) = "cloud/projects/edit/$projectId"

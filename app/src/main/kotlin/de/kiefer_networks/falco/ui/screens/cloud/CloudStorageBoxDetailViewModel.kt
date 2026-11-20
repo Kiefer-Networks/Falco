@@ -102,8 +102,9 @@ class CloudStorageBoxDetailViewModel @Inject constructor(
         repo.deleteStorageBoxSnapshot(boxId, snapshotId)
     }
 
-    fun rollbackSnapshot(snapshotId: Long) = wrap(refreshAfter = true) {
-        repo.rollbackStorageBoxSnapshot(boxId, snapshotId)
+    // The API takes the snapshot ID or name as a string; the name is always set on listed snapshots.
+    fun rollbackSnapshot(snapshot: CloudStorageBoxSnapshot) = wrap(refreshAfter = true) {
+        repo.rollbackStorageBoxSnapshot(boxId, snapshot.name ?: snapshot.id.toString())
     }
 
     fun createSubaccount(

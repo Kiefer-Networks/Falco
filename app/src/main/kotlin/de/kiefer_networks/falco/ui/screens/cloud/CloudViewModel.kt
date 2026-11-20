@@ -147,7 +147,7 @@ class CloudViewModel @Inject constructor(
                         ServerAction.Reset -> repo.reset(id)
                         ServerAction.Snapshot -> repo.snapshot(id)
                     }
-                }
+                }.onFailure { _events.emit(sanitizeError(it)) }
                 refresh()
             } finally {
                 inFlight.set(false)

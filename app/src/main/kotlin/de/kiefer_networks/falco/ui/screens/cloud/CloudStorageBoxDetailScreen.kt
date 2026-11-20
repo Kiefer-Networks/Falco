@@ -182,7 +182,7 @@ fun CloudStorageBoxDetailScreen(
                             )
                         }
                     } else {
-                        items(state.snapshots, key = { it.id }) { snap ->
+                        items(state.snapshots, key = { "snapshot-${it.id}" }) { snap ->
                             SnapshotCard(
                                 snapshot = snap,
                                 onRollback = { snapshotPendingRollback = snap },
@@ -208,7 +208,7 @@ fun CloudStorageBoxDetailScreen(
                             )
                         }
                     } else {
-                        items(state.subaccounts, key = { it.id }) { sub ->
+                        items(state.subaccounts, key = { "subaccount-${it.id}" }) { sub ->
                             SubaccountCard(
                                 subaccount = sub,
                                 onResetPassword = { subaccountResetPassword = sub },
@@ -295,7 +295,7 @@ fun CloudStorageBoxDetailScreen(
             destructive = true,
             onDismiss = { snapshotPendingRollback = null },
             onConfirm = {
-                viewModel.rollbackSnapshot(snap.id)
+                viewModel.rollbackSnapshot(snap)
                 snapshotPendingRollback = null
             },
         )
@@ -339,20 +339,17 @@ private fun OverviewCard(box: CloudStorageBox) {
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                val active = box.status == "active"
                 Surface(
                     shape = CircleShape,
-                    color = if (box.accessible) Color(0xFF2E7D32) else Color(0xFF9E9E9E),
+                    color = if (active) Color(0xFF2E7D32) else Color(0xFF9E9E9E),
                     modifier = Modifier.size(12.dp),
                 ) {}
                 Spacer(Modifier.size(12.dp))
                 Text(
-                    text = if (box.accessible) {
-                        stringResource(R.string.cloud_storage_box_status_active)
-                    } else {
-                        stringResource(R.string.cloud_storage_box_status_inactive)
-                    },
+                    text = storageBoxStatusLabel(box.status),
                     style = MaterialTheme.typography.titleSmall,
-                    color = if (box.accessible) {
+                    color = if (active) {
                         MaterialTheme.colorScheme.primary
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -409,12 +406,6 @@ private fun OverviewCard(box: CloudStorageBox) {
                 Property(
                     label = stringResource(R.string.server_label_location),
                     value = listOfNotNull(loc.name, loc.city, loc.country).joinToString(" · "),
-                )
-            }
-            if (box.linkedResources.isNotEmpty()) {
-                Property(
-                    label = stringResource(R.string.cloud_storage_box_linked_resources, box.linkedResources.size),
-                    value = box.linkedResources.joinToString(" · ") { "${it.type}#${it.id ?: 0}" },
                 )
             }
         }
@@ -537,7 +528,7 @@ private fun SubaccountCard(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(subaccount.username, style = MaterialTheme.typography.titleMedium)
+                    Text(subaccount.username.ifBlank { "#${subaccount.id}" }, style = MaterialTheme.typography.titleMedium)
                     if (!subaccount.description.isNullOrBlank()) {
                         Text(
                             subaccount.description!!,
@@ -842,7 +833,7 @@ private fun SubaccountFormDialog(
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
-                        label = { Text(stringResource(R.string.dns_record_value)) },
+                        label = { Text(stringResource(R.string.storagebox_snapshot_description)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
