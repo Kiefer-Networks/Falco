@@ -10,10 +10,12 @@ import de.kiefer_networks.falco.data.repo.S3Repo
 import de.kiefer_networks.falco.data.s3.S3DownloadHelper
 import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.nav.Routes
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.OutputStream
 import javax.inject.Inject
 
@@ -119,14 +121,20 @@ class ObjectBrowserViewModel @Inject constructor(
         }
     }
 
-    fun download(key: String, output: OutputStream, onComplete: () -> Unit = {}) {
+    /**
+     * Streams [key] into [output] and closes it. [onFailure] runs off the main
+     * thread after a failed download so the caller can delete the partial file.
+     */
+    fun download(key: String, output: OutputStream, onFailure: () -> Unit = {}) {
         viewModelScope.launch {
             runCatching {
-                output.use { downloader.download(bucket, key, it) }
+                withContext(Dispatchers.IO) { output.use { downloader.download(bucket, key, it) } }
             }
                 .onSuccess { _events.value = ObjectBrowserEvent.DownloadSucceeded(key) }
-                .onFailure { _events.value = ObjectBrowserEvent.DownloadFailed(sanitizeError(it)) }
-            onComplete()
+                .onFailure {
+                    withContext(Dispatchers.IO) { runCatching(onFailure) }
+                    _events.value = ObjectBrowserEvent.DownloadFailed(sanitizeError(it))
+                }
         }
     }
 

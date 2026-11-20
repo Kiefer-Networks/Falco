@@ -329,7 +329,6 @@
     <string name="s3_ttl_1h">1 ora</string>
     <string name="s3_ttl_24h">24 ore</string>
     <string name="s3_ttl_7d">7 giorni</string>
-    <string name="s3_ttl_30d">30 giorni</string>
     <string name="s3_upload_picker_title">Scegli un file da caricare</string>
     <string name="s3_download_saved">Salvato in Download</string>
     <string name="s3_delete_confirm_title">Eliminare l\'oggetto?</string>

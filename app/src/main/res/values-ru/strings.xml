@@ -335,7 +335,6 @@
     <string name="s3_ttl_1h">1 час</string>
     <string name="s3_ttl_24h">24 часа</string>
     <string name="s3_ttl_7d">7 дней</string>
-    <string name="s3_ttl_30d">30 дней</string>
     <string name="s3_upload_picker_title">Выберите файл для загрузки</string>
     <string name="s3_download_saved">Сохранено в «Загрузки»</string>
     <string name="s3_delete_confirm_title">Удалить объект?</string>
