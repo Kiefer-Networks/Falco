@@ -16,7 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AltRoute
+import androidx.compose.material.icons.automirrored.filled.AltRoute
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Hub
@@ -54,7 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.dto.CloudNetwork
 import de.kiefer_networks.falco.data.dto.NetworkRoute
@@ -245,7 +245,7 @@ fun CloudNetworkDetailScreen(
                         sheetOpen = false
                         viewModel.setProtection(!(net.protection?.delete ?: false))
                     },
-                    SheetAction(Icons.Filled.AltRoute, stringResource(R.string.cloud_network_action_expose_vswitch)) {
+                    SheetAction(Icons.AutoMirrored.Filled.AltRoute, stringResource(R.string.cloud_network_action_expose_vswitch)) {
                         sheetOpen = false; exposeOpen = true
                     },
                 ),
@@ -399,7 +399,7 @@ private fun kpisFor(net: CloudNetwork): List<Kpi> = buildList {
     )
     add(
         Kpi(
-            Icons.Filled.AltRoute,
+            Icons.AutoMirrored.Filled.AltRoute,
             stringResource(R.string.cloud_network_kpi_routes),
             net.routes.size.toString(),
         ),

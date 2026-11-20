@@ -478,7 +478,7 @@
     <string name="settings_block_screenshots">Block screenshots</string>
     <string name="settings_block_screenshots_desc">Hide content in screenshots and the recent apps switcher (FLAG_SECURE).</string>
     <string name="settings_hardware_bound">Require fresh unlock for stored credentials</string>
-    <string name="settings_hardware_bound_desc">Higher-assurance mode: re-enrolling biometrics invalidates stored credentials. Pass-through PIN unlock no longer suffices to read tokens. Existing tokens may need to be re-entered after enabling. Takes effect on next app start.</string>
+    <string name="settings_hardware_bound_desc">Higher assurance mode for the credential encryption key: re-enrolling biometrics invalidates stored credentials, and reading tokens requires an unlock within the last 60 seconds. Applies only when the key is created, which happens on a fresh install or after stored credentials had to be reset. An existing key keeps its current protection.</string>
     <string name="settings_pinning_title">TLS pinning</string>
     <string name="settings_theme_oled">OLED black</string>
     <string name="settings_accent">Accent color</string>

@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.ui.components.dialog.TypeToConfirmDeleteDialog
 import de.kiefer_networks.falco.ui.nav.LocalNavDrawer
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel

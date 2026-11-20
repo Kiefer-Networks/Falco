@@ -54,7 +54,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.dto.CloudCertificate
 import de.kiefer_networks.falco.data.dto.CloudFloatingIp
@@ -73,6 +73,7 @@ fun CloudResourcesTab(
     onOpenFloatingIp: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     onOpenLoadBalancer: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     onOpenPrimaryIp: (projectId: String?, id: Long) -> Unit = { _, _ -> },
+    onOpenNetwork: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     volumesViewModel: CloudVolumesViewModel = hiltViewModel(),
     networksViewModel: CloudNetworksViewModel = hiltViewModel(),
     floatingIpsViewModel: CloudFloatingIpsViewModel = hiltViewModel(),
@@ -186,7 +187,7 @@ fun CloudResourcesTab(
         }
         if (n.loading) item { LoadingRow() }
         else if (n.data.isEmpty()) item { EmptyRow() }
-        else items(n.data, key = { "net-${it.id}" }) { ResourceNetworkCard(it) }
+        else items(n.data, key = { "net-${it.id}" }) { ResourceNetworkCard(it, onClick = { onOpenNetwork(null, it.id) }) }
 
         item {
             SectionHeader(
@@ -409,13 +410,13 @@ private fun ResourceVolumeCard(volume: CloudVolume, onClick: () -> Unit = {}) {
 }
 
 @Composable
-private fun ResourceNetworkCard(network: CloudNetwork) {
+private fun ResourceNetworkCard(network: CloudNetwork, onClick: () -> Unit) {
     ResourceCardShell(
         icon = Icons.Filled.Hub,
         title = network.name,
         statusLabel = network.ipRange,
         statusColor = MaterialTheme.colorScheme.primary,
-        onClick = null,
+        onClick = onClick,
     ) {
         StatChip(
             Icons.Filled.Hub,

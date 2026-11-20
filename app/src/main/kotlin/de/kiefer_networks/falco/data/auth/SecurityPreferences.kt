@@ -119,9 +119,11 @@ class SecurityPreferences @Inject constructor(
      *  * A pass-through PIN unlock no longer suffices to read tokens; the
      *    user must have authenticated within the last 60 s.
      *
-     * Default is false (existing user-presence model). The toggle takes
-     * effect on the next process start; existing master keys are not
-     * migrated.
+     * Default is false (existing user-presence model). The flag is read only
+     * when the master key is generated (fresh install, or recovery after the
+     * key was invalidated). An existing master key is never rotated, because
+     * wrapping the keyset under an auth-bound key at startup could lock the
+     * user out of their tokens; the settings copy says so.
      */
     val hardwareBoundCredentials: Flow<Boolean> =
         dataStore.data.map { it[KEY_HARDWARE_BOUND_CREDENTIALS] ?: false }
