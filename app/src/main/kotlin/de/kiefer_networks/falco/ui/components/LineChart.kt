@@ -44,7 +44,7 @@ fun LineChart(
     unit: String = "",
     color: Color = MaterialTheme.colorScheme.primary,
     secondary: List<Pair<Long, Double>> = emptyList(),
-    secondaryColor: Color = MaterialTheme.colorScheme.tertiary,
+    secondaryColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     if (points.isEmpty()) {
         Box(

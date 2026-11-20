@@ -53,6 +53,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.data.repo.S3Repo
 import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.components.dialog.TypeToConfirmDeleteDialog
@@ -217,7 +218,7 @@ fun S3Screen(
             s.error != null -> Box(Modifier.fillMaxSize().padding(padding).padding(24.dp), contentAlignment = Alignment.Center) { Text(s.error!!) }
             else -> LazyColumn(Modifier.fillMaxSize().padding(padding).padding(12.dp)) {
                 items(s.buckets, key = { it }) { bucket ->
-                    Card(
+                    HairlineCard(
                         Modifier
                             .fillMaxWidth()
                             .padding(vertical = 6.dp)

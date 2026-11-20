@@ -38,6 +38,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.data.dto.RobotVSwitch
 import de.kiefer_networks.falco.data.repo.RobotRepo
 import de.kiefer_networks.falco.data.util.sanitizeError
@@ -123,7 +124,7 @@ fun VSwitchTab(
                 verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
                 items(s.items, key = { it.id }) { vs ->
-                    OutlinedCard(
+                    HairlineCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onVSwitchClick(vs.id) },

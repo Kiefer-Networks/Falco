@@ -3,6 +3,10 @@
 package de.kiefer_networks.falco.ui.screens.cloud
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.ui.components.EmptyState
+import de.kiefer_networks.falco.ui.components.PillChip
 import de.kiefer_networks.falco.ui.nav.LocalNavDrawer
 
 private data class CloudTab(val labelRes: Int, val icon: ImageVector)
@@ -169,17 +174,18 @@ fun CloudHubScreen(
                 )
                 return@Column
             }
-            PrimaryTabRow(selectedTabIndex = selected) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 CLOUD_TABS.forEachIndexed { index, tab ->
-                    Tab(
+                    PillChip(
                         selected = selected == index,
                         onClick = { selected = index },
-                        icon = {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = stringResource(tab.labelRes),
-                            )
-                        },
+                        label = stringResource(tab.labelRes),
                     )
                 }
             }

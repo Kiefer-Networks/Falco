@@ -43,6 +43,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.data.dto.CloudFloatingIp
 import de.kiefer_networks.falco.data.dto.CloudServer
 import de.kiefer_networks.falco.data.dto.Location
@@ -195,7 +196,7 @@ fun CloudFloatingIpsTab(viewModel: CloudFloatingIpsViewModel = hiltViewModel()) 
 
 @Composable
 private fun FloatingIpCard(fip: CloudFloatingIp) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    HairlineCard(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Column(Modifier.padding(12.dp)) {
             Text(fip.ip, style = MaterialTheme.typography.titleMedium)
             Text(

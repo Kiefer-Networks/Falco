@@ -41,6 +41,13 @@ import de.kiefer_networks.falco.data.repo.CloudRepo
 import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.components.ActivityRow
 import de.kiefer_networks.falco.ui.components.ErrorState
+import de.kiefer_networks.falco.ui.components.PillChip
+import de.kiefer_networks.falco.ui.components.SectionLabel
+import de.kiefer_networks.falco.ui.components.actionLocalDate
+import de.kiefer_networks.falco.ui.theme.falcoColors
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -70,6 +77,24 @@ class CloudActivityViewModel @Inject constructor(private val repo: CloudRepo) : 
 }
 
 private enum class StatusFilter { ALL, RUNNING, ERROR }
+
+private val dayFormat: DateTimeFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+
+@Composable
+private fun DayHeader(day: LocalDate?) {
+    if (day == null) return
+    val today = LocalDate.now()
+    val label = when (day) {
+        today -> stringResource(R.string.activity_today)
+        today.minusDays(1) -> stringResource(R.string.activity_yesterday)
+        else -> day.format(dayFormat)
+    }
+    SectionLabel(
+        text = label,
+        color = MaterialTheme.falcoColors.textTertiary,
+        modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
+    )
+}
 
 /**
  * Project wide activity: the newest Hetzner actions of every resource type
@@ -118,21 +143,24 @@ fun CloudActivityScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     item {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(bottom = 4.dp),
+                        ) {
+                            PillChip(
                                 selected = filter == StatusFilter.ALL,
                                 onClick = { filter = StatusFilter.ALL },
-                                label = { Text(stringResource(R.string.cloud_activity_filter_all)) },
+                                label = stringResource(R.string.cloud_activity_filter_all),
                             )
-                            FilterChip(
+                            PillChip(
                                 selected = filter == StatusFilter.RUNNING,
                                 onClick = { filter = StatusFilter.RUNNING },
-                                label = { Text(stringResource(R.string.cloud_activity_filter_running)) },
+                                label = stringResource(R.string.cloud_activity_filter_running),
                             )
-                            FilterChip(
+                            PillChip(
                                 selected = filter == StatusFilter.ERROR,
                                 onClick = { filter = StatusFilter.ERROR },
-                                label = { Text(stringResource(R.string.cloud_activity_filter_error)) },
+                                label = stringResource(R.string.cloud_activity_filter_error),
                             )
                         }
                     }
@@ -147,19 +175,27 @@ fun CloudActivityScreen(
                             )
                         }
                     }
-                    items(visible, key = { "${it.projectId}-${it.resourceType}-${it.action.id}" }) { item ->
-                        val resource = item.action.resources.joinToString(", ") { "${it.type} #${it.id}" }
-                            .ifBlank { item.resourceType }
-                        ActivityRow(
-                            command = item.action.command,
-                            status = item.action.status,
-                            started = item.action.started,
-                            finished = item.action.finished,
-                            subtitle = listOfNotNull(resource, item.projectName?.takeIf { showProject })
-                                .joinToString(" · "),
-                            errorMessage = item.action.error?.message,
-                        )
-                        HorizontalDivider()
+                    // One group per local day, newest day first; unparsable times last.
+                    // groupBy keeps the incoming order inside each day.
+                    val byDay = visible.groupBy { actionLocalDate(it.action.started) }
+                        .entries.sortedByDescending { it.key?.toEpochDay() ?: Long.MIN_VALUE }
+                    byDay.forEach { (day, dayItems) ->
+                        item(key = "day-$day") { DayHeader(day) }
+                        items(dayItems, key = { "${it.projectId}-${it.resourceType}-${it.action.id}" }) { item ->
+                            val resource = item.action.resources.joinToString(", ") { "${it.type} #${it.id}" }
+                                .ifBlank { item.resourceType }
+                            ActivityRow(
+                                command = item.action.command,
+                                status = item.action.status,
+                                started = item.action.started,
+                                finished = item.action.finished,
+                                subtitle = listOfNotNull(resource, item.projectName?.takeIf { showProject })
+                                    .joinToString(" · "),
+                                errorMessage = item.action.error?.message,
+                                timeOnly = day != null,
+                            )
+                            HorizontalDivider(color = MaterialTheme.falcoColors.divider)
+                        }
                     }
                 }
             }

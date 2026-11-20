@@ -56,6 +56,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.theme.falcoColors
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.data.dto.CloudCertificate
 import de.kiefer_networks.falco.data.dto.CloudFloatingIp
 import de.kiefer_networks.falco.data.dto.CloudLoadBalancer
@@ -362,9 +364,9 @@ private fun SectionHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "$title ($count)",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
+            text = "$title · $count".uppercase(java.util.Locale.getDefault()),
+            style = de.kiefer_networks.falco.ui.theme.SectionLabelStyle,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
         if (onAdd != null) {
@@ -408,7 +410,7 @@ private fun LoadingRow() {
 @Composable
 private fun ResourceVolumeCard(volume: CloudVolume, onClick: () -> Unit = {}) {
     val accent = when (volume.status) {
-        "available" -> Color(0xFF2E7D32)
+        "available" -> MaterialTheme.falcoColors.running
         "creating" -> MaterialTheme.colorScheme.tertiary
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -458,7 +460,7 @@ private fun ResourceFloatingIpCard(fip: CloudFloatingIp, onClick: () -> Unit = {
         } else {
             stringResource(R.string.floating_ip_unassigned)
         },
-        statusColor = if (active) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant,
+        statusColor = if (active) MaterialTheme.falcoColors.running else MaterialTheme.colorScheme.onSurfaceVariant,
         onClick = onClick,
     ) {
         StatChip(Icons.Filled.Public, fip.type.uppercase())
@@ -478,7 +480,7 @@ private fun ResourcePrimaryIpCard(ip: CloudPrimaryIp, onClick: () -> Unit = {}) 
         } else {
             stringResource(R.string.cloud_primary_ip_unassigned)
         },
-        statusColor = if (active) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant,
+        statusColor = if (active) MaterialTheme.falcoColors.running else MaterialTheme.colorScheme.onSurfaceVariant,
         onClick = onClick,
     ) {
         StatChip(Icons.Filled.Public, ip.type.uppercase())
@@ -502,7 +504,7 @@ private fun ResourceCardShell(
     } else {
         Modifier.fillMaxWidth()
     }
-    ElevatedCard(modifier = mod) {
+    HairlineCard(modifier = mod) {
         Column(
             modifier = Modifier.padding(Spacing.md),
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),

@@ -98,7 +98,27 @@ import de.kiefer_networks.falco.data.dto.CloudPlacementGroup
 import de.kiefer_networks.falco.data.dto.CloudServer
 import de.kiefer_networks.falco.data.repo.MetricPeriod
 import de.kiefer_networks.falco.data.repo.byteRateUnit
+import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import de.kiefer_networks.falco.ui.components.ErrorState
+import de.kiefer_networks.falco.ui.components.HairlineCard
+import de.kiefer_networks.falco.ui.components.HairlineGrid
+import de.kiefer_networks.falco.ui.components.SectionLabel
+import de.kiefer_networks.falco.ui.components.SpecCell
+import de.kiefer_networks.falco.ui.components.StatusIndicator
+import de.kiefer_networks.falco.ui.components.detail.ActionStrip
+import de.kiefer_networks.falco.ui.components.detail.StripAction
+import de.kiefer_networks.falco.ui.components.serverStatusLabel
+import de.kiefer_networks.falco.ui.components.serverStatusTone
+import de.kiefer_networks.falco.ui.theme.MonoStyle
+import de.kiefer_networks.falco.ui.theme.SectionLabelStyle
 import de.kiefer_networks.falco.ui.components.LineChart
 import de.kiefer_networks.falco.ui.components.LoadingState
 import de.kiefer_networks.falco.ui.components.dialog.ActionsBottomSheetSections
@@ -157,12 +177,8 @@ fun CloudServerDetailScreen(
         topBar = {
             Column {
                 CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            text = state.server?.name ?: stringResource(R.string.cloud_servers),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                    },
+                    // The name sits in the large header below; the bar only carries actions.
+                    title = {},
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
@@ -221,10 +237,41 @@ fun CloudServerDetailScreen(
             else -> {
                 val server = state.server ?: return@Scaffold
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    item { OverviewCard(server) }
+                    item { ServerHeader(server) }
+                    item {
+                        val running = server.status == "running"
+                        val rebootLabel = stringResource(R.string.action_reboot)
+                        val shutdownLabel = stringResource(R.string.action_shutdown)
+                        val powerOnLabel = stringResource(R.string.action_power_on)
+                        // Same confirmation flow as the action sheet; snapshot and
+                        // console run directly there too.
+                        ActionStrip(
+                            listOf(
+                                StripAction(Icons.Filled.RestartAlt, rebootLabel, enabled = running) {
+                                    pendingConfirm = rebootLabel to { viewModel.reboot() }
+                                },
+                                if (running) {
+                                    StripAction(Icons.Filled.PowerSettingsNew, shutdownLabel) {
+                                        pendingConfirm = shutdownLabel to { viewModel.shutdown() }
+                                    }
+                                } else {
+                                    StripAction(Icons.Filled.PowerSettingsNew, powerOnLabel) {
+                                        pendingConfirm = powerOnLabel to { viewModel.powerOn() }
+                                    }
+                                },
+                                StripAction(Icons.Filled.Computer, stringResource(R.string.server_action_console)) {
+                                    viewModel.requestConsole()
+                                },
+                                StripAction(Icons.Filled.PhotoCamera, stringResource(R.string.action_snapshot)) {
+                                    viewModel.snapshot()
+                                },
+                            ),
+                        )
+                    }
+                    item { SpecGrid(server) }
                     val attachedIso = server.iso
                     if (attachedIso != null) {
                         item {
@@ -237,38 +284,43 @@ fun CloudServerDetailScreen(
                         }
                     }
                     item {
-                        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                SectionTitle(R.string.server_section_metrics)
-                                PeriodTabs(state.period, viewModel::setPeriod)
-                                MetricBlock(
-                                    titleRes = R.string.metrics_cpu,
-                                    state = state.cpuMetrics,
-                                    unit = stringResource(R.string.metrics_unit_percent),
-                                    primarySuffix = "cpu",
-                                    // 100 % per vCPU: the scale grows past 100 when needed.
-                                    minCeiling = 100.0,
-                                )
-                                MetricBlock(
-                                    titleRes = R.string.metrics_disk,
-                                    state = state.diskMetrics,
-                                    unit = null,
-                                    primarySuffix = "bandwidth.read",
-                                    secondarySuffix = "bandwidth.write",
-                                    primaryLabelRes = R.string.metrics_series_read,
-                                    secondaryLabelRes = R.string.metrics_series_write,
-                                )
-                                MetricBlock(
-                                    titleRes = R.string.metrics_network,
-                                    state = state.networkMetrics,
-                                    unit = null,
-                                    primarySuffix = "bandwidth.in",
-                                    secondarySuffix = "bandwidth.out",
-                                    primaryLabelRes = R.string.metrics_series_in,
-                                    secondaryLabelRes = R.string.metrics_series_out,
-                                )
-                            }
-                        }
+                        SectionLabel(
+                            text = stringResource(R.string.server_section_metrics),
+                            modifier = Modifier.padding(start = 4.dp, top = 4.dp),
+                            trailing = { PeriodTabs(state.period, viewModel::setPeriod) },
+                        )
+                    }
+                    item {
+                        MetricBlock(
+                            titleRes = R.string.metrics_cpu,
+                            state = state.cpuMetrics,
+                            unit = stringResource(R.string.metrics_unit_percent),
+                            primarySuffix = "cpu",
+                            // 100 % per vCPU: the scale grows past 100 when needed.
+                            minCeiling = 100.0,
+                        )
+                    }
+                    item {
+                        MetricBlock(
+                            titleRes = R.string.metrics_disk,
+                            state = state.diskMetrics,
+                            unit = null,
+                            primarySuffix = "bandwidth.read",
+                            secondarySuffix = "bandwidth.write",
+                            primaryLabelRes = R.string.metrics_series_read,
+                            secondaryLabelRes = R.string.metrics_series_write,
+                        )
+                    }
+                    item {
+                        MetricBlock(
+                            titleRes = R.string.metrics_network,
+                            state = state.networkMetrics,
+                            unit = null,
+                            primarySuffix = "bandwidth.in",
+                            secondarySuffix = "bandwidth.out",
+                            primaryLabelRes = R.string.metrics_series_in,
+                            secondaryLabelRes = R.string.metrics_series_out,
+                        )
                     }
                     item { ToggleSettingsCard(server, viewModel) }
                     item { AttachedResourcesCard(server) }
@@ -768,10 +820,10 @@ private fun ConsoleResultDialog(
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(stringResource(R.string.server_console_url), style = MaterialTheme.typography.labelSmall)
-                Text(wssUrl, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                Text(wssUrl, style = MaterialTheme.typography.bodySmall, fontFamily = de.kiefer_networks.falco.ui.theme.PlexMono)
                 TextButton(onClick = onCopyUrl) { Text(stringResource(R.string.copy)) }
                 Text(stringResource(R.string.server_console_password), style = MaterialTheme.typography.labelSmall)
-                Text(password, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                Text(password, style = MaterialTheme.typography.bodySmall, fontFamily = de.kiefer_networks.falco.ui.theme.PlexMono)
                 TextButton(onClick = onCopyPassword) { Text(stringResource(R.string.copy)) }
             }
         },
@@ -782,57 +834,83 @@ private fun ConsoleResultDialog(
 }
 
 @Composable
-private fun OverviewCard(server: CloudServer) {
+private fun ServerHeader(server: CloudServer) {
     val ctx = LocalContext.current
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = CircleShape,
-                    color = statusDotColor(server.status),
-                    modifier = Modifier.size(12.dp),
-                ) {}
-                Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(server.name, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        server.status,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = statusDotColor(server.status),
-                    )
-                }
-                if (server.protection?.delete == true) {
-                    Icon(
-                        Icons.Filled.Shield,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-            server.serverType?.let { st ->
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SpecChip(Icons.Filled.Settings, pluralStringResource(R.plurals.server_cores, st.cores, st.cores))
-                    SpecChip(Icons.Filled.Memory, "${formatGb(st.memory)} RAM")
-                    SpecChip(Icons.Filled.Storage, "${st.disk} GB")
-                    SpecChip(Icons.Filled.Sell, st.name)
-                }
-            }
-            HorizontalDivider()
-            server.publicNet?.ipv4?.ip?.let {
-                CopyRow(Icons.Filled.Public, stringResource(R.string.server_public_ipv4), it, ctx)
-            }
-            server.publicNet?.ipv6?.ip?.let {
-                CopyRow(Icons.Filled.Public, stringResource(R.string.server_public_ipv6), it, ctx)
-            }
-            val loc = listOfNotNull(
-                server.datacenter?.location?.city,
-                server.datacenter?.location?.country,
-            ).joinToString(", ")
-            if (loc.isNotBlank()) {
-                Property(Icons.Filled.LocationOn, stringResource(R.string.server_label_location), loc)
+    val tone = serverStatusTone(server.status)
+    val ipv4Label = stringResource(R.string.server_public_ipv4)
+    val ipv6Label = stringResource(R.string.server_public_ipv6)
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, bottom = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StatusIndicator(
+                tone = tone,
+                label = serverStatusLabel(server.status).lowercase(java.util.Locale.getDefault()),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            if (server.protection?.delete == true) {
+                Icon(
+                    Icons.Filled.Shield,
+                    contentDescription = stringResource(R.string.server_action_protection),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
+                )
             }
         }
+        Text(server.name, style = MaterialTheme.typography.headlineMedium)
+        // Tap an address to copy it.
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            val muted = MaterialTheme.colorScheme.onSurfaceVariant
+            val ipStyle = MonoStyle.copy(fontSize = 13.sp, lineHeight = 18.sp)
+            val v4 = server.publicNet?.ipv4?.ip
+            val v6 = server.publicNet?.ipv6?.ip
+            if (v4 != null) {
+                Text(
+                    v4,
+                    style = ipStyle,
+                    color = muted,
+                    modifier = Modifier.clickable { copyToClipboard(ctx, ipv4Label, v4) },
+                )
+            }
+            if (v4 != null && v6 != null) Text("·", style = ipStyle, color = muted)
+            if (v6 != null) {
+                Text(
+                    v6,
+                    style = ipStyle,
+                    color = muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false).clickable { copyToClipboard(ctx, ipv6Label, v6) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpecGrid(server: CloudServer) {
+    val st = server.serverType
+    val location = server.location ?: server.datacenter?.location
+    val specs = buildList {
+        if (st != null) {
+            add(stringResource(R.string.spec_type) to st.name.uppercase(java.util.Locale.ROOT))
+        }
+        val loc = listOfNotNull(location?.name ?: server.datacenter?.name, location?.city).joinToString(" · ")
+        if (loc.isNotBlank()) add(stringResource(R.string.server_label_location) to loc)
+        if (st != null) {
+            add(stringResource(R.string.spec_cores) to st.cores.toString())
+            add(stringResource(R.string.spec_memory) to formatGb(st.memory))
+            add(stringResource(R.string.spec_disk) to "${st.disk} GB")
+        }
+        server.image?.let { img ->
+            (img.description ?: img.name)?.let { add(stringResource(R.string.spec_image) to it) }
+        }
+    }
+    if (specs.isEmpty()) return
+    HairlineGrid(columns = 2, count = specs.size) { i ->
+        SpecCell(label = specs[i].first, value = specs[i].second)
     }
 }
 
@@ -841,7 +919,7 @@ private fun AttachedResourcesCard(server: CloudServer) {
     if (server.volumes.isEmpty() && server.firewalls.isEmpty() && server.privateNet.isEmpty() && server.loadBalancers.isEmpty()) {
         return
     }
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    HairlineCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SectionTitle(R.string.server_section_attached)
             if (server.volumes.isNotEmpty()) {
@@ -904,7 +982,7 @@ private fun ToggleSettingsCard(server: CloudServer, vm: CloudServerDetailViewMod
             onDismiss = { confirmBackupOff = false },
         )
     }
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    HairlineCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             ToggleRow(
                 label = if (server.backupWindow != null) {
@@ -944,9 +1022,28 @@ private fun PeriodTabs(period: MetricPeriod, onChange: (MetricPeriod) -> Unit) {
         MetricPeriod.D7 to R.string.metrics_period_7d,
         MetricPeriod.D30 to R.string.metrics_period_30d,
     )
-    SecondaryTabRow(selectedTabIndex = periods.indexOfFirst { it.first == period }) {
+    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         periods.forEach { (p, label) ->
-            Tab(selected = p == period, onClick = { onChange(p) }, text = { Text(stringResource(label)) })
+            val selected = p == period
+            // 44 dp touch height; the visible pill is 28 dp like the mockup.
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 44.dp)
+                    .selectable(selected = selected, role = Role.Tab, onClick = { onChange(p) }),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    stringResource(label),
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    ),
+                    color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (selected) MaterialTheme.colorScheme.surfaceContainerHighest else Color.Transparent)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                )
+            }
         }
     }
 }
@@ -967,8 +1064,9 @@ private fun MetricBlock(
     secondaryLabelRes: Int? = null,
     minCeiling: Double? = null,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(stringResource(titleRes), style = MaterialTheme.typography.titleSmall)
+    HairlineCard(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        SectionLabel(stringResource(titleRes))
         when (state) {
             MetricLoadState.Loading -> Box(
                 modifier = Modifier.fillMaxWidth().padding(8.dp),
@@ -1000,7 +1098,7 @@ private fun MetricBlock(
                     val secondary = rawSecondary.map { it.first to it.second / divisor }
                     val lines = listOfNotNull(
                         primary.takeIf { it.isNotEmpty() }?.let { (primaryLabelRes to MaterialTheme.colorScheme.primary) to it },
-                        secondary.takeIf { it.isNotEmpty() }?.let { (secondaryLabelRes to MaterialTheme.colorScheme.tertiary) to it },
+                        secondary.takeIf { it.isNotEmpty() }?.let { (secondaryLabelRes to MaterialTheme.colorScheme.onSurfaceVariant) to it },
                     )
                     lines.forEach { (meta, series) ->
                         val (labelRes, color) = meta
@@ -1018,17 +1116,17 @@ private fun MetricBlock(
                             }
                             Text(
                                 "${stringResource(R.string.metrics_min)}: %.1f%s".format(values.min(), shownUnit),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MonoStyle,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
                                 "${stringResource(R.string.metrics_max)}: %.1f%s".format(values.max(), shownUnit),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MonoStyle,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
                                 "${stringResource(R.string.metrics_avg)}: %.1f%s".format(values.average(), shownUnit),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MonoStyle,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -1043,15 +1141,12 @@ private fun MetricBlock(
             }
         }
     }
+    }
 }
 
 @Composable
 private fun SectionTitle(@androidx.annotation.StringRes resId: Int) {
-    Text(
-        stringResource(resId),
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-    )
+    SectionLabel(stringResource(resId))
 }
 
 @Composable
@@ -1088,7 +1183,7 @@ private fun CopyRow(icon: ImageVector, label: String, value: String, ctx: Contex
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
+            Text(value, style = MaterialTheme.typography.bodyMedium, fontFamily = de.kiefer_networks.falco.ui.theme.PlexMono)
         }
         Icon(
             Icons.Filled.ContentCopy,
@@ -1143,7 +1238,7 @@ private fun ProtectionDialog(
 
 @Composable
 private fun IsoTile(iso: CloudIso, loading: Boolean) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    HairlineCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SectionTitle(R.string.cloud_server_iso_section)
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1216,7 +1311,7 @@ private fun AttachNetworkDialog(
                                     net.ipRange,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontFamily = FontFamily.Monospace,
+                                    fontFamily = de.kiefer_networks.falco.ui.theme.PlexMono,
                                 )
                             }
                         }
@@ -1352,12 +1447,6 @@ private fun copyToClipboard(context: Context, label: String, value: String) {
     de.kiefer_networks.falco.ui.util.Clipboard.copySensitive(context, label, value)
 }
 
-private fun statusDotColor(status: String): Color = when (status.lowercase()) {
-    "running" -> Color(0xFF2E7D32)
-    "starting", "initializing", "rebuilding", "migrating" -> Color(0xFFEF6C00)
-    "stopping", "off", "deleting" -> Color(0xFF6D4C41)
-    else -> Color(0xFF9E9E9E)
-}
 
 private fun formatGb(memory: Double): String =
     if (memory % 1.0 == 0.0) "${memory.toInt()} GB" else "%.1f GB".format(memory)

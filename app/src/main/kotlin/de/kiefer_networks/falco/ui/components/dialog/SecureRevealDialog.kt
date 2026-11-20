@@ -60,7 +60,7 @@ fun SecureRevealDialog(
                     Text(
                         secret,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = de.kiefer_networks.falco.ui.theme.PlexMono,
                         modifier = Modifier.padding(12.dp),
                     )
                 }

@@ -39,6 +39,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.ui.components.dialog.TypeToConfirmDeleteDialog
 import de.kiefer_networks.falco.ui.nav.LocalNavDrawer
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -130,7 +131,7 @@ fun DnsScreen(
             else -> LazyColumn(Modifier.fillMaxSize().padding(padding).padding(12.dp)) {
                 items(s.zones, key = { it.id }) { zone ->
                     Box {
-                        Card(
+                        HairlineCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 6.dp)

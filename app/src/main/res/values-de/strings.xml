@@ -606,4 +606,19 @@
     <string name="s3_upload_done">%1$s hochgeladen</string>
     <string name="s3_upload_failed">Hochladen von %1$s fehlgeschlagen: %2$s</string>
     <string name="dns_import_replace_warning">Der Import der Zonendatei ersetzt alle Einträge dieser Zone. Einträge, die in der Datei fehlen, werden gelöscht.</string>
+    <string name="fleet_running">Läuft</string>
+    <string name="fleet_off">Aus</string>
+    <string name="fleet_in_progress">In Arbeit</string>
+    <string name="cloud_server_quick_actions">Serveraktionen</string>
+    <string name="spec_type">Typ</string>
+    <string name="spec_cores">vCPU</string>
+    <string name="spec_memory">Arbeitsspeicher</string>
+    <string name="spec_disk">Festplatte</string>
+    <string name="spec_image">Image</string>
+    <string name="confirm_action_title">%1$s?</string>
+    <string name="activity_status_done">erledigt</string>
+    <string name="activity_status_running">läuft</string>
+    <string name="activity_status_failed">fehlgeschlagen</string>
+    <string name="activity_today">Heute</string>
+    <string name="activity_yesterday">Gestern</string>
 </resources>

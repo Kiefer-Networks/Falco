@@ -45,9 +45,9 @@ fun DetailSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
+                title.uppercase(java.util.Locale.getDefault()),
+                style = de.kiefer_networks.falco.ui.theme.SectionLabelStyle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
             if (trailing != null) {

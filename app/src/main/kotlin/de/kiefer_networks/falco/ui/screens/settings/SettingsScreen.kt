@@ -70,7 +70,7 @@ data class SettingsUiState(
     val activeAccount: HetznerAccount? = null,
     val autoLockTimeout: Int = SecurityPreferences.DEFAULT_LOCK_TIMEOUT,
     val themeMode: Int = SecurityPreferences.THEME_LIGHT,
-    val accentMode: Int = SecurityPreferences.ACCENT_RED,
+    val accentMode: Int = SecurityPreferences.ACCENT_AMBER,
     val locale: String = "",
     val blockScreenshots: Boolean = true,
     val requireUnlockOnLaunch: Boolean = true,
@@ -354,6 +354,7 @@ fun AppearanceSettingsScreen(
 @Composable
 private fun AccentRow(current: Int, onPick: (Int) -> Unit) {
     val accents = listOf(
+        SecurityPreferences.ACCENT_AMBER to androidx.compose.ui.graphics.Color(0xFFF2A33A),
         SecurityPreferences.ACCENT_RED to androidx.compose.ui.graphics.Color(0xFFD50C2D),
         SecurityPreferences.ACCENT_BLUE to androidx.compose.ui.graphics.Color(0xFF1976D2),
         SecurityPreferences.ACCENT_GREEN to androidx.compose.ui.graphics.Color(0xFF2E7D32),

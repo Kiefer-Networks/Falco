@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ElevatedCard
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,7 +29,7 @@ fun HeroCard(
     status: HeroStatus? = null,
     modifier: Modifier = Modifier,
 ) {
-    ElevatedCard(modifier = modifier.fillMaxWidth()) {
+    HairlineCard(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(Spacing.md),
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),

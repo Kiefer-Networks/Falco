@@ -51,6 +51,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.theme.falcoColors
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.data.dto.CloudFirewall
 import de.kiefer_networks.falco.data.dto.CloudServer
 import de.kiefer_networks.falco.data.repo.CloudRepo
@@ -232,7 +234,7 @@ fun CloudFirewallsTab(
 @Composable
 private fun FirewallCard(firewall: CloudFirewall, onClick: () -> Unit, onApplyClick: () -> Unit) {
     val active = firewall.appliedTo.isNotEmpty()
-    ElevatedCard(
+    HairlineCard(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
@@ -267,7 +269,7 @@ private fun FirewallCard(firewall: CloudFirewall, onClick: () -> Unit, onApplyCl
                                 .size(8.dp)
                                 .background(
                                     color = if (active) {
-                                        androidx.compose.ui.graphics.Color(0xFF2E7D32)
+                                        MaterialTheme.falcoColors.running
                                     } else {
                                         MaterialTheme.colorScheme.onSurfaceVariant
                                     },

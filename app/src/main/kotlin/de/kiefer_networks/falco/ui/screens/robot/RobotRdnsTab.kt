@@ -39,6 +39,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.data.dto.RobotRdns
 import de.kiefer_networks.falco.data.repo.RobotRepo
 import de.kiefer_networks.falco.data.util.sanitizeError
@@ -200,7 +201,7 @@ private fun RdnsRow(
     onLongPress: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
-    OutlinedCard(
+    HairlineCard(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
@@ -216,7 +217,7 @@ private fun RdnsRow(
                 Text(
                     rdns.ip,
                     style = MaterialTheme.typography.titleSmall,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = de.kiefer_networks.falco.ui.theme.PlexMono,
                 )
                 Text(
                     rdns.ptr,
