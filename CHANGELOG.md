@@ -4,6 +4,17 @@ All notable changes to Falco are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] — 2026-11-20
+
+### Changed
+- Operator console redesign: graphite neutrals, signal amber accent
+  (new default; existing accent choices kept), status tokens with words
+  and hollow rings, hairline cards instead of tonal surfaces.
+- IBM Plex Sans and Plex Mono bundled (OFL 1.1, assets/licenses).
+- Dense server list with fleet status strip and quick actions in a
+  menu; server detail with power tiles and spec grid; confirmation
+  dialog as bottom sheet; activity grouped by day.
+
 ## [2.4.0] — 2026-11-20
 
 ### Changed
