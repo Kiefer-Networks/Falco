@@ -44,7 +44,6 @@
     <string name="account_cloud_token">Jeton API Cloud</string>
     <string name="account_robot_user">Utilisateur webservice Robot</string>
     <string name="account_robot_pass">Mot de passe Robot</string>
-    <string name="account_s3_endpoint">Endpoint S3 (ex. fsn1.your-objectstorage.com)</string>
     <string name="account_s3_access_key">Clé d\'accès S3</string>
     <string name="account_s3_secret_key">Clé secrète S3</string>
     <string name="account_manage_projects">Gérer les projets</string>
@@ -438,7 +437,6 @@
     <string name="wizard_service_picker_caption">Quels services Hetzner ce compte doit-il gérer ?</string>
     <string name="wizard_service_required">Sélectionnez au moins un service</string>
     <string name="wizard_done_caption">« %1$s » est prêt.</string>
-    <string name="account_s3_region_optional">Région (optionnel)</string>
 
     <string name="server_label_ipv4">IPv4 publique</string>
     <string name="server_label_ipv6">IPv6 publique</string>

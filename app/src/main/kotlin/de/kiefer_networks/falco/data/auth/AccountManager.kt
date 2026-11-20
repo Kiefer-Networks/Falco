@@ -276,11 +276,7 @@ class AccountManager @Inject constructor(
             // DNS runs on the Cloud API with the project token since the
             // standalone DNS API was shut down.
             hasDns = projects.isNotEmpty(),
-            hasS3 = projects.any {
-                !it.s3Endpoint.isNullOrBlank() &&
-                    !it.s3AccessKey.isNullOrBlank() &&
-                    !it.s3SecretKey.isNullOrBlank()
-            },
+            hasS3 = projects.any { it.hasS3 },
         )
     }
 

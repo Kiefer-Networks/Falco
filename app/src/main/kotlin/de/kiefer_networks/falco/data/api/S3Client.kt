@@ -4,6 +4,7 @@ package de.kiefer_networks.falco.data.api
 import io.minio.BucketExistsArgs
 import io.minio.CopyObjectArgs
 import io.minio.GetBucketVersioningArgs
+import io.minio.GetObjectArgs
 import io.minio.GetPresignedObjectUrlArgs
 import io.minio.Http
 import io.minio.ListObjectsArgs
@@ -127,6 +128,11 @@ class S3Client(
             .stream(stream, size, if (size in 0..partSize) -1L else partSize)
             .build()
         client.putObject(args)
+    }
+
+    /** Opens the object body. The caller must close the stream. */
+    suspend fun getObject(bucket: String, key: String): InputStream = withContext(Dispatchers.IO) {
+        client.getObject(GetObjectArgs.builder().bucket(bucket).`object`(key).build())
     }
 
     suspend fun deleteObject(bucket: String, key: String) = withContext(Dispatchers.IO) {

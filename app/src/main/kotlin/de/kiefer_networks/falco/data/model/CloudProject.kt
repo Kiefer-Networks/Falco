@@ -10,7 +10,9 @@ import kotlinx.serialization.Serializable
  * S3 (Object Storage) credentials are also project-scoped on the Hetzner side
  * — they're created in the same Cloud Console under the project — so they
  * live as optional fields on the project. A project may opt out of S3 by
- * leaving the keys null.
+ * leaving the keys null. Hetzner S3 keys work in every location of the
+ * project, so [s3Endpoint] is optional: null means all locations, a value
+ * (older projects) pins the project to that one endpoint.
  */
 @Serializable
 data class CloudProject(
@@ -23,7 +25,6 @@ data class CloudProject(
     val s3SecretKey: String? = null,
 ) {
     val hasS3: Boolean
-        get() = !s3Endpoint.isNullOrBlank() &&
-            !s3AccessKey.isNullOrBlank() &&
+        get() = !s3AccessKey.isNullOrBlank() &&
             !s3SecretKey.isNullOrBlank()
 }

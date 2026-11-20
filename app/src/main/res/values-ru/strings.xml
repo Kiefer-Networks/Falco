@@ -44,7 +44,6 @@
     <string name="account_cloud_token">Токен Cloud API</string>
     <string name="account_robot_user">Пользователь Robot</string>
     <string name="account_robot_pass">Пароль Robot</string>
-    <string name="account_s3_endpoint">Эндпоинт S3 (например, fsn1.your-objectstorage.com)</string>
     <string name="account_s3_access_key">Ключ доступа S3</string>
     <string name="account_s3_secret_key">Секретный ключ S3</string>
     <string name="account_manage_projects">Управлять проектами</string>
@@ -444,7 +443,6 @@
     <string name="wizard_service_picker_caption">Какими сервисами Hetzner будет управлять эта учётная запись?</string>
     <string name="wizard_service_required">Выберите хотя бы один сервис</string>
     <string name="wizard_done_caption">«%1$s» готова к использованию.</string>
-    <string name="account_s3_region_optional">Регион (необязательно)</string>
 
     <string name="server_label_ipv4">Публичный IPv4</string>
     <string name="server_label_ipv6">Публичный IPv6</string>

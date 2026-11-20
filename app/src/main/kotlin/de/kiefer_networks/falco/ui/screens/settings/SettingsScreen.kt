@@ -69,7 +69,7 @@ import javax.inject.Inject
 data class SettingsUiState(
     val activeAccount: HetznerAccount? = null,
     val autoLockTimeout: Int = SecurityPreferences.DEFAULT_LOCK_TIMEOUT,
-    val themeMode: Int = SecurityPreferences.THEME_LIGHT,
+    val themeMode: Int = SecurityPreferences.THEME_DARK,
     val accentMode: Int = SecurityPreferences.ACCENT_AMBER,
     val locale: String = "",
     val blockScreenshots: Boolean = true,

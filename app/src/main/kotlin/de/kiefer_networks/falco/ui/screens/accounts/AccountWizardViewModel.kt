@@ -39,8 +39,6 @@ data class CloudProjectDraft(
     val name: String = "",
     val token: String = "",
     val s3Enabled: Boolean = false,
-    val s3Endpoint: String = "fsn1.your-objectstorage.com",
-    val s3Region: String = "",
     val s3AccessKey: String = "",
     val s3SecretKey: String = "",
 )
@@ -89,8 +87,7 @@ class AccountWizardViewModel @Inject constructor(
             list.isNotEmpty() && list.all { p ->
                 p.name.isNotBlank() && p.token.isNotBlank() &&
                     (!p.s3Enabled || (
-                        p.s3Endpoint.isNotBlank() &&
-                            p.s3AccessKey.isNotBlank() &&
+                        p.s3AccessKey.isNotBlank() &&
                             p.s3SecretKey.isNotBlank()
                         ))
             }
@@ -179,8 +176,6 @@ class AccountWizardViewModel @Inject constructor(
                     id = d.id,
                     name = d.name,
                     cloudToken = d.token,
-                    s3Endpoint = d.s3Endpoint.takeIf { d.s3Enabled && it.isNotBlank() },
-                    s3Region = d.s3Region.takeIf { d.s3Enabled && it.isNotBlank() },
                     s3AccessKey = d.s3AccessKey.takeIf { d.s3Enabled && it.isNotBlank() },
                     s3SecretKey = d.s3SecretKey.takeIf { d.s3Enabled && it.isNotBlank() },
                 )

@@ -171,7 +171,7 @@ private fun falcoColorsFor(dark: Boolean, oled: Boolean, scheme: ColorScheme) = 
 
 @Composable
 fun FalcoTheme(
-    themeMode: Int = SecurityPreferences.THEME_LIGHT,
+    themeMode: Int = SecurityPreferences.THEME_DARK,
     accentMode: Int = SecurityPreferences.ACCENT_AMBER,
     content: @Composable () -> Unit,
 ) {

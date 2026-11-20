@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.data.api.S3Client
 import de.kiefer_networks.falco.data.repo.S3Repo
-import de.kiefer_networks.falco.data.s3.S3DownloadHelper
 import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.nav.Routes
 import kotlinx.coroutines.Dispatchers
@@ -57,7 +56,6 @@ sealed interface ObjectBrowserEvent {
 @HiltViewModel
 class ObjectBrowserViewModel @Inject constructor(
     private val repo: S3Repo,
-    private val downloader: S3DownloadHelper,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -128,7 +126,7 @@ class ObjectBrowserViewModel @Inject constructor(
     fun download(key: String, output: OutputStream, onFailure: () -> Unit = {}) {
         viewModelScope.launch {
             runCatching {
-                withContext(Dispatchers.IO) { output.use { downloader.download(bucket, key, it) } }
+                withContext(Dispatchers.IO) { output.use { repo.download(bucket, key, it) } }
             }
                 .onSuccess { _events.value = ObjectBrowserEvent.DownloadSucceeded(key) }
                 .onFailure {

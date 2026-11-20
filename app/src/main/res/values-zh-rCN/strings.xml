@@ -44,7 +44,6 @@
     <string name="account_cloud_token">Cloud API 令牌</string>
     <string name="account_robot_user">Robot 网络服务用户</string>
     <string name="account_robot_pass">Robot 密码</string>
-    <string name="account_s3_endpoint">S3 端点（例如 fsn1.your-objectstorage.com）</string>
     <string name="account_s3_access_key">S3 访问密钥</string>
     <string name="account_s3_secret_key">S3 私有密钥</string>
     <string name="account_manage_projects">管理项目</string>
@@ -415,7 +414,6 @@
     <string name="wizard_service_picker_caption">您希望此账户管理哪些 Hetzner 服务？</string>
     <string name="wizard_service_required">至少选择一项服务</string>
     <string name="wizard_done_caption">「%1$s」已配置就绪。</string>
-    <string name="account_s3_region_optional">区域（可选）</string>
 
     <string name="server_label_ipv4">公共 IPv4</string>
     <string name="server_label_ipv6">公共 IPv6</string>

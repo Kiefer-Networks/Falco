@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
         lastPausedAt = SystemClock.elapsedRealtime()
 
         setContent {
-            val themeMode by securityPrefs.themeMode.collectAsState(initial = SecurityPreferences.THEME_LIGHT)
+            val themeMode by securityPrefs.themeMode.collectAsState(initial = SecurityPreferences.THEME_DARK)
             val accentMode by securityPrefs.accentMode.collectAsState(initial = SecurityPreferences.ACCENT_AMBER)
             val blockScreenshots by securityPrefs.blockScreenshots.collectAsState(initial = true)
             androidx.compose.runtime.LaunchedEffect(blockScreenshots) {

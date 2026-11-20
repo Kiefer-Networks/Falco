@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 @file:OptIn(
     androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
     androidx.compose.foundation.ExperimentalFoundationApi::class,
 )
 package de.kiefer_networks.falco.ui.screens.s3
@@ -11,6 +12,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,6 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
@@ -54,7 +57,10 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.ui.components.HairlineCard
+import de.kiefer_networks.falco.data.repo.HETZNER_S3_LOCATIONS
+import de.kiefer_networks.falco.data.repo.S3Bucket
 import de.kiefer_networks.falco.data.repo.S3Repo
+import de.kiefer_networks.falco.ui.theme.MonoStyle
 import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.components.dialog.TypeToConfirmDeleteDialog
 import de.kiefer_networks.falco.ui.nav.LocalNavDrawer
@@ -64,7 +70,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class S3UiState(val loading: Boolean = true, val buckets: List<String> = emptyList(), val error: String? = null)
+data class S3UiState(val loading: Boolean = true, val buckets: List<S3Bucket> = emptyList(), val error: String? = null)
 
 sealed interface S3Event {
     data class CreateSucceeded(val bucket: String) : S3Event
@@ -94,9 +100,9 @@ class S3ViewModel @Inject constructor(private val repo: S3Repo) : ViewModel() {
             .onFailure { _state.value = S3UiState(loading = false, error = sanitizeError(it)) }
     }
 
-    fun createBucket(name: String, region: String?) {
+    fun createBucket(name: String, location: String) {
         viewModelScope.launch {
-            runCatching { repo.createBucket(name, region) }
+            runCatching { repo.createBucket(name, location) }
                 .onSuccess {
                     _events.value = S3Event.CreateSucceeded(name)
                     refresh()
@@ -217,7 +223,8 @@ fun S3Screen(
             s.loading -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             s.error != null -> Box(Modifier.fillMaxSize().padding(padding).padding(24.dp), contentAlignment = Alignment.Center) { Text(s.error!!) }
             else -> LazyColumn(Modifier.fillMaxSize().padding(padding).padding(12.dp)) {
-                items(s.buckets, key = { it }) { bucket ->
+                items(s.buckets, key = { it.name }) { b ->
+                    val bucket = b.name
                     HairlineCard(
                         Modifier
                             .fillMaxWidth()
@@ -229,6 +236,11 @@ fun S3Screen(
                     ) {
                         Column(Modifier.padding(12.dp)) {
                             Text(bucket, style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                b.location,
+                                style = MonoStyle,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 }
@@ -239,7 +251,7 @@ fun S3Screen(
     if (createOpen) {
         CreateBucketDialog(
             onDismiss = { createOpen = false },
-            onConfirm = { name, region -> viewModel.createBucket(name, region) },
+            onConfirm = { name, location -> viewModel.createBucket(name, location) },
         )
     }
 
@@ -287,10 +299,10 @@ fun S3Screen(
 @Composable
 private fun CreateBucketDialog(
     onDismiss: () -> Unit,
-    onConfirm: (name: String, region: String?) -> Unit,
+    onConfirm: (name: String, location: String) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
-    var region by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf(HETZNER_S3_LOCATIONS.first()) }
     val trimmedName = name.trim()
     val canSubmit = trimmedName.isNotEmpty()
 
@@ -306,18 +318,21 @@ private fun CreateBucketDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                OutlinedTextField(
-                    value = region,
-                    onValueChange = { region = it },
-                    label = { Text(stringResource(R.string.s3_bucket_region_optional)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                Text(stringResource(R.string.s3_bucket_location), style = MaterialTheme.typography.labelLarge)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HETZNER_S3_LOCATIONS.forEach { loc ->
+                        FilterChip(
+                            selected = location == loc,
+                            onClick = { location = loc },
+                            label = { Text("$loc ${locationName(loc)}") },
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(trimmedName, region.trim().ifEmpty { null }) },
+                onClick = { onConfirm(trimmedName, location) },
                 enabled = canSubmit,
             ) { Text(stringResource(R.string.s3_bucket_create)) }
         },
@@ -325,6 +340,14 @@ private fun CreateBucketDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
+}
+
+@Composable
+private fun locationName(location: String): String = when (location) {
+    "fsn1" -> stringResource(R.string.s3_location_fsn1)
+    "nbg1" -> stringResource(R.string.s3_location_nbg1)
+    "hel1" -> stringResource(R.string.s3_location_hel1)
+    else -> location
 }
 
 @Composable
