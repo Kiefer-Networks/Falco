@@ -116,7 +116,7 @@ internal fun ServerPickerCard(
             ) {
                 server.serverType?.name?.let { ServerSpecChip(Icons.Filled.Sell, it) }
                 server.publicNet?.ipv4?.ip?.let { ServerSpecChip(Icons.Filled.Public, it) }
-                server.datacenter?.location?.let { loc ->
+                (server.location ?: server.datacenter?.location)?.let { loc ->
                     ServerSpecChip(Icons.Filled.LocationOn, loc.city ?: loc.name)
                 }
                 server.serverType?.cores?.let { ServerSpecChip(Icons.Filled.Memory, "$it cores") }

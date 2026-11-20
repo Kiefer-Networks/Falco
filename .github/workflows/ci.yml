@@ -74,7 +74,10 @@ jobs:
 
   dependency-review:
     name: Dependency Review
-    if: github.event_name == 'pull_request'
+    # Runs after the Gradle snapshot for the PR head was submitted, so the
+    # review sees Gradle dependencies, not only workflow actions.
+    needs: dependency-submission
+    if: github.event_name == 'pull_request' && !cancelled()
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -85,14 +88,19 @@ jobs:
         with:
           fail-on-severity: low
           comment-summary-in-pr: on-failure
+          retry-on-snapshot-warnings: true
           # GPL-3.0-or-later app: block licences that cannot be combined with it.
           deny-licenses: SSPL-1.0, BUSL-1.1, CC-BY-NC-4.0, CC-BY-NC-SA-4.0
 
   dependency-submission:
     name: Gradle Dependency Graph
-    # Feeds the full resolved Gradle graph (incl. transitive deps) into
-    # GitHub so Dependabot alerts and dependency review see everything.
-    if: github.event_name == 'push'
+    # Feeds the resolved release runtime graph (incl. transitive deps) into
+    # GitHub so Dependabot alerts and dependency review see what ships.
+    # On PRs it runs too (same-repo branches only: forks get no write token)
+    # so Dependency Review has a snapshot for the PR head.
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -108,6 +116,11 @@ jobs:
           java-version: '17'
 
       - uses: gradle/actions/dependency-submission@8da46b539cd8fe6ab27ca75128919a18d757604c  # v6.4.1
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          # Only what ships in the APK; the AGP/lint build classpath would
+          # raise alerts for code that never reaches users.
+          dependency-graph-include-configurations: releaseRuntimeClasspath
 
   zizmor:
     name: Workflow Security (zizmor)
@@ -123,5 +136,8 @@ jobs:
       - uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd  # v0.8.1
         with:
           persona: pedantic
+          # Pin the tool itself; "latest" can break the required check
+          # without any change in this repository.
+          version: 1.32.0
           # Fail the job on findings instead of only uploading SARIF.
           advanced-security: false

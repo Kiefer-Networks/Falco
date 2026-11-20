@@ -3,6 +3,7 @@ package de.kiefer_networks.falco.data.util
 
 import de.kiefer_networks.falco.data.api.CleartextS3EndpointException
 import de.kiefer_networks.falco.data.api.PermissionDeniedException
+import de.kiefer_networks.falco.data.api.RobotRateLimitException
 import de.kiefer_networks.falco.data.api.UnpinnedS3EndpointException
 import retrofit2.HttpException
 import java.io.IOException
@@ -24,6 +25,7 @@ fun sanitizeError(t: Throwable): String = when (t) {
     // or DNS token rotated/scoped elsewhere — surface a clear hint instead
     // of a generic HTTP 403 toast that leaves the user guessing.
     is PermissionDeniedException -> "Insufficient permissions for this action — credential is read-only or scoped narrower than required."
+    is RobotRateLimitException -> "Hetzner Robot rate limit exceeded, try again later."
     is HttpException -> "HTTP ${t.code()}"
     is IOException -> "Network error"
     else -> "Error"

@@ -92,6 +92,8 @@ fun CloudVolumeDetailScreen(
     var renameOpen by remember { mutableStateOf(false) }
     var resizeOpen by remember { mutableStateOf(false) }
     var attachOpen by remember { mutableStateOf(false) }
+    // Detaching a mounted volume can break the running workload: confirm.
+    var confirmDetach by remember { mutableStateOf(false) }
     var deleteOpen by remember { mutableStateOf(false) }
     var protectOpen by remember { mutableStateOf(false) }
 
@@ -191,7 +193,7 @@ fun CloudVolumeDetailScreen(
                         }
                     } else {
                         SheetAction(Icons.Filled.LinkOff, stringResource(R.string.cloud_volume_action_detach)) {
-                            sheetOpen = false; viewModel.detach()
+                            sheetOpen = false; confirmDetach = true
                         }
                     },
                 ),
@@ -254,6 +256,14 @@ fun CloudVolumeDetailScreen(
                 viewModel.resize(size)
                 resizeOpen = false
             },
+        )
+    }
+
+    if (confirmDetach) {
+        de.kiefer_networks.falco.ui.components.dialog.ConfirmDestructiveDialog(
+            actionLabel = stringResource(R.string.cloud_volume_action_detach),
+            onConfirm = { viewModel.detach() },
+            onDismiss = { confirmDetach = false },
         )
     }
 

@@ -41,7 +41,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.dto.CloudPrimaryIp
-import de.kiefer_networks.falco.data.dto.Datacenter
+import de.kiefer_networks.falco.data.dto.Location
 import de.kiefer_networks.falco.data.repo.CloudRepo
 import de.kiefer_networks.falco.data.util.sanitizeError
 import de.kiefer_networks.falco.ui.components.wizard.PickCard
@@ -65,7 +65,7 @@ data class CloudPrimaryIpsUiState(
 data class CreatePrimaryIpOptions(
     val loading: Boolean = false,
     val running: Boolean = false,
-    val datacenters: List<Datacenter> = emptyList(),
+    val locations: List<Location> = emptyList(),
 )
 
 @HiltViewModel
@@ -100,8 +100,9 @@ class CloudPrimaryIpsViewModel @Inject constructor(private val repo: CloudRepo) 
     fun loadCreateOptions() = viewModelScope.launch {
         _create.update { it.copy(loading = true) }
         runCatching {
-            val dcs = repo.listDatacenters()
-            _create.update { it.copy(loading = false, datacenters = dcs) }
+            // GET /datacenters returns 410 Gone since 2026-10-01.
+            val locs = repo.listLocations()
+            _create.update { it.copy(loading = false, locations = locs) }
         }.onFailure { e ->
             _create.update { it.copy(loading = false) }
             _events.emit(sanitizeError(e))
@@ -122,7 +123,7 @@ class CloudPrimaryIpsViewModel @Inject constructor(private val repo: CloudRepo) 
                     name = name,
                     type = type,
                     assigneeType = "server",
-                    datacenter = datacenter,
+                    location = datacenter,
                 )
             }
             _create.update { it.copy(running = false) }
@@ -202,11 +203,11 @@ private fun PrimaryIpCard(ip: CloudPrimaryIp) {
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            ip.datacenter?.let { dc ->
+            (ip.location?.name ?: ip.datacenter?.name)?.let { loc ->
                 Text(
                     stringResource(
                         R.string.cloud_primary_ip_datacenter,
-                        dc.name,
+                        loc,
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -293,10 +294,10 @@ internal fun CreatePrimaryIpWizard(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(opts.datacenters, key = { it.id }) { dc ->
+                    items(opts.locations, key = { it.id }) { dc ->
                         PickCard(
                             title = dc.name,
-                            subtitle = dc.location?.let { it.city ?: it.name },
+                            subtitle = dc.city,
                             icon = Icons.Filled.LocationOn,
                             selected = datacenter == dc.name,
                             onClick = { datacenter = dc.name },

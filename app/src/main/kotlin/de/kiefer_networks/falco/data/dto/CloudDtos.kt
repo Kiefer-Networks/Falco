@@ -1,10 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 @file:Suppress("PropertyName")
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 package de.kiefer_networks.falco.data.dto
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonEncoder
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 @Serializable data class CloudServerList(val servers: List<CloudServer>, val meta: Meta? = null)
 @Serializable data class CloudServer(
@@ -15,7 +25,10 @@ import kotlinx.serialization.json.JsonElement
     @SerialName("public_net") val publicNet: PublicNet? = null,
     @SerialName("private_net") val privateNet: List<PrivateNet> = emptyList(),
     @SerialName("server_type") val serverType: ServerType? = null,
+    // Hetzner removed `datacenter` from server responses on 2026-07-01;
+    // `location` replaces it. Keep both so older payloads still decode.
     val datacenter: Datacenter? = null,
+    val location: Location? = null,
     val image: Image? = null,
     val labels: Map<String, String> = emptyMap(),
     val locked: Boolean = false,
@@ -40,8 +53,8 @@ import kotlinx.serialization.json.JsonElement
 @Serializable data class CloudServerProtection(val delete: Boolean = false, val rebuild: Boolean = false)
 
 @Serializable data class PublicNet(val ipv4: Ipv4? = null, val ipv6: Ipv6? = null)
-@Serializable data class Ipv4(val ip: String, val blocked: Boolean = false, @SerialName("dns_ptr") val dnsPtr: String? = null)
-@Serializable data class Ipv6(val ip: String, val blocked: Boolean = false)
+@Serializable data class Ipv4(val ip: String = "", val blocked: Boolean = false, @SerialName("dns_ptr") val dnsPtr: String? = null)
+@Serializable data class Ipv6(val ip: String = "", val blocked: Boolean = false)
 @Serializable data class PrivateNet(val network: Long, val ip: String?)
 @Serializable data class ServerType(val id: Long, val name: String, val cores: Int, val memory: Double, val disk: Int)
 @Serializable data class Datacenter(val id: Long, val name: String, val location: Location? = null)
@@ -66,7 +79,7 @@ import kotlinx.serialization.json.JsonElement
     val finished: String? = null,
 )
 
-@Serializable data class CloudVolumeList(val volumes: List<CloudVolume>)
+@Serializable data class CloudVolumeList(val volumes: List<CloudVolume>, val meta: Meta? = null)
 @Serializable data class CloudVolume(
     val id: Long,
     val name: String,
@@ -97,7 +110,7 @@ import kotlinx.serialization.json.JsonElement
 @Serializable data class AttachVolumeRequest(val server: Long, val automount: Boolean? = null)
 @Serializable data class ResizeVolumeRequest(val size: Int)
 
-@Serializable data class CloudFirewallList(val firewalls: List<CloudFirewall>)
+@Serializable data class CloudFirewallList(val firewalls: List<CloudFirewall>, val meta: Meta? = null)
 @Serializable data class CloudFirewall(
     val id: Long,
     val name: String,
@@ -125,10 +138,33 @@ import kotlinx.serialization.json.JsonElement
 @Serializable data class RemoveFirewallRequest(@SerialName("remove_from") val removeFrom: List<FirewallApplyTarget>)
 @Serializable data class UpdateFirewallRequest(val name: String? = null, val labels: Map<String, String>? = null)
 
-@Serializable data class ChangeDnsPtrRequest(
+/**
+ * `dns_ptr` is required and must be sent as JSON null to reset the pointer
+ * (Hetzner rejects requests that omit it since 2026-09-30). The shared Json
+ * uses explicitNulls=false, which would drop a null property, so this type
+ * encodes itself as a JsonObject.
+ */
+@Serializable(with = ChangeDnsPtrRequestSerializer::class)
+data class ChangeDnsPtrRequest(
     val ip: String,
-    @SerialName("dns_ptr") val dnsPtr: String? = null,
+    val dnsPtr: String? = null,
 )
+
+internal object ChangeDnsPtrRequestSerializer : KSerializer<ChangeDnsPtrRequest> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ChangeDnsPtrRequest")
+
+    override fun serialize(encoder: Encoder, value: ChangeDnsPtrRequest) {
+        (encoder as JsonEncoder).encodeJsonElement(
+            buildJsonObject {
+                put("ip", value.ip)
+                put("dns_ptr", value.dnsPtr)
+            },
+        )
+    }
+
+    override fun deserialize(decoder: Decoder): ChangeDnsPtrRequest =
+        throw UnsupportedOperationException("request-only type")
+}
 @Serializable data class RequestConsoleResponse(
     val action: ActionEnvelope,
     @SerialName("wss_url") val wssUrl: String,
@@ -144,7 +180,7 @@ import kotlinx.serialization.json.JsonElement
 )
 @Serializable data class CreateFirewallResponse(val firewall: CloudFirewall)
 
-@Serializable data class CloudFloatingIpList(@SerialName("floating_ips") val floatingIps: List<CloudFloatingIp>)
+@Serializable data class CloudFloatingIpList(@SerialName("floating_ips") val floatingIps: List<CloudFloatingIp>, val meta: Meta? = null)
 @Serializable data class CloudFloatingIp(
     val id: Long,
     val name: String? = null,
@@ -178,7 +214,7 @@ import kotlinx.serialization.json.JsonElement
 )
 @Serializable data class AssignFloatingIpRequest(val server: Long)
 
-@Serializable data class CloudNetworkList(val networks: List<CloudNetwork>)
+@Serializable data class CloudNetworkList(val networks: List<CloudNetwork>, val meta: Meta? = null)
 @Serializable data class CloudNetwork(
     val id: Long,
     val name: String,
@@ -220,7 +256,7 @@ import kotlinx.serialization.json.JsonElement
 
 // ---- SSH Keys -----------------------------------------------------------
 
-@Serializable data class CloudSshKeyList(@SerialName("ssh_keys") val sshKeys: List<CloudSshKey>)
+@Serializable data class CloudSshKeyList(@SerialName("ssh_keys") val sshKeys: List<CloudSshKey>, val meta: Meta? = null)
 @Serializable data class CloudSshKey(
     val id: Long,
     val name: String,
@@ -242,7 +278,7 @@ import kotlinx.serialization.json.JsonElement
 
 // ---- Primary IPs --------------------------------------------------------
 
-@Serializable data class CloudPrimaryIpList(@SerialName("primary_ips") val primaryIps: List<CloudPrimaryIp>)
+@Serializable data class CloudPrimaryIpList(@SerialName("primary_ips") val primaryIps: List<CloudPrimaryIp>, val meta: Meta? = null)
 @Serializable data class CloudPrimaryIp(
     val id: Long,
     val name: String,
@@ -252,6 +288,7 @@ import kotlinx.serialization.json.JsonElement
     @SerialName("assignee_type") val assigneeType: String? = null,
     @SerialName("auto_delete") val autoDelete: Boolean = false,
     val datacenter: Datacenter? = null,
+    val location: Location? = null,
     val protection: CloudServerProtection? = null,
     @SerialName("dns_ptr") val dnsPtr: List<FloatingIpDnsPtr> = emptyList(),
     val created: String? = null,
@@ -262,13 +299,15 @@ import kotlinx.serialization.json.JsonElement
     val type: String,
     @SerialName("assignee_type") val assigneeType: String,
     @SerialName("assignee_id") val assigneeId: Long? = null,
-    val datacenter: String? = null,
+    // `datacenter` was removed from this request on 2026-07-01.
+    val location: String? = null,
     @SerialName("auto_delete") val autoDelete: Boolean = false,
     val labels: Map<String, String> = emptyMap(),
 )
 @Serializable data class AssignPrimaryIpRequest(
     @SerialName("assignee_id") val assigneeId: Long,
-    @SerialName("assignee_type") val assigneeType: String = "server",
+    // Required by the API; encodeDefaults=false would otherwise drop it.
+    @EncodeDefault @SerialName("assignee_type") val assigneeType: String = "server",
 )
 
 // ---- Locations / Datacenters / Action read ----------------------------
@@ -347,7 +386,7 @@ import kotlinx.serialization.json.JsonElement
     val labels: Map<String, String> = emptyMap(),
 )
 
-@Serializable data class CloudServerTypeList(@SerialName("server_types") val serverTypes: List<CloudServerType>)
+@Serializable data class CloudServerTypeList(@SerialName("server_types") val serverTypes: List<CloudServerType>, val meta: Meta? = null)
 @Serializable data class CloudServerType(
     val id: Long,
     val name: String,
@@ -363,7 +402,8 @@ import kotlinx.serialization.json.JsonElement
 @Serializable data class CloudIsoList(val isos: List<CloudIso>, val meta: Meta? = null)
 @Serializable data class CloudIso(
     val id: Long,
-    val name: String,
+    // null for private ISOs ("only set for public ISOs").
+    val name: String? = null,
     val description: String? = null,
     val type: String? = null,
     val deprecated: String? = null,
@@ -386,12 +426,13 @@ import kotlinx.serialization.json.JsonElement
 @Serializable data class AttachIsoRequest(val iso: String)
 @Serializable data class ChangeServerTypeRequest(
     @SerialName("server_type") val serverType: String,
-    @SerialName("upgrade_disk") val upgradeDisk: Boolean = false,
+    // Required by the API; encodeDefaults=false would otherwise drop `false`.
+    @EncodeDefault @SerialName("upgrade_disk") val upgradeDisk: Boolean = false,
 )
 @Serializable data class ChangeProtectionRequest(val delete: Boolean? = null, val rebuild: Boolean? = null)
 @Serializable data class UpdateServerRequest(val name: String? = null, val labels: Map<String, String>? = null)
 
-@Serializable data class CloudStorageBoxList(@SerialName("storage_boxes") val storageBoxes: List<CloudStorageBox>)
+@Serializable data class CloudStorageBoxList(@SerialName("storage_boxes") val storageBoxes: List<CloudStorageBox>, val meta: Meta? = null)
 
 @Serializable data class CloudStorageBox(
     val id: Long,
@@ -503,7 +544,8 @@ import kotlinx.serialization.json.JsonElement
 @Serializable data class CloudStorageBoxSubaccountEnvelope(val subaccount: CloudStorageBoxSubaccount)
 @Serializable data class CloudStorageBoxSubaccount(
     val id: Long,
-    val username: String,
+    // Absent in the create response, which only returns id + storage_box.
+    val username: String = "",
     val server: String? = null,
     @SerialName("home_directory") val homeDirectory: String? = null,
     @SerialName("access_settings") val accessSettings: CloudSubaccountAccessSettings? = null,
@@ -512,17 +554,19 @@ import kotlinx.serialization.json.JsonElement
     val labels: Map<String, String> = emptyMap(),
     @SerialName("storage_box") val storageBox: Long? = null,
 )
+// Always encode every flag: the server has its own defaults (SSH off), so an
+// omitted `ssh_enabled = true` would create a subaccount without SSH access.
 @Serializable data class CloudSubaccountAccessSettings(
-    @SerialName("samba_enabled") val sambaEnabled: Boolean = false,
-    @SerialName("ssh_enabled") val sshEnabled: Boolean = true,
-    @SerialName("webdav_enabled") val webdavEnabled: Boolean = false,
-    @SerialName("readonly") val readonly: Boolean = false,
-    @SerialName("reachable_externally") val reachableExternally: Boolean = false,
+    @EncodeDefault @SerialName("samba_enabled") val sambaEnabled: Boolean = false,
+    @EncodeDefault @SerialName("ssh_enabled") val sshEnabled: Boolean = true,
+    @EncodeDefault @SerialName("webdav_enabled") val webdavEnabled: Boolean = false,
+    @EncodeDefault @SerialName("readonly") val readonly: Boolean = false,
+    @EncodeDefault @SerialName("reachable_externally") val reachableExternally: Boolean = false,
 )
 @Serializable data class CreateStorageBoxSubaccount(
     val password: String,
     @SerialName("home_directory") val homeDirectory: String,
-    @SerialName("access_settings") val accessSettings: CloudSubaccountAccessSettings = CloudSubaccountAccessSettings(),
+    @EncodeDefault @SerialName("access_settings") val accessSettings: CloudSubaccountAccessSettings = CloudSubaccountAccessSettings(),
     val description: String? = null,
     val labels: Map<String, String> = emptyMap(),
 ) {
@@ -712,7 +756,8 @@ import kotlinx.serialization.json.JsonElement
     @SerialName("listen_port") val listenPort: Int,
 )
 
-@Serializable data class ChangeLbAlgorithmRequest(val algorithm: LoadBalancerAlgorithm)
+// change_algorithm takes a top-level `type`, not a nested algorithm object.
+@Serializable data class ChangeLbAlgorithmRequest(val type: String)
 @Serializable data class ChangeLbTypeRequest(
     @SerialName("load_balancer_type") val loadBalancerType: String,
 )

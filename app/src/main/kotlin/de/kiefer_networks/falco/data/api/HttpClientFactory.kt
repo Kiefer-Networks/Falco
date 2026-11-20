@@ -218,9 +218,13 @@ private class RobotRateLimitInterceptor : Interceptor {
  * Robot 429/throttle response. The optional [retryAfter] is the raw
  * `Retry-After` header value (may be a delta in seconds OR an HTTP-date,
  * per RFC 7231); UI code can surface it verbatim or parse as needed.
+ *
+ * Extends [java.io.IOException] for the same reason as
+ * [PermissionDeniedException]: OkHttp rethrows non-IOExceptions from
+ * interceptors on its dispatcher thread and crashes the app.
  */
 class RobotRateLimitException(val request: Request, val retryAfter: String? = null) :
-    RuntimeException(
+    java.io.IOException(
         if (retryAfter != null) "Hetzner Robot rate limit exceeded; retry after $retryAfter"
         else "Hetzner Robot rate limit exceeded",
     )

@@ -2,6 +2,7 @@
 package de.kiefer_networks.falco.data.api
 
 import okhttp3.Request
+import java.io.IOException
 
 /**
  * Thrown by [PermissionInterceptor] when a mutating request returns 401 or
@@ -16,10 +17,14 @@ import okhttp3.Request
  *
  * Falco's [sanitizeError] maps this to a localized hint instead of the
  * generic "HTTP 403" so the user understands why the action was rejected.
+ *
+ * Must extend [IOException]: it is thrown inside an OkHttp interceptor, and
+ * OkHttp's async path rethrows any other exception type on its dispatcher
+ * thread, which crashes the process.
  */
 class PermissionDeniedException(
     val request: Request,
     val httpCode: Int,
-) : RuntimeException(
+) : IOException(
     "HTTP $httpCode for ${request.method} ${request.url} — credential lacks the rights for this action.",
 )

@@ -139,7 +139,7 @@ fun FailoverTab(viewModel: FailoverViewModel = hiltViewModel()) {
     routeTarget?.let { fo ->
         RouteDialog(
             failoverIp = fo.ip,
-            currentTarget = fo.activeServerIp,
+            currentTarget = fo.activeServerIp.orEmpty(),
             onDismiss = { routeTarget = null },
             onConfirm = { target ->
                 viewModel.route(fo.ip, target.trim())
@@ -183,7 +183,7 @@ private fun FailoverRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    stringResource(R.string.robot_failover_active_on, fo.activeServerIp),
+                    stringResource(R.string.robot_failover_active_on, fo.activeServerIp ?: "–"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
