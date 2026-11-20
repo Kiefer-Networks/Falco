@@ -4,6 +4,35 @@ All notable changes to Falco are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] — 2026-11-20
+
+### Changed
+- DNS uses the Hetzner Cloud DNS API (dns.hetzner.com was shut down):
+  zones, RRSets, zone file import/export, primary nameservers. The
+  separate DNS token is gone; DNS uses the Cloud project token. Zone
+  validation before import and zone renaming are no longer available.
+- Build uses AGP 9 built-in Kotlin and the new DSL.
+
+### Fixed
+- Cloud aggregate mode uses each item's project for writes, details
+  and pickers; networks are created atomically with vSwitch support;
+  route exposure via PUT; failures are surfaced; metrics show
+  bandwidth series with units; one shared OkHttpClient.
+- Robot: rDNS updates via POST, cancellation parameters and location
+  reservation, rescue key fingerprints, vSwitch decoding and form
+  fields, credential check without failover IPs.
+- S3: route encoding, downloads via the document picker, upload
+  service lifecycle and notifications, 7 day share link limit, bulk
+  delete errors.
+- Accounts and UI: account switching resets screens, credential store
+  changes emit, no duplicate account save, locale below Android 13,
+  clipboard wipe in background, NavHost state across rotation, search
+  routes to all detail screens, network detail reachable.
+
+### CI
+- Daily and manual CI on main (auto merges start no workflows), majors
+  disable auto merge.
+
 ## [2.3.0] — 2026-11-20
 
 Stability and safety release based on a full code review.
