@@ -130,4 +130,25 @@ class RobotDtosTest {
         assertEquals(listOf("sw", "hw", "man"), env.reset.type)
         assertEquals(321L, env.reset.serverNumber)
     }
+
+    @Test
+    fun `RobotCancellation parses reason list and reservation flag`() {
+        val c = json.decodeFromString(
+            RobotCancellationEnvelope.serializer(),
+            """{"cancellation":{"server_number":321,"earliest_cancellation_date":"2026-12-31","cancelled":false,"reservation_possible":true,"reserved":false,"cancellation_date":null,"cancellation_reason":["Upgrade","Other"]}}""",
+        ).cancellation
+        assertEquals(listOf("Upgrade", "Other"), c.cancellationReason)
+        assertEquals("2026-12-31", c.earliestCancellationDate)
+        assertEquals(true, c.reservationPossible)
+        assertFalse(c.cancelled)
+    }
+
+    @Test
+    fun `RobotVSwitch list decodes as bare array`() {
+        val list = json.decodeFromString(
+            ListSerializer(RobotVSwitch.serializer()),
+            """[{"id":1,"name":"a","vlan":4000,"cancelled":false}]""",
+        )
+        assertEquals(1L, list.single().id)
+    }
 }

@@ -84,8 +84,9 @@ class VSwitchViewModel @Inject constructor(private val repo: RobotRepo) : ViewMo
 
     fun create(name: String, vlan: Int) = viewModelScope.launch {
         _state.update { it.copy(running = true) }
-        runCatching { repo.createVSwitch(name, vlan) }.onSuccess { refresh() }
-        _state.update { it.copy(running = false) }
+        runCatching { repo.createVSwitch(name, vlan) }
+            .onSuccess { refresh() }
+            .onFailure { e -> _state.update { it.copy(running = false, error = sanitizeError(e)) } }
     }
 }
 

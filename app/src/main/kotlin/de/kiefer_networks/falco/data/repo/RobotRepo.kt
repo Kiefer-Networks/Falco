@@ -32,7 +32,7 @@ class RobotRepo @Inject constructor(private val accounts: AccountManager) {
     suspend fun resetOptions(serverNumber: Long) = api().resetOptions(serverNumber).reset
 
     suspend fun listFailoverIps(): List<RobotFailover> = api().listFailoverIps().map { it.failover }
-    suspend fun listVSwitches(): List<RobotVSwitch> = api().listVSwitches().map { it.vswitch }
+    suspend fun listVSwitches(): List<RobotVSwitch> = api().listVSwitches()
 
     suspend fun listSshKeys(): List<de.kiefer_networks.falco.data.dto.RobotSshKey> =
         api().listKeys().map { it.key }
@@ -56,11 +56,11 @@ class RobotRepo @Inject constructor(private val accounts: AccountManager) {
 
     // ---- vSwitch CRUD -----------------------------------------------------
 
-    suspend fun getVSwitch(id: Long): RobotVSwitch = api().getVSwitch(id).vswitch
-    suspend fun createVSwitch(name: String, vlan: Int): RobotVSwitch = api().createVSwitch(name, vlan).vswitch
-    suspend fun updateVSwitch(id: Long, name: String, vlan: Int): RobotVSwitch =
-        api().updateVSwitch(id, name, vlan).vswitch
-    suspend fun deleteVSwitch(id: Long, cancellationDate: String? = null) =
+    suspend fun getVSwitch(id: Long): RobotVSwitch = api().getVSwitch(id)
+    suspend fun createVSwitch(name: String, vlan: Int): RobotVSwitch = api().createVSwitch(name, vlan)
+    suspend fun updateVSwitch(id: Long, name: String, vlan: Int) =
+        api().updateVSwitch(id, name, vlan)
+    suspend fun deleteVSwitch(id: Long, cancellationDate: String = "now") =
         api().deleteVSwitch(id, cancellationDate)
     suspend fun attachServerToVSwitch(vswitchId: Long, serverNumber: Long) =
         api().attachServerToVSwitch(vswitchId, serverNumber)
@@ -73,16 +73,20 @@ class RobotRepo @Inject constructor(private val accounts: AccountManager) {
         api().bootOptions(serverNumber).boot
     suspend fun rescueOptions(serverNumber: Long): de.kiefer_networks.falco.data.dto.RobotRescue =
         api().rescueOptions(serverNumber).rescue
-    suspend fun enableRescue(serverNumber: Long, os: String = "linux", authorizedKey: String? = null) =
-        api().enableRescue(serverNumber, os, authorizedKey).rescue
+    suspend fun enableRescue(serverNumber: Long, os: String = "linux", authorizedKeys: List<String> = emptyList()) =
+        api().enableRescue(serverNumber, os, authorizedKeys).rescue
     suspend fun disableRescue(serverNumber: Long) = api().disableRescue(serverNumber)
 
     // ---- Cancellation ----------------------------------------------------
 
     suspend fun getCancellation(serverNumber: Long): de.kiefer_networks.falco.data.dto.RobotCancellation =
         api().getCancellation(serverNumber).cancellation
-    suspend fun cancelServer(serverNumber: Long, cancellationDate: String, reason: String? = null) =
-        api().cancelServer(serverNumber, cancellationDate, reason).cancellation
+    suspend fun cancelServer(
+        serverNumber: Long,
+        cancellationDate: String,
+        reason: String? = null,
+        reserveLocation: Boolean? = null,
+    ) = api().cancelServer(serverNumber, cancellationDate, reason, reserveLocation).cancellation
     suspend fun withdrawCancellation(serverNumber: Long) = api().withdrawCancellation(serverNumber)
 
     // ---- Traffic ---------------------------------------------------------

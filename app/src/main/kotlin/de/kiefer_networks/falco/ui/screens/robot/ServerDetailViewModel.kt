@@ -5,7 +5,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.kiefer_networks.falco.data.dto.RobotCancellation
 import de.kiefer_networks.falco.data.dto.RobotServer
+import de.kiefer_networks.falco.data.dto.RobotSshKey
 import de.kiefer_networks.falco.data.repo.RobotRepo
 import de.kiefer_networks.falco.data.repo.TrafficStats
 import de.kiefer_networks.falco.data.util.sanitizeError
@@ -28,6 +30,10 @@ data class ServerDetailUiState(
     val cancellationDate: String? = null,
     val cancellationCancelled: Boolean = false,
     val traffic: TrafficStats? = null,
+    /** Full GET /server/{n}/cancellation payload (reasons, reservation info). */
+    val cancellation: RobotCancellation? = null,
+    /** SSH keys stored in Robot, selectable for the rescue system. */
+    val sshKeys: List<RobotSshKey> = emptyList(),
 )
 
 sealed interface ServerActionResult {
@@ -75,7 +81,11 @@ class ServerDetailViewModel @Inject constructor(
                 _state.value = _state.value.copy(
                     cancellationDate = c.cancellationDate,
                     cancellationCancelled = c.cancelled,
+                    cancellation = c,
                 )
+            }
+            runCatching { repo.listSshKeys() }.onSuccess { keys ->
+                _state.value = _state.value.copy(sshKeys = keys)
             }
             // Monthly traffic on the primary IPv4. Robot reports per-IP via
             // /traffic — fan-out to a single IP and pick the matching row.
@@ -86,10 +96,10 @@ class ServerDetailViewModel @Inject constructor(
         }
     }
 
-    fun enableRescue(authorizedKey: String?, successMsg: String, failureFmt: (String) -> String) {
+    fun enableRescue(authorizedKeys: List<String>, successMsg: String, failureFmt: (String) -> String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(running = true)
-            runCatching { repo.enableRescue(serverNumber, "linux", authorizedKey) }
+            runCatching { repo.enableRescue(serverNumber, "linux", authorizedKeys) }
                 .onSuccess {
                     _state.value = _state.value.copy(rescueActive = true)
                     it.password?.let { pw -> _rescuePassword.tryEmit(pw) }
@@ -103,10 +113,7 @@ class ServerDetailViewModel @Inject constructor(
     fun disableRescue(successMsg: String, failureFmt: (String) -> String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(running = true)
-            runCatching {
-                val resp = repo.disableRescue(serverNumber)
-                if (!resp.isSuccessful) error("HTTP ${resp.code()}")
-            }
+            runCatching { repo.disableRescue(serverNumber) }
                 .onSuccess {
                     _state.value = _state.value.copy(rescueActive = false)
                     _events.value = ServerActionResult.Success(successMsg)
@@ -126,12 +133,26 @@ class ServerDetailViewModel @Inject constructor(
         }
     }
 
-    fun cancelServer(date: String, reason: String?, successMsg: String, failureFmt: (String) -> String) {
+    /**
+     * [reserveLocation] must be non-null when the cancellation data reports
+     * `reservation_possible`; Robot rejects the request otherwise.
+     */
+    fun cancelServer(
+        date: String,
+        reason: String?,
+        reserveLocation: Boolean?,
+        successMsg: String,
+        failureFmt: (String) -> String,
+    ) {
         viewModelScope.launch {
             _state.value = _state.value.copy(running = true)
-            runCatching { repo.cancelServer(serverNumber, date, reason) }
+            runCatching { repo.cancelServer(serverNumber, date, reason, reserveLocation) }
                 .onSuccess { c ->
-                    _state.value = _state.value.copy(cancellationDate = c.cancellationDate, cancellationCancelled = c.cancelled)
+                    _state.value = _state.value.copy(
+                        cancellationDate = c.cancellationDate,
+                        cancellationCancelled = c.cancelled,
+                        cancellation = c,
+                    )
                     _events.value = ServerActionResult.Success(successMsg)
                 }
                 .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(sanitizeError(e))) }
@@ -142,10 +163,7 @@ class ServerDetailViewModel @Inject constructor(
     fun withdrawCancellation(successMsg: String, failureFmt: (String) -> String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(running = true)
-            runCatching {
-                val resp = repo.withdrawCancellation(serverNumber)
-                if (!resp.isSuccessful) error("HTTP ${resp.code()}")
-            }
+            runCatching { repo.withdrawCancellation(serverNumber) }
                 .onSuccess {
                     _state.value = _state.value.copy(cancellationDate = null, cancellationCancelled = false)
                     _events.value = ServerActionResult.Success(successMsg)
@@ -168,10 +186,7 @@ class ServerDetailViewModel @Inject constructor(
     fun wakeOnLan(successMsg: String, failureFmt: (String) -> String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(running = true)
-            runCatching {
-                val resp = repo.wakeOnLan(serverNumber)
-                if (!resp.isSuccessful) error("HTTP ${resp.code()}")
-            }
+            runCatching { repo.wakeOnLan(serverNumber) }
                 .onSuccess { _events.value = ServerActionResult.Success(successMsg) }
                 .onFailure { e -> _events.value = ServerActionResult.Failure(failureFmt(sanitizeError(e))) }
             _state.value = _state.value.copy(running = false)

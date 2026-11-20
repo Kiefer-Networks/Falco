@@ -517,11 +517,15 @@
     <string name="server_action_rescue_disable">Rescue-Modus deaktivieren</string>
 <string name="server_action_cancellation">Server kündigen</string>
     <string name="server_action_cancellation_withdraw">Kündigung zurückziehen</string>
-    <string name="server_rescue_caption">Bootet beim nächsten Reset in Rescue-Linux. SSH-Schlüssel optional.</string>
-    <string name="server_rescue_authorized_key">SSH-Public-Key (optional)</string>
+    <string name="server_rescue_caption">Bootet beim nächsten Reset in Rescue Linux. Ohne ausgewählten Schlüssel erfolgt der Login mit dem erzeugten Root Passwort.</string>
+    <string name="server_rescue_authorized_key">Autorisierte SSH Schlüssel (optional)</string>
+    <string name="server_rescue_no_keys">Keine SSH Schlüssel im Robot hinterlegt.</string>
     <string name="server_cancellation_caption">Kündigungsdatum festlegen. Server läuft bis dahin weiter.</string>
     <string name="server_cancellation_date">Kündigungsdatum</string>
     <string name="server_cancellation_reason">Grund (optional)</string>
+    <string name="server_cancellation_date_hint">JJJJ-MM-TT oder \"now\"</string>
+    <string name="server_cancellation_reserve_location">Serverstandort reservieren</string>
+    <string name="robot_vswitch_delete_cancellation_date">Kündigungsdatum (JJJJ-MM-TT, leer kündigt sofort)</string>
     <string name="server_action_backup_enable">Backups aktivieren</string>
     <string name="server_action_backup_disable">Backups deaktivieren</string>
     <string name="server_action_iso_attach">ISO einlegen</string>

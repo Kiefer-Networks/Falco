@@ -79,7 +79,7 @@ class AccountManager @Inject constructor(
     /**
      * Best-effort credential probe: fires cheap GETs against each non-blank
      * credential supplied in [secrets] (Cloud `listLocations`, DNS `listZones`,
-     * Robot `listFailoverIps`). Throws on the first failure so callers can
+     * Robot `listServers`). Throws on the first failure so callers can
      * abort persistence before bad creds land in [CredentialStore]. Safe to
      * retry — performs no mutation, touches no DataStore / CredentialStore
      * state. S3 creds are intentionally not probed (would require spinning up
@@ -102,9 +102,15 @@ class AccountManager @Inject constructor(
         val user = secrets.robotUser
         val pass = secrets.robotPass
         if (!user.isNullOrBlank() && !pass.isNullOrBlank()) {
-            HttpClientFactory.robotRetrofit(user, pass)
-                .create(RobotApi::class.java)
-                .listFailoverIps()
+            // GET /server works for every account; 404 only means "no servers",
+            // so the credentials were accepted. 401/403 and others propagate.
+            try {
+                HttpClientFactory.robotRetrofit(user, pass)
+                    .create(RobotApi::class.java)
+                    .listServers()
+            } catch (e: retrofit2.HttpException) {
+                if (e.code() != 404) throw e
+            }
         }
     }
 

@@ -665,11 +665,14 @@
     <string name="server_action_rescue_disable">Disable rescue mode</string>
     <string name="server_action_cancellation">Cancel server</string>
     <string name="server_action_cancellation_withdraw">Withdraw cancellation</string>
-    <string name="server_rescue_caption">Boots into rescue Linux on next reset. SSH key optional.</string>
-    <string name="server_rescue_authorized_key">SSH public key (optional)</string>
+    <string name="server_rescue_caption">Boots into rescue Linux on next reset. Without a selected key, log in with the generated root password.</string>
+    <string name="server_rescue_authorized_key">Authorized SSH keys (optional)</string>
+    <string name="server_rescue_no_keys">No SSH keys stored in Robot.</string>
     <string name="server_cancellation_caption">Schedule a cancellation date. Server keeps running until that date.</string>
     <string name="server_cancellation_date">Cancellation date</string>
     <string name="server_cancellation_reason">Reason (optional)</string>
+    <string name="server_cancellation_date_hint">YYYY-MM-DD or \"now\"</string>
+    <string name="server_cancellation_reserve_location">Reserve the server location</string>
     <string name="server_action_backup_enable">Enable backups</string>
     <string name="server_action_backup_disable">Disable backups</string>
     <string name="server_action_iso_attach">Attach ISO</string>
@@ -839,7 +842,7 @@
     <string name="robot_vswitch_rename_action">Rename / change VLAN</string>
     <string name="robot_vswitch_delete_title">Delete vSwitch?</string>
     <string name="robot_vswitch_delete_warning">This permanently removes the vSwitch from your Robot account. The action cannot be undone.</string>
-    <string name="robot_vswitch_delete_cancellation_date">Cancellation date (optional, YYYY-MM-DD)</string>
+    <string name="robot_vswitch_delete_cancellation_date">Cancellation date (YYYY-MM-DD, empty cancels immediately)</string>
     <string name="robot_vswitch_section_overview">Overview</string>
     <string name="robot_vswitch_section_servers">Attached servers</string>
     <string name="robot_vswitch_no_servers">No servers attached.</string>
