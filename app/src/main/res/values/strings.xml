@@ -48,7 +48,6 @@
     <string name="account_cloud_token">Cloud API token</string>
     <string name="account_robot_user">Robot webservice user</string>
     <string name="account_robot_pass">Robot password</string>
-    <string name="account_dns_token">DNS API token</string>
     <string name="account_s3_endpoint">S3 endpoint (e.g. fsn1.your-objectstorage.com)</string>
     <string name="account_s3_access_key">S3 access key</string>
     <string name="account_s3_secret_key">S3 secret key</string>
@@ -352,10 +351,8 @@
     <!-- DNS BIND import/export -->
     <string name="dns_import">Import zone file</string>
     <string name="dns_export">Export zone file</string>
-    <string name="dns_import_validate_title">Validate zone file</string>
-    <string name="dns_import_validate_summary">Parsed %1$d records · %2$d valid · %3$d invalid</string>
-    <string name="dns_import_invalid_records">Invalid records:</string>
     <string name="dns_import_confirm">Import</string>
+    <string name="dns_import_replace_warning">Importing the zone file replaces all records of this zone. Records missing from the file are deleted.</string>
     <string name="dns_import_too_large">Zone file is too large (max 1 MiB).</string>
     <string name="dns_import_read_failed">Could not read file.</string>
     <string name="dns_import_succeeded">Zone imported.</string>
@@ -543,7 +540,6 @@
     <string name="wizard_step_services">Choose services</string>
     <string name="wizard_step_cloud">Cloud</string>
     <string name="wizard_step_robot">Robot</string>
-    <string name="wizard_step_dns">DNS</string>
     <string name="wizard_step_s3">Object Storage</string>
     <string name="wizard_step_review">Review</string>
     <string name="wizard_step_done">All set</string>
@@ -552,14 +548,12 @@
     <string name="wizard_back">Back</string>
     <string name="wizard_next">Next</string>
     <string name="wizard_help_name">Pick a name that uniquely identifies this Hetzner account.</string>
-    <string name="wizard_help_cloud">Create an API token in the Hetzner Cloud Console. Read+Write recommended.</string>
+    <string name="wizard_help_cloud">Create an API token in the Hetzner Cloud Console. Read+Write recommended. The token also manages the DNS zones of the project.</string>
     <string name="wizard_help_robot">Set up a Robot webservice user in the Robot settings (separate from your login).</string>
-    <string name="wizard_help_dns">Create a DNS API token in the Hetzner DNS Console.</string>
     <string name="wizard_help_s3">S3 credentials for Object Storage. Endpoint depends on location (FSN1 / HEL1 / NBG1).</string>
     <string name="wizard_help_review">Double-check every field. Tap the pencil icon to jump back.</string>
     <string name="wizard_cloud_link">Open Hetzner Cloud Console</string>
     <string name="wizard_robot_link">Open Robot preferences</string>
-    <string name="wizard_dns_link">Open DNS Console settings</string>
     <string name="wizard_s3_link">Open Hetzner Cloud Console</string>
     <string name="wizard_review_hidden">Secrets are hidden. Tap the eye icon to reveal.</string>
     <string name="wizard_review_revealed">Secrets are visible.</string>

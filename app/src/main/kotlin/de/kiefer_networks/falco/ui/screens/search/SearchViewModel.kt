@@ -247,7 +247,7 @@ class SearchViewModel @Inject constructor(
 
         cache.dnsZones.forEach { z ->
             if (z.name.lowercase().contains(needle)) {
-                hits += SearchHit(ResultKind.DnsZone, z.id, z.name, "${z.recordsCount ?: 0} records")
+                hits += SearchHit(ResultKind.DnsZone, z.id.toString(), z.name, "${z.recordsCount ?: 0} records")
             }
         }
 

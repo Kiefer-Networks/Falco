@@ -44,7 +44,6 @@
     <string name="account_cloud_token">Токен Cloud API</string>
     <string name="account_robot_user">Пользователь Robot</string>
     <string name="account_robot_pass">Пароль Robot</string>
-    <string name="account_dns_token">Токен DNS API</string>
     <string name="account_s3_endpoint">Эндпоинт S3 (например, fsn1.your-objectstorage.com)</string>
     <string name="account_s3_access_key">Ключ доступа S3</string>
     <string name="account_s3_secret_key">Секретный ключ S3</string>
@@ -425,7 +424,6 @@
     <string name="wizard_step_services">Выбор сервисов</string>
     <string name="wizard_step_cloud">Cloud</string>
     <string name="wizard_step_robot">Robot</string>
-    <string name="wizard_step_dns">DNS</string>
     <string name="wizard_step_s3">Object Storage</string>
     <string name="wizard_step_review">Проверка</string>
     <string name="wizard_step_done">Готово</string>
@@ -436,12 +434,10 @@
     <string name="wizard_help_name">Выберите имя, которое однозначно идентифицирует эту учётную запись Hetzner.</string>
     <string name="wizard_help_cloud">Создайте API-токен в Hetzner Cloud Console. Рекомендуется Read+Write.</string>
     <string name="wizard_help_robot">Создайте отдельного Robot webservice user в настройках Robot (не используйте логин).</string>
-    <string name="wizard_help_dns">Создайте DNS-токен в Hetzner DNS Console.</string>
     <string name="wizard_help_s3">S3-учётные данные для Object Storage. Эндпоинт зависит от локации (FSN1 / HEL1 / NBG1).</string>
     <string name="wizard_help_review">Проверьте все поля. Нажмите карандаш, чтобы вернуться к шагу.</string>
     <string name="wizard_cloud_link">Открыть Hetzner Cloud Console</string>
     <string name="wizard_robot_link">Открыть настройки Robot</string>
-    <string name="wizard_dns_link">Открыть настройки DNS Console</string>
     <string name="wizard_s3_link">Открыть Hetzner Cloud Console</string>
     <string name="wizard_review_hidden">Секреты скрыты. Нажмите на глаз, чтобы показать.</string>
     <string name="wizard_review_revealed">Секреты видны.</string>

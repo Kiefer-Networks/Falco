@@ -44,7 +44,6 @@
     <string name="account_cloud_token">Cloud-API-Token</string>
     <string name="account_robot_user">Robot-Webservice-Benutzer</string>
     <string name="account_robot_pass">Robot-Passwort</string>
-    <string name="account_dns_token">DNS-API-Token</string>
     <string name="account_s3_endpoint">S3-Endpoint (z. B. fsn1.your-objectstorage.com)</string>
     <string name="account_s3_access_key">S3-Access-Key</string>
     <string name="account_s3_secret_key">S3-Secret-Key</string>
@@ -398,7 +397,6 @@
     <string name="wizard_step_services">Dienste auswählen</string>
     <string name="wizard_step_cloud">Cloud</string>
     <string name="wizard_step_robot">Robot</string>
-    <string name="wizard_step_dns">DNS</string>
     <string name="wizard_step_s3">Object Storage</string>
     <string name="wizard_step_review">Übersicht</string>
     <string name="wizard_step_done">Fertig</string>
@@ -407,14 +405,12 @@
     <string name="wizard_back">Zurück</string>
     <string name="wizard_next">Weiter</string>
     <string name="wizard_help_name">Wähle einen Namen, der dieses Hetzner-Konto eindeutig macht.</string>
-    <string name="wizard_help_cloud">API-Token in der Hetzner Cloud Console anlegen. Read+Write empfohlen.</string>
+    <string name="wizard_help_cloud">API Token in der Hetzner Cloud Console anlegen. Read+Write empfohlen. Der Token verwaltet auch die DNS Zonen des Projekts.</string>
     <string name="wizard_help_robot">Robot-Webservice-User in den Robot-Einstellungen anlegen (separat vom Login).</string>
-    <string name="wizard_help_dns">DNS-API-Token in der Hetzner DNS Console anlegen.</string>
     <string name="wizard_help_s3">S3-Credentials für Object Storage. Endpoint je nach Standort (FSN1 / HEL1 / NBG1).</string>
     <string name="wizard_help_review">Prüfe alle Eingaben. Tippe auf das Stift-Symbol, um zurückzuspringen.</string>
     <string name="wizard_cloud_link">Hetzner Cloud Console öffnen</string>
     <string name="wizard_robot_link">Robot-Einstellungen öffnen</string>
-    <string name="wizard_dns_link">DNS-Console-Einstellungen öffnen</string>
     <string name="wizard_s3_link">Hetzner Cloud Console öffnen</string>
     <string name="wizard_review_hidden">Geheimnisse sind ausgeblendet. Tippe auf das Auge zum Anzeigen.</string>
     <string name="wizard_review_revealed">Geheimnisse sind sichtbar.</string>
@@ -599,4 +595,5 @@
     <string name="robot_traffic_out">Ausgehend</string>
     <string name="robot_traffic_sum">Gesamt</string>
     <string name="robot_traffic_gb_format">%1$.2f GB</string>
+    <string name="dns_import_replace_warning">Der Import der Zonendatei ersetzt alle Einträge dieser Zone. Einträge, die in der Datei fehlen, werden gelöscht.</string>
 </resources>

@@ -44,7 +44,6 @@
     <string name="account_cloud_token">Token API Cloud</string>
     <string name="account_robot_user">Utente webservice Robot</string>
     <string name="account_robot_pass">Password Robot</string>
-    <string name="account_dns_token">Token API DNS</string>
     <string name="account_s3_endpoint">Endpoint S3 (es. fsn1.your-objectstorage.com)</string>
     <string name="account_s3_access_key">Access key S3</string>
     <string name="account_s3_secret_key">Secret key S3</string>
@@ -419,7 +418,6 @@
     <string name="wizard_step_services">Scegli i servizi</string>
     <string name="wizard_step_cloud">Cloud</string>
     <string name="wizard_step_robot">Robot</string>
-    <string name="wizard_step_dns">DNS</string>
     <string name="wizard_step_s3">Object Storage</string>
     <string name="wizard_step_review">Riepilogo</string>
     <string name="wizard_step_done">Fatto</string>
@@ -430,12 +428,10 @@
     <string name="wizard_help_name">Scegli un nome che identifichi in modo univoco questo account Hetzner.</string>
     <string name="wizard_help_cloud">Crea un token API nella Hetzner Cloud Console. Read+Write consigliato.</string>
     <string name="wizard_help_robot">Crea un utente webservice Robot nelle impostazioni Robot (separato dal login).</string>
-    <string name="wizard_help_dns">Crea un token DNS nella Hetzner DNS Console.</string>
     <string name="wizard_help_s3">Credenziali S3 per Object Storage. Endpoint in base alla località (FSN1 / HEL1 / NBG1).</string>
     <string name="wizard_help_review">Controlla ogni campo. Tocca la matita per tornare indietro.</string>
     <string name="wizard_cloud_link">Apri la Hetzner Cloud Console</string>
     <string name="wizard_robot_link">Apri le impostazioni Robot</string>
-    <string name="wizard_dns_link">Apri le impostazioni DNS Console</string>
     <string name="wizard_s3_link">Apri la Hetzner Cloud Console</string>
     <string name="wizard_review_hidden">I segreti sono nascosti. Tocca l\'occhio per mostrarli.</string>
     <string name="wizard_review_revealed">I segreti sono visibili.</string>

@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.OpenInNew
@@ -156,7 +155,6 @@ fun AccountWizardScreen(
                 is WizardStep.Credentials -> when (current.service) {
                     HetznerService.Cloud -> StepCloudProjects(state = state, viewModel = viewModel)
                     HetznerService.Robot -> StepRobot(state = state, viewModel = viewModel)
-                    HetznerService.Dns -> StepDns(state = state, viewModel = viewModel)
                 }
                 WizardStep.Review -> StepReview(state = state, viewModel = viewModel)
                 WizardStep.Done -> StepDone(state = state)
@@ -230,7 +228,6 @@ private fun StepServicePicker(state: WizardState, viewModel: AccountWizardViewMo
         val items = listOf(
             HetznerService.Cloud to (Icons.Filled.Cloud to stringResource(R.string.nav_cloud)),
             HetznerService.Robot to (Icons.Filled.Memory to stringResource(R.string.nav_robot)),
-            HetznerService.Dns to (Icons.Filled.Dns to stringResource(R.string.nav_dns)),
         )
         items.forEach { (svc, labels) ->
             val selected = svc in state.services
@@ -405,23 +402,6 @@ private fun StepRobot(state: WizardState, viewModel: AccountWizardViewModel) {
 }
 
 @Composable
-private fun StepDns(state: WizardState, viewModel: AccountWizardViewModel) {
-    StepHeader(
-        title = stringResource(R.string.wizard_step_dns),
-        body = stringResource(R.string.wizard_help_dns),
-    )
-    SecretField(
-        label = stringResource(R.string.account_dns_token),
-        value = state.dns.token,
-        onValueChange = viewModel::setDnsToken,
-    )
-    ConsoleLink(
-        label = stringResource(R.string.wizard_dns_link),
-        url = "https://dns.hetzner.com/settings/api-token",
-    )
-}
-
-@Composable
 private fun StepReview(state: WizardState, viewModel: AccountWizardViewModel) {
     var revealed by remember { mutableStateOf(false) }
     StepHeader(
@@ -492,19 +472,6 @@ private fun StepReview(state: WizardState, viewModel: AccountWizardViewModel) {
             )
         }
     }
-    if (HetznerService.Dns in state.services) {
-        ReviewSection(
-            icon = Icons.Filled.Dns,
-            title = stringResource(R.string.nav_dns),
-            onEdit = { viewModel.goToStep(WizardStep.Credentials(HetznerService.Dns)) },
-        ) {
-            ReviewRow(
-                label = stringResource(R.string.account_dns_token),
-                value = mask(state.dns.token, revealed),
-            )
-        }
-    }
-
     Row(verticalAlignment = Alignment.CenterVertically) {
         OutlinedButton(
             onClick = { viewModel.verify() },

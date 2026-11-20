@@ -43,7 +43,7 @@ fun ZoneFormDialog(
 
     val titleRes = if (existing == null) R.string.dns_zone_create_title else R.string.dns_zone_edit_title
     // Allow empty TTL → null. When set, must be a non-negative integer.
-    val ttlValid = ttl.isBlank() || (ttl.toIntOrNull() ?: -1) >= 0
+    val ttlValid = ttl.isBlank() || (ttl.toIntOrNull() ?: -1) >= 60
     val canSave = name.isNotBlank() && ttlValid
 
     AlertDialog(
@@ -56,6 +56,8 @@ fun ZoneFormDialog(
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.dns_zone_name)) },
                     singleLine = true,
+                    // Zone names are immutable in the Cloud DNS API.
+                    enabled = existing == null,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(

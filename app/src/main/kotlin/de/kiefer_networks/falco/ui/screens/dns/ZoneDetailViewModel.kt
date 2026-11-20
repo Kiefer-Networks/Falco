@@ -8,7 +8,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.data.dto.CreateDnsRecord
 import de.kiefer_networks.falco.data.dto.DnsPrimaryServer
 import de.kiefer_networks.falco.data.dto.DnsRecord
-import de.kiefer_networks.falco.data.dto.DnsValidateResponse
 import de.kiefer_networks.falco.data.dto.DnsZone
 import de.kiefer_networks.falco.data.repo.BindFileTooLargeException
 import de.kiefer_networks.falco.data.repo.DnsRepo
@@ -28,9 +27,11 @@ data class ZoneDetailUiState(
     val error: String? = null,
     val zone: DnsZone? = null,
     val records: List<DnsRecord> = emptyList(),
-    val primaryServers: List<DnsPrimaryServer> = emptyList(),
-    val primaryServersLoading: Boolean = false,
-)
+    val busy: Boolean = false,
+) {
+    val primaryServers: List<DnsPrimaryServer> get() = zone?.primaryNameservers.orEmpty()
+    val isSecondary: Boolean get() = zone?.mode == "secondary"
+}
 
 /**
  * One-shot UI events: BIND export string, validation result, transient
@@ -39,7 +40,6 @@ data class ZoneDetailUiState(
  */
 sealed interface ZoneDetailEvent {
     data class ExportReady(val text: String, val suggestedName: String) : ZoneDetailEvent
-    data class ValidationReady(val result: DnsValidateResponse, val bindText: String) : ZoneDetailEvent
     data class SnackMessage(val message: String) : ZoneDetailEvent
     data object ImportSucceeded : ZoneDetailEvent
     data object BulkSucceeded : ZoneDetailEvent
@@ -64,15 +64,15 @@ class ZoneDetailViewModel @Inject constructor(
 
     init {
         refresh()
-        refreshPrimaryServers()
     }
 
     fun refresh() {
         viewModelScope.launch {
             _state.value = _state.value.copy(loading = true, error = null)
             runCatching {
-                val zone = repo.listZones().firstOrNull { it.id == zoneId }
-                val records = repo.listRecords(zoneId)
+                val zone = repo.getZone(zoneId)
+                // RRSets exist only for primary zones; secondary zones are AXFR copies.
+                val records = if (zone.mode == "secondary") emptyList() else repo.listRecords(zoneId)
                 zone to records
             }.onSuccess { (zone, records) ->
                 _state.value = _state.value.copy(
@@ -86,84 +86,41 @@ class ZoneDetailViewModel @Inject constructor(
         }
     }
 
-    fun createRecord(record: CreateDnsRecord) {
+    /** Runs a mutation, surfaces errors, then reloads. Actions are awaited in the repo. */
+    private fun mutate(block: suspend () -> Unit) {
         viewModelScope.launch {
-            runCatching { repo.createRecord(record) }
-                .onFailure { e -> _state.value = _state.value.copy(error = sanitizeError(e)) }
+            _state.value = _state.value.copy(busy = true)
+            runCatching { block() }
+                .onFailure { e -> _events.emit(ZoneDetailEvent.SnackMessage(sanitizeError(e))) }
+            _state.value = _state.value.copy(busy = false)
             refresh()
         }
     }
 
-    fun updateRecord(id: String, record: CreateDnsRecord) {
-        viewModelScope.launch {
-            runCatching { repo.updateRecord(id, record) }
-                .onFailure { e -> _state.value = _state.value.copy(error = sanitizeError(e)) }
-            refresh()
-        }
-    }
+    fun createRecord(record: CreateDnsRecord) = mutate { repo.createRecord(record) }
 
-    fun deleteRecord(id: String) {
-        viewModelScope.launch {
-            runCatching { repo.deleteRecord(id) }
-                .onFailure { e -> _state.value = _state.value.copy(error = sanitizeError(e)) }
-            refresh()
-        }
-    }
+    fun updateRecord(old: DnsRecord, record: CreateDnsRecord) =
+        mutate { repo.updateRecord(old, record, _state.value.records) }
+
+    fun deleteRecord(record: DnsRecord) = mutate { repo.deleteRecord(record) }
 
     // ---- Bulk edit ------------------------------------------------------
 
     /**
-     * Apply [newValue] and/or [newTtl] to every record in [selectedIds] and
-     * push the patched list through `bulkUpdateRecords`. Records keep their
-     * other fields (name/type/zoneId) untouched.
+     * Apply [newValue] and/or [newTtl] to the records in [selectedIds]. TTL is
+     * per RRSet in the Cloud API, so it applies to the whole RRSet.
      */
     fun applyBulkEdit(selectedIds: Set<String>, newValue: String?, newTtl: Int?) {
-        viewModelScope.launch {
-            val patched = _state.value.records
-                .filter { it.id != null && it.id in selectedIds }
-                .map { rec ->
-                    rec.copy(
-                        value = newValue ?: rec.value,
-                        ttl = newTtl ?: rec.ttl,
-                    )
-                }
-            if (patched.isEmpty()) return@launch
-            runCatching { repo.bulkUpdateRecords(patched) }
-                .onSuccess { resp ->
-                    val failed = resp.failedRecords.size
-                    if (failed > 0) {
-                        _events.emit(ZoneDetailEvent.BulkFailed(failed))
-                    } else {
-                        _events.emit(ZoneDetailEvent.BulkSucceeded)
-                    }
-                }
-                .onFailure { e -> _state.value = _state.value.copy(error = sanitizeError(e)) }
-            refresh()
+        val all = _state.value.records
+        val selected = all.filter { it.id != null && it.id in selectedIds }
+        if (selected.isEmpty()) return
+        mutate {
+            val failed = repo.bulkEdit(all, selected, newValue, newTtl)
+            _events.emit(if (failed > 0) ZoneDetailEvent.BulkFailed(failed) else ZoneDetailEvent.BulkSucceeded)
         }
     }
 
     // ---- Import / Export -----------------------------------------------
-
-    /**
-     * Validate a BIND zone file before import. The repo enforces the 1 MiB cap
-     * locally; we surface that as a friendly snack instead of a stack trace.
-     */
-    fun validateBind(bindText: String) {
-        viewModelScope.launch {
-            runCatching { repo.validateZone(zoneId, bindText) }
-                .onSuccess { result ->
-                    _events.emit(ZoneDetailEvent.ValidationReady(result, bindText))
-                }
-                .onFailure { e ->
-                    when (e) {
-                        is BindFileTooLargeException ->
-                            _events.emit(ZoneDetailEvent.SnackMessage(BIND_TOO_LARGE))
-                        else ->
-                            _events.emit(ZoneDetailEvent.SnackMessage(sanitizeError(e)))
-                    }
-                }
-        }
-    }
 
     fun importBind(bindText: String) {
         viewModelScope.launch {
@@ -198,48 +155,19 @@ class ZoneDetailViewModel @Inject constructor(
 
     // ---- Primary servers ------------------------------------------------
 
-    fun refreshPrimaryServers() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(primaryServersLoading = true)
-            runCatching { repo.listPrimaryServers(zoneId) }
-                .onSuccess { list ->
-                    _state.value = _state.value.copy(
-                        primaryServers = list,
-                        primaryServersLoading = false,
-                    )
-                }
-                .onFailure { e ->
-                    _state.value = _state.value.copy(
-                        primaryServersLoading = false,
-                        error = sanitizeError(e),
-                    )
-                }
-        }
+    /** Primary nameservers are replaced as a whole list via change_primary_nameservers. */
+    private fun setPrimaryServers(transform: (List<DnsPrimaryServer>) -> List<DnsPrimaryServer>) {
+        val next = transform(_state.value.primaryServers)
+        mutate { repo.setPrimaryServers(zoneId, next) }
     }
 
-    fun addPrimaryServer(address: String, port: Int) {
-        viewModelScope.launch {
-            runCatching { repo.createPrimaryServer(address, port, zoneId) }
-                .onFailure { e -> _state.value = _state.value.copy(error = sanitizeError(e)) }
-            refreshPrimaryServers()
-        }
-    }
+    fun addPrimaryServer(address: String, port: Int) =
+        setPrimaryServers { it + DnsPrimaryServer(address = address, port = port) }
 
-    fun updatePrimaryServer(id: String, address: String, port: Int) {
-        viewModelScope.launch {
-            runCatching { repo.updatePrimaryServer(id, address, port, zoneId) }
-                .onFailure { e -> _state.value = _state.value.copy(error = sanitizeError(e)) }
-            refreshPrimaryServers()
-        }
-    }
+    fun updatePrimaryServer(id: String, address: String, port: Int) =
+        setPrimaryServers { list -> list.map { if (it.id == id) it.copy(address = address, port = port) else it } }
 
-    fun deletePrimaryServer(id: String) {
-        viewModelScope.launch {
-            runCatching { repo.deletePrimaryServer(id) }
-                .onFailure { e -> _state.value = _state.value.copy(error = sanitizeError(e)) }
-            refreshPrimaryServers()
-        }
-    }
+    fun deletePrimaryServer(id: String) = setPrimaryServers { list -> list.filterNot { it.id == id } }
 
     private companion object {
         // Sentinel marker the screen swaps for the localised string. Kept here
