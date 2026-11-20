@@ -4,10 +4,11 @@ package de.kiefer_networks.falco.data.api
 import de.kiefer_networks.falco.data.dto.RobotFailoverEnvelope
 import de.kiefer_networks.falco.data.dto.RobotResetEnvelope
 import de.kiefer_networks.falco.data.dto.RobotServerEnvelope
-import de.kiefer_networks.falco.data.dto.RobotVSwitchEnvelope
+import de.kiefer_networks.falco.data.dto.RobotVSwitch
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -37,7 +38,7 @@ interface RobotApi {
     ): RobotResetEnvelope
 
     @POST("wol/{number}")
-    suspend fun wakeOnLan(@Path("number") serverNumber: Long): retrofit2.Response<Unit>
+    suspend fun wakeOnLan(@Path("number") serverNumber: Long)
 
     @GET("failover")
     suspend fun listFailoverIps(): List<RobotFailoverEnvelope>
@@ -50,7 +51,7 @@ interface RobotApi {
     ): RobotFailoverEnvelope
 
     @retrofit2.http.DELETE("failover/{ip}")
-    suspend fun unrouteFailover(@Path("ip") ip: String): retrofit2.Response<Unit>
+    suspend fun unrouteFailover(@Path("ip") ip: String)
 
     // ---- Reverse DNS -----------------------------------------------------
 
@@ -60,57 +61,63 @@ interface RobotApi {
     @GET("rdns/{ip}")
     suspend fun getRdns(@Path("ip") ip: String): de.kiefer_networks.falco.data.dto.RobotRdnsEnvelope
 
+    // POST creates or updates; PUT is create only (409 RDNS_ALREADY_EXISTS).
     @FormUrlEncoded
-    @retrofit2.http.PUT("rdns/{ip}")
+    @POST("rdns/{ip}")
     suspend fun setRdns(
         @Path("ip") ip: String,
         @Field("ptr") ptr: String,
     ): de.kiefer_networks.falco.data.dto.RobotRdnsEnvelope
 
     @retrofit2.http.DELETE("rdns/{ip}")
-    suspend fun deleteRdns(@Path("ip") ip: String): retrofit2.Response<Unit>
+    suspend fun deleteRdns(@Path("ip") ip: String)
 
     // ---- vSwitch CRUD ----------------------------------------------------
 
+    // vSwitch endpoints return bare objects/arrays, no envelope.
     @GET("vswitch")
-    suspend fun listVSwitches(): List<RobotVSwitchEnvelope>
+    suspend fun listVSwitches(): List<RobotVSwitch>
 
     @GET("vswitch/{id}")
-    suspend fun getVSwitch(@Path("id") id: Long): RobotVSwitchEnvelope
+    suspend fun getVSwitch(@Path("id") id: Long): RobotVSwitch
 
     @FormUrlEncoded
     @POST("vswitch")
     suspend fun createVSwitch(
         @Field("name") name: String,
         @Field("vlan") vlan: Int,
-    ): RobotVSwitchEnvelope
+    ): RobotVSwitch
 
+    /** No response body. */
     @FormUrlEncoded
     @POST("vswitch/{id}")
     suspend fun updateVSwitch(
         @Path("id") id: Long,
         @Field("name") name: String,
         @Field("vlan") vlan: Int,
-    ): RobotVSwitchEnvelope
+    )
 
-    @retrofit2.http.DELETE("vswitch/{id}")
+    /** [cancellationDate] is `yyyy-MM-dd` or `now`, sent form-encoded. */
+    @FormUrlEncoded
+    @HTTP(method = "DELETE", path = "vswitch/{id}", hasBody = true)
     suspend fun deleteVSwitch(
         @Path("id") id: Long,
-        @retrofit2.http.Query("cancellation_date") cancellationDate: String? = null,
-    ): retrofit2.Response<Unit>
+        @Field("cancellation_date") cancellationDate: String,
+    )
 
     @FormUrlEncoded
     @POST("vswitch/{id}/server")
     suspend fun attachServerToVSwitch(
         @Path("id") id: Long,
-        @Field("server") serverNumber: Long,
-    ): retrofit2.Response<Unit>
+        @Field("server[]") serverNumber: Long,
+    )
 
-    @retrofit2.http.DELETE("vswitch/{id}/server")
+    @FormUrlEncoded
+    @HTTP(method = "DELETE", path = "vswitch/{id}/server", hasBody = true)
     suspend fun detachServerFromVSwitch(
         @Path("id") id: Long,
-        @retrofit2.http.Query("server") serverNumber: Long,
-    ): retrofit2.Response<Unit>
+        @Field("server[]") serverNumber: Long,
+    )
 
     // ---- Rescue / Boot ---------------------------------------------------
 
@@ -125,11 +132,11 @@ interface RobotApi {
     suspend fun enableRescue(
         @Path("number") serverNumber: Long,
         @Field("os") os: String = "linux",
-        @Field("authorized_key") authorizedKey: String? = null,
+        @Field("authorized_key[]") authorizedKeys: List<String> = emptyList(),
     ): de.kiefer_networks.falco.data.dto.RobotRescueEnvelope
 
     @retrofit2.http.DELETE("boot/{number}/rescue")
-    suspend fun disableRescue(@Path("number") serverNumber: Long): retrofit2.Response<Unit>
+    suspend fun disableRescue(@Path("number") serverNumber: Long)
 
     // ---- Cancellation ----------------------------------------------------
 
@@ -141,11 +148,12 @@ interface RobotApi {
     suspend fun cancelServer(
         @Path("number") serverNumber: Long,
         @Field("cancellation_date") cancellationDate: String,
-        @Field("reason") reason: String? = null,
+        @Field("cancellation_reason") reason: String? = null,
+        @Field("reserve_location") reserveLocation: Boolean? = null,
     ): de.kiefer_networks.falco.data.dto.RobotCancellationEnvelope
 
     @retrofit2.http.DELETE("server/{number}/cancellation")
-    suspend fun withdrawCancellation(@Path("number") serverNumber: Long): retrofit2.Response<Unit>
+    suspend fun withdrawCancellation(@Path("number") serverNumber: Long)
 
     // ---- Traffic ---------------------------------------------------------
 
@@ -178,5 +186,5 @@ interface RobotApi {
     ): de.kiefer_networks.falco.data.dto.RobotKeyEnvelope
 
     @retrofit2.http.DELETE("key/{fp}")
-    suspend fun deleteKey(@Path("fp") fingerprint: String): retrofit2.Response<Unit>
+    suspend fun deleteKey(@Path("fp") fingerprint: String)
 }

@@ -107,14 +107,16 @@ class RobotSshKeysViewModel @Inject constructor(private val repo: RobotRepo) : V
 
     fun create(name: String, data: String) = viewModelScope.launch {
         _state.update { it.copy(running = true) }
-        runCatching { repo.createSshKey(name, data) }.onSuccess { refresh() }
-        _state.update { it.copy(running = false) }
+        runCatching { repo.createSshKey(name, data) }
+            .onSuccess { refresh() }
+            .onFailure { e -> _state.update { it.copy(running = false, error = sanitizeError(e)) } }
     }
 
     fun delete(fingerprint: String) = viewModelScope.launch {
         _state.update { it.copy(running = true) }
-        runCatching { repo.deleteSshKey(fingerprint) }.onSuccess { refresh() }
-        _state.update { it.copy(running = false) }
+        runCatching { repo.deleteSshKey(fingerprint) }
+            .onSuccess { refresh() }
+            .onFailure { e -> _state.update { it.copy(running = false, error = sanitizeError(e)) } }
     }
 }
 

@@ -155,7 +155,6 @@ fun RobotScreen(
                 when (selected) {
                     0 -> RobotServersTab(onServerClick = onServerClick)
                     1 -> FailoverTab()
-                    2 -> VSwitchTab()
                     3 -> RobotRdnsTab()
                     2 -> VSwitchTab(onVSwitchClick = onVSwitchClick)
                     else -> RobotSshKeysTab()

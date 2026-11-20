@@ -12,7 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Checkbox
+import androidx.compose.ui.semantics.Role
+import de.kiefer_networks.falco.ui.components.dialog.ConfirmDestructiveDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
@@ -285,26 +291,46 @@ fun ServerDetailScreen(
     }
 
     if (showRescueDialog) {
-        var key by remember { mutableStateOf("") }
+        // authorized_key takes fingerprints of keys stored in Robot.
+        var selected by remember { mutableStateOf(setOf<String>()) }
         AlertDialog(
             onDismissRequest = { showRescueDialog = false },
             title = { Text(stringResource(R.string.server_action_rescue_enable)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.server_rescue_caption))
-                    OutlinedTextField(
-                        value = key,
-                        onValueChange = { key = it },
-                        label = { Text(stringResource(R.string.server_rescue_authorized_key)) },
-                        singleLine = true,
+                    Text(
+                        stringResource(R.string.server_rescue_authorized_key),
+                        style = MaterialTheme.typography.labelLarge,
                     )
+                    if (state.sshKeys.isEmpty()) {
+                        Text(stringResource(R.string.server_rescue_no_keys))
+                    }
+                    state.sshKeys.forEach { key ->
+                        val checked = key.fingerprint in selected
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .toggleable(
+                                    value = checked,
+                                    role = Role.Checkbox,
+                                    onValueChange = { on ->
+                                        selected = if (on) selected + key.fingerprint else selected - key.fingerprint
+                                    },
+                                ),
+                        ) {
+                            Checkbox(checked = checked, onCheckedChange = null)
+                            Text(key.name, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
                 }
             },
             confirmButton = {
                 Button(onClick = {
                     showRescueDialog = false
                     viewModel.enableRescue(
-                        authorizedKey = key.takeIf { it.isNotBlank() },
+                        authorizedKeys = selected.toList(),
                         successMsg = doneMsg,
                         failureFmt = { msg -> failedFmt.format(msg) },
                     )
@@ -359,42 +385,76 @@ fun ServerDetailScreen(
     }
 
     if (showCancelDialog) {
-        var date by remember { mutableStateOf("") }
-        var reason by remember { mutableStateOf("") }
+        val info = state.cancellation
+        // Before cancelling, cancellation_reason is the list of allowed reasons.
+        val reasons = info?.cancellationReason.orEmpty()
+        val reservationPossible = info?.reservationPossible == true
+        var date by remember { mutableStateOf(info?.earliestCancellationDate.orEmpty()) }
+        var reason by remember { mutableStateOf<String?>(null) }
+        var reserve by remember { mutableStateOf(false) }
+        var confirm by remember { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
             title = { Text(stringResource(R.string.server_action_cancellation)) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                ) {
                     Text(stringResource(R.string.server_cancellation_caption))
                     OutlinedTextField(
                         value = date,
                         onValueChange = { date = it },
                         label = { Text(stringResource(R.string.server_cancellation_date)) },
+                        supportingText = { Text(stringResource(R.string.server_cancellation_date_hint)) },
                         placeholder = { Text("YYYY-MM-DD") },
                         singleLine = true,
                     )
-                    OutlinedTextField(
-                        value = reason,
-                        onValueChange = { reason = it },
-                        label = { Text(stringResource(R.string.server_cancellation_reason)) },
-                        singleLine = false,
-                        minLines = 2,
-                    )
+                    if (reasons.isNotEmpty()) {
+                        Text(
+                            stringResource(R.string.server_cancellation_reason),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        reasons.forEach { r ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .selectable(
+                                        selected = reason == r,
+                                        role = Role.RadioButton,
+                                        onClick = { reason = if (reason == r) null else r },
+                                    ),
+                            ) {
+                                RadioButton(selected = reason == r, onClick = null)
+                                Text(r, modifier = Modifier.padding(start = 8.dp))
+                            }
+                        }
+                    }
+                    if (reservationPossible) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .toggleable(
+                                    value = reserve,
+                                    role = Role.Checkbox,
+                                    onValueChange = { reserve = it },
+                                ),
+                        ) {
+                            Checkbox(checked = reserve, onCheckedChange = null)
+                            Text(
+                                stringResource(R.string.server_cancellation_reserve_location),
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     enabled = date.isNotBlank(),
-                    onClick = {
-                        showCancelDialog = false
-                        viewModel.cancelServer(
-                            date = date.trim(),
-                            reason = reason.trim().ifBlank { null },
-                            successMsg = doneMsg,
-                            failureFmt = { msg -> failedFmt.format(msg) },
-                        )
-                    },
+                    onClick = { confirm = true },
                 ) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
@@ -403,6 +463,24 @@ fun ServerDetailScreen(
                 }
             },
         )
+        if (confirm) {
+            ConfirmDestructiveDialog(
+                actionLabel = stringResource(R.string.server_action_cancellation),
+                onConfirm = {
+                    confirm = false
+                    showCancelDialog = false
+                    viewModel.cancelServer(
+                        date = date.trim(),
+                        reason = reason,
+                        // Mandatory when a reservation is possible, otherwise omitted.
+                        reserveLocation = if (reservationPossible) reserve else null,
+                        successMsg = doneMsg,
+                        failureFmt = { msg -> failedFmt.format(msg) },
+                    )
+                },
+                onDismiss = { confirm = false },
+            )
+        }
     }
 
     if (showResetDialog) {

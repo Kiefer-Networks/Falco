@@ -73,22 +73,17 @@ class RobotVSwitchDetailViewModel @Inject constructor(
     }
 
     fun delete(cancellationDate: String?) = wrap {
-        val response = repo.deleteVSwitch(vswitchId, cancellationDate)
-        if (response.isSuccessful) {
-            _state.update { it.copy(deleted = true) }
-        } else {
-            error("HTTP ${response.code()}")
-        }
+        // Robot requires cancellation_date: yyyy-MM-dd or "now".
+        repo.deleteVSwitch(vswitchId, cancellationDate?.takeIf { it.isNotBlank() } ?: "now")
+        _state.update { it.copy(deleted = true) }
     }
 
     fun attachServer(serverNumber: Long) = wrap(refreshAfter = true) {
-        val response = repo.attachServerToVSwitch(vswitchId, serverNumber)
-        if (!response.isSuccessful) error("HTTP ${response.code()}")
+        repo.attachServerToVSwitch(vswitchId, serverNumber)
     }
 
     fun detachServer(serverNumber: Long) = wrap(refreshAfter = true) {
-        val response = repo.detachServerFromVSwitch(vswitchId, serverNumber)
-        if (!response.isSuccessful) error("HTTP ${response.code()}")
+        repo.detachServerFromVSwitch(vswitchId, serverNumber)
     }
 
     private fun wrap(refreshAfter: Boolean = false, block: suspend () -> Unit) {

@@ -100,7 +100,7 @@ import kotlinx.serialization.json.JsonTransformingSerializer
     @SerialName("created_at") val createdAt: String? = null,
 )
 
-@Serializable data class RobotVSwitchEnvelope(val vswitch: RobotVSwitch)
+// vSwitch responses are bare objects/arrays, not envelope wrapped.
 @Serializable data class RobotVSwitch(
     val id: Long,
     val name: String,
@@ -148,7 +148,12 @@ import kotlinx.serialization.json.JsonTransformingSerializer
     @SerialName("server_name") val serverName: String? = null,
     val cancelled: Boolean = false,
     @SerialName("cancellation_date") val cancellationDate: String? = null,
-    val reason: String? = null,
+    @SerialName("earliest_cancellation_date") val earliestCancellationDate: String? = null,
+    @SerialName("reservation_possible") val reservationPossible: Boolean = false,
+    val reserved: Boolean = false,
+    // List of selectable reasons, or the single active reason once cancelled.
+    @Serializable(with = StringOrListSerializer::class)
+    @SerialName("cancellation_reason") val cancellationReason: List<String> = emptyList(),
 )
 
 @Serializable data class RobotTrafficResponse(
