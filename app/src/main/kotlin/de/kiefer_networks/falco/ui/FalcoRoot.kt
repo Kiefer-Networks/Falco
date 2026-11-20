@@ -89,7 +89,6 @@ fun FalcoRoot(viewModel: FalcoRootViewModel, windowSizeClass: WindowSizeClass) {
                     val target = when (firstService) {
                         HetznerService.Cloud -> Routes.CLOUD
                         HetznerService.Robot -> Routes.ROBOT
-                        HetznerService.Dns -> Routes.DNS
                         null -> null
                     }
                     if (target != null) {

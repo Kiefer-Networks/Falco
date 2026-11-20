@@ -74,14 +74,16 @@ class DnsViewModel @Inject constructor(private val repo: DnsRepo) : ViewModel() 
         refresh()
     }
 
-    fun updateZone(id: String, name: String, ttl: Int?) = viewModelScope.launch {
-        runCatching { repo.updateZone(id, name, ttl) }
+    /** Only the default TTL is editable; the Cloud API keeps zone names immutable. */
+    fun updateZone(zone: DnsZone, ttl: Int?) = viewModelScope.launch {
+        if (ttl == null || ttl == zone.ttl) return@launch
+        runCatching { repo.changeZoneTtl(zone.id.toString(), ttl) }
             .onFailure { _state.value = _state.value.copy(error = sanitizeError(it)) }
         refresh()
     }
 
-    fun deleteZone(id: String) = viewModelScope.launch {
-        runCatching { repo.deleteZone(id) }
+    fun deleteZone(id: Long) = viewModelScope.launch {
+        runCatching { repo.deleteZone(id.toString()) }
             .onFailure { _state.value = _state.value.copy(error = sanitizeError(it)) }
         refresh()
     }
@@ -133,7 +135,7 @@ fun DnsScreen(
                                 .fillMaxWidth()
                                 .padding(vertical = 6.dp)
                                 .combinedClickable(
-                                    onClick = { onZoneClick(zone.id) },
+                                    onClick = { onZoneClick(zone.id.toString()) },
                                     onLongClick = { menuZone = zone },
                                 ),
                         ) {
@@ -187,9 +189,9 @@ fun DnsScreen(
         ZoneFormDialog(
             existing = edit,
             onDismiss = { editing = null },
-            onConfirm = { name, ttl ->
+            onConfirm = { _, ttl ->
                 editing = null
-                viewModel.updateZone(edit.id, name, ttl)
+                viewModel.updateZone(edit, ttl)
             },
         )
     }

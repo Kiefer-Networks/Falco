@@ -16,7 +16,8 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 
-enum class HetznerService { Cloud, Robot, Dns }
+/** DNS needs no own step: it uses the Cloud project token. */
+enum class HetznerService { Cloud, Robot }
 
 sealed interface WizardStep {
     data object Name : WizardStep
@@ -27,7 +28,6 @@ sealed interface WizardStep {
 }
 
 data class RobotCreds(val user: String = "", val pass: String = "")
-data class DnsCreds(val token: String = "")
 
 /**
  * Draft state for one Cloud project being authored inside the wizard. We keep
@@ -50,7 +50,6 @@ data class WizardState(
     val services: Set<HetznerService> = emptySet(),
     val cloudProjects: List<CloudProjectDraft> = listOf(CloudProjectDraft()),
     val robot: RobotCreds = RobotCreds(),
-    val dns: DnsCreds = DnsCreds(),
     val stepIndex: Int = 0,
     val saving: Boolean = false,
     val saved: Boolean = false,
@@ -97,7 +96,6 @@ class AccountWizardViewModel @Inject constructor(
             }
         }
         HetznerService.Robot -> _state.value.robot.user.isNotBlank() && _state.value.robot.pass.isNotBlank()
-        HetznerService.Dns -> _state.value.dns.token.isNotBlank()
     }
 
     fun setName(value: String) = _state.update { it.copy(name = value.take(64)) }
@@ -109,7 +107,6 @@ class AccountWizardViewModel @Inject constructor(
 
     fun setRobotUser(value: String) = _state.update { it.copy(robot = it.robot.copy(user = value)) }
     fun setRobotPass(value: String) = _state.update { it.copy(robot = it.robot.copy(pass = value)) }
-    fun setDnsToken(value: String) = _state.update { it.copy(dns = DnsCreds(value)) }
 
     // Project list ops
 
@@ -194,7 +191,6 @@ class AccountWizardViewModel @Inject constructor(
             activeCloudProjectId = projects.firstOrNull()?.id,
             robotUser = if (HetznerService.Robot in s.services) s.robot.user else null,
             robotPass = if (HetznerService.Robot in s.services) s.robot.pass else null,
-            dnsToken = if (HetznerService.Dns in s.services) s.dns.token else null,
         )
     }
 }
