@@ -21,7 +21,8 @@ name: Dependabot auto-merge
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    # No `labeled`: label changes must not re-run this and re-arm auto-merge.
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: automerge-${{ github.event.pull_request.number }}
@@ -59,6 +60,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+        # A group PR can be updated in place from minor to major; drop any
+        # auto-merge armed by an earlier run. Fails harmlessly if none is set.
         run: |
+          gh pr merge --disable-auto "$PR_URL" || true
           gh pr edit "$PR_URL" --add-label automerge-skipped
           gh pr comment "$PR_URL" --body "Auto-merge skipped: this is a major version bump. Falco's toolchain (AGP, Kotlin, AndroidX security, biometric, Compose BOM) regularly ships breaking changes inside majors. Please review the upstream changelog, run a clean build locally, and merge manually."
