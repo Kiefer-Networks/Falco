@@ -79,7 +79,7 @@ import javax.inject.Inject
 
 data class CloudSshKeysUiState(
     val loading: Boolean = true,
-    val keys: List<CloudSshKey> = emptyList(),
+    val keys: List<ProjectAware<CloudSshKey>> = emptyList(),
     val error: String? = null,
     val running: Boolean = false,
 )
@@ -89,26 +89,36 @@ class CloudSshKeysViewModel @Inject constructor(private val repo: CloudRepo) : V
     private val _state = MutableStateFlow(CloudSshKeysUiState())
     val state: StateFlow<CloudSshKeysUiState> = _state.asStateFlow()
 
+    private val _events = kotlinx.coroutines.flow.MutableSharedFlow<String>(extraBufferCapacity = 4)
+    val events: kotlinx.coroutines.flow.SharedFlow<String> = _events
+
     init { refresh() }
 
     fun refresh() = viewModelScope.launch {
         _state.value = CloudSshKeysUiState(loading = true)
-        runCatching { repo.listSshKeys() }
-            .onSuccess { _state.value = CloudSshKeysUiState(loading = false, keys = it) }
+        runCatching { repo.listSshKeysAware() }
+            .onSuccess { items ->
+                _state.value = CloudSshKeysUiState(loading = false, keys = items.map { (pid, k) -> ProjectAware(pid, k) })
+            }
             .onFailure { e -> _state.value = CloudSshKeysUiState(loading = false, error = sanitizeError(e)) }
     }
 
     fun create(name: String, data: String, projectId: String? = null) = viewModelScope.launch {
         if (_state.value.running) return@launch
         _state.update { it.copy(running = true) }
-        runCatching { repo.createSshKey(name, data, projectId) }.onSuccess { refresh() }
+        runCatching { repo.createSshKey(name, data, projectId) }
+            .onSuccess { refresh() }
+            .onFailure { _events.emit(sanitizeError(it)) }
         _state.update { it.copy(running = false) }
     }
 
-    fun delete(id: Long) = viewModelScope.launch {
+    /** [projectId] is the key's own project (aggregate mode lists every project). */
+    fun delete(id: Long, projectId: String?) = viewModelScope.launch {
         if (_state.value.running) return@launch
         _state.update { it.copy(running = true) }
-        runCatching { repo.deleteSshKey(id) }.onSuccess { refresh() }
+        runCatching { repo.deleteSshKey(id, projectId) }
+            .onSuccess { refresh() }
+            .onFailure { _events.emit(sanitizeError(it)) }
         _state.update { it.copy(running = false) }
     }
 }
@@ -128,12 +138,17 @@ fun CloudSshKeysTab(
     val context = LocalContext.current
     var fabExpanded by remember { mutableStateOf(false) }
     var addMode by remember { mutableStateOf<SshAddMode?>(null) }
-    var pendingDelete by remember { mutableStateOf<CloudSshKey?>(null) }
+    var pendingDelete by remember { mutableStateOf<ProjectAware<CloudSshKey>?>(null) }
     var pickedProjectId by remember { mutableStateOf<String?>(null) }
     // When set, the project chooser is open and will run this action with the picked id.
     var pendingMode by remember { mutableStateOf<SshAddMode?>(null) }
 
     LaunchedEffect(Unit) { viewModel.refresh() }
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { msg ->
+            android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
 
     val needsProjectPick = projectsState.aggregateProjects && projectsState.projects.size > 1
 
@@ -173,8 +188,8 @@ fun CloudSshKeysTab(
                 modifier = Modifier.fillMaxSize().padding(Spacing.md),
                 verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
-                items(s.keys, key = { it.id }) { key ->
-                    KeyCard(key, onDelete = { pendingDelete = key })
+                items(s.keys, key = { "${it.projectId.orEmpty()}-${it.item.id}" }) { entry ->
+                    KeyCard(entry.item, onDelete = { pendingDelete = entry })
                 }
             }
         }
@@ -223,14 +238,15 @@ fun CloudSshKeysTab(
         )
     }
 
-    pendingDelete?.let { key ->
+    pendingDelete?.let { entry ->
+        val key = entry.item
         TypeToConfirmDeleteDialog(
             title = stringResource(R.string.robot_ssh_key_delete_title),
             warning = key.name,
             confirmName = key.name,
             confirmButtonLabel = stringResource(R.string.delete),
             onConfirm = {
-                viewModel.delete(key.id)
+                viewModel.delete(key.id, entry.projectId)
                 pendingDelete = null
             },
             onDismiss = { pendingDelete = null },

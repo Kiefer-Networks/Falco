@@ -20,7 +20,7 @@ import javax.inject.Inject
 
 data class CloudLoadBalancersUiState(
     val loading: Boolean = true,
-    val data: List<CloudLoadBalancer> = emptyList(),
+    val data: List<ProjectAware<CloudLoadBalancer>> = emptyList(),
     val error: String? = null,
 )
 
@@ -35,16 +35,13 @@ class CloudLoadBalancersViewModel @Inject constructor(private val repo: CloudRep
 
     fun refresh() = viewModelScope.launch {
         _state.value = CloudLoadBalancersUiState(loading = true)
-        runCatching { repo.listLoadBalancers() }
-            .onSuccess { _state.value = CloudLoadBalancersUiState(loading = false, data = it) }
+        runCatching { repo.listLoadBalancersAware() }
+            .onSuccess { items ->
+                _state.value = CloudLoadBalancersUiState(loading = false, data = items.map { (pid, lb) -> ProjectAware(pid, lb) })
+            }
             .onFailure { _state.value = CloudLoadBalancersUiState(loading = false, error = sanitizeError(it)) }
     }
 
-    fun delete(id: Long) = viewModelScope.launch {
-        runCatching { repo.deleteLoadBalancer(id) }
-            .onSuccess { refresh() }
-            .onFailure { _events.emit(sanitizeError(it)) }
-    }
 }
 
 data class CloudCertificatesUiState(
@@ -69,11 +66,6 @@ class CloudCertificatesViewModel @Inject constructor(private val repo: CloudRepo
             .onFailure { _state.value = CloudCertificatesUiState(loading = false, error = sanitizeError(it)) }
     }
 
-    fun delete(id: Long) = viewModelScope.launch {
-        runCatching { repo.deleteCertificate(id) }
-            .onSuccess { refresh() }
-            .onFailure { _events.emit(sanitizeError(it)) }
-    }
 
     fun upload(
         name: String,
@@ -134,9 +126,4 @@ class CloudPlacementGroupsViewModel @Inject constructor(private val repo: CloudR
             .onFailure { _events.emit(sanitizeError(it)); onDone(false) }
     }
 
-    fun delete(id: Long) = viewModelScope.launch {
-        runCatching { repo.deletePlacementGroup(id) }
-            .onSuccess { refresh() }
-            .onFailure { _events.emit(sanitizeError(it)) }
-    }
 }

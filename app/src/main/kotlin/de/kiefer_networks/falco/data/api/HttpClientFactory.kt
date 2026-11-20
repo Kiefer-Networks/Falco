@@ -49,7 +49,9 @@ object HttpClientFactory {
         return builder.build()
     }
 
-    private fun baseClient(extra: Iterable<Interceptor> = emptyList()): OkHttpClient =
+    // One shared client; every per-credential client is derived with
+    // newBuilder(), which shares its connection pool, dispatcher and pinner.
+    private val sharedClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .connectionSpecs(listOf(tlsOnly))
             .certificatePinner(pinner())
@@ -66,6 +68,14 @@ object HttpClientFactory {
             // Server-side idempotency keys would be the right answer but
             // that's beyond this fix.)
             .retryOnConnectionFailure(false)
+            .build()
+    }
+
+    // ponytail: unbounded per-token cache; tokens are few (one per project).
+    private val retrofitCache = java.util.concurrent.ConcurrentHashMap<String, Retrofit>()
+
+    private fun baseClient(extra: Iterable<Interceptor> = emptyList()): OkHttpClient =
+        sharedClient.newBuilder()
             .apply { extra.forEach(::addInterceptor) }
             // Permission-denied detection runs LAST in the chain so it sees
             // the response after the auth/header/idempotency layers have
@@ -76,32 +86,36 @@ object HttpClientFactory {
             .addInterceptor(PermissionInterceptor)
             .build()
 
-    fun cloudRetrofit(token: String): Retrofit = retrofit(
-        baseUrl = "https://api.hetzner.cloud/v1/",
-        client = baseClient(
-            listOf(
-                BearerInterceptor(token),
-                IdempotencyKeyInterceptor,
-                UserAgentInterceptor,
+    fun cloudRetrofit(token: String): Retrofit = retrofitCache.getOrPut("cloud:$token") {
+        retrofit(
+            baseUrl = "https://api.hetzner.cloud/v1/",
+            client = baseClient(
+                listOf(
+                    BearerInterceptor(token),
+                    IdempotencyKeyInterceptor,
+                    UserAgentInterceptor,
+                ),
             ),
-        ),
-    )
+        )
+    }
 
     /**
      * Hetzner moved the Storage Box endpoints to a separate base URL on
      * 2025-06-25 (api.hetzner.com instead of api.hetzner.cloud). Same Bearer
      * token, different host, so it gets its own Retrofit / OkHttp pin set.
      */
-    fun storageBoxRetrofit(token: String): Retrofit = retrofit(
-        baseUrl = "https://api.hetzner.com/v1/",
-        client = baseClient(
-            listOf(
-                BearerInterceptor(token),
-                IdempotencyKeyInterceptor,
-                UserAgentInterceptor,
+    fun storageBoxRetrofit(token: String): Retrofit = retrofitCache.getOrPut("sb:$token") {
+        retrofit(
+            baseUrl = "https://api.hetzner.com/v1/",
+            client = baseClient(
+                listOf(
+                    BearerInterceptor(token),
+                    IdempotencyKeyInterceptor,
+                    UserAgentInterceptor,
+                ),
             ),
-        ),
-    )
+        )
+    }
 
     fun robotRetrofit(user: String, pass: String): Retrofit = retrofit(
         baseUrl = "https://robot-ws.your-server.de/",

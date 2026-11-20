@@ -93,25 +93,27 @@ class CloudFirewallsViewModel @Inject constructor(private val repo: CloudRepo) :
             .onFailure { e -> _state.update { it.copy(loading = false, error = sanitizeError(e)) } }
     }
 
-    fun create(name: String) = viewModelScope.launch {
+    fun create(name: String, projectId: String? = null) = viewModelScope.launch {
         if (_state.value.running) return@launch
         _state.update { it.copy(running = true) }
-        runCatching { repo.createFirewall(name) }
+        runCatching { repo.createFirewall(name, projectId) }
             .onSuccess { refresh() }
             .onFailure { e -> _events.emit(sanitizeError(e)) }
         _state.update { it.copy(running = false) }
     }
 
-    fun loadServers() = viewModelScope.launch {
-        runCatching { repo.listServers() }
+    /** Only servers of the firewall's own project can be targets. */
+    fun loadServers(projectId: String?) = viewModelScope.launch {
+        _state.update { it.copy(servers = emptyList()) }
+        runCatching { repo.listServersIn(projectId) }
             .onSuccess { list -> _state.update { it.copy(servers = list) } }
             .onFailure { e -> _events.emit(sanitizeError(e)) }
     }
 
-    fun attach(firewallId: Long, serverId: Long) = viewModelScope.launch {
+    fun attach(firewallId: Long, serverId: Long, projectId: String?) = viewModelScope.launch {
         if (_state.value.running) return@launch
         _state.update { it.copy(running = true) }
-        runCatching { repo.applyFirewallToServer(firewallId, serverId) }
+        runCatching { repo.applyFirewallToServer(firewallId, serverId, projectId) }
             .onSuccess { refresh() }
             .onFailure { e -> _events.emit(sanitizeError(e)) }
         _state.update { it.copy(running = false) }
@@ -122,14 +124,21 @@ class CloudFirewallsViewModel @Inject constructor(private val repo: CloudRepo) :
 fun CloudFirewallsTab(
     onOpen: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     viewModel: CloudFirewallsViewModel = hiltViewModel(),
+    projectsViewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     val s by viewModel.state.collectAsState()
+    val projectsState by projectsViewModel.state.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
-    var applyFor by remember { mutableStateOf<CloudFirewall?>(null) }
+    var createProjectId by remember { mutableStateOf<String?>(null) }
+    var chooseProject by remember { mutableStateOf(false) }
+    var applyFor by remember { mutableStateOf<ProjectAware<CloudFirewall>?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(Unit) { viewModel.refresh() }
-    LaunchedEffect(Unit) {
-        viewModel.events.collect { /* no-op; could surface to snackbar */ }
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { msg ->
+            android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+        }
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -159,15 +168,22 @@ fun CloudFirewallsTab(
                         firewall,
                         onClick = { onOpen(entry.projectId, firewall.id) },
                         onApplyClick = {
-                            viewModel.loadServers()
-                            applyFor = firewall
+                            viewModel.loadServers(entry.projectId)
+                            applyFor = entry
                         },
                     )
                 }
             }
         }
         FloatingActionButton(
-            onClick = { createOpen = true },
+            onClick = {
+                if (projectsState.aggregateProjects && projectsState.projects.size > 1) {
+                    chooseProject = true
+                } else {
+                    createProjectId = null
+                    createOpen = true
+                }
+            },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
@@ -176,24 +192,37 @@ fun CloudFirewallsTab(
         }
     }
 
+    if (chooseProject) {
+        de.kiefer_networks.falco.ui.components.dialog.ProjectChooserDialog(
+            projects = projectsState.projects,
+            onDismiss = { chooseProject = false },
+            onPick = { id ->
+                chooseProject = false
+                createProjectId = id
+                createOpen = true
+            },
+        )
+    }
+
     if (createOpen) {
         CreateFirewallSheet(
             onDismiss = { createOpen = false },
             onConfirm = { name ->
-                viewModel.create(name.trim())
+                viewModel.create(name.trim(), createProjectId)
                 createOpen = false
             },
         )
     }
 
-    applyFor?.let { fw ->
+    applyFor?.let { entry ->
+        val fw = entry.item
         val excluded = fw.appliedTo.mapNotNull { it.server?.id }.toSet()
         FirewallApplyDialog(
             servers = s.servers,
             excludedIds = excluded,
             onDismiss = { applyFor = null },
             onConfirm = { serverId ->
-                viewModel.attach(fw.id, serverId)
+                viewModel.attach(fw.id, serverId, entry.projectId)
                 applyFor = null
             },
         )

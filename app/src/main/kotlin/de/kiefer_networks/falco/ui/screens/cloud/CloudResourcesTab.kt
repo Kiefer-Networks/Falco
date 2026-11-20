@@ -108,9 +108,9 @@ fun CloudResourcesTab(
         } else {
             pickedProjectId = null
             when (kind) {
-                PendingCreate.Volume -> { volumesViewModel.loadCreateOptions(); createVolumeOpen = true }
+                PendingCreate.Volume -> { volumesViewModel.loadCreateOptions(null); createVolumeOpen = true }
                 PendingCreate.Network -> createNetworkOpen = true
-                PendingCreate.FloatingIp -> { floatingIpsViewModel.loadCreateOptions(); createFloatingIpOpen = true }
+                PendingCreate.FloatingIp -> { floatingIpsViewModel.loadCreateOptions(null); createFloatingIpOpen = true }
                 PendingCreate.PrimaryIp -> { primaryIpsViewModel.loadCreateOptions(); createPrimaryIpOpen = true }
                 PendingCreate.PlacementGroup -> createPlacementGroupOpen = true
                 PendingCreate.Certificate -> uploadCertOpen = true
@@ -166,6 +166,7 @@ fun CloudResourcesTab(
             )
         }
         if (v.loading) item { LoadingRow() }
+        else if (v.error != null) item { ErrorRow(v.error!!) }
         else if (v.data.isEmpty()) item { EmptyRow() }
         else items(
             v.data,
@@ -186,6 +187,7 @@ fun CloudResourcesTab(
             )
         }
         if (n.loading) item { LoadingRow() }
+        else if (n.error != null) item { ErrorRow(n.error!!) }
         else if (n.data.isEmpty()) item { EmptyRow() }
         else items(n.data, key = { "net-${it.id}" }) { ResourceNetworkCard(it, onClick = { onOpenNetwork(null, it.id) }) }
 
@@ -198,6 +200,7 @@ fun CloudResourcesTab(
             )
         }
         if (f.loading) item { LoadingRow() }
+        else if (f.error != null) item { ErrorRow(f.error!!) }
         else if (f.data.isEmpty()) item { EmptyRow() }
         else items(
             f.data,
@@ -218,6 +221,7 @@ fun CloudResourcesTab(
             )
         }
         if (p.loading) item { LoadingRow() }
+        else if (p.error != null) item { ErrorRow(p.error!!) }
         else if (p.data.isEmpty()) item { EmptyRow() }
         else items(
             p.data,
@@ -231,11 +235,12 @@ fun CloudResourcesTab(
 
         item { SectionHeader(stringResource(R.string.cloud_load_balancers), lb.data.size) }
         if (lb.loading) item { LoadingRow() }
+        else if (lb.error != null) item { ErrorRow(lb.error!!) }
         else if (lb.data.isEmpty()) item { EmptyRow() }
-        else items(lb.data, key = { "lb-${it.id}" }) { item ->
+        else items(lb.data, key = { "lb-${it.projectId.orEmpty()}-${it.item.id}" }) { entry ->
             ResourceLoadBalancerCard(
-                item,
-                onClick = { onOpenLoadBalancer(null, item.id) },
+                entry.item,
+                onClick = { onOpenLoadBalancer(entry.projectId, entry.item.id) },
             )
         }
 
@@ -248,6 +253,7 @@ fun CloudResourcesTab(
             )
         }
         if (cert.loading) item { LoadingRow() }
+        else if (cert.error != null) item { ErrorRow(cert.error!!) }
         else if (cert.data.isEmpty()) item { EmptyRow() }
         else items(cert.data, key = { "cert-${it.id}" }) { ResourceCertificateCard(it) }
 
@@ -260,6 +266,7 @@ fun CloudResourcesTab(
             )
         }
         if (pg.loading) item { LoadingRow() }
+        else if (pg.error != null) item { ErrorRow(pg.error!!) }
         else if (pg.data.isEmpty()) item { EmptyRow() }
         else items(pg.data, key = { "pg-${it.id}" }) { ResourcePlacementGroupCard(it) }
     }
@@ -319,6 +326,7 @@ fun CloudResourcesTab(
             viewModel = primaryIpsViewModel,
             onDismiss = { createPrimaryIpOpen = false; pickedProjectId = null },
             onCreated = { createPrimaryIpOpen = false; pickedProjectId = null },
+            projectId = pickedProjectId,
         )
     }
 
@@ -330,9 +338,9 @@ fun CloudResourcesTab(
                 pickedProjectId = id
                 pendingCreate = null
                 when (kind) {
-                    PendingCreate.Volume -> { volumesViewModel.loadCreateOptions(); createVolumeOpen = true }
+                    PendingCreate.Volume -> { volumesViewModel.loadCreateOptions(id); createVolumeOpen = true }
                     PendingCreate.Network -> createNetworkOpen = true
-                    PendingCreate.FloatingIp -> { floatingIpsViewModel.loadCreateOptions(); createFloatingIpOpen = true }
+                    PendingCreate.FloatingIp -> { floatingIpsViewModel.loadCreateOptions(id); createFloatingIpOpen = true }
                     PendingCreate.PrimaryIp -> { primaryIpsViewModel.loadCreateOptions(); createPrimaryIpOpen = true }
                     PendingCreate.PlacementGroup -> createPlacementGroupOpen = true
                     PendingCreate.Certificate -> uploadCertOpen = true
@@ -365,6 +373,16 @@ private fun SectionHeader(
             }
         }
     }
+}
+
+@Composable
+private fun ErrorRow(message: String) {
+    Text(
+        message,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.padding(vertical = Spacing.sm),
+    )
 }
 
 @Composable

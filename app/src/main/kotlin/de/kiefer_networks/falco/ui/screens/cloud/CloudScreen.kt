@@ -69,11 +69,18 @@ import de.kiefer_networks.falco.ui.components.LoadingState
 fun CloudScreen(
     onOpenServer: (projectId: String?, id: Long) -> Unit = { _, _ -> },
     viewModel: CloudViewModel = hiltViewModel(),
+    projectsViewModel: ProjectsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val projectsState by projectsViewModel.state.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
-    // Power actions from the list cards always ask before running.
-    var pendingAction by remember { mutableStateOf<Pair<CloudViewModel.ServerAction, Long>?>(null) }
+    // Target project of the create sheet; null = active project.
+    var createProjectId by remember { mutableStateOf<String?>(null) }
+    var chooseProject by remember { mutableStateOf(false) }
+    // Power actions from the list cards always ask before running. The
+    // server's own project travels along: in aggregate mode it may differ
+    // from the active one.
+    var pendingAction by remember { mutableStateOf<Triple<CloudViewModel.ServerAction, Long, String?>?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
     androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.refresh() }
     androidx.compose.runtime.LaunchedEffect(Unit) {
@@ -87,31 +94,49 @@ fun CloudScreen(
             is CloudUiState.Failed -> ErrorState(message = s.message, onRetry = viewModel::refresh)
             is CloudUiState.Loaded -> ServerList(
                 servers = s.servers,
-                onAction = { action, id ->
-                    if (action == CloudViewModel.ServerAction.Snapshot) viewModel.action(action, id)
-                    else pendingAction = action to id
+                onAction = { action, id, pid ->
+                    if (action == CloudViewModel.ServerAction.Snapshot) viewModel.action(action, id, pid)
+                    else pendingAction = Triple(action, id, pid)
                 },
                 onOpen = onOpenServer,
             )
         }
         FloatingActionButton(
             onClick = {
-                viewModel.loadCreateOptions()
-                createOpen = true
+                if (projectsState.aggregateProjects && projectsState.projects.size > 1) {
+                    chooseProject = true
+                } else {
+                    createProjectId = null
+                    viewModel.loadCreateOptions()
+                    createOpen = true
+                }
             },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
         ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cloud_server_create))
         }
     }
+    if (chooseProject) {
+        de.kiefer_networks.falco.ui.components.dialog.ProjectChooserDialog(
+            projects = projectsState.projects,
+            onDismiss = { chooseProject = false },
+            onPick = { id ->
+                chooseProject = false
+                createProjectId = id
+                viewModel.loadCreateOptions(id)
+                createOpen = true
+            },
+        )
+    }
     if (createOpen) {
         CreateServerSheet(
             viewModel = viewModel,
             onDismiss = { createOpen = false },
             onCreated = { createOpen = false },
+            projectId = createProjectId,
         )
     }
-    pendingAction?.let { (action, id) ->
+    pendingAction?.let { (action, id, pid) ->
         val label = when (action) {
             CloudViewModel.ServerAction.PowerOn -> stringResource(R.string.action_power_on)
             CloudViewModel.ServerAction.PowerOff -> stringResource(R.string.action_power_off)
@@ -123,7 +148,7 @@ fun CloudScreen(
         de.kiefer_networks.falco.ui.components.dialog.ConfirmDestructiveDialog(
             actionLabel = label,
             message = stringResource(R.string.confirm_server_action_msg, label),
-            onConfirm = { viewModel.action(action, id) },
+            onConfirm = { viewModel.action(action, id, pid) },
             onDismiss = { pendingAction = null },
         )
     }
@@ -143,7 +168,7 @@ fun CloudScreen(
 @Composable
 private fun ServerList(
     servers: List<ProjectAware<CloudServer>>,
-    onAction: (CloudViewModel.ServerAction, Long) -> Unit,
+    onAction: (CloudViewModel.ServerAction, Long, String?) -> Unit,
     onOpen: (projectId: String?, id: Long) -> Unit,
 ) {
     if (servers.isEmpty()) {
@@ -162,7 +187,7 @@ private fun ServerList(
             val server = entry.item
             ServerCard(
                 server = server,
-                onAction = onAction,
+                onAction = { action, id -> onAction(action, id, entry.projectId) },
                 onClick = { onOpen(entry.projectId, server.id) },
             )
         }
