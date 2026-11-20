@@ -402,9 +402,8 @@ internal object ChangeDnsPtrRequestSerializer : KSerializer<ChangeDnsPtrRequest>
 @Serializable data class CloudIsoList(val isos: List<CloudIso>, val meta: Meta? = null)
 @Serializable data class CloudIso(
     val id: Long,
-    // null for private ISOs ("only set for public ISOs"); explicitNulls=false
-    // maps null to this default instead of failing the whole list.
-    val name: String = "",
+    // null for private ISOs ("only set for public ISOs").
+    val name: String? = null,
     val description: String? = null,
     val type: String? = null,
     val deprecated: String? = null,

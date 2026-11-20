@@ -47,7 +47,7 @@ fun IsoPickerDialog(
     val filtered = isos.filter { iso ->
         val q = query.trim().lowercase()
         q.isEmpty() ||
-            iso.name.contains(q, ignoreCase = true) ||
+            iso.name.orEmpty().contains(q, ignoreCase = true) ||
             (iso.description?.contains(q, ignoreCase = true) == true)
     }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -65,7 +65,7 @@ fun IsoPickerDialog(
                             TextButton(
                                 enabled = selected != null,
                                 // attach_iso takes ID or name; private ISOs have no name.
-                                onClick = { selected?.let { onAttach(it.name.ifBlank { it.id.toString() }) } },
+                                onClick = { selected?.let { onAttach(it.name ?: it.id.toString()) } },
                             ) { Text(stringResource(R.string.save)) }
                         },
                     )
@@ -107,7 +107,7 @@ private fun IsoRow(iso: CloudIso, selected: Boolean, onClick: () -> Unit) {
         ),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text(iso.name.ifBlank { "#${iso.id}" }, style = MaterialTheme.typography.titleSmall)
+            Text(iso.name ?: "#${iso.id}", style = MaterialTheme.typography.titleSmall)
             iso.description?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             iso.deprecated?.let {
                 Text(

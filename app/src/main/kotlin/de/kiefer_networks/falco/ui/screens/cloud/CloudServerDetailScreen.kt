@@ -1101,7 +1101,7 @@ private fun IsoTile(iso: CloudIso, loading: Boolean) {
                 )
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(iso.name.ifBlank { "#${iso.id}" }, style = MaterialTheme.typography.titleSmall)
+                    Text(iso.name ?: "#${iso.id}", style = MaterialTheme.typography.titleSmall)
                     val description = iso.description
                     if (!description.isNullOrBlank()) {
                         Text(

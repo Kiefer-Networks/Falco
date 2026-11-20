@@ -75,7 +75,7 @@ class WireFormatTest {
     @Test
     fun `private ISO without name and subaccount create without username decode`() {
         val iso = json.decodeFromString(CloudIsoList.serializer(), """{"isos":[{"id":7,"name":null,"type":"private"}]}""")
-        assertEquals("", iso.isos.single().name)
+        assertNull(iso.isos.single().name)
         val sub = json.decodeFromString(
             CloudStorageBoxSubaccountEnvelope.serializer(),
             """{"subaccount":{"id":5,"storage_box":9}}""",
