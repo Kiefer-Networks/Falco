@@ -7,7 +7,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import de.kiefer_networks.falco.data.api.CloudApi
-import de.kiefer_networks.falco.data.api.DnsApi
 import de.kiefer_networks.falco.data.api.HttpClientFactory
 import de.kiefer_networks.falco.data.api.RobotApi
 import de.kiefer_networks.falco.data.model.CloudProject
@@ -95,11 +94,6 @@ class AccountManager @Inject constructor(
                     .create(CloudApi::class.java)
                     .listLocations()
             }
-        secrets.dnsToken?.takeIf { it.isNotBlank() }?.let { token ->
-            HttpClientFactory.dnsRetrofit(token)
-                .create(DnsApi::class.java)
-                .listZones(page = 1, perPage = 1)
-        }
         val user = secrets.robotUser
         val pass = secrets.robotPass
         if (!user.isNullOrBlank() && !pass.isNullOrBlank()) {
@@ -279,7 +273,9 @@ class AccountManager @Inject constructor(
             activeCloudProjectId = activeProj,
             hasRobot = !store.get(id, CredentialStore.Field.ROBOT_USER).isNullOrBlank() &&
                 !store.get(id, CredentialStore.Field.ROBOT_PASS).isNullOrBlank(),
-            hasDns = !store.get(id, CredentialStore.Field.DNS_TOKEN).isNullOrBlank(),
+            // DNS runs on the Cloud API with the project token since the
+            // standalone DNS API was shut down.
+            hasDns = projects.isNotEmpty(),
             hasS3 = projects.any {
                 !it.s3Endpoint.isNullOrBlank() &&
                     !it.s3AccessKey.isNullOrBlank() &&

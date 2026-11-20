@@ -1,93 +1,95 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.data.api
 
-import de.kiefer_networks.falco.data.dto.CreateDnsRecord
-import de.kiefer_networks.falco.data.dto.DnsRecord
-import de.kiefer_networks.falco.data.dto.DnsRecordList
+import de.kiefer_networks.falco.data.dto.ActionResponse
+import de.kiefer_networks.falco.data.dto.CreateDnsZoneRequest
+import de.kiefer_networks.falco.data.dto.DnsAddRecordsRequest
+import de.kiefer_networks.falco.data.dto.DnsPrimaryServersRequest
+import de.kiefer_networks.falco.data.dto.DnsRRSetList
+import de.kiefer_networks.falco.data.dto.DnsRecordsRequest
+import de.kiefer_networks.falco.data.dto.DnsTtlRequest
+import de.kiefer_networks.falco.data.dto.DnsZoneCreateResponse
+import de.kiefer_networks.falco.data.dto.DnsZoneEnvelope
 import de.kiefer_networks.falco.data.dto.DnsZoneList
+import de.kiefer_networks.falco.data.dto.DnsZonefile
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
-import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+/** DNS part of the Hetzner Cloud API; built on the Cloud retrofit. */
 interface DnsApi {
     @GET("zones")
     suspend fun listZones(
         @Query("page") page: Int = 1,
-        @Query("per_page") perPage: Int = 100,
+        @Query("per_page") perPage: Int = 50,
     ): DnsZoneList
 
-    @GET("records")
-    suspend fun listRecords(@Query("zone_id") zoneId: String): DnsRecordList
-
-    @POST("records")
-    suspend fun createRecord(@Body record: CreateDnsRecord): DnsRecord
-
-    @PUT("records/{id}")
-    suspend fun updateRecord(@Path("id") id: String, @Body record: CreateDnsRecord): DnsRecord
-
-    @DELETE("records/{id}")
-    suspend fun deleteRecord(@Path("id") id: String): retrofit2.Response<Unit>
-
-    @GET("zones/{id}")
-    suspend fun getZone(@Path("id") id: String): de.kiefer_networks.falco.data.dto.DnsZoneEnvelope
+    @GET("zones/{zone}")
+    suspend fun getZone(@Path("zone") zone: String): DnsZoneEnvelope
 
     @POST("zones")
-    suspend fun createZone(@Body body: de.kiefer_networks.falco.data.dto.CreateDnsZoneRequest): de.kiefer_networks.falco.data.dto.DnsZoneEnvelope
+    suspend fun createZone(@Body body: CreateDnsZoneRequest): DnsZoneCreateResponse
 
-    @PUT("zones/{id}")
-    suspend fun updateZone(
-        @Path("id") id: String,
-        @Body body: de.kiefer_networks.falco.data.dto.CreateDnsZoneRequest,
-    ): de.kiefer_networks.falco.data.dto.DnsZoneEnvelope
+    @DELETE("zones/{zone}")
+    suspend fun deleteZone(@Path("zone") zone: String): ActionResponse
 
-    @DELETE("zones/{id}")
-    suspend fun deleteZone(@Path("id") id: String): retrofit2.Response<Unit>
+    @POST("zones/{zone}/actions/change_ttl")
+    suspend fun changeZoneTtl(@Path("zone") zone: String, @Body body: DnsTtlRequest): ActionResponse
 
-    @GET("records/{id}")
-    suspend fun getRecord(@Path("id") id: String): de.kiefer_networks.falco.data.dto.DnsRecordEnvelope
+    @GET("zones/{zone}/zonefile")
+    suspend fun exportZonefile(@Path("zone") zone: String): DnsZonefile
 
-    @POST("records/bulk")
-    suspend fun bulkCreateRecords(
-        @Body body: de.kiefer_networks.falco.data.dto.BulkRecordsRequest,
-    ): de.kiefer_networks.falco.data.dto.BulkCreateRecordsResponse
+    @POST("zones/{zone}/actions/import_zonefile")
+    suspend fun importZonefile(@Path("zone") zone: String, @Body body: DnsZonefile): ActionResponse
 
-    @PUT("records/bulk")
-    suspend fun bulkUpdateRecords(
-        @Body body: de.kiefer_networks.falco.data.dto.BulkUpdateRecordsRequest,
-    ): de.kiefer_networks.falco.data.dto.BulkUpdateRecordsResponse
+    @POST("zones/{zone}/actions/change_primary_nameservers")
+    suspend fun changePrimaryNameservers(
+        @Path("zone") zone: String,
+        @Body body: DnsPrimaryServersRequest,
+    ): ActionResponse
 
-    @GET("zones/{id}/export")
-    @retrofit2.http.Headers("Accept: text/plain")
-    suspend fun exportZone(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
+    @GET("zones/actions/{id}")
+    suspend fun getAction(@Path("id") id: Long): ActionResponse
 
-    @POST("zones/file/import")
-    suspend fun importZoneFile(
-        @Query("zone_id") zoneId: String,
-        @Body body: okhttp3.RequestBody,
-    ): de.kiefer_networks.falco.data.dto.DnsZoneEnvelope
+    @GET("zones/{zone}/rrsets")
+    suspend fun listRRSets(
+        @Path("zone") zone: String,
+        @Query("page") page: Int = 1,
+        @Query("per_page") perPage: Int = 50,
+    ): DnsRRSetList
 
-    @POST("zones/{id}/validate")
-    suspend fun validateZone(
-        @Path("id") id: String,
-        @Body body: okhttp3.RequestBody,
-    ): de.kiefer_networks.falco.data.dto.DnsValidateResponse
+    @POST("zones/{zone}/rrsets/{name}/{type}/actions/add_records")
+    suspend fun addRecords(
+        @Path("zone") zone: String,
+        @Path("name") name: String,
+        @Path("type") type: String,
+        @Body body: DnsAddRecordsRequest,
+    ): ActionResponse
 
-    @GET("primary_servers")
-    suspend fun listPrimaryServers(@Query("zone_id") zoneId: String? = null): de.kiefer_networks.falco.data.dto.DnsPrimaryServerList
+    @POST("zones/{zone}/rrsets/{name}/{type}/actions/set_records")
+    suspend fun setRecords(
+        @Path("zone") zone: String,
+        @Path("name") name: String,
+        @Path("type") type: String,
+        @Body body: DnsRecordsRequest,
+    ): ActionResponse
 
-    @POST("primary_servers")
-    suspend fun createPrimaryServer(@Body body: de.kiefer_networks.falco.data.dto.CreateDnsPrimaryServerRequest): de.kiefer_networks.falco.data.dto.DnsPrimaryServerEnvelope
+    @POST("zones/{zone}/rrsets/{name}/{type}/actions/remove_records")
+    suspend fun removeRecords(
+        @Path("zone") zone: String,
+        @Path("name") name: String,
+        @Path("type") type: String,
+        @Body body: DnsRecordsRequest,
+    ): ActionResponse
 
-    @PUT("primary_servers/{id}")
-    suspend fun updatePrimaryServer(
-        @Path("id") id: String,
-        @Body body: de.kiefer_networks.falco.data.dto.CreateDnsPrimaryServerRequest,
-    ): de.kiefer_networks.falco.data.dto.DnsPrimaryServerEnvelope
-
-    @DELETE("primary_servers/{id}")
-    suspend fun deletePrimaryServer(@Path("id") id: String): retrofit2.Response<Unit>
+    @POST("zones/{zone}/rrsets/{name}/{type}/actions/change_ttl")
+    suspend fun changeRRSetTtl(
+        @Path("zone") zone: String,
+        @Path("name") name: String,
+        @Path("type") type: String,
+        @Body body: DnsTtlRequest,
+    ): ActionResponse
 }

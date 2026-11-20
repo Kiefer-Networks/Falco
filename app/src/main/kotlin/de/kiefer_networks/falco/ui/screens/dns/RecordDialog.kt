@@ -52,11 +52,12 @@ fun RecordDialog(
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var type by remember { mutableStateOf(existing?.type ?: RECORD_TYPES.first()) }
     var value by remember { mutableStateOf(existing?.value ?: "") }
-    var ttl by remember { mutableStateOf(existing?.ttl?.toString() ?: "3600") }
+    // Blank TTL on an existing RRSet means "zone default"; keep it blank so editing does not pin it.
+    var ttl by remember { mutableStateOf(if (existing != null) existing.ttl?.toString().orEmpty() else "3600") }
     var typeExpanded by remember { mutableStateOf(false) }
 
     val titleRes = if (existing == null) R.string.dns_record_create_title else R.string.dns_record_edit_title
-    val isValid = name.isNotBlank() && value.isNotBlank() && (ttl.toIntOrNull() ?: -1) >= 0
+    val isValid = name.isNotBlank() && value.isNotBlank() && (ttl.isBlank() || (ttl.toIntOrNull() ?: -1) >= 60)
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {

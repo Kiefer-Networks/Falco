@@ -128,11 +128,6 @@ object HttpClientFactory {
         ),
     )
 
-    fun dnsRetrofit(token: String): Retrofit = retrofit(
-        baseUrl = "https://dns.hetzner.com/api/v1/",
-        client = baseClient(listOf(HeaderInterceptor("Auth-API-Token", token), UserAgentInterceptor)),
-    )
-
     fun s3OkHttp(): OkHttpClient = baseClient(listOf(UserAgentInterceptor))
 
     private fun retrofit(baseUrl: String, client: OkHttpClient): Retrofit = Retrofit.Builder()
@@ -145,12 +140,6 @@ object HttpClientFactory {
 private class BearerInterceptor(private val token: String) : Interceptor {
     override fun intercept(chain: Interceptor.Chain) = chain.proceed(
         chain.request().newBuilder().header("Authorization", "Bearer $token").build(),
-    )
-}
-
-private class HeaderInterceptor(private val name: String, private val value: String) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain) = chain.proceed(
-        chain.request().newBuilder().header(name, value).build(),
     )
 }
 

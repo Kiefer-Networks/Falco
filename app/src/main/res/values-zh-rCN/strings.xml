@@ -44,7 +44,6 @@
     <string name="account_cloud_token">Cloud API 令牌</string>
     <string name="account_robot_user">Robot 网络服务用户</string>
     <string name="account_robot_pass">Robot 密码</string>
-    <string name="account_dns_token">DNS API 令牌</string>
     <string name="account_s3_endpoint">S3 端点（例如 fsn1.your-objectstorage.com）</string>
     <string name="account_s3_access_key">S3 访问密钥</string>
     <string name="account_s3_secret_key">S3 私有密钥</string>
@@ -395,7 +394,6 @@
     <string name="wizard_step_services">选择服务</string>
     <string name="wizard_step_cloud">Cloud</string>
     <string name="wizard_step_robot">Robot</string>
-    <string name="wizard_step_dns">DNS</string>
     <string name="wizard_step_s3">对象存储</string>
     <string name="wizard_step_review">概览</string>
     <string name="wizard_step_done">完成</string>
@@ -406,12 +404,10 @@
     <string name="wizard_help_name">为该 Hetzner 账户选择一个唯一可识别的名称。</string>
     <string name="wizard_help_cloud">在 Hetzner Cloud 控制台创建 API 令牌，建议 Read+Write 权限。</string>
     <string name="wizard_help_robot">在 Robot 设置中创建 Robot 网络服务用户（与登录账户分开）。</string>
-    <string name="wizard_help_dns">在 Hetzner DNS 控制台创建 DNS 令牌。</string>
     <string name="wizard_help_s3">对象存储的 S3 凭据。端点按位置选择（FSN1 / HEL1 / NBG1）。</string>
     <string name="wizard_help_review">请检查每一项。点击铅笔图标可跳回。</string>
     <string name="wizard_cloud_link">打开 Hetzner Cloud 控制台</string>
     <string name="wizard_robot_link">打开 Robot 设置</string>
-    <string name="wizard_dns_link">打开 DNS 控制台设置</string>
     <string name="wizard_s3_link">打开 Hetzner Cloud 控制台</string>
     <string name="wizard_review_hidden">机密已隐藏。点击眼睛图标显示。</string>
     <string name="wizard_review_revealed">机密已显示。</string>

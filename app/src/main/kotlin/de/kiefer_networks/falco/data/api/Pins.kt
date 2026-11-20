@@ -12,7 +12,6 @@ package de.kiefer_networks.falco.data.api
  * Live observations (regenerate via `scripts/fetch_pins.sh` before every tag):
  *   - api.hetzner.cloud, fsn1.your-objectstorage.com  → Let's Encrypt E7  (ECDSA → ISRG Root X2)
  *   - hel1.your-objectstorage.com, nbg1.your-objectstorage.com → Let's Encrypt E8 (ECDSA → ISRG Root X2)
- *   - dns.hetzner.com                                 → Let's Encrypt R13 (RSA   → ISRG Root X1)
  *   - api.hetzner.cloud                               → Let's Encrypt YE2 (ECDSA → ISRG Root YE → X2)
  *   - api.hetzner.com                                 → Let's Encrypt YE1 (ECDSA → ISRG Root YE → X2)
  *   - robot-ws.your-server.de                         → Thawte TLS RSA CA G1 (DigiCert chain)
@@ -37,7 +36,6 @@ internal object Pins {
     private const val LE_E8 = "iFvwVyJSxnQdyaUvUERIf+8qk7gRze3612JMwoO3zdU="
     private const val LE_YE1 = "brzvtCELCIZUo4sD/qPX0ccRtPsd3DY6RfmxpOU9oB4="
     private const val LE_YE2 = "s/tdAOmUzd8syaTuqfgGvFcn6DzA5Cmb+Vby1ST+U3Y="
-    private const val LE_R13 = "AlSQhgtJirc8ahLyekmtX+Iw+v46yPYRLJt9Cq1GlB0="
     private const val THAWTE_TLS_RSA_CA_G1 = "42b9RNOnyb3tlC0KYtNPA3KKpJluskyU6aG+CipUmaM="
 
     private val letsEncryptRoots = listOf(ISRG_ROOT_X1, ISRG_ROOT_X2, ISRG_ROOT_YE)
@@ -48,14 +46,12 @@ internal object Pins {
     // api.hetzner.com (Storage Box) moved to Let's Encrypt; DigiCert stays as overlap.
     val hetznerApi: List<String> = letsEncryptRoots + letsEncryptIntermediates + digiCertChain
     val robot: List<String> = digiCertChain                                // robot-ws.your-server.de
-    val dns: List<String> = letsEncryptRoots + LE_R13                      // dns.hetzner.com
     val objectStorage: List<String> = letsEncryptRoots + letsEncryptIntermediates  // *.your-objectstorage.com (fsn1/hel1/nbg1)
 
     fun all(): Map<String, List<String>> = mapOf(
         "api.hetzner.cloud" to cloud,
         "api.hetzner.com" to hetznerApi,
         "robot-ws.your-server.de" to robot,
-        "dns.hetzner.com" to dns,
         "fsn1.your-objectstorage.com" to objectStorage,
         "hel1.your-objectstorage.com" to objectStorage,
         "nbg1.your-objectstorage.com" to objectStorage,

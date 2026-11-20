@@ -60,7 +60,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.dto.DnsPrimaryServer
 import de.kiefer_networks.falco.data.dto.DnsRecord
-import de.kiefer_networks.falco.data.dto.DnsValidateResponse
 import de.kiefer_networks.falco.data.dto.DnsZone
 import kotlinx.coroutines.launch
 
@@ -76,7 +75,7 @@ fun ZoneDetailScreen(
 
     var dialogRecord by remember { mutableStateOf<DnsRecord?>(null) }
     // Deleting a record (e.g. the apex MX) takes effect immediately: confirm.
-    var deleteCandidate by remember { mutableStateOf<String?>(null) }
+    var deleteCandidate by remember { mutableStateOf<DnsRecord?>(null) }
     var creating by remember { mutableStateOf(false) }
     var overflowOpen by remember { mutableStateOf(false) }
 
@@ -85,8 +84,8 @@ fun ZoneDetailScreen(
     var selectedIds by rememberSaveable { mutableStateOf(emptySet<String>()) }
     var bulkApplyOpen by remember { mutableStateOf(false) }
 
-    // BIND import preview state.
-    var validateResult by remember { mutableStateOf<DnsValidateResponse?>(null) }
+    // BIND import: the file replaces every record, so confirm first.
+    var importCandidate by remember { mutableStateOf<String?>(null) }
     var pendingBindText by remember { mutableStateOf<String?>(null) }
 
     // Primary servers.
@@ -111,7 +110,7 @@ fun ZoneDetailScreen(
                     snackbarHostState.showSnackbar(context.getString(R.string.dns_import_read_failed))
                 }
             } else {
-                viewModel.validateBind(text)
+                importCandidate = text
             }
         }
     }
@@ -145,10 +144,6 @@ fun ZoneDetailScreen(
                 is ZoneDetailEvent.ExportReady -> {
                     pendingBindText = event.text
                     exportLauncher.launch(event.suggestedName)
-                }
-                is ZoneDetailEvent.ValidationReady -> {
-                    validateResult = event.result
-                    pendingBindText = event.bindText
                 }
                 is ZoneDetailEvent.SnackMessage -> {
                     val msg = if (event.message == ZONE_DETAIL_BIND_TOO_LARGE) {
@@ -209,7 +204,7 @@ fun ZoneDetailScreen(
                             enabled = selectedIds.isNotEmpty(),
                             onClick = { bulkApplyOpen = true },
                         ) { Text(stringResource(R.string.dns_bulk_apply)) }
-                    } else if (state.zone != null) {
+                    } else if (state.zone != null && !state.isSecondary) {
                         IconButton(onClick = { overflowOpen = true }) {
                             Icon(Icons.Filled.MoreVert, contentDescription = null)
                         }
@@ -249,7 +244,7 @@ fun ZoneDetailScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            if (state.zone != null && !bulkMode) {
+            if (state.zone != null && !state.isSecondary && !bulkMode) {
                 FloatingActionButton(onClick = { creating = true }) {
                     Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.dns_record_create))
                 }
@@ -271,7 +266,7 @@ fun ZoneDetailScreen(
                     bulkMode = bulkMode,
                     selectedIds = selectedIds,
                     primaryServers = state.primaryServers,
-                    primaryServersLoading = state.primaryServersLoading,
+                    primaryServersLoading = state.busy,
                     primaryExpanded = primaryExpanded,
                     onTogglePrimary = { primaryExpanded = !primaryExpanded },
                     onAddPrimary = { primaryAddOpen = true },
@@ -288,16 +283,16 @@ fun ZoneDetailScreen(
                     },
                     onClearSelection = { selectedIds = emptySet() },
                     onEdit = { dialogRecord = it },
-                    onDelete = { rec -> rec.id?.let { deleteCandidate = it } },
+                    onDelete = { rec -> deleteCandidate = rec },
                 )
             }
         }
     }
 
-    deleteCandidate?.let { id ->
+    deleteCandidate?.let { rec ->
         de.kiefer_networks.falco.ui.components.dialog.ConfirmDestructiveDialog(
             actionLabel = stringResource(R.string.delete),
-            onConfirm = { viewModel.deleteRecord(id) },
+            onConfirm = { viewModel.deleteRecord(rec) },
             onDismiss = { deleteCandidate = null },
         )
     }
@@ -321,9 +316,8 @@ fun ZoneDetailScreen(
             existing = editing,
             onDismiss = { dialogRecord = null },
             onConfirm = { rec ->
-                val id = editing.id
                 dialogRecord = null
-                if (id != null) viewModel.updateRecord(id, rec)
+                viewModel.updateRecord(editing, rec)
             },
         )
     }
@@ -339,21 +333,12 @@ fun ZoneDetailScreen(
         )
     }
 
-    val preview = validateResult
-    val previewText = pendingBindText
-    if (preview != null && previewText != null) {
-        ImportPreviewDialog(
-            result = preview,
-            onConfirm = {
-                val text = previewText
-                validateResult = null
-                pendingBindText = null
-                viewModel.importBind(text)
-            },
-            onDismiss = {
-                validateResult = null
-                pendingBindText = null
-            },
+    importCandidate?.let { text ->
+        de.kiefer_networks.falco.ui.components.dialog.ConfirmDestructiveDialog(
+            actionLabel = stringResource(R.string.dns_import_confirm),
+            message = stringResource(R.string.dns_import_replace_warning),
+            onConfirm = { viewModel.importBind(text) },
+            onDismiss = { importCandidate = null },
         )
     }
 
@@ -449,7 +434,7 @@ private fun Content(
                 }
             }
         }
-        item {
+        if (zone?.mode == "secondary") item {
             PrimaryServersCard(
                 expanded = primaryExpanded,
                 loading = primaryServersLoading,
