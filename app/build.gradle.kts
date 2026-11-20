@@ -5,7 +5,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -33,15 +32,13 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
 
-        // Limit packaged locales to those we actually translate (saves APK size,
-        // forces us to translate everything we ship).
-        resourceConfigurations += listOf("en", "de", "es", "fr", "it", "zh-rCN", "ru")
     }
 
-    sourceSets {
-        getByName("main").kotlin.srcDirs("src/main/kotlin")
-        getByName("test").kotlin.srcDirs("src/test/kotlin")
-        getByName("androidTest").kotlin.srcDirs("src/androidTest/kotlin")
+    // Limit packaged locales to those we actually translate (saves APK size,
+    // forces us to translate everything we ship). src/*/kotlin are the
+    // default source directories with built-in Kotlin, no sourceSets needed.
+    androidResources {
+        localeFilters += listOf("en", "de", "es", "fr", "it", "zh-rCN", "ru")
     }
 
     signingConfigs {
@@ -73,16 +70,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = false
-    }
-
-    kotlin {
-        jvmToolchain(17)
-        compilerOptions {
-            freeCompilerArgs.addAll(
-                "-opt-in=kotlin.RequiresOptIn",
-                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-            )
-        }
     }
 
     buildFeatures {
@@ -154,6 +141,16 @@ android {
     testOptions {
         unitTests.isReturnDefaultValues = true
         unitTests.isIncludeAndroidResources = true
+    }
+}
+
+kotlin {
+    jvmToolchain(17)
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            "-opt-in=kotlin.RequiresOptIn",
+            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+        )
     }
 }
 
