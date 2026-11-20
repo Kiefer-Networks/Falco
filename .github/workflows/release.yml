@@ -5,17 +5,25 @@ on:
     tags:
       - 'v*'
 
-permissions:
-  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
 
 jobs:
   preflight:
     name: Preflight
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
 
       - id: version
         name: Extract version
@@ -43,6 +51,10 @@ jobs:
           java-version: '17'
 
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92  # v6.2.0
+        with:
+          # Release builds start from a clean Gradle home: no cache can
+          # inject anything into signed artifacts.
+          cache-disabled: true
 
       - name: Lint (debug)
         run: ./gradlew :app:lintDebug --no-daemon
@@ -57,10 +69,15 @@ jobs:
     name: Android (APK + AAB)
     needs: preflight
     runs-on: ubuntu-latest
-    env:
-      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+    timeout-minutes: 45
+    # Signing secrets belong in this environment, restricted to v* tags.
+    environment: release
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520  # v5.4.0
         with:
@@ -68,6 +85,10 @@ jobs:
           java-version: '17'
 
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92  # v6.2.0
+        with:
+          # Release builds start from a clean Gradle home: no cache can
+          # inject anything into signed artifacts.
+          cache-disabled: true
 
       - name: Verify signing secrets present
         env:
@@ -80,6 +101,7 @@ jobs:
 
       - name: Set up signing materials
         env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
@@ -117,13 +139,15 @@ jobs:
         with:
           name: android-apk
           path: release-assets/*.apk
-          if-no-files-found: ignore
+          if-no-files-found: error
+          retention-days: 7
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: android-aab
           path: release-assets/*.aab
-          if-no-files-found: ignore
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Cleanup signing materials
         if: ${{ always() }}
@@ -133,13 +157,12 @@ jobs:
     name: Create GitHub Release
     needs: [preflight, build-android]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
-      contents: write
+      contents: write # create the release
+      id-token: write # sign build provenance (Sigstore)
+      attestations: write # store build provenance
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: android-apk
@@ -159,6 +182,11 @@ jobs:
           cp "artifacts/android-apk/Falco-${VERSION}.apk" release-assets/
           cp "artifacts/android-aab/Falco-${VERSION}.aab" release-assets/
           ls -lh release-assets/
+          (cd release-assets && sha256sum Falco-* > SHA256SUMS)
+
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8  # v4.2.2
+        with:
+          subject-path: release-assets/Falco-*
 
       - name: Generate release notes
         env:
@@ -176,17 +204,26 @@ jobs:
           | Android (APK) | \`Falco-${VERSION}.apk\` |
           | Android (AAB) | \`Falco-${VERSION}.aab\` |
 
+          Verify: \`sha256sum -c SHA256SUMS\` and
+          \`gh attestation verify Falco-${VERSION}.apk --repo Kiefer-Networks/Falco\`
+
           ---
           **License:** GPL-3.0-or-later · **Donate:** https://de.liberapay.com/beli3ver
           NOTES
           sed -i 's/^          //' release-notes.md
 
-      - uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b  # v3.0.1
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Falco ${{ needs.preflight.outputs.version }}
-          draft: false
-          body_path: release-notes.md
-          files: |
-            release-assets/Falco-*.apk
-            release-assets/Falco-*.aab
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.preflight.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "Falco ${VERSION}" \
+            --notes-file release-notes.md \
+            release-assets/Falco-*.apk \
+            release-assets/Falco-*.aab \
+            release-assets/SHA256SUMS

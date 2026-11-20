@@ -11,15 +11,19 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   lint-and-test:
     name: Lint & Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520  # v5.4.0
         with:
@@ -27,6 +31,9 @@ jobs:
           java-version: '17'
 
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92  # v6.2.0
+        with:
+          # Only main writes the cache, so a PR cannot poison it.
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Lint
         run: ./gradlew :app:lintDebug --no-daemon
@@ -38,8 +45,13 @@ jobs:
     name: Build Debug APK
     needs: lint-and-test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520  # v5.4.0
         with:
@@ -47,6 +59,8 @@ jobs:
           java-version: '17'
 
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92  # v6.2.0
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Assemble debug APK
         run: ./gradlew :app:assembleDebug --no-daemon
@@ -56,3 +70,58 @@ jobs:
           name: app-debug
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          retention-days: 7
+
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write # summary comment on the PR
+    steps:
+      - uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec  # v5.0.1
+        with:
+          fail-on-severity: low
+          comment-summary-in-pr: on-failure
+          # GPL-3.0-or-later app: block licences that cannot be combined with it.
+          deny-licenses: SSPL-1.0, BUSL-1.1, CC-BY-NC-4.0, CC-BY-NC-SA-4.0
+
+  dependency-submission:
+    name: Gradle Dependency Graph
+    # Feeds the full resolved Gradle graph (incl. transitive deps) into
+    # GitHub so Dependabot alerts and dependency review see everything.
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # dependency submission API
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520  # v5.4.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/dependency-submission@3f131e8634966bd73d06cc69884922b02e6faf92  # v6.2.0
+
+  zizmor:
+    name: Workflow Security (zizmor)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd  # v0.8.1
+        with:
+          persona: pedantic
+          # Fail the job on findings instead of only uploading SARIF.
+          advanced-security: false
