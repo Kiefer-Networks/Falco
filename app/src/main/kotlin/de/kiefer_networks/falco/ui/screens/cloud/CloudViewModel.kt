@@ -59,14 +59,15 @@ class CloudViewModel @Inject constructor(
 
     init { refresh() }
 
-    fun loadCreateOptions() {
+    /** [projectId] is the target project; SSH keys only exist per project. */
+    fun loadCreateOptions(projectId: String? = null) {
         viewModelScope.launch {
             _create.update { it.copy(loading = true) }
             runCatching {
                 val st = repo.listServerTypes()
                 val img = repo.listImages("system")
                 val loc = repo.listLocations()
-                val keys = repo.listSshKeys()
+                val keys = repo.listSshKeysIn(projectId)
                 _create.update {
                     it.copy(
                         loading = false,
@@ -92,6 +93,7 @@ class CloudViewModel @Inject constructor(
         userData: String?,
         startAfterCreate: Boolean,
         onDone: (Boolean) -> Unit,
+        projectId: String? = null,
     ) {
         if (_create.value.running) return
         viewModelScope.launch {
@@ -105,6 +107,7 @@ class CloudViewModel @Inject constructor(
                     sshKeyIds = sshKeyIds.takeIf { it.isNotEmpty() },
                     userData = userData?.takeIf { it.isNotBlank() },
                     startAfterCreate = startAfterCreate,
+                    projectId = projectId,
                 )
             }
             _create.update { it.copy(running = false) }
@@ -134,18 +137,18 @@ class CloudViewModel @Inject constructor(
 
     private val inFlight = java.util.concurrent.atomic.AtomicBoolean(false)
 
-    fun action(action: ServerAction, id: Long) {
+    fun action(action: ServerAction, id: Long, projectId: String? = null) {
         if (!inFlight.compareAndSet(false, true)) return // guard against concurrent triggers
         viewModelScope.launch {
             try {
                 runCatching {
                     when (action) {
-                        ServerAction.PowerOn -> repo.powerOn(id)
-                        ServerAction.PowerOff -> repo.powerOff(id)
-                        ServerAction.Reboot -> repo.reboot(id)
-                        ServerAction.Shutdown -> repo.shutdown(id)
-                        ServerAction.Reset -> repo.reset(id)
-                        ServerAction.Snapshot -> repo.snapshot(id)
+                        ServerAction.PowerOn -> repo.powerOn(id, projectId)
+                        ServerAction.PowerOff -> repo.powerOff(id, projectId)
+                        ServerAction.Reboot -> repo.reboot(id, projectId)
+                        ServerAction.Shutdown -> repo.shutdown(id, projectId)
+                        ServerAction.Reset -> repo.reset(id, projectId)
+                        ServerAction.Snapshot -> repo.snapshot(id, projectId)
                     }
                 }.onFailure { _events.emit(sanitizeError(it)) }
                 refresh()

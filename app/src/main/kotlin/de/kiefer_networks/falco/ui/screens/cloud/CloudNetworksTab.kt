@@ -101,6 +101,7 @@ class CloudNetworksViewModel @Inject constructor(private val repo: CloudRepo) : 
         subnetType: String,
         subnetZone: String,
         subnetIpRange: String?,
+        subnetVswitchId: Long?,
         onDone: (Boolean) -> Unit,
         projectId: String? = null,
     ) {
@@ -108,15 +109,22 @@ class CloudNetworksViewModel @Inject constructor(private val repo: CloudRepo) : 
         viewModelScope.launch {
             _create.update { it.copy(running = true) }
             val res = runCatching {
-                val net = repo.createNetwork(name = name, ipRange = ipRange, projectId = projectId)
-                if (addSubnet) {
-                    repo.addNetworkSubnet(
-                        id = net.id,
-                        type = subnetType,
-                        networkZone = subnetZone,
-                        ipRange = subnetIpRange?.takeIf { it.isNotBlank() },
-                    )
-                }
+                // Subnet travels in the POST body: no half created network on failure.
+                repo.createNetwork(
+                    name = name,
+                    ipRange = ipRange,
+                    subnets = if (addSubnet) {
+                        listOf(
+                            de.kiefer_networks.falco.data.dto.AddSubnetRequest(
+                                type = subnetType,
+                                networkZone = subnetZone,
+                                ipRange = subnetIpRange?.takeIf { it.isNotBlank() },
+                                vswitchId = subnetVswitchId.takeIf { subnetType == "vswitch" },
+                            ),
+                        )
+                    } else null,
+                    projectId = projectId,
+                )
             }
             _create.update { it.copy(running = false) }
             res.onSuccess {
@@ -231,6 +239,7 @@ internal fun CreateNetworkWizard(
     var subnetZone by remember { mutableStateOf<String?>("eu-central") }
     var subnetType by remember { mutableStateOf("cloud") }
     var subnetIpRange by remember { mutableStateOf("") }
+    var subnetVswitch by remember { mutableStateOf("") }
 
     val stepLabels = listOf(
         stringResource(R.string.wizard_step_details),
@@ -239,7 +248,7 @@ internal fun CreateNetworkWizard(
 
     val canGoNext = when (step) {
         0 -> name.isNotBlank() && ipRange.isNotBlank()
-        1 -> !addSubnet || subnetZone != null
+        1 -> !addSubnet || (subnetZone != null && (subnetType != "vswitch" || subnetVswitch.toLongOrNull() != null))
         else -> false
     }
 
@@ -261,6 +270,7 @@ internal fun CreateNetworkWizard(
                 subnetType = subnetType,
                 subnetZone = subnetZone ?: "eu-central",
                 subnetIpRange = subnetIpRange.trim().ifBlank { null },
+                subnetVswitchId = subnetVswitch.toLongOrNull(),
                 onDone = { ok -> if (ok) onCreated() },
                 projectId = projectId,
             )
@@ -342,6 +352,18 @@ internal fun CreateNetworkWizard(
                         supportingText = { Text(stringResource(R.string.cloud_network_subnet_ip_range_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    if (subnetType == "vswitch") {
+                        OutlinedTextField(
+                            value = subnetVswitch,
+                            onValueChange = { v -> subnetVswitch = v.filter { it.isDigit() } },
+                            label = { Text(stringResource(R.string.cloud_network_expose_vswitch_id)) },
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
+                            ),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
                 Spacer(Modifier.size(8.dp))
             }

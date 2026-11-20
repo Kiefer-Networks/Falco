@@ -58,7 +58,19 @@ enum class MetricPeriod(val secondsBack: Long, val step: Int) {
     D7(604_800L, 3600),
     D30(2_592_000L, 21_600),
 }
-data class MetricSeries(val series: Map<String, List<Pair<Long, Double>>>)
+data class MetricSeries(val series: Map<String, List<Pair<Long, Double>>>) {
+    /** Series whose name ends with [suffix]; Hetzner names them e.g. `disk.0.bandwidth.read`. */
+    fun bySuffix(suffix: String): List<Pair<Long, Double>> =
+        series.entries.firstOrNull { it.key.endsWith(suffix) }?.value.orEmpty()
+}
+
+/** Divisor and unit label for a bytes per second magnitude. */
+fun byteRateUnit(maxBytesPerSecond: Double): Pair<Double, String> = when {
+    maxBytesPerSecond >= 1e9 -> 1e9 to " GB/s"
+    maxBytesPerSecond >= 1e6 -> 1e6 to " MB/s"
+    maxBytesPerSecond >= 1e3 -> 1e3 to " kB/s"
+    else -> 1.0 to " B/s"
+}
 
 @Singleton
 class CloudRepo @Inject constructor(
@@ -145,6 +157,52 @@ class CloudRepo @Inject constructor(
     }
 
 
+    /** Fan-out list tagged with the source project id (see [apisWithProjectIds]). */
+    private suspend fun <T> listAware(
+        fetch: suspend (CloudApi, Int) -> Pair<List<T>, de.kiefer_networks.falco.data.dto.Meta?>,
+    ): List<Pair<String?, T>> = apisWithProjectIds().flatMap { (pid, api) ->
+        fetchAllPages { p -> fetch(api, p) }.map { pid to it }
+    }
+
+    /** List of exactly one project (null = active), for pickers whose choice must live there. */
+    private suspend fun <T> listIn(
+        projectId: String?,
+        fetch: suspend (CloudApi, Int) -> Pair<List<T>, de.kiefer_networks.falco.data.dto.Meta?>,
+    ): List<T> {
+        val api = api(projectId)
+        return fetchAllPages { p -> fetch(api, p) }
+    }
+
+    /** DELETE endpoints return an empty body; surface non 2xx as [retrofit2.HttpException]. */
+    private fun <T> retrofit2.Response<T>.orThrow(): retrofit2.Response<T> {
+        if (!isSuccessful) throw retrofit2.HttpException(this)
+        return this
+    }
+
+    suspend fun listServersIn(projectId: String?): List<CloudServer> =
+        listIn(projectId) { a, p -> a.listServers(page = p).let { it.servers to it.meta } }
+    suspend fun listSshKeysIn(projectId: String?): List<de.kiefer_networks.falco.data.dto.CloudSshKey> =
+        listIn(projectId) { a, p -> a.listSshKeys(page = p).let { it.sshKeys to it.meta } }
+    suspend fun listNetworksIn(projectId: String?): List<CloudNetwork> =
+        listIn(projectId) { a, p -> a.listNetworks(page = p).let { it.networks to it.meta } }
+    suspend fun listPlacementGroupsIn(projectId: String?): List<de.kiefer_networks.falco.data.dto.CloudPlacementGroup> =
+        listIn(projectId) { a, p -> a.listPlacementGroups(page = p).let { it.placementGroups to it.meta } }
+    suspend fun listFirewallsIn(projectId: String?): List<CloudFirewall> =
+        listIn(projectId) { a, p -> a.listFirewalls(page = p).let { it.firewalls to it.meta } }
+
+    suspend fun listSshKeysAware(): List<Pair<String?, de.kiefer_networks.falco.data.dto.CloudSshKey>> =
+        listAware { a, p -> a.listSshKeys(page = p).let { it.sshKeys to it.meta } }
+    suspend fun listPrimaryIpsAware(): List<Pair<String?, de.kiefer_networks.falco.data.dto.CloudPrimaryIp>> =
+        listAware { a, p -> a.listPrimaryIps(page = p).let { it.primaryIps to it.meta } }
+    suspend fun listNetworksAware(): List<Pair<String?, CloudNetwork>> =
+        listAware { a, p -> a.listNetworks(page = p).let { it.networks to it.meta } }
+    suspend fun listLoadBalancersAware(): List<Pair<String?, de.kiefer_networks.falco.data.dto.CloudLoadBalancer>> =
+        listAware { a, p -> a.listLoadBalancers(page = p).let { it.loadBalancers to it.meta } }
+    suspend fun listCertificatesAware(): List<Pair<String?, de.kiefer_networks.falco.data.dto.CloudCertificate>> =
+        listAware { a, p -> a.listCertificates(page = p).let { it.certificates to it.meta } }
+    suspend fun listPlacementGroupsAware(): List<Pair<String?, de.kiefer_networks.falco.data.dto.CloudPlacementGroup>> =
+        listAware { a, p -> a.listPlacementGroups(page = p).let { it.placementGroups to it.meta } }
+
     suspend fun listServers(): List<CloudServer> = apis().flatMap { fetchAllPages { p -> it.listServers(page = p).let { r -> r.servers to r.meta } } }
 
     /**
@@ -222,7 +280,7 @@ class CloudRepo @Inject constructor(
     suspend fun renameVolume(id: Long, name: String): CloudVolume =
         api().updateVolume(id, de.kiefer_networks.falco.data.dto.UpdateVolumeRequest(name = name)).volume
 
-    suspend fun deleteVolume(id: Long) = api().deleteVolume(id)
+    suspend fun deleteVolume(id: Long) = api().deleteVolume(id).orThrow()
 
     suspend fun attachVolume(id: Long, serverId: Long, automount: Boolean? = null) =
         api().attachVolume(
@@ -249,11 +307,11 @@ class CloudRepo @Inject constructor(
     suspend fun getFirewall(id: Long): CloudFirewall = api().getFirewall(id).firewall
     suspend fun renameFirewall(id: Long, name: String): CloudFirewall =
         api().updateFirewall(id, UpdateFirewallRequest(name = name)).firewall
-    suspend fun deleteFirewall(id: Long) = api().deleteFirewall(id)
+    suspend fun deleteFirewall(id: Long) = api().deleteFirewall(id).orThrow()
     suspend fun setFirewallRules(id: Long, rules: List<FirewallRule>) =
         api().setFirewallRules(id, SetFirewallRulesRequest(rules))
-    suspend fun applyFirewallToServer(id: Long, serverId: Long) =
-        api().applyFirewall(
+    suspend fun applyFirewallToServer(id: Long, serverId: Long, projectId: String? = null) =
+        api(projectId).applyFirewall(
             id,
             ApplyFirewallRequest(listOf(FirewallApplyTarget("server", ResourceRef(serverId)))),
         )
@@ -283,7 +341,7 @@ class CloudRepo @Inject constructor(
     ).floatingIp
     suspend fun renameFloatingIp(id: Long, name: String): CloudFloatingIp =
         api().updateFloatingIp(id, de.kiefer_networks.falco.data.dto.UpdateFloatingIpRequest(name = name)).floatingIp
-    suspend fun deleteFloatingIp(id: Long) = api().deleteFloatingIp(id)
+    suspend fun deleteFloatingIp(id: Long) = api().deleteFloatingIp(id).orThrow()
     suspend fun assignFloatingIp(id: Long, serverId: Long) =
         api().assignFloatingIp(id, de.kiefer_networks.falco.data.dto.AssignFloatingIpRequest(server = serverId))
     suspend fun unassignFloatingIp(id: Long) = api().unassignFloatingIp(id)
@@ -297,17 +355,30 @@ class CloudRepo @Inject constructor(
 
     suspend fun listNetworks(): List<CloudNetwork> = apis().flatMap { fetchAllPages { p -> it.listNetworks(page = p).let { r -> r.networks to r.meta } } }
     suspend fun getNetwork(id: Long): CloudNetwork = api().getNetwork(id).network
-    suspend fun createNetwork(name: String, ipRange: String, projectId: String? = null): CloudNetwork =
+    suspend fun createNetwork(
+        name: String,
+        ipRange: String,
+        subnets: List<de.kiefer_networks.falco.data.dto.AddSubnetRequest>? = null,
+        projectId: String? = null,
+    ): CloudNetwork =
         api(projectId).createNetwork(
-            de.kiefer_networks.falco.data.dto.CreateNetworkRequest(name = name, ipRange = ipRange),
+            de.kiefer_networks.falco.data.dto.CreateNetworkRequest(name = name, ipRange = ipRange, subnets = subnets),
         ).network
     suspend fun renameNetwork(id: Long, name: String): CloudNetwork =
         api().updateNetwork(id, de.kiefer_networks.falco.data.dto.UpdateNetworkRequest(name = name)).network
-    suspend fun deleteNetwork(id: Long) = api().deleteNetwork(id)
-    suspend fun addNetworkSubnet(id: Long, type: String, networkZone: String, ipRange: String? = null) =
+    suspend fun deleteNetwork(id: Long) = api().deleteNetwork(id).orThrow()
+    suspend fun addNetworkSubnet(
+        id: Long,
+        type: String,
+        networkZone: String,
+        ipRange: String? = null,
+        vswitchId: Long? = null,
+    ) =
         api().addNetworkSubnet(
             id,
-            de.kiefer_networks.falco.data.dto.AddSubnetRequest(type = type, networkZone = networkZone, ipRange = ipRange),
+            de.kiefer_networks.falco.data.dto.AddSubnetRequest(
+                type = type, networkZone = networkZone, ipRange = ipRange, vswitchId = vswitchId,
+            ),
         )
     suspend fun deleteNetworkSubnet(id: Long, ipRange: String) =
         api().deleteNetworkSubnet(id, de.kiefer_networks.falco.data.dto.DeleteSubnetRequest(ipRange = ipRange))
@@ -323,8 +394,12 @@ class CloudRepo @Inject constructor(
     suspend fun changeNetworkIpRange(id: Long, ipRange: String) =
         api().changeNetworkIpRange(id, de.kiefer_networks.falco.data.dto.ChangeIpRangeRequest(ipRange))
 
-    suspend fun exposeNetworkToVSwitch(id: Long, vswitchId: Long, expose: Boolean = true) =
-        api().exposeNetworkRoutesToVSwitch(id, de.kiefer_networks.falco.data.dto.ExposeRoutesRequest(vswitchId, expose))
+    /** `expose_routes_to_vswitch` is a field of PUT /networks/{id}, not an action. */
+    suspend fun setNetworkExposeRoutesToVSwitch(id: Long, expose: Boolean): CloudNetwork =
+        api().updateNetwork(
+            id,
+            de.kiefer_networks.falco.data.dto.UpdateNetworkRequest(exposeRoutesToVswitch = expose),
+        ).network
 
     // ---- Server <-> Network actions ---------------------------------------
 
@@ -401,12 +476,12 @@ class CloudRepo @Inject constructor(
         api(projectId).createSshKey(
             de.kiefer_networks.falco.data.dto.CreateSshKeyRequest(name = name, publicKey = publicKey),
         ).sshKey
-    suspend fun renameSshKey(id: Long, name: String): de.kiefer_networks.falco.data.dto.CloudSshKey =
-        api().updateSshKey(
+    suspend fun renameSshKey(id: Long, name: String, projectId: String? = null): de.kiefer_networks.falco.data.dto.CloudSshKey =
+        api(projectId).updateSshKey(
             id,
             de.kiefer_networks.falco.data.dto.UpdateSshKeyRequest(name = name),
         ).sshKey
-    suspend fun deleteSshKey(id: Long) = api().deleteSshKey(id)
+    suspend fun deleteSshKey(id: Long, projectId: String? = null) = api(projectId).deleteSshKey(id).orThrow()
 
     // ---- Primary IPs ------------------------------------------------------
 
@@ -419,12 +494,13 @@ class CloudRepo @Inject constructor(
         type: String,
         assigneeType: String,
         location: String? = null,
-    ): de.kiefer_networks.falco.data.dto.CloudPrimaryIp = api().createPrimaryIp(
+        projectId: String? = null,
+    ): de.kiefer_networks.falco.data.dto.CloudPrimaryIp = api(projectId).createPrimaryIp(
         de.kiefer_networks.falco.data.dto.CreatePrimaryIpRequest(
             name = name, type = type, assigneeType = assigneeType, location = location,
         ),
     ).primaryIp
-    suspend fun deletePrimaryIp(id: Long) = api().deletePrimaryIp(id)
+    suspend fun deletePrimaryIp(id: Long) = api().deletePrimaryIp(id).orThrow()
     suspend fun assignPrimaryIp(id: Long, serverId: Long) =
         api().assignPrimaryIp(id, de.kiefer_networks.falco.data.dto.AssignPrimaryIpRequest(assigneeId = serverId))
     suspend fun unassignPrimaryIp(id: Long) = api().unassignPrimaryIp(id)
@@ -589,12 +665,12 @@ class CloudRepo @Inject constructor(
         it.resetSubaccountPassword(id, subaccountId, ResetSubaccountPasswordRequest(password)).action
     }
 
-    suspend fun powerOn(id: Long) = api().powerOn(id)
-    suspend fun powerOff(id: Long) = api().powerOff(id)
-    suspend fun reboot(id: Long) = api().reboot(id)
-    suspend fun shutdown(id: Long) = api().shutdown(id)
-    suspend fun reset(id: Long) = api().reset(id)
-    suspend fun snapshot(id: Long) = api().snapshot(id)
+    suspend fun powerOn(id: Long, projectId: String? = null) = api(projectId).powerOn(id)
+    suspend fun powerOff(id: Long, projectId: String? = null) = api(projectId).powerOff(id)
+    suspend fun reboot(id: Long, projectId: String? = null) = api(projectId).reboot(id)
+    suspend fun shutdown(id: Long, projectId: String? = null) = api(projectId).shutdown(id)
+    suspend fun reset(id: Long, projectId: String? = null) = api(projectId).reset(id)
+    suspend fun snapshot(id: Long, projectId: String? = null) = api(projectId).snapshot(id)
 
     // ---- Server detail ---------------------------------------------------
 
@@ -684,7 +760,8 @@ class CloudRepo @Inject constructor(
         networkZone: String? = null,
         algorithm: String = "round_robin",
         publicInterface: Boolean = true,
-    ): de.kiefer_networks.falco.data.dto.CloudLoadBalancer = api().createLoadBalancer(
+        projectId: String? = null,
+    ): de.kiefer_networks.falco.data.dto.CloudLoadBalancer = api(projectId).createLoadBalancer(
         de.kiefer_networks.falco.data.dto.CreateLoadBalancerRequest(
             name = name,
             loadBalancerType = type,
@@ -700,7 +777,7 @@ class CloudRepo @Inject constructor(
         de.kiefer_networks.falco.data.dto.UpdateLoadBalancerRequest(name = name),
     ).loadBalancer
 
-    suspend fun deleteLoadBalancer(id: Long) = api().deleteLoadBalancer(id)
+    suspend fun deleteLoadBalancer(id: Long, projectId: String? = null) = api(projectId).deleteLoadBalancer(id).orThrow()
 
     suspend fun addLoadBalancerService(id: Long, service: de.kiefer_networks.falco.data.dto.LoadBalancerService) =
         api().addLoadBalancerService(id, service)
@@ -810,7 +887,7 @@ class CloudRepo @Inject constructor(
         de.kiefer_networks.falco.data.dto.UpdateCertificateRequest(name = name),
     ).certificate
 
-    suspend fun deleteCertificate(id: Long) = api().deleteCertificate(id)
+    suspend fun deleteCertificate(id: Long, projectId: String? = null) = api(projectId).deleteCertificate(id).orThrow()
     suspend fun retryCertificate(id: Long) = api().retryCertificate(id)
 
     // ---- Placement Groups --------------------------------------------------
@@ -835,7 +912,7 @@ class CloudRepo @Inject constructor(
         de.kiefer_networks.falco.data.dto.UpdatePlacementGroupRequest(name = name),
     ).placementGroup
 
-    suspend fun deletePlacementGroup(id: Long) = api().deletePlacementGroup(id)
+    suspend fun deletePlacementGroup(id: Long, projectId: String? = null) = api(projectId).deletePlacementGroup(id).orThrow()
 
     // ---- ISO detail --------------------------------------------------------
 

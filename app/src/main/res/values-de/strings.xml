@@ -505,7 +505,7 @@
     <string name="metrics_period_7d">7 Tage</string>
     <string name="metrics_period_30d">30 Tage</string>
     <string name="metrics_cpu">CPU-Auslastung</string>
-    <string name="metrics_disk">Disk-IOPS</string>
+    <string name="metrics_disk">Datenträger Durchsatz</string>
     <string name="metrics_network">Netzwerk</string>
     <string name="metrics_min">min</string>
     <string name="metrics_max">max</string>
@@ -513,6 +513,10 @@
     <string name="metrics_unit_percent">%</string>
     <string name="metrics_unit_iops"> IOPS</string>
     <string name="metrics_unit_mbps"> B/s</string>
+    <string name="metrics_series_read">Lesen</string>
+    <string name="metrics_series_write">Schreiben</string>
+    <string name="metrics_series_in">Eingehend</string>
+    <string name="metrics_series_out">Ausgehend</string>
     <string name="server_action_rebuild">Neu installieren</string>
     <string name="server_action_rescue_enable">Rescue-Modus aktivieren</string>
     <string name="server_action_rescue_disable">Rescue-Modus deaktivieren</string>

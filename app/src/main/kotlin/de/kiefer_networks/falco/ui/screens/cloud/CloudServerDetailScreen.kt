@@ -97,6 +97,7 @@ import de.kiefer_networks.falco.data.dto.CloudNetwork
 import de.kiefer_networks.falco.data.dto.CloudPlacementGroup
 import de.kiefer_networks.falco.data.dto.CloudServer
 import de.kiefer_networks.falco.data.repo.MetricPeriod
+import de.kiefer_networks.falco.data.repo.byteRateUnit
 import de.kiefer_networks.falco.ui.components.ErrorState
 import de.kiefer_networks.falco.ui.components.LineChart
 import de.kiefer_networks.falco.ui.components.LoadingState
@@ -244,17 +245,27 @@ fun CloudServerDetailScreen(
                                     titleRes = R.string.metrics_cpu,
                                     state = state.cpuMetrics,
                                     unit = stringResource(R.string.metrics_unit_percent),
-                                    capMaxY = 100.0,
+                                    primarySuffix = "cpu",
+                                    // 100 % per vCPU: the scale grows past 100 when needed.
+                                    minCeiling = 100.0,
                                 )
                                 MetricBlock(
                                     titleRes = R.string.metrics_disk,
                                     state = state.diskMetrics,
-                                    unit = stringResource(R.string.metrics_unit_iops),
+                                    unit = null,
+                                    primarySuffix = "bandwidth.read",
+                                    secondarySuffix = "bandwidth.write",
+                                    primaryLabelRes = R.string.metrics_series_read,
+                                    secondaryLabelRes = R.string.metrics_series_write,
                                 )
                                 MetricBlock(
                                     titleRes = R.string.metrics_network,
                                     state = state.networkMetrics,
-                                    unit = stringResource(R.string.metrics_unit_mbps),
+                                    unit = null,
+                                    primarySuffix = "bandwidth.in",
+                                    secondarySuffix = "bandwidth.out",
+                                    primaryLabelRes = R.string.metrics_series_in,
+                                    secondaryLabelRes = R.string.metrics_series_out,
                                 )
                             }
                         }
@@ -940,12 +951,21 @@ private fun PeriodTabs(period: MetricPeriod, onChange: (MetricPeriod) -> Unit) {
     }
 }
 
+/**
+ * One metric chart. [unit] null means the series are bytes per second and
+ * get an automatic B/s, kB/s, MB/s or GB/s unit. With [secondarySuffix] a
+ * second series (write / out) shares the axes.
+ */
 @Composable
 private fun MetricBlock(
     titleRes: Int,
     state: MetricLoadState,
-    unit: String,
-    capMaxY: Double? = null,
+    unit: String?,
+    primarySuffix: String,
+    secondarySuffix: String? = null,
+    primaryLabelRes: Int? = null,
+    secondaryLabelRes: Int? = null,
+    minCeiling: Double? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(stringResource(titleRes), style = MaterialTheme.typography.titleSmall)
@@ -962,36 +982,62 @@ private fun MetricBlock(
                 color = MaterialTheme.colorScheme.error,
             )
             is MetricLoadState.Loaded -> {
-                val series = state.series.series.values.firstOrNull().orEmpty()
-                if (series.isEmpty()) {
+                val rawPrimary = state.series.bySuffix(primarySuffix)
+                val rawSecondary = secondarySuffix?.let { state.series.bySuffix(it) }.orEmpty()
+                if (rawPrimary.isEmpty() && rawSecondary.isEmpty()) {
                     Text(
                         "—",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 } else {
-                    val values = series.map { it.second }
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(
-                            "${stringResource(R.string.metrics_min)}: %.1f%s".format(values.min(), unit),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            "${stringResource(R.string.metrics_max)}: %.1f%s".format(values.max(), unit),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            "${stringResource(R.string.metrics_avg)}: %.1f%s".format(values.average(), unit),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    val (divisor, shownUnit) = if (unit != null) {
+                        1.0 to unit
+                    } else {
+                        byteRateUnit((rawPrimary + rawSecondary).maxOf { it.second })
+                    }
+                    val primary = rawPrimary.map { it.first to it.second / divisor }
+                    val secondary = rawSecondary.map { it.first to it.second / divisor }
+                    val lines = listOfNotNull(
+                        primary.takeIf { it.isNotEmpty() }?.let { (primaryLabelRes to MaterialTheme.colorScheme.primary) to it },
+                        secondary.takeIf { it.isNotEmpty() }?.let { (secondaryLabelRes to MaterialTheme.colorScheme.tertiary) to it },
+                    )
+                    lines.forEach { (meta, series) ->
+                        val (labelRes, color) = meta
+                        val values = series.map { it.second }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (labelRes != null) {
+                                Text(
+                                    stringResource(labelRes),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = color,
+                                )
+                            }
+                            Text(
+                                "${stringResource(R.string.metrics_min)}: %.1f%s".format(values.min(), shownUnit),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                "${stringResource(R.string.metrics_max)}: %.1f%s".format(values.max(), shownUnit),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                "${stringResource(R.string.metrics_avg)}: %.1f%s".format(values.average(), shownUnit),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                     LineChart(
-                        points = series,
-                        unit = unit,
-                        maxY = capMaxY,
+                        points = primary.ifEmpty { secondary },
+                        unit = shownUnit,
+                        maxY = minCeiling,
+                        secondary = if (primary.isEmpty()) emptyList() else secondary,
                     )
                 }
             }

@@ -98,11 +98,11 @@ class CloudFloatingIpsViewModel @Inject constructor(private val repo: CloudRepo)
             .onFailure { _state.value = CloudFloatingIpsUiState(loading = false, error = sanitizeError(it)) }
     }
 
-    fun loadCreateOptions() = viewModelScope.launch {
+    fun loadCreateOptions(projectId: String? = null) = viewModelScope.launch {
         _create.update { it.copy(loading = true) }
         runCatching {
             val locs = repo.listLocations()
-            val servers = repo.listServers()
+            val servers = repo.listServersIn(projectId)
             _create.update { it.copy(loading = false, locations = locs, servers = servers) }
         }.onFailure { e ->
             _create.update { it.copy(loading = false) }

@@ -51,6 +51,7 @@ internal fun CreateServerSheet(
     viewModel: CloudViewModel,
     onDismiss: () -> Unit,
     onCreated: () -> Unit,
+    projectId: String? = null,
 ) {
     val opts by viewModel.createOptions.collectAsState()
 
@@ -100,6 +101,7 @@ internal fun CreateServerSheet(
                 userData = userData.trim().ifBlank { null },
                 startAfterCreate = startAfterCreate,
                 onDone = { ok -> if (ok) onCreated() },
+                projectId = projectId,
             )
         },
         nextLabel = stringResource(R.string.wizard_next),

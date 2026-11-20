@@ -29,7 +29,9 @@ import java.util.Date
  * Compose-Canvas line chart. Plots `points` (epoch seconds → value) without
  * pulling in a charting library — F-Droid clean, no extra deps.
  *
- * Y-axis auto-scales between [minY] and [maxY] (auto when null). Three X-tick
+ * Y-axis auto-scales to the data; [maxY] is a minimum ceiling (CPU keeps a
+ * 100 % scale but grows past it on multi vCPU servers). An optional
+ * [secondary] series is drawn on the same axes in [secondaryColor]. Three X-tick
  * timestamps (start / mid / end) are rendered using the system locale's short
  * time format.
  */
@@ -41,6 +43,8 @@ fun LineChart(
     maxY: Double? = null,
     unit: String = "",
     color: Color = MaterialTheme.colorScheme.primary,
+    secondary: List<Pair<Long, Double>> = emptyList(),
+    secondaryColor: Color = MaterialTheme.colorScheme.tertiary,
 ) {
     if (points.isEmpty()) {
         Box(
@@ -58,8 +62,8 @@ fun LineChart(
         return
     }
 
-    val derivedMaxY = (maxY ?: points.maxOf { it.second }.coerceAtLeast(minY + 1.0))
-    val derivedMinY = minOf(minY, points.minOf { it.second })
+    val all = points + secondary
+    val (derivedMinY, derivedMaxY) = chartYRange(all.map { it.second }, minY, maxY)
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val axisColor = MaterialTheme.colorScheme.outlineVariant
     val fillColor = color.copy(alpha = 0.18f)
@@ -93,20 +97,24 @@ fun LineChart(
                         // Pre-compute pixel-space coordinates for the line path.
                         val w = size.width
                         val h = size.height
-                        val tMin = points.first().first
-                        val tMax = points.last().first
-                        val tSpan = (tMax - tMin).coerceAtLeast(1L)
+                        val tMin = all.minOf { it.first }
+                        val tMax = all.maxOf { it.first }
+                        val tSpan = tMax - tMin
                         val ySpan = (derivedMaxY - derivedMinY).coerceAtLeast(1e-6)
-                        val coords = points.map { (t, v) ->
-                            val x = ((t - tMin).toDouble() / tSpan) * w
-                            val y = h - ((v - derivedMinY) / ySpan).toFloat() * h
+                        fun coordsOf(series: List<Pair<Long, Double>>) = series.map { (t, v) ->
+                            // A single timestamp spans the full width as a flat line.
+                            val x = if (tSpan <= 0L) 0.0 else ((t - tMin).toDouble() / tSpan) * w
+                            val y = h - ((v - derivedMinY) / ySpan).toFloat().coerceIn(0f, 1f) * h
                             Offset(x.toFloat(), y)
-                        }
-                        val linePath = Path().apply {
+                        }.let { if (it.size == 1) it + Offset(w, it[0].y) else it }
+                        fun pathOf(coords: List<Offset>) = Path().apply {
                             coords.forEachIndexed { i, p ->
                                 if (i == 0) moveTo(p.x, p.y) else lineTo(p.x, p.y)
                             }
                         }
+                        val coords = coordsOf(points)
+                        val linePath = pathOf(coords)
+                        val secondaryPath = secondary.takeIf { it.isNotEmpty() }?.let { pathOf(coordsOf(it)) }
                         val fillPath = Path().apply {
                             addPath(linePath)
                             lineTo(coords.last().x, h)
@@ -131,6 +139,13 @@ fun LineChart(
                                 color = color,
                                 style = Stroke(width = 3f, cap = StrokeCap.Round),
                             )
+                            secondaryPath?.let {
+                                drawPath(
+                                    path = it,
+                                    color = secondaryColor,
+                                    style = Stroke(width = 3f, cap = StrokeCap.Round),
+                                )
+                            }
                         }
                     },
             ) {}
@@ -150,4 +165,15 @@ fun LineChart(
             }
         }
     }
+}
+
+/**
+ * Y range of a chart: starts at [minY] (or lower data), ends at the data max,
+ * never below [ceilingAtLeast] and never a zero height span (equal values).
+ */
+internal fun chartYRange(values: List<Double>, minY: Double, ceilingAtLeast: Double?): Pair<Double, Double> {
+    val lo = minOf(minY, values.minOrNull() ?: minY)
+    val dataMax = values.maxOrNull() ?: lo
+    val hi = maxOf(dataMax, ceilingAtLeast ?: dataMax, lo + 1.0)
+    return lo to hi
 }

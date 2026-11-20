@@ -229,6 +229,7 @@ internal object ChangeDnsPtrRequestSerializer : KSerializer<ChangeDnsPtrRequest>
     val protection: CloudServerProtection? = null,
     val labels: Map<String, String> = emptyMap(),
     val created: String? = null,
+    @SerialName("expose_routes_to_vswitch") val exposeRoutesToVswitch: Boolean = false,
 )
 @Serializable data class NetworkSubnet(
     val type: String,
@@ -242,13 +243,15 @@ internal object ChangeDnsPtrRequestSerializer : KSerializer<ChangeDnsPtrRequest>
 @Serializable data class CreateNetworkRequest(
     val name: String,
     @SerialName("ip_range") val ipRange: String,
-    val subnets: List<NetworkSubnet> = emptyList(),
-    val routes: List<NetworkRoute> = emptyList(),
-    val labels: Map<String, String> = emptyMap(),
+    // Sent in the POST so network and subnets are created atomically.
+    val subnets: List<AddSubnetRequest>? = null,
+    val routes: List<NetworkRoute>? = null,
+    val labels: Map<String, String>? = null,
 )
 @Serializable data class UpdateNetworkRequest(
     val name: String? = null,
     val labels: Map<String, String>? = null,
+    @SerialName("expose_routes_to_vswitch") val exposeRoutesToVswitch: Boolean? = null,
 )
 @Serializable data class AddSubnetRequest(
     val type: String,
@@ -616,11 +619,6 @@ internal object ChangeDnsPtrRequestSerializer : KSerializer<ChangeDnsPtrRequest>
 
 @Serializable data class ChangeIpRangeRequest(
     @SerialName("ip_range") val ipRange: String,
-)
-
-@Serializable data class ExposeRoutesRequest(
-    @SerialName("vswitch_id") val vswitchId: Long,
-    val expose: Boolean = true,
 )
 
 @Serializable data class ActionListResponse(

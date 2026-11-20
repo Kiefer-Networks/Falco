@@ -106,11 +106,11 @@ class CloudVolumesViewModel @Inject constructor(private val repo: CloudRepo) : V
             .onFailure { _state.value = CloudVolumesUiState(loading = false, error = sanitizeError(it)) }
     }
 
-    fun loadCreateOptions() = viewModelScope.launch {
+    fun loadCreateOptions(projectId: String? = null) = viewModelScope.launch {
         _create.update { it.copy(loading = true) }
         runCatching {
             val locs = repo.listLocations()
-            val servers = repo.listServers()
+            val servers = repo.listServersIn(projectId)
             val pricing = runCatching { repo.getPricing() }.getOrNull()
             val gross = pricing?.volume?.pricePerGbMonth?.gross?.toDoubleOrNull()
             val net = pricing?.volume?.pricePerGbMonth?.net?.toDoubleOrNull()

@@ -392,12 +392,6 @@ interface CloudApi {
         @Body body: de.kiefer_networks.falco.data.dto.ChangeIpRangeRequest,
     ): CloudServerActionResponse
 
-    @POST("networks/{id}/actions/expose_routes_to_vswitch")
-    suspend fun exposeNetworkRoutesToVSwitch(
-        @Path("id") id: Long,
-        @Body body: de.kiefer_networks.falco.data.dto.ExposeRoutesRequest,
-    ): CloudServerActionResponse
-
     @GET("volumes/{id}/actions")
     suspend fun listVolumeActions(
         @Path("id") id: Long,

@@ -77,8 +77,8 @@ class CloudNetworkDetailViewModel @Inject constructor(
         repo.changeNetworkIpRange(networkId, ipRange)
     }
 
-    fun addSubnet(type: String, networkZone: String, ipRange: String?) = wrap(refreshAfter = true) {
-        repo.addNetworkSubnet(networkId, type = type, networkZone = networkZone, ipRange = ipRange)
+    fun addSubnet(type: String, networkZone: String, ipRange: String?, vswitchId: Long?) = wrap(refreshAfter = true) {
+        repo.addNetworkSubnet(networkId, type = type, networkZone = networkZone, ipRange = ipRange, vswitchId = vswitchId)
     }
 
     fun deleteSubnet(ipRange: String) = wrap(refreshAfter = true) {
@@ -93,8 +93,8 @@ class CloudNetworkDetailViewModel @Inject constructor(
         repo.deleteNetworkRoute(networkId, destination, gateway)
     }
 
-    fun exposeToVSwitch(vswitchId: Long, expose: Boolean = true) = wrap(refreshAfter = true) {
-        repo.exposeNetworkToVSwitch(networkId, vswitchId, expose)
+    fun exposeToVSwitch(expose: Boolean) = wrap(refreshAfter = true) {
+        repo.setNetworkExposeRoutesToVSwitch(networkId, expose)
     }
 
     private fun wrap(refreshAfter: Boolean = false, block: suspend () -> Unit) {

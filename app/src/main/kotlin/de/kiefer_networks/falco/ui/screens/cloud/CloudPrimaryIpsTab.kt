@@ -83,15 +83,11 @@ class CloudPrimaryIpsViewModel @Inject constructor(private val repo: CloudRepo) 
 
     fun refresh() = viewModelScope.launch {
         _state.value = CloudPrimaryIpsUiState(loading = true)
-        runCatching { repo.listPrimaryIps() }
+        runCatching { repo.listPrimaryIpsAware() }
             .onSuccess { items ->
-                // CloudRepo only exposes a flat listPrimaryIps() that already
-                // fans out across projects in aggregate-projects mode. We don't
-                // get project ids back, so wrap with null — selectProjectThen
-                // is a no-op for null project ids.
                 _state.value = CloudPrimaryIpsUiState(
                     loading = false,
-                    data = items.map { ProjectAware(null, it) },
+                    data = items.map { (pid, ip) -> ProjectAware(pid, ip) },
                 )
             }
             .onFailure { _state.value = CloudPrimaryIpsUiState(loading = false, error = sanitizeError(it)) }
@@ -114,6 +110,7 @@ class CloudPrimaryIpsViewModel @Inject constructor(private val repo: CloudRepo) 
         name: String,
         datacenter: String?,
         onDone: (Boolean) -> Unit,
+        projectId: String? = null,
     ) {
         if (_create.value.running) return
         viewModelScope.launch {
@@ -124,6 +121,7 @@ class CloudPrimaryIpsViewModel @Inject constructor(private val repo: CloudRepo) 
                     type = type,
                     assigneeType = "server",
                     location = datacenter,
+                    projectId = projectId,
                 )
             }
             _create.update { it.copy(running = false) }
@@ -221,6 +219,7 @@ internal fun CreatePrimaryIpWizard(
     viewModel: CloudPrimaryIpsViewModel,
     onDismiss: () -> Unit,
     onCreated: () -> Unit,
+    projectId: String? = null,
 ) {
     val opts by viewModel.createOptions.collectAsState()
 
@@ -258,6 +257,7 @@ internal fun CreatePrimaryIpWizard(
                 name = name.trim(),
                 datacenter = datacenter,
                 onDone = { ok -> if (ok) onCreated() },
+                projectId = projectId,
             )
         },
         nextLabel = stringResource(R.string.wizard_next),

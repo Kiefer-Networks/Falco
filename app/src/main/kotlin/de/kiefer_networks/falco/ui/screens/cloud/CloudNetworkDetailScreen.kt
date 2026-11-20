@@ -294,9 +294,10 @@ fun CloudNetworkDetailScreen(
 
     if (exposeOpen) {
         ExposeVSwitchDialog(
+            current = state.network?.exposeRoutesToVswitch ?: false,
             onDismiss = { exposeOpen = false },
-            onConfirm = { vswitchId, expose ->
-                viewModel.exposeToVSwitch(vswitchId, expose)
+            onConfirm = { expose ->
+                viewModel.exposeToVSwitch(expose)
                 exposeOpen = false
             },
         )
@@ -305,8 +306,8 @@ fun CloudNetworkDetailScreen(
     if (addSubnetOpen) {
         AddSubnetDialog(
             onDismiss = { addSubnetOpen = false },
-            onConfirm = { type, zone, ipRange ->
-                viewModel.addSubnet(type, zone, ipRange)
+            onConfirm = { type, zone, ipRange, vswitchId ->
+                viewModel.addSubnet(type, zone, ipRange, vswitchId)
                 addSubnetOpen = false
             },
         )
@@ -619,12 +620,11 @@ private fun ChangeIpRangeDialog(
 
 @Composable
 private fun ExposeVSwitchDialog(
+    current: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (vswitchId: Long, expose: Boolean) -> Unit,
+    onConfirm: (expose: Boolean) -> Unit,
 ) {
-    var idText by remember { mutableStateOf("") }
-    var expose by remember { mutableStateOf(true) }
-    val vswitchId = idText.toLongOrNull()
+    var expose by remember { mutableStateOf(current) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.cloud_network_action_expose_vswitch)) },
@@ -634,14 +634,6 @@ private fun ExposeVSwitchDialog(
                     stringResource(R.string.cloud_network_expose_vswitch_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                OutlinedTextField(
-                    value = idText,
-                    onValueChange = { v -> idText = v.filter { it.isDigit() } },
-                    label = { Text(stringResource(R.string.cloud_network_expose_vswitch_id)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -655,8 +647,8 @@ private fun ExposeVSwitchDialog(
         },
         confirmButton = {
             TextButton(
-                enabled = vswitchId != null,
-                onClick = { vswitchId?.let { onConfirm(it, expose) } },
+                enabled = expose != current,
+                onClick = { onConfirm(expose) },
             ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
@@ -668,11 +660,13 @@ private fun ExposeVSwitchDialog(
 @Composable
 private fun AddSubnetDialog(
     onDismiss: () -> Unit,
-    onConfirm: (type: String, zone: String, ipRange: String?) -> Unit,
+    onConfirm: (type: String, zone: String, ipRange: String?, vswitchId: Long?) -> Unit,
 ) {
     var type by remember { mutableStateOf("cloud") }
     var zone by remember { mutableStateOf("eu-central") }
     var ipRange by remember { mutableStateOf("") }
+    var vswitchText by remember { mutableStateOf("") }
+    val vswitchId = vswitchText.toLongOrNull()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.cloud_network_subnet_add)) },
@@ -714,12 +708,25 @@ private fun AddSubnetDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                if (type == "vswitch") {
+                    OutlinedTextField(
+                        value = vswitchText,
+                        onValueChange = { v -> vswitchText = v.filter { it.isDigit() } },
+                        label = { Text(stringResource(R.string.cloud_network_expose_vswitch_id)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                onConfirm(type, zone, ipRange.trim().ifBlank { null })
-            }) { Text(stringResource(R.string.save)) }
+            TextButton(
+                enabled = type != "vswitch" || vswitchId != null,
+                onClick = {
+                    onConfirm(type, zone, ipRange.trim().ifBlank { null }, vswitchId.takeIf { type == "vswitch" })
+                },
+            ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }

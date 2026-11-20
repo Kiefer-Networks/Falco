@@ -62,7 +62,7 @@ class CloudFirewallDetailViewModel @Inject constructor(
     }
 
     fun loadServers() = viewModelScope.launch {
-        runCatching { repo.listServers() }.onSuccess { servers ->
+        runCatching { repo.listServersIn(null) }.onSuccess { servers ->
             _state.update { it.copy(servers = servers) }
         }
     }

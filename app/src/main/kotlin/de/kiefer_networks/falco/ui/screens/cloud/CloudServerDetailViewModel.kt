@@ -19,6 +19,8 @@ import de.kiefer_networks.falco.data.repo.MetricType
 import de.kiefer_networks.falco.ui.nav.Routes
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -115,7 +117,11 @@ class CloudServerDetailViewModel @Inject constructor(
         loadMetrics(period)
     }
 
+    // Only the newest period may write state; an older, slower load is cancelled.
+    private var metricsJob: Job? = null
+
     private fun loadMetrics(period: MetricPeriod) {
+        metricsJob?.cancel()
         _state.update {
             it.copy(
                 cpuMetrics = MetricLoadState.Loading,
@@ -123,12 +129,13 @@ class CloudServerDetailViewModel @Inject constructor(
                 networkMetrics = MetricLoadState.Loading,
             )
         }
-        viewModelScope.launch {
+        metricsJob = viewModelScope.launch {
             coroutineScope {
                 val cpu = async { runCatching { repo.serverMetrics(serverId, MetricType.Cpu, period) } }
                 val disk = async { runCatching { repo.serverMetrics(serverId, MetricType.Disk, period) } }
                 val net = async { runCatching { repo.serverMetrics(serverId, MetricType.Network, period) } }
                 val cpuRes = cpu.await()
+                ensureActive()
                 _state.update {
                     it.copy(
                         cpuMetrics = cpuRes.fold(
@@ -138,6 +145,7 @@ class CloudServerDetailViewModel @Inject constructor(
                     )
                 }
                 val diskRes = disk.await()
+                ensureActive()
                 _state.update {
                     it.copy(
                         diskMetrics = diskRes.fold(
@@ -147,6 +155,7 @@ class CloudServerDetailViewModel @Inject constructor(
                     )
                 }
                 val netRes = net.await()
+                ensureActive()
                 _state.update {
                     it.copy(
                         networkMetrics = netRes.fold(
@@ -159,12 +168,12 @@ class CloudServerDetailViewModel @Inject constructor(
         }
     }
 
-    fun powerOn() = wrap { repo.powerOn(serverId) }
-    fun powerOff() = wrap { repo.powerOff(serverId) }
-    fun reboot() = wrap { repo.reboot(serverId) }
-    fun shutdown() = wrap { repo.shutdown(serverId) }
-    fun reset() = wrap { repo.reset(serverId) }
-    fun snapshot() = wrap { repo.snapshot(serverId) }
+    fun powerOn() = wrap(refreshAfter = true) { repo.powerOn(serverId) }
+    fun powerOff() = wrap(refreshAfter = true) { repo.powerOff(serverId) }
+    fun reboot() = wrap(refreshAfter = true) { repo.reboot(serverId) }
+    fun shutdown() = wrap(refreshAfter = true) { repo.shutdown(serverId) }
+    fun reset() = wrap(refreshAfter = true) { repo.reset(serverId) }
+    fun snapshot() = wrap(refreshAfter = true) { repo.snapshot(serverId) }
 
     fun rebuild(imageIdOrName: String) = wrap(refreshAfter = true) {
         // Rebuild returns a fresh root password when the image has no SSH key;
@@ -257,7 +266,7 @@ class CloudServerDetailViewModel @Inject constructor(
     /** Lazy-loads the network picker. Network names are also used for nicer
      *  detach labels ("Detach from <name>") instead of bare ids. */
     fun loadNetworks() = viewModelScope.launch {
-        runCatching { repo.listNetworks() }.onSuccess { nets ->
+        runCatching { repo.listNetworksIn(null) }.onSuccess { nets ->
             _state.update { it.copy(networkOptions = nets) }
         }
     }
@@ -278,7 +287,7 @@ class CloudServerDetailViewModel @Inject constructor(
     /** Loads placement groups and derives the current one by membership
      *  (CloudServer DTO does not parse a `placement_group` field). */
     fun loadPlacementGroups() = viewModelScope.launch {
-        runCatching { repo.listPlacementGroups() }.onSuccess { groups ->
+        runCatching { repo.listPlacementGroupsIn(null) }.onSuccess { groups ->
             val current = groups.firstOrNull { serverId in it.servers }
             _state.update {
                 it.copy(placementGroupOptions = groups, currentPlacementGroup = current)
