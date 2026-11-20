@@ -61,6 +61,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.data.dto.CloudSshKey
 import de.kiefer_networks.falco.data.repo.CloudRepo
 import de.kiefer_networks.falco.data.util.sanitizeError
@@ -381,7 +382,7 @@ private fun AddKeySheet(
 
 @Composable
 private fun KeyCard(key: CloudSshKey, onDelete: () -> Unit) {
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+    HairlineCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
@@ -391,7 +392,7 @@ private fun KeyCard(key: CloudSshKey, onDelete: () -> Unit) {
                 Text(
                     key.fingerprint,
                     style = MaterialTheme.typography.bodySmall,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = de.kiefer_networks.falco.ui.theme.PlexMono,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

@@ -47,6 +47,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.data.dto.CloudNetwork
 import de.kiefer_networks.falco.data.repo.CloudRepo
 import de.kiefer_networks.falco.data.util.sanitizeError
@@ -188,7 +189,7 @@ fun CloudNetworksTab(
 
 @Composable
 private fun NetworkCard(network: CloudNetwork, onOpen: () -> Unit) {
-    Card(
+    HairlineCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)

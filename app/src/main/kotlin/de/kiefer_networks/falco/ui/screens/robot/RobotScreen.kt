@@ -66,6 +66,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.theme.falcoColors
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.data.dto.RobotServer
 import de.kiefer_networks.falco.data.repo.RobotRepo
 import de.kiefer_networks.falco.ui.components.ErrorState
@@ -194,7 +196,7 @@ private fun RobotServersTab(
 @Composable
 private fun RobotServerCard(server: RobotServer, onClick: () -> Unit) {
     val ctx = LocalContext.current
-    ElevatedCard(
+    HairlineCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
@@ -322,7 +324,7 @@ private fun RobotServerCard(server: RobotServer, onClick: () -> Unit) {
 private fun statusColor(server: RobotServer): Color {
     return when {
         server.cancelled -> MaterialTheme.colorScheme.error
-        server.status?.equals("ready", ignoreCase = true) == true -> Color(0xFF2E7D32)
+        server.status?.equals("ready", ignoreCase = true) == true -> MaterialTheme.falcoColors.running
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 }

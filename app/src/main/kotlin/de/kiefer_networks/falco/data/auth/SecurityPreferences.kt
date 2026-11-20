@@ -52,9 +52,9 @@ class SecurityPreferences @Inject constructor(
         dataStore.edit { it[KEY_THEME_MODE] = value }
     }
 
-    /** Accent palette. 0 = Hetzner Red, 1 = Blue, 2 = Green, 3 = Purple, 4 = Orange. */
+    /** Accent palette. 0 = Hetzner Red, 1 = Blue, 2 = Green, 3 = Purple, 4 = Orange, 5 = Signal amber (default). */
     val accentMode: Flow<Int> =
-        dataStore.data.map { it[KEY_ACCENT_MODE] ?: ACCENT_RED }
+        dataStore.data.map { it[KEY_ACCENT_MODE] ?: ACCENT_AMBER }
 
     suspend fun setAccentMode(value: Int) {
         dataStore.edit { it[KEY_ACCENT_MODE] = value }
@@ -154,6 +154,7 @@ class SecurityPreferences @Inject constructor(
         const val ACCENT_GREEN = 2
         const val ACCENT_PURPLE = 3
         const val ACCENT_ORANGE = 4
+        const val ACCENT_AMBER = 5
 
         private val KEY_LOCK_TIMEOUT = intPreferencesKey("auto_lock_timeout_seconds")
         private val KEY_THEME_MODE = intPreferencesKey("theme_mode")

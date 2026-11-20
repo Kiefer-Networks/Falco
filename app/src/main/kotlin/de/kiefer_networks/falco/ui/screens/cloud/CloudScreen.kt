@@ -1,48 +1,39 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 @file:OptIn(
-    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
     androidx.compose.material3.ExperimentalMaterial3Api::class,
 )
 package de.kiefer_networks.falco.ui.screens.cloud
 
 import android.content.Context
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PowerSettingsNew
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material.icons.filled.Sell
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -52,18 +43,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.dto.CloudServer
 import de.kiefer_networks.falco.ui.components.EmptyState
 import de.kiefer_networks.falco.ui.components.ErrorState
+import de.kiefer_networks.falco.ui.components.FleetStatusStrip
 import de.kiefer_networks.falco.ui.components.LoadingState
+import de.kiefer_networks.falco.ui.components.SectionLabel
+import de.kiefer_networks.falco.ui.components.StatusDot
+import de.kiefer_networks.falco.ui.components.StatusTone
+import de.kiefer_networks.falco.ui.components.color
+import de.kiefer_networks.falco.ui.components.serverStatusLabel
+import de.kiefer_networks.falco.ui.components.serverStatusTone
+import de.kiefer_networks.falco.ui.theme.MonoStyle
+import de.kiefer_networks.falco.ui.theme.falcoColors
+import java.util.Locale
 
 @Composable
 fun CloudScreen(
@@ -179,13 +179,29 @@ private fun ServerList(
         )
         return
     }
+    val tones = servers.map { serverStatusTone(it.item.status) }
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxSize(),
+        // Bottom padding keeps the last row clear of the FAB.
+        contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 88.dp),
     ) {
+        item(key = "fleet") {
+            FleetStatusStrip(
+                running = tones.count { it == StatusTone.Running },
+                off = tones.count { it == StatusTone.Off },
+                inProgress = tones.count { it == StatusTone.Progress },
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+        }
+        item(key = "label") {
+            SectionLabel(
+                text = "${stringResource(R.string.cloud_servers)} · ${servers.size}",
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 16.dp, bottom = 6.dp),
+            )
+        }
         items(servers, key = { "${it.projectId.orEmpty()}-${it.item.id}" }) { entry ->
             val server = entry.item
-            ServerCard(
+            ServerRow(
                 server = server,
                 onAction = { action, id -> onAction(action, id, entry.projectId) },
                 onClick = { onOpen(entry.projectId, server.id) },
@@ -194,237 +210,111 @@ private fun ServerList(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ServerCard(
+private fun ServerRow(
     server: CloudServer,
     onAction: (CloudViewModel.ServerAction, Long) -> Unit,
     onClick: () -> Unit,
 ) {
-    ElevatedCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+    val context = LocalContext.current
+    val tone = serverStatusTone(server.status)
+    val ipv4 = server.publicNet?.ipv4?.ip
+    val ipLabel = stringResource(R.string.server_label_ipv4)
+    val meta = listOfNotNull(
+        ipv4 ?: server.publicNet?.ipv6?.ip,
+        server.serverType?.name?.uppercase(Locale.ROOT),
+        server.location?.name ?: server.datacenter?.location?.name ?: server.datacenter?.name,
+    ).joinToString(" · ")
+    var menuOpen by remember { mutableStateOf(false) }
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 64.dp)
+                .combinedClickable(
+                    onClick = onClick,
+                    // Long press copies the IPv4 address, like the copy button of the old card.
+                    onLongClick = if (ipv4 != null) {
+                        { copyToClipboard(context, ipLabel, ipv4) }
+                    } else {
+                        null
+                    },
+                )
+                .padding(start = 8.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Header: status dot + name + status text
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                StatusDot(status = server.status)
-                Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
+            Box(Modifier.width(10.dp), contentAlignment = Alignment.Center) { StatusDot(tone) }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = server.name,
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
                     Text(
-                        text = humanStatus(server.status),
+                        text = serverStatusLabel(server.status).lowercase(Locale.getDefault()),
                         style = MaterialTheme.typography.bodySmall,
-                        color = statusColor(server.status),
+                        color = tone.color(),
+                        maxLines = 1,
+                    )
+                }
+                if (meta.isNotBlank()) {
+                    Text(
+                        text = meta,
+                        style = MonoStyle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-
-            // Spec chips: cores, RAM, disk
-            server.serverType?.let { st ->
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    SpecChip(icon = Icons.Filled.Settings, label = "${st.cores} ${pluralCores(st.cores)}")
-                    SpecChip(icon = Icons.Filled.Memory, label = "${formatGb(st.memory)} RAM")
-                    SpecChip(icon = Icons.Filled.Storage, label = "${st.disk} GB")
-                    SpecChip(icon = Icons.Filled.Sell, label = st.name)
-                }
-            }
-
-            HorizontalDivider()
-
-            // Networking + location
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                server.publicNet?.ipv4?.ip?.let {
-                    PropertyRow(
-                        icon = Icons.Filled.Public,
-                        label = stringResource(R.string.server_label_ipv4),
-                        value = it,
-                        copyable = true,
+            Box {
+                IconButton(onClick = { menuOpen = true }) {
+                    Icon(
+                        Icons.Filled.MoreVert,
+                        contentDescription = stringResource(R.string.cloud_server_quick_actions),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                server.publicNet?.ipv6?.ip?.let {
-                    PropertyRow(
-                        icon = Icons.Filled.Public,
-                        label = stringResource(R.string.server_label_ipv6),
-                        value = it,
-                        copyable = true,
-                    )
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    QuickAction(Icons.Filled.RestartAlt, stringResource(R.string.action_reboot)) {
+                        menuOpen = false
+                        onAction(CloudViewModel.ServerAction.Reboot, server.id)
+                    }
+                    if (server.status == "running") {
+                        QuickAction(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_shutdown)) {
+                            menuOpen = false
+                            onAction(CloudViewModel.ServerAction.Shutdown, server.id)
+                        }
+                    } else {
+                        QuickAction(Icons.Filled.PowerSettingsNew, stringResource(R.string.action_power_on)) {
+                            menuOpen = false
+                            onAction(CloudViewModel.ServerAction.PowerOn, server.id)
+                        }
+                    }
+                    QuickAction(Icons.Filled.Storage, stringResource(R.string.action_snapshot)) {
+                        menuOpen = false
+                        onAction(CloudViewModel.ServerAction.Snapshot, server.id)
+                    }
                 }
-                val locationLine = listOfNotNull(
-                    server.datacenter?.name ?: server.location?.name,
-                    (server.location ?: server.datacenter?.location)?.city,
-                    (server.location ?: server.datacenter?.location)?.country,
-                ).joinToString(" · ")
-                if (locationLine.isNotBlank()) {
-                    PropertyRow(
-                        icon = Icons.Filled.LocationOn,
-                        label = stringResource(R.string.server_label_location),
-                        value = locationLine,
-                    )
-                }
-            }
-
-            // Action chips
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                ActionChip(
-                    icon = Icons.Filled.RestartAlt,
-                    label = stringResource(R.string.action_reboot),
-                    onClick = { onAction(CloudViewModel.ServerAction.Reboot, server.id) },
-                )
-                if (server.status == "running") {
-                    ActionChip(
-                        icon = Icons.Filled.PowerSettingsNew,
-                        label = stringResource(R.string.action_shutdown),
-                        onClick = { onAction(CloudViewModel.ServerAction.Shutdown, server.id) },
-                    )
-                } else {
-                    ActionChip(
-                        icon = Icons.Filled.PowerSettingsNew,
-                        label = stringResource(R.string.action_power_on),
-                        onClick = { onAction(CloudViewModel.ServerAction.PowerOn, server.id) },
-                    )
-                }
-                ActionChip(
-                    icon = Icons.Filled.Storage,
-                    label = stringResource(R.string.action_snapshot),
-                    onClick = { onAction(CloudViewModel.ServerAction.Snapshot, server.id) },
-                )
             }
         }
+        HorizontalDivider(color = MaterialTheme.falcoColors.divider)
     }
 }
 
 @Composable
-private fun StatusDot(status: String) {
-    val color = statusColor(status)
-    Surface(
-        shape = CircleShape,
-        color = color,
-        modifier = Modifier.size(12.dp),
-    ) {}
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SpecChip(icon: ImageVector, label: String) {
-    AssistChip(
-        onClick = {},
-        leadingIcon = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(AssistChipDefaults.IconSize),
-            )
-        },
-        label = { Text(label, style = MaterialTheme.typography.labelMedium) },
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ActionChip(icon: ImageVector, label: String, onClick: () -> Unit) {
-    AssistChip(
+private fun QuickAction(icon: ImageVector, label: String, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = { Text(label) },
+        leadingIcon = { Icon(icon, contentDescription = null) },
         onClick = onClick,
-        leadingIcon = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(AssistChipDefaults.IconSize),
-            )
-        },
-        label = { Text(label) },
     )
-}
-
-@Composable
-private fun PropertyRow(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    copyable: Boolean = false,
-) {
-    val context = LocalContext.current
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .let {
-                if (copyable) it.clickable { copyToClipboard(context, label, value) } else it
-            }
-            .padding(vertical = 2.dp),
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(Modifier.width(10.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontFamily = FontFamily.Monospace,
-            )
-        }
-        if (copyable) {
-            IconButton(onClick = { copyToClipboard(context, label, value) }) {
-                Icon(
-                    imageVector = Icons.Filled.ContentCopy,
-                    contentDescription = stringResource(R.string.copy),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-        }
-    }
 }
 
 private fun copyToClipboard(context: Context, label: String, value: String) {
     de.kiefer_networks.falco.ui.util.Clipboard.copySensitive(context, label, value)
 }
-
-private fun statusColor(status: String): Color = when (status.lowercase()) {
-    "running" -> Color(0xFF2E7D32) // green
-    "starting", "initializing", "rebuilding", "migrating" -> Color(0xFFEF6C00) // orange
-    "stopping", "off", "deleting" -> Color(0xFF6D4C41) // brown-grey
-    else -> Color(0xFF9E9E9E) // grey
-}
-
-@Composable
-private fun humanStatus(status: String): String = when (status.lowercase()) {
-    "running" -> stringResource(R.string.server_status_running)
-    "off" -> stringResource(R.string.server_status_off)
-    "starting" -> stringResource(R.string.server_status_starting)
-    "stopping" -> stringResource(R.string.server_status_stopping)
-    "initializing" -> stringResource(R.string.server_status_initializing)
-    "rebuilding" -> stringResource(R.string.server_status_rebuilding)
-    "migrating" -> stringResource(R.string.server_status_migrating)
-    "deleting" -> stringResource(R.string.server_status_deleting)
-    else -> status
-}
-
-private fun formatGb(value: Double): String {
-    return if (value % 1.0 == 0.0) "${value.toInt()} GB" else "%.1f GB".format(value)
-}
-
-@Composable
-private fun pluralCores(cores: Int): String =
-    if (cores == 1) stringResource(R.string.server_unit_core_singular)
-    else stringResource(R.string.server_unit_core_plural)

@@ -13,13 +13,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
+import de.kiefer_networks.falco.ui.components.HairlineCard
+import de.kiefer_networks.falco.ui.theme.MonoStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import de.kiefer_networks.falco.ui.theme.Spacing
 
 data class Kpi(val icon: ImageVector, val label: String, val value: String)
@@ -33,7 +35,7 @@ fun KpiStrip(items: List<Kpi>, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
         items.forEach { item ->
-            OutlinedCard {
+            HairlineCard {
                 Row(
                     modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
                     verticalAlignment = Alignment.CenterVertically,
@@ -51,7 +53,7 @@ fun KpiStrip(items: List<Kpi>, modifier: Modifier = Modifier) {
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Text(item.value, style = MaterialTheme.typography.titleSmall)
+                        Text(item.value, style = MonoStyle.copy(fontSize = 14.sp, lineHeight = 20.sp))
                     }
                 }
             }

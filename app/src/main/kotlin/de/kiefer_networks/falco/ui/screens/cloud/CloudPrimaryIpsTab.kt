@@ -40,6 +40,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.data.dto.CloudPrimaryIp
 import de.kiefer_networks.falco.data.dto.Location
 import de.kiefer_networks.falco.data.repo.CloudRepo
@@ -187,7 +188,7 @@ fun CloudPrimaryIpsTab(viewModel: CloudPrimaryIpsViewModel = hiltViewModel()) {
 
 @Composable
 private fun PrimaryIpCard(ip: CloudPrimaryIp) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    HairlineCard(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Column(Modifier.padding(12.dp)) {
             Text(ip.name, style = MaterialTheme.typography.titleMedium)
             Text(ip.ip, style = MaterialTheme.typography.bodyMedium)

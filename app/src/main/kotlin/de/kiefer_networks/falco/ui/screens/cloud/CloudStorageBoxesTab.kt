@@ -52,6 +52,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.theme.falcoColors
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.data.dto.CloudStorageBox
 import de.kiefer_networks.falco.data.dto.CloudStorageBoxType
 import de.kiefer_networks.falco.data.dto.Location
@@ -333,7 +335,7 @@ private fun CreateStorageBoxSheet(
 
 @Composable
 private fun StorageBoxCard(box: CloudStorageBox, onClick: () -> Unit) {
-    ElevatedCard(
+    HairlineCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -415,7 +417,7 @@ internal fun storageBoxStatusLabel(status: String?): String = when (status) {
 private fun StatusDotColor(active: Boolean) {
     Surface(
         shape = CircleShape,
-        color = if (active) Color(0xFF2E7D32) else Color(0xFF9E9E9E),
+        color = if (active) MaterialTheme.falcoColors.running else MaterialTheme.falcoColors.off,
         modifier = Modifier.size(12.dp),
     ) {}
 }

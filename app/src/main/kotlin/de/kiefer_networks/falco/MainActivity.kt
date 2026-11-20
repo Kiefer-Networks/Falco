@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val themeMode by securityPrefs.themeMode.collectAsState(initial = SecurityPreferences.THEME_LIGHT)
-            val accentMode by securityPrefs.accentMode.collectAsState(initial = SecurityPreferences.ACCENT_RED)
+            val accentMode by securityPrefs.accentMode.collectAsState(initial = SecurityPreferences.ACCENT_AMBER)
             val blockScreenshots by securityPrefs.blockScreenshots.collectAsState(initial = true)
             androidx.compose.runtime.LaunchedEffect(blockScreenshots) {
                 if (blockScreenshots) {

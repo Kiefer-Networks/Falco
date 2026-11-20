@@ -893,4 +893,19 @@
     <string name="s3_upload_running">Uploading files</string>
     <string name="s3_upload_done">Uploaded %1$s</string>
     <string name="s3_upload_failed">Upload of %1$s failed: %2$s</string>
+    <string name="fleet_running">Running</string>
+    <string name="fleet_off">Off</string>
+    <string name="fleet_in_progress">In progress</string>
+    <string name="cloud_server_quick_actions">Server actions</string>
+    <string name="spec_type">Type</string>
+    <string name="spec_cores">vCPU</string>
+    <string name="spec_memory">Memory</string>
+    <string name="spec_disk">Disk</string>
+    <string name="spec_image">Image</string>
+    <string name="confirm_action_title">%1$s?</string>
+    <string name="activity_status_done">done</string>
+    <string name="activity_status_running">running</string>
+    <string name="activity_status_failed">failed</string>
+    <string name="activity_today">Today</string>
+    <string name="activity_yesterday">Yesterday</string>
 </resources>

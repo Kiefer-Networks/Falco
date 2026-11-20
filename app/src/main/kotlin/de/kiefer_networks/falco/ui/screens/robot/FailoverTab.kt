@@ -37,6 +37,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.kiefer_networks.falco.R
+import de.kiefer_networks.falco.ui.components.HairlineCard
 import de.kiefer_networks.falco.data.dto.RobotFailover
 import de.kiefer_networks.falco.data.repo.RobotRepo
 import de.kiefer_networks.falco.data.util.sanitizeError
@@ -170,7 +171,7 @@ private fun FailoverRow(
     onUnroute: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+    HairlineCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
