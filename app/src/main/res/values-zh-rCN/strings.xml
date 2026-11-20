@@ -306,7 +306,6 @@
     <string name="s3_ttl_1h">1 小时</string>
     <string name="s3_ttl_24h">24 小时</string>
     <string name="s3_ttl_7d">7 天</string>
-    <string name="s3_ttl_30d">30 天</string>
     <string name="s3_upload_picker_title">选择要上传的文件</string>
     <string name="s3_download_saved">已保存到下载目录</string>
     <string name="s3_delete_confirm_title">删除对象？</string>

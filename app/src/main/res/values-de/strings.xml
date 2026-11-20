@@ -303,9 +303,8 @@
     <string name="s3_ttl_1h">1 Stunde</string>
     <string name="s3_ttl_24h">24 Stunden</string>
     <string name="s3_ttl_7d">7 Tage</string>
-    <string name="s3_ttl_30d">30 Tage</string>
     <string name="s3_upload_picker_title">Datei zum Hochladen wählen</string>
-    <string name="s3_download_saved">In Downloads gespeichert</string>
+    <string name="s3_download_saved">Download gespeichert</string>
     <string name="s3_delete_confirm_title">Objekt löschen?</string>
     <string name="s3_delete_confirm_msg">\"%1$s\" endgültig löschen? Das kann nicht rückgängig gemacht werden.</string>
 
@@ -599,4 +598,7 @@
     <string name="robot_traffic_out">Ausgehend</string>
     <string name="robot_traffic_sum">Gesamt</string>
     <string name="robot_traffic_gb_format">%1$.2f GB</string>
+    <string name="s3_upload_running">Dateien werden hochgeladen</string>
+    <string name="s3_upload_done">%1$s hochgeladen</string>
+    <string name="s3_upload_failed">Hochladen von %1$s fehlgeschlagen: %2$s</string>
 </resources>

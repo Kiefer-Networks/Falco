@@ -2,12 +2,12 @@
 @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 package de.kiefer_networks.falco.ui.screens.s3
 
-import android.content.ContentValues
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
+import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -63,9 +63,6 @@ import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.api.S3Client
 import de.kiefer_networks.falco.data.s3.UploadService
 import de.kiefer_networks.falco.ui.components.dialog.TypeToConfirmDeleteDialog
-import java.io.File
-import java.io.FileOutputStream
-import java.io.OutputStream
 import java.text.DateFormat
 import java.util.Date
 
@@ -117,6 +114,45 @@ fun ObjectBrowserScreen(
                 putExtra(UploadService.EXTRA_MIME, mime)
             }
             ContextCompat.startForegroundService(context, intent)
+        }
+    }
+
+    // Upload progress and results are notifications, so ask for the runtime
+    // permission on API 33+ first. The upload proceeds either way.
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { openDocLauncher.launch(arrayOf("*/*")) }
+    val startUploadPicker = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            openDocLauncher.launch(arrayOf("*/*"))
+        }
+    }
+
+    // SAF picker for downloads: works on every API level without storage
+    // permissions and leaves no half published MediaStore entry behind.
+    var pendingDownloadKey by rememberSaveable { mutableStateOf<String?>(null) }
+    val saveDocLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream"),
+    ) { uri: Uri? ->
+        val key = pendingDownloadKey
+        pendingDownloadKey = null
+        if (uri == null || key == null) return@rememberLauncherForActivityResult
+        val resolver = context.contentResolver
+        val deletePartial = {
+            runCatching { DocumentsContract.deleteDocument(resolver, uri) }
+            Unit
+        }
+        val out = runCatching { resolver.openOutputStream(uri, "wt") }.getOrNull()
+        if (out != null) {
+            viewModel.download(key, out, onFailure = deletePartial)
+        } else {
+            deletePartial()
+            Toast.makeText(context, context.getString(R.string.error), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -279,18 +315,8 @@ fun ObjectBrowserScreen(
                                 },
                                 onDownload = {
                                     menuOpenForKey = null
-                                    val fileName = obj.key.substringAfterLast('/')
-                                    val mime = guessMime(fileName)
-                                    val out = openDownloadStream(context, fileName, mime)
-                                    if (out != null) {
-                                        viewModel.download(obj.key, out)
-                                    } else {
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.error),
-                                            Toast.LENGTH_LONG,
-                                        ).show()
-                                    }
+                                    pendingDownloadKey = obj.key
+                                    saveDocLauncher.launch(obj.key.substringAfterLast('/'))
                                 },
                                 onDelete = {
                                     menuOpenForKey = null
@@ -320,7 +346,7 @@ fun ObjectBrowserScreen(
 
         if (!inSelectionMode) {
             ExtendedFloatingActionButton(
-                onClick = { openDocLauncher.launch(arrayOf("*/*")) },
+                onClick = startUploadPicker,
                 icon = { Icon(Icons.Filled.UploadFile, contentDescription = null) },
                 text = { Text(stringResource(R.string.s3_upload)) },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
@@ -597,47 +623,3 @@ private fun formatLastModified(raw: String): String {
     }.getOrDefault(raw)
 }
 
-private fun guessMime(name: String): String =
-    java.net.URLConnection.guessContentTypeFromName(name) ?: "application/octet-stream"
-
-/**
- * Opens an [OutputStream] backed by the public Downloads collection. On Q+
- * we use [MediaStore]; on older APIs we fall back to the legacy Downloads
- * directory (no extra permission needed for app-private data within the
- * shared dir on those versions, which Android still allows via FileOutputStream
- * because we're writing to the user-visible Downloads folder using the
- * pre-scoped-storage path).
- */
-private fun openDownloadStream(
-    context: android.content.Context,
-    name: String,
-    mime: String,
-): OutputStream? {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        val resolver = context.contentResolver
-        val values = ContentValues().apply {
-            put(MediaStore.Downloads.DISPLAY_NAME, name)
-            put(MediaStore.Downloads.MIME_TYPE, mime)
-            put(MediaStore.Downloads.IS_PENDING, 1)
-        }
-        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: return null
-        val out = resolver.openOutputStream(uri) ?: return null
-        // Wrap so we clear IS_PENDING once the stream closes.
-        object : OutputStream() {
-            override fun write(b: Int) = out.write(b)
-            override fun write(b: ByteArray) = out.write(b)
-            override fun write(b: ByteArray, off: Int, len: Int) = out.write(b, off, len)
-            override fun flush() = out.flush()
-            override fun close() {
-                out.close()
-                val update = ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }
-                resolver.update(uri, update, null, null)
-            }
-        }
-    } else {
-        @Suppress("DEPRECATION")
-        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        if (!dir.exists()) dir.mkdirs()
-        FileOutputStream(File(dir, name))
-    }
-}

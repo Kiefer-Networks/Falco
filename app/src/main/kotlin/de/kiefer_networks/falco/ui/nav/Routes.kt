@@ -24,10 +24,15 @@ object Routes {
     fun robotVSwitchDetail(id: Long) = "robot_vswitch_detail/$id"
     fun dnsZoneDetail(id: String) = "dns/zone/$id"
     fun s3Browser(bucket: String, prefix: String = ""): String {
-        val encodedBucket = java.net.URLEncoder.encode(bucket, "UTF-8")
-        val encodedPrefix = java.net.URLEncoder.encode(prefix, "UTF-8")
-        return "s3/browser?bucket=$encodedBucket&prefix=$encodedPrefix"
+        return "s3/browser?bucket=${encodeArg(bucket)}&prefix=${encodeArg(prefix)}"
     }
+
+    /**
+     * Percent encodes a route argument. Navigation decodes query args with
+     * Uri.decode, which keeps '+' literally, so spaces must become %20.
+     */
+    internal fun encodeArg(value: String): String =
+        java.net.URLEncoder.encode(value, "UTF-8").replace("+", "%20")
 
     const val CLOUD_STORAGE_BOX_DETAIL = "cloud/storagebox/{id}"
     fun cloudStorageBoxDetail(id: Long) = "cloud/storagebox/$id"

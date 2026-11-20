@@ -193,10 +193,8 @@ class S3Client(
                 .bucket(bucket)
                 .objects(keys.map { DeleteRequest.Object(it) })
                 .build()
-            val failed = client.removeObjects(args).mapNotNull {
-                runCatching { it.get().objectName() }.getOrNull()
-            }.toSet()
-            keys.filterNot { it in failed }
+            val results = client.removeObjects(args).map { r -> runCatching { r.get().objectName() } }
+            successfulDeletes(keys, results)
         }
 
     suspend fun copyObject(
@@ -236,5 +234,15 @@ class S3Client(
             SetBucketVersioningArgs.builder().bucket(bucket).config(cfg).build(),
         )
     }
+}
 
+/**
+ * Maps MinIO removeObjects results (one per failed key, or a thrown
+ * request level error) to the keys that were actually deleted. A request
+ * level failure means nothing can be confirmed, so it is rethrown.
+ */
+internal fun successfulDeletes(keys: List<String>, results: List<Result<String>>): List<String> {
+    results.firstOrNull { it.isFailure }?.let { throw it.exceptionOrNull()!! }
+    val failed = results.map { it.getOrThrow() }.toSet()
+    return keys.filterNot { it in failed }
 }

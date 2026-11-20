@@ -38,7 +38,6 @@ private val TTL_OPTIONS = listOf(
     TtlOption(1, R.string.s3_ttl_1h),
     TtlOption(24, R.string.s3_ttl_24h),
     TtlOption(24 * 7, R.string.s3_ttl_7d),
-    TtlOption(24 * 30, R.string.s3_ttl_30d),
 )
 
 /**

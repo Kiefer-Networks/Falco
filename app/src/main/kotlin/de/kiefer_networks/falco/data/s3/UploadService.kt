@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package de.kiefer_networks.falco.data.s3
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -12,16 +13,23 @@ import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.ServiceCompat
+import androidx.core.content.IntentCompat
 import dagger.hilt.android.AndroidEntryPoint
 import de.kiefer_networks.falco.R
 import de.kiefer_networks.falco.data.api.S3Client
 import de.kiefer_networks.falco.data.auth.AccountManager
+import de.kiefer_networks.falco.data.util.sanitizeError
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
 /**
@@ -38,21 +46,30 @@ class UploadService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    /** Uploads still running. Only touched on the main thread. */
+    private var active = 0
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // startForegroundService() obliges us to call startForeground() even
+        // when the extras turn out to be invalid, so do it first.
+        startInForeground(buildNotification(getString(R.string.s3_upload_running)))
+
         val bucket = intent?.getStringExtra(EXTRA_BUCKET)?.takeIf { isValidBucket(it) }
-            ?: return START_NOT_STICKY
-        val key = intent.getStringExtra(EXTRA_KEY)?.takeIf { isValidObjectKey(it) }
-            ?: return START_NOT_STICKY
-        val source = intent.getParcelableExtra<Uri>(EXTRA_SOURCE_URI)?.takeIf { isLocalContentUri(it) }
-            ?: return START_NOT_STICKY
-        val mime = intent.getStringExtra(EXTRA_MIME)
+        val key = intent?.getStringExtra(EXTRA_KEY)?.takeIf { isValidObjectKey(it) }
+        val source = intent
+            ?.let { IntentCompat.getParcelableExtra(it, EXTRA_SOURCE_URI, Uri::class.java) }
+            ?.takeIf { isLocalContentUri(it) }
+        if (bucket == null || key == null || source == null) {
+            stopIfIdle()
+            return START_NOT_STICKY
+        }
+        val mime = intent?.getStringExtra(EXTRA_MIME)
             ?.takeIf { it.matches(MIME_REGEX) }
             ?: "application/octet-stream"
 
-        startInForeground(buildNotification("Uploading $key…"))
-
+        active++
         scope.launch {
-            runCatching {
+            val result = runCatching {
                 val project = accounts.activeCloudProject.first()
                     ?: error("No active Cloud project")
                 require(project.hasS3) { "Active Cloud project has no S3 credentials" }
@@ -64,14 +81,49 @@ class UploadService : Service() {
                 )
                 val resolver = applicationContext.contentResolver
                 val size = resolver.openFileDescriptor(source, "r")?.use { it.statSize } ?: -1L
-                resolver.openInputStream(source).use { input ->
-                    requireNotNull(input) { "Cannot open input stream for $source" }
-                    client.putObject(bucket, key, mime, size, input)
+                val input = requireNotNull(resolver.openInputStream(source)) {
+                    "Cannot open input stream for $source"
                 }
-            }.onFailure { /* TODO surface error notification */ }
-            stopSelf(startId)
+                input.use { client.putObject(bucket, key, mime, size, it) }
+            }
+            if (result.isFailure && result.exceptionOrNull() is CancellationException) return@launch
+            val name = key.substringAfterLast('/')
+            notifyResult(
+                if (result.isSuccess) {
+                    getString(R.string.s3_upload_done, name)
+                } else {
+                    getString(R.string.s3_upload_failed, name, sanitizeError(result.exceptionOrNull()!!))
+                },
+                success = result.isSuccess,
+            )
+            withContext(Dispatchers.Main) {
+                active--
+                stopIfIdle()
+            }
         }
         return START_NOT_STICKY
+    }
+
+    private fun stopIfIdle() {
+        if (active > 0) return
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    /** Posts a dismissible result notification (no op without POST_NOTIFICATIONS). */
+    @SuppressLint("MissingPermission")
+    private fun notifyResult(text: String, success: Boolean) {
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.s3_upload))
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setSmallIcon(if (success) android.R.drawable.stat_sys_upload_done else android.R.drawable.stat_notify_error)
+            .setAutoCancel(true)
+            .build()
+        val nm = NotificationManagerCompat.from(this)
+        if (nm.areNotificationsEnabled()) {
+            runCatching { nm.notify(resultIds.incrementAndGet(), notification) }
+        }
     }
 
     /** S3 bucket name format per AWS spec — lowercase alphanumerics, dot, dash, 3-63 chars. */
@@ -104,7 +156,7 @@ class UploadService : Service() {
     private fun buildNotification(text: String): Notification {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, "Uploads", NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(CHANNEL_ID, getString(R.string.s3_upload), NotificationManager.IMPORTANCE_LOW)
             nm.createNotificationChannel(channel)
         }
         return NotificationCompat.Builder(this, CHANNEL_ID)
@@ -125,6 +177,7 @@ class UploadService : Service() {
         private const val NOTIFICATION_ID = 0xF1A1
         private const val MAX_KEY_LEN = 1024
         private val BUCKET_REGEX = "^[a-z0-9](?:[a-z0-9.\\-]{1,61}[a-z0-9])?$".toRegex()
+        private val resultIds = AtomicInteger(NOTIFICATION_ID)
         private val MIME_REGEX = "^[\\w.+-]+/[\\w.+-]+$".toRegex()
     }
 }
