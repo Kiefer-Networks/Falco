@@ -503,4 +503,427 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tokenHidden => 'verborgen';
+
+  @override
+  String actionCommand(String command) {
+    String _temp0 = intl.Intl.selectLogic(command, {
+      'start_server': 'Server einschalten',
+      'stop_server': 'Server ausschalten',
+      'poweron_server': 'Server einschalten',
+      'poweroff_server': 'Server ausschalten',
+      'shutdown_server': 'Server herunterfahren',
+      'reboot_server': 'Server neu starten',
+      'reset_server': 'Server zurücksetzen',
+      'create_server': 'Server erstellen',
+      'delete_server': 'Server löschen',
+      'rebuild_server': 'Server neu aufsetzen',
+      'change_server_type': 'Servertyp ändern',
+      'enable_rescue': 'Rescue Modus aktivieren',
+      'disable_rescue': 'Rescue Modus deaktivieren',
+      'attach_iso': 'ISO einlegen',
+      'detach_iso': 'ISO entfernen',
+      'create_image': 'Image erstellen',
+      'enable_backup': 'Backups aktivieren',
+      'disable_backup': 'Backups deaktivieren',
+      'change_protection': 'Schutz ändern',
+      'change_dns_ptr': 'Reverse DNS ändern',
+      'reset_password': 'Root Passwort zurücksetzen',
+      'request_console': 'Konsole öffnen',
+      'attach_volume': 'Volume anhängen',
+      'detach_volume': 'Volume abhängen',
+      'resize_volume': 'Volume vergrößern',
+      'create_volume': 'Volume erstellen',
+      'attach_to_network': 'Mit Netzwerk verbinden',
+      'detach_from_network': 'Vom Netzwerk trennen',
+      'add_to_placement_group': 'Zur Placement Group hinzufügen',
+      'remove_from_placement_group': 'Aus Placement Group entfernen',
+      'assign_floating_ip': 'Floating IP zuweisen',
+      'unassign_floating_ip': 'Floating IP entfernen',
+      'assign_primary_ip': 'Primary IP zuweisen',
+      'unassign_primary_ip': 'Primary IP entfernen',
+      'apply_firewall': 'Firewall anwenden',
+      'remove_firewall': 'Firewall entfernen',
+      'set_firewall_rules': 'Firewall Regeln setzen',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get accountManage => 'Account verwalten';
+
+  @override
+  String get lockUnavailable =>
+      'Dieses Gerät hat keine Displaysperre. Richte eine PIN, Face ID oder einen Fingerabdruck ein, um Falco zu schützen.';
+
+  @override
+  String get lockContinueWithout => 'Ohne App Sperre fortfahren';
+
+  @override
+  String get fieldS3Location => 'Object Storage Standort';
+
+  @override
+  String get s3Hint =>
+      'Optional. S3 Schlüssel aus der Cloud Console unter Object Storage, Zugangsdaten. Geprüft am gewählten Standort.';
+
+  @override
+  String get s3None => 'Keine';
+
+  @override
+  String get fieldAccessKey => 'Access Key';
+
+  @override
+  String get fieldSecretKey => 'Secret Key';
+
+  @override
+  String get fieldRobotUser => 'Webservice Benutzer';
+
+  @override
+  String get fieldRobotPassword => 'Webservice Passwort';
+
+  @override
+  String get robotHint =>
+      'Lege in Robot unter Einstellungen, Webservice und App Einstellungen einen Webservice Benutzer an.';
+
+  @override
+  String get s3Step => 'Object Storage';
+
+  @override
+  String get cloudOpenConsole => 'Cloud Console öffnen';
+
+  @override
+  String get robotOpenSettings => 'Robot Einstellungen öffnen';
+
+  @override
+  String accountDone(String name) {
+    return 'Fertig. $name ist einsatzbereit.';
+  }
+
+  @override
+  String get accountOpen => 'Öffnen';
+
+  @override
+  String get fieldDescription => 'Beschreibung (optional)';
+
+  @override
+  String get servicesStep => 'Dienste';
+
+  @override
+  String get serviceCloud => 'Cloud';
+
+  @override
+  String get serviceCloudHint =>
+      'Cloud Projekte mit Servern, Netzwerken, DNS und Storage';
+
+  @override
+  String get serviceRobotHint => 'Dedicated Server über den Robot Webservice';
+
+  @override
+  String get servicesPickOne => 'Wähle mindestens einen Dienst.';
+
+  @override
+  String get projectsStep => 'Cloud Projekte';
+
+  @override
+  String projectRemoveDraft(String name) {
+    return '$name entfernen';
+  }
+
+  @override
+  String get robotStep => 'Robot Zugang';
+
+  @override
+  String get commonEdit => 'Bearbeiten';
+
+  @override
+  String get accountsTitle => 'Accounts';
+
+  @override
+  String get accountsEmpty => 'Noch keine Accounts.';
+
+  @override
+  String accountsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Accounts',
+      one: '1 Account',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountCloudBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Cloud, $count Projekte',
+      one: 'Cloud, 1 Projekt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountActive => 'Aktiv';
+
+  @override
+  String get accountDefault => 'Standard';
+
+  @override
+  String get accountTitle => 'Account';
+
+  @override
+  String get accountEdit => 'Account bearbeiten';
+
+  @override
+  String get accountDelete => 'Account löschen';
+
+  @override
+  String accountDeleteTitle(String name) {
+    return '$name löschen?';
+  }
+
+  @override
+  String get accountDeleteConsequence =>
+      'Der Account wird mit allen Tokens, Schlüsseln und Robot Zugangsdaten von diesem Gerät gelöscht. Bei Hetzner ändert sich nichts.';
+
+  @override
+  String get robotAccess => 'Webservice Zugang';
+
+  @override
+  String get robotStored => 'Gespeichert und geprüft';
+
+  @override
+  String get robotAdd => 'Robot Zugang hinzufügen';
+
+  @override
+  String get robotChange => 'Robot Zugang ändern';
+
+  @override
+  String get robotDelete => 'Robot Zugang löschen';
+
+  @override
+  String robotDeleteTitle(String name) {
+    return 'Robot Zugang von $name löschen?';
+  }
+
+  @override
+  String get robotDeleteConsequence =>
+      'Benutzer und Passwort werden von diesem Gerät gelöscht. Der Webservice Benutzer bei Hetzner bleibt.';
+
+  @override
+  String get projectsEmpty => 'Noch keine Cloud Projekte.';
+
+  @override
+  String get projectDelete => 'Projekt löschen';
+
+  @override
+  String projectDeleteTitle(String name) {
+    return '$name löschen?';
+  }
+
+  @override
+  String get projectDeleteConsequence =>
+      'Das Projekt wird mit Token und S3 Schlüsseln von diesem Gerät gelöscht. Projekt und Server bei Hetzner bleiben.';
+
+  @override
+  String get tokenChange => 'Token ändern';
+
+  @override
+  String get s3Change => 'Object Storage Schlüssel';
+
+  @override
+  String get s3Delete => 'Object Storage Schlüssel löschen';
+
+  @override
+  String s3DeleteTitle(String name) {
+    return 'Object Storage Schlüssel von $name löschen?';
+  }
+
+  @override
+  String get s3DeleteConsequence =>
+      'Access und Secret Key werden von diesem Gerät gelöscht. Buckets und Schlüssel bei Hetzner bleiben.';
+
+  @override
+  String get s3NoKeys => 'Keine Object Storage Schlüssel';
+
+  @override
+  String s3Keys(String location) {
+    return 'Object Storage Schlüssel, geprüft in $location';
+  }
+
+  @override
+  String get savedMessage => 'Gespeichert';
+
+  @override
+  String get settingsTitle => 'Einstellungen';
+
+  @override
+  String get settingsGeneral => 'Allgemein';
+
+  @override
+  String get settingsTheme => 'Erscheinungsbild';
+
+  @override
+  String get settingsLanguage => 'Sprache';
+
+  @override
+  String get settingsSystem => 'System';
+
+  @override
+  String get settingsSecurity => 'Sicherheit';
+
+  @override
+  String get settingsLock => 'Entsperren beim Start';
+
+  @override
+  String get settingsLockHint =>
+      'Face ID, Fingerabdruck oder Geräte PIN beim Start und nach der Auto Sperre';
+
+  @override
+  String get settingsAutoLock => 'Auto Sperre';
+
+  @override
+  String get lockImmediately => 'Sofort';
+
+  @override
+  String lockSeconds(int count) {
+    return 'Nach $count s';
+  }
+
+  @override
+  String lockMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nach $count Minuten',
+      one: 'Nach 1 Minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsSecureScreen => 'Screenshots blockieren';
+
+  @override
+  String get settingsSecureScreenHint =>
+      'Verdeckt Falco in der App Übersicht und blockiert Screenshots';
+
+  @override
+  String get settingsPinning => 'Zertifikat Pinning';
+
+  @override
+  String get settingsPinningHint =>
+      'Aktiv für alle Hetzner Endpunkte: Cloud, Storage Boxen, Robot und Object Storage.';
+
+  @override
+  String get accentAmber => 'Bernstein';
+
+  @override
+  String get accentBlue => 'Blau';
+
+  @override
+  String get accentGreen => 'Grün';
+
+  @override
+  String get accentRed => 'Rot';
+
+  @override
+  String get accentPurple => 'Lila';
+
+  @override
+  String get accentOrange => 'Orange';
+
+  @override
+  String get aboutTitle => 'Über Falco';
+
+  @override
+  String aboutVersion(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get aboutDescription =>
+      'Hetzner Cloud, Robot, DNS und Storage vom Telefon aus verwalten. Freie Software ohne Tracking.';
+
+  @override
+  String get aboutWebsite => 'Website';
+
+  @override
+  String get aboutDonate => 'Spenden';
+
+  @override
+  String get aboutSource => 'Quellcode';
+
+  @override
+  String get aboutDeveloper => 'Entwickler';
+
+  @override
+  String get aboutLicense => 'Lizenz';
+
+  @override
+  String get aboutLicenses => 'Open Source Lizenzen';
+
+  @override
+  String get welcomeSkip => 'Überspringen';
+
+  @override
+  String get welcomeLanguage => 'Sprache wählen';
+
+  @override
+  String get welcomeFeatures => 'Was Falco kann';
+
+  @override
+  String get welcomeCloud =>
+      'Server, Volumes, Netzwerke, Firewalls, Load Balancer und mehr, über alle Projekte.';
+
+  @override
+  String get welcomeRobot =>
+      'Dedicated Server: Reset, Rescue, Wake on LAN, Reverse DNS und Failover.';
+
+  @override
+  String get welcomeDns => 'Zonen und Records deiner Cloud Projekte.';
+
+  @override
+  String get welcomeObjectStorage => 'Object Storage';
+
+  @override
+  String get welcomeObjectStorageText =>
+      'Buckets und Dateien an allen Standorten, mit Uploads im Hintergrund.';
+
+  @override
+  String get welcomeSecurity => 'Dein Zugang bleibt sicher';
+
+  @override
+  String get welcomeSecretsTitle => 'Verschlüsselt auf dem Gerät';
+
+  @override
+  String get welcomeSecretsIos =>
+      'Tokens und Passwörter liegen nur im iOS Schlüsselbund dieses Geräts.';
+
+  @override
+  String get welcomeSecretsAndroid =>
+      'Tokens und Passwörter liegen nur im hardwaregestützten Android Keystore.';
+
+  @override
+  String get welcomeLockTitle => 'Entsperren beim Start';
+
+  @override
+  String get welcomeLockIos =>
+      'Falco fragt beim Start nach Face ID, Touch ID oder deinem Code.';
+
+  @override
+  String get welcomeLockAndroid =>
+      'Falco fragt beim Start nach Fingerabdruck oder Geräte PIN.';
+
+  @override
+  String get welcomePinning =>
+      'TLS 1.2 oder neuer mit Zertifikat Pinning für jeden Hetzner Endpunkt. Kein Tracking.';
+
+  @override
+  String get welcomeStart => 'Bereit zum Start';
+
+  @override
+  String get welcomeStartText =>
+      'Füge einen Account mit Cloud API Token, Robot Zugang oder beidem hinzu. Jeder Zugang wird vor dem Speichern geprüft.';
 }

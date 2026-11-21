@@ -124,6 +124,10 @@ class SecretStore {
     await _storage.delete(key: 's3.$projectId');
   }
 
+  /// Deletes the S3 credentials of a project.
+  Future<void> deleteS3(String projectId) =>
+      _storage.delete(key: 's3.$projectId');
+
   /// Deletes the Robot credentials of an account.
   Future<void> deleteRobot(String accountId) =>
       _storage.delete(key: 'robot.$accountId');

@@ -58,6 +58,10 @@ class ActionProgress {
 /// `fetch` loads one action (`GET /actions/{id}` or the Storage Box
 /// equivalent). Each finished action is reported once to [onDone], which
 /// invalidates the affected resources. The activity view reads [running].
+///
+/// Polling runs until the action ends, whether or not a screen listens, so
+/// a detail page opened again finds its progress in [running] and
+/// [changes].
 class ActionTracker {
   /// Creates a tracker.
   new(
@@ -80,6 +84,10 @@ class ActionTracker {
 
   final _streams = <int, Stream<ActionProgress>>{};
   final _latest = <int, ActionProgress>{};
+  final _changes = StreamController<ActionProgress>.broadcast();
+
+  /// Every update of every tracked action.
+  Stream<ActionProgress> get changes => _changes.stream;
 
   /// Actions that are being followed and have not ended.
   Iterable<ActionProgress> get running => _latest.values.where((a) => !a.done);
@@ -87,7 +95,8 @@ class ActionTracker {
   /// Progress of action [id] until it ends. Tracking an id twice shares
   /// one poll loop.
   Stream<ActionProgress> track(int id) =>
-      _streams[id] ??= _poll(id).asBroadcastStream();
+      _streams[id] ??= _poll(id).asBroadcastStream()
+        ..listen(null, onError: (Object _) {});
 
   Stream<ActionProgress> _poll(int id) async* {
     var delay = interval;
@@ -116,6 +125,7 @@ class ActionTracker {
           }
         }
         _latest[id] = action;
+        _changes.add(action);
         yield action;
         if (action.done) {
           onDone?.call(action);

@@ -39,6 +39,7 @@ class Account {
   const new({
     required this.id,
     required this.name,
+    this.description = '',
     this.projects = const [],
     this.hasRobot = false,
   });
@@ -47,6 +48,7 @@ class Account {
   factory fromJson(Map<String, Object?> json) => Account(
     id: json['id']! as String,
     name: json['name']! as String,
+    description: json['description'] as String? ?? '',
     hasRobot: json['hasRobot'] as bool? ?? false,
     projects: [
       for (final p in json['projects']! as List)
@@ -60,6 +62,9 @@ class Account {
   /// Name chosen by the user.
   final String name;
 
+  /// Optional note chosen by the user (ONB-021).
+  final String description;
+
   /// Cloud projects in display order.
   final List<Project> projects;
 
@@ -67,18 +72,24 @@ class Account {
   final bool hasRobot;
 
   /// Copy with changed fields.
-  Account copyWith({String? name, List<Project>? projects, bool? hasRobot}) =>
-      Account(
-        id: id,
-        name: name ?? this.name,
-        projects: projects ?? this.projects,
-        hasRobot: hasRobot ?? this.hasRobot,
-      );
+  Account copyWith({
+    String? name,
+    String? description,
+    List<Project>? projects,
+    bool? hasRobot,
+  }) => Account(
+    id: id,
+    name: name ?? this.name,
+    description: description ?? this.description,
+    projects: projects ?? this.projects,
+    hasRobot: hasRobot ?? this.hasRobot,
+  );
 
   /// JSON without secrets.
   Map<String, Object?> toJson() => {
     'id': id,
     'name': name,
+    'description': description,
     'hasRobot': hasRobot,
     'projects': [for (final p in projects) p.toJson()],
   };
@@ -88,11 +99,13 @@ class Account {
       other is Account &&
       other.id == id &&
       other.name == name &&
+      other.description == description &&
       other.hasRobot == hasRobot &&
       listEquals(other.projects, projects);
 
   @override
-  int get hashCode => Object.hash(id, name, hasRobot, Object.hashAll(projects));
+  int get hashCode =>
+      Object.hash(id, name, description, hasRobot, Object.hashAll(projects));
 }
 
 /// What a screen shows: one project, all projects, or Robot of an account.

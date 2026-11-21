@@ -34,7 +34,7 @@ class ActivityPage extends ConsumerWidget {
             : null,
         onRefresh: () => refreshQuietly(ref, provider.future),
         empty: EmptyHint(message: l10n.activityEmpty),
-        searchText: (a) => a.command,
+        searchText: (a) => actionCommandText(a.command, l10n),
         filters: [
           ResourceFilter(l10n.filterAll, (_) => true),
           ResourceFilter(l10n.filterInProgress, (a) => !a.done),
@@ -58,18 +58,13 @@ class ActivityRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final command = action.command.replaceAll('_', ' ');
     return ResourceRow(
       status: switch (action.status) {
         ActionStatus.running => ResourceStatus.inProgress,
         ActionStatus.success => ResourceStatus.done,
         ActionStatus.error => ResourceStatus.failed,
       },
-      // ponytail: API command names, untranslated; l10n per command in
-      // Phase 8 (activity).
-      name: command.isEmpty
-          ? command
-          : '${command[0].toUpperCase()}${command.substring(1)}',
+      name: actionCommandText(action.command, l10n),
       monoLine: [
         for (final (type, id) in action.resources) '$type #$id',
         if (action.started case final t?)
@@ -77,4 +72,15 @@ class ActivityRow extends StatelessWidget {
       ].join(' · '),
     );
   }
+}
+
+/// Localized name of an action command; a command without translation
+/// (new in the API) shows as readable words.
+String actionCommandText(String command, AppLocalizations l10n) {
+  final text = l10n.actionCommand(command);
+  if (text.isNotEmpty) return text;
+  final words = command.replaceAll('_', ' ');
+  return words.isEmpty
+      ? words
+      : '${words[0].toUpperCase()}${words.substring(1)}';
 }

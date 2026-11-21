@@ -286,13 +286,20 @@ ActionTracker actionTracker(Ref ref, ProjectScope scope) => ActionTracker(
   },
 );
 
-/// Progress of one tracked action.
+/// The latest tracked action touching server [serverId]: the running one
+/// when the page opens, then every update until it ends. Read from the
+/// tracker, so the progress survives leaving and reopening the page.
 @riverpod
-Stream<ActionProgress> trackedAction(
+Stream<ActionProgress?> serverAction(
   Ref ref,
   ProjectScope scope,
-  int actionId,
-) => ref.watch(actionTrackerProvider(scope)).track(actionId);
+  int serverId,
+) async* {
+  final tracker = ref.watch(actionTrackerProvider(scope));
+  bool touches(ActionProgress a) => a.resources.contains(('server', serverId));
+  yield tracker.running.where(touches).lastOrNull;
+  yield* tracker.changes.where(touches);
+}
 
 /// Power actions of a server (CMP-020 to CMP-024).
 enum ServerPower { reboot, shutdown, powerOff, powerOn, reset }

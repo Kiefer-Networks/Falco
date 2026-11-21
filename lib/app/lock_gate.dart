@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/core/secure/app_lock.dart';
+import 'package:falco/core/settings/settings.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Covers [child] while the app is locked and asks for authentication at
-/// start and on return from background.
+/// start and on return from background. With "block screenshots" on, the
+/// content is also covered while the app is inactive, so the iOS app
+/// switcher shows no data (SET-014).
 class LockGate extends ConsumerStatefulWidget {
   /// Creates the gate.
   const new({required this.child, super.key});
@@ -20,6 +23,8 @@ class LockGate extends ConsumerStatefulWidget {
 
 class _LockGateState extends ConsumerState<LockGate>
     with WidgetsBindingObserver {
+  bool _inactive = false;
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +41,7 @@ class _LockGateState extends ConsumerState<LockGate>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final lock = ref.read(appLockProvider.notifier);
+    setState(() => _inactive = state != AppLifecycleState.resumed);
     switch (state) {
       case AppLifecycleState.paused || AppLifecycleState.hidden:
         lock.paused();
@@ -54,15 +60,37 @@ class _LockGateState extends ConsumerState<LockGate>
 
   @override
   Widget build(BuildContext context) {
-    final locked = ref.watch(appLockProvider);
-    if (!locked) return widget.child;
+    final state = ref.watch(appLockProvider);
+    final secure = ref.watch(appSettingsProvider.select((s) => s.secureScreen));
+    if (state == AppLockState.unlocked && !(secure && _inactive)) {
+      return widget.child;
+    }
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
-        child: EmptyHint(
-          message: l10n.lockTitle,
-          actionLabel: l10n.lockUnlock,
-          onAction: _unlock,
+        child: Center(
+          child: switch (state) {
+            AppLockState.unlocked => const SizedBox.shrink(),
+            AppLockState.locked => EmptyHint(
+              message: l10n.lockTitle,
+              actionLabel: l10n.lockUnlock,
+              onAction: _unlock,
+            ),
+            AppLockState.unavailable => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                EmptyHint(
+                  message: l10n.lockUnavailable,
+                  actionLabel: l10n.commonRetry,
+                  onAction: _unlock,
+                ),
+                TextButton(
+                  onPressed: ref.read(appLockProvider.notifier).disable,
+                  child: Text(l10n.lockContinueWithout),
+                ),
+              ],
+            ),
+          },
         ),
       ),
     );

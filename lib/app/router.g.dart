@@ -9,7 +9,12 @@ part of 'router.dart';
 List<RouteBase> get $appRoutes => [
   $homeRoute,
   $showcaseRoute,
+  $welcomeRoute,
   $setupRoute,
+  $settingsRoute,
+  $aboutRoute,
+  $accountsRoute,
+  $accountRoute,
   $addProjectRoute,
   $projectRoute,
   $serverRoute,
@@ -70,6 +75,32 @@ mixin $ShowcaseRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
+RouteBase get $welcomeRoute => GoRouteData.$route(
+  path: '/welcome',
+  hasOverriddenOnExit: false,
+  factory: $WelcomeRoute._fromState,
+);
+
+mixin $WelcomeRoute on GoRouteData {
+  static WelcomeRoute _fromState(GoRouterState state) => const WelcomeRoute();
+
+  @override
+  String get location => GoRouteData.$location('/welcome');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
 RouteBase get $setupRoute => GoRouteData.$route(
   path: '/setup',
   hasOverriddenOnExit: false,
@@ -81,6 +112,127 @@ mixin $SetupRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/setup');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $settingsRoute => GoRouteData.$route(
+  path: '/settings',
+  hasOverriddenOnExit: false,
+  factory: $SettingsRoute._fromState,
+);
+
+mixin $SettingsRoute on GoRouteData {
+  static SettingsRoute _fromState(GoRouterState state) =>
+      SettingsRoute(active: state.uri.queryParameters['active']);
+
+  SettingsRoute get _self => this as SettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings',
+    queryParams: {if (_self.active != null) 'active': _self.active},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $aboutRoute => GoRouteData.$route(
+  path: '/about',
+  hasOverriddenOnExit: false,
+  factory: $AboutRoute._fromState,
+);
+
+mixin $AboutRoute on GoRouteData {
+  static AboutRoute _fromState(GoRouterState state) => const AboutRoute();
+
+  @override
+  String get location => GoRouteData.$location('/about');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $accountsRoute => GoRouteData.$route(
+  path: '/accounts',
+  hasOverriddenOnExit: false,
+  factory: $AccountsRoute._fromState,
+);
+
+mixin $AccountsRoute on GoRouteData {
+  static AccountsRoute _fromState(GoRouterState state) =>
+      AccountsRoute(active: state.uri.queryParameters['active']);
+
+  AccountsRoute get _self => this as AccountsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/accounts',
+    queryParams: {if (_self.active != null) 'active': _self.active},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $accountRoute => GoRouteData.$route(
+  path: '/accounts/:accountId',
+  hasOverriddenOnExit: false,
+  factory: $AccountRoute._fromState,
+);
+
+mixin $AccountRoute on GoRouteData {
+  static AccountRoute _fromState(GoRouterState state) =>
+      AccountRoute(accountId: state.pathParameters['accountId']!);
+
+  AccountRoute get _self => this as AccountRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/accounts/${Uri.encodeComponent(_self.accountId)}',
+  );
 
   @override
   void go(BuildContext context) => context.go(location);

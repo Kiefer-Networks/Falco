@@ -5,12 +5,16 @@
 library;
 
 import 'package:falco/app/scope_home.dart';
-import 'package:falco/app/theme_settings.dart';
 import 'package:falco/core/scope/scope.dart';
+import 'package:falco/core/settings/settings.dart';
+import 'package:falco/features/accounts/account_pages.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/activity/activity_page.dart';
+import 'package:falco/features/onboarding/welcome_page.dart';
 import 'package:falco/features/servers/server_detail_page.dart';
+import 'package:falco/features/settings/settings_page.dart';
 import 'package:falco/ui/showcase/showcase_page.dart';
+import 'package:falco/ui/ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -37,26 +41,23 @@ GoRouteData scopeRoute(Scope scope) => switch (scope) {
   RobotScope(:final accountId) => RobotRoute(accountId: accountId),
 };
 
-/// Start: the first scope of the first account, or the account setup when
-/// there is none (ONB-006).
+/// Start: the first scope of the default account (ONB-027), else of the
+/// first account, or the welcome pages when there is none (ONB-006).
 @TypedGoRoute<HomeRoute>(path: '/')
 class HomeRoute extends GoRouteData with $HomeRoute {
   const new();
 
   @override
   Future<String?> redirect(BuildContext context, GoRouterState state) async {
-    final accounts = await ProviderScope.containerOf(
-      context,
-      listen: false,
-    ).read(accountsProvider.future);
-    final a = accounts.firstOrNull;
-    if (a == null) return const SetupRoute().location;
-    if (a.projects.firstOrNull case final p?) {
-      return ProjectRoute(accountId: a.id, projectId: p.id).location;
-    }
-    return a.hasRobot
-        ? RobotRoute(accountId: a.id).location
-        : AddProjectRoute(accountId: a.id).location;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final accounts = await container.read(accountsProvider.future);
+    final preferred = container.read(appSettingsProvider).defaultAccount;
+    final a =
+        accounts.where((a) => a.id == preferred).firstOrNull ??
+        accounts.firstOrNull;
+    if (a == null) return const WelcomeRoute().location;
+    if (firstScope(a) case final scope?) return scopeRoute(scope).location;
+    return AddProjectRoute(accountId: a.id).location;
   }
 
   @override
@@ -76,24 +77,81 @@ class ShowcaseRoute extends GoRouteData with $ShowcaseRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) => Consumer(
     builder: (context, ref, _) {
-      final theme = ref.watch(themeSettingsProvider);
+      final s = ref.watch(appSettingsProvider);
       return ShowcasePage(
-        variant: theme.variant,
-        accent: theme.accent,
-        onThemeChanged: ref.read(themeSettingsProvider.notifier).set,
+        variant: s.variant ?? FalcoVariant.dark,
+        accent: s.accent,
+        onThemeChanged: (variant, accent) => ref
+            .read(appSettingsProvider.notifier)
+            .update(s.copyWith(variant: () => variant, accent: accent)),
       );
     },
   );
 }
 
-/// New account with its first Cloud project.
+/// First start without an account (ONB-001).
+@TypedGoRoute<WelcomeRoute>(path: '/welcome')
+class WelcomeRoute extends GoRouteData with $WelcomeRoute {
+  const new();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const WelcomePage();
+}
+
+/// New account wizard (ONB-007).
 @TypedGoRoute<SetupRoute>(path: '/setup')
 class SetupRoute extends GoRouteData with $SetupRoute {
   const new();
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const ProjectSetupPage();
+      const AccountWizardPage();
+}
+
+/// Settings; [active] is the account of the scope the user came from.
+@TypedGoRoute<SettingsRoute>(path: '/settings')
+class SettingsRoute extends GoRouteData with $SettingsRoute {
+  const new({this.active});
+
+  final String? active;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      SettingsPage(activeAccountId: active);
+}
+
+/// About Falco (ONB-040).
+@TypedGoRoute<AboutRoute>(path: '/about')
+class AboutRoute extends GoRouteData with $AboutRoute {
+  const new();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => const AboutPage();
+}
+
+/// All accounts (ONB-021).
+@TypedGoRoute<AccountsRoute>(path: '/accounts')
+class AccountsRoute extends GoRouteData with $AccountsRoute {
+  const new({this.active});
+
+  final String? active;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      AccountsPage(activeAccountId: active);
+}
+
+/// One account with its projects and accesses.
+@TypedGoRoute<AccountRoute>(path: '/accounts/:accountId')
+class AccountRoute extends GoRouteData with $AccountRoute {
+  const new({required this.accountId});
+
+  final String accountId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      AccountPage(accountId: accountId);
 }
 
 /// New Cloud project of an account.

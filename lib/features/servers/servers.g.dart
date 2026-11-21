@@ -483,58 +483,64 @@ final class ActionTrackerFamily extends $Family
   String toString() => r'actionTrackerProvider';
 }
 
-/// Progress of one tracked action.
+/// The latest tracked action touching server [serverId]: the running one
+/// when the page opens, then every update until it ends. Read from the
+/// tracker, so the progress survives leaving and reopening the page.
 
-@ProviderFor(trackedAction)
-final trackedActionProvider = TrackedActionFamily._();
+@ProviderFor(serverAction)
+final serverActionProvider = ServerActionFamily._();
 
-/// Progress of one tracked action.
+/// The latest tracked action touching server [serverId]: the running one
+/// when the page opens, then every update until it ends. Read from the
+/// tracker, so the progress survives leaving and reopening the page.
 
-final class TrackedActionProvider
+final class ServerActionProvider
     extends
         $FunctionalProvider<
-          AsyncValue<ActionProgress>,
-          ActionProgress,
-          Stream<ActionProgress>
+          AsyncValue<ActionProgress?>,
+          ActionProgress?,
+          Stream<ActionProgress?>
         >
-    with $FutureModifier<ActionProgress>, $StreamProvider<ActionProgress> {
-  /// Progress of one tracked action.
-  TrackedActionProvider._({
-    required TrackedActionFamily super.from,
+    with $FutureModifier<ActionProgress?>, $StreamProvider<ActionProgress?> {
+  /// The latest tracked action touching server [serverId]: the running one
+  /// when the page opens, then every update until it ends. Read from the
+  /// tracker, so the progress survives leaving and reopening the page.
+  ServerActionProvider._({
+    required ServerActionFamily super.from,
     required (ProjectScope, int) super.argument,
   }) : super(
          retry: null,
-         name: r'trackedActionProvider',
+         name: r'serverActionProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$trackedActionHash();
+  String debugGetCreateSourceHash() => _$serverActionHash();
 
   @override
   String toString() {
-    return r'trackedActionProvider'
+    return r'serverActionProvider'
         ''
         '$argument';
   }
 
   @$internal
   @override
-  $StreamProviderElement<ActionProgress> $createElement(
+  $StreamProviderElement<ActionProgress?> $createElement(
     $ProviderPointer pointer,
   ) => $StreamProviderElement(pointer);
 
   @override
-  Stream<ActionProgress> create(Ref ref) {
+  Stream<ActionProgress?> create(Ref ref) {
     final argument = this.argument as (ProjectScope, int);
-    return trackedAction(ref, argument.$1, argument.$2);
+    return serverAction(ref, argument.$1, argument.$2);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is TrackedActionProvider && other.argument == argument;
+    return other is ServerActionProvider && other.argument == argument;
   }
 
   @override
@@ -543,27 +549,34 @@ final class TrackedActionProvider
   }
 }
 
-String _$trackedActionHash() => r'dc61ee7b4d6f9570477072e2c1eaf4fd389ee9d2';
+String _$serverActionHash() => r'3b8b2f1dc8e9e42601fbe450b597fe1a5363f81a';
 
-/// Progress of one tracked action.
+/// The latest tracked action touching server [serverId]: the running one
+/// when the page opens, then every update until it ends. Read from the
+/// tracker, so the progress survives leaving and reopening the page.
 
-final class TrackedActionFamily extends $Family
+final class ServerActionFamily extends $Family
     with
-        $FunctionalFamilyOverride<Stream<ActionProgress>, (ProjectScope, int)> {
-  TrackedActionFamily._()
+        $FunctionalFamilyOverride<
+          Stream<ActionProgress?>,
+          (ProjectScope, int)
+        > {
+  ServerActionFamily._()
     : super(
         retry: null,
-        name: r'trackedActionProvider',
+        name: r'serverActionProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  /// Progress of one tracked action.
+  /// The latest tracked action touching server [serverId]: the running one
+  /// when the page opens, then every update until it ends. Read from the
+  /// tracker, so the progress survives leaving and reopening the page.
 
-  TrackedActionProvider call(ProjectScope scope, int actionId) =>
-      TrackedActionProvider._(argument: (scope, actionId), from: this);
+  ServerActionProvider call(ProjectScope scope, int serverId) =>
+      ServerActionProvider._(argument: (scope, serverId), from: this);
 
   @override
-  String toString() => r'trackedActionProvider';
+  String toString() => r'serverActionProvider';
 }

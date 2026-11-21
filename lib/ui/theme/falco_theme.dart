@@ -87,6 +87,16 @@ ThemeData falcoTheme({
           : SystemUiOverlayStyle.dark,
     ),
     iconTheme: IconThemeData(color: c.text, size: 20),
+    // Flat like every other surface: no Material shadow.
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: c.accent,
+      foregroundColor: c.onAccent,
+      elevation: 0,
+      focusElevation: 0,
+      hoverElevation: 0,
+      highlightElevation: 0,
+      shape: cardShape,
+    ),
     dividerTheme: DividerThemeData(color: c.divider, thickness: 1, space: 1),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(

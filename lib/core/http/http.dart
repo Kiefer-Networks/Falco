@@ -78,13 +78,12 @@ SecurityContext pinnedContext(
     if (!spki[key]!.contains(X509Parts.parse(der).spkiPin)) {
       throw StateError('Root for $key does not match its pin');
     }
-    // iOS takes one DER certificate per call, BoringSSL takes PEM.
+    // PEM on every platform: the iOS embedder rejects raw DER here
+    // (BAD_PKCS12_DATA, seen on the iOS simulator).
     context.setTrustedCertificatesBytes(
-      Platform.isIOS
-          ? der
-          : utf8.encode(
-              '-----BEGIN CERTIFICATE-----\n$b64\n-----END CERTIFICATE-----\n',
-            ),
+      utf8.encode(
+        '-----BEGIN CERTIFICATE-----\n$b64\n-----END CERTIFICATE-----\n',
+      ),
     );
   }
   return context;
