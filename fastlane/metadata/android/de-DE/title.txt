@@ -1,1 +1,1 @@
-Falco — Hetzner-Manager
+Falco: Hetzner Manager

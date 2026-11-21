@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Only debug and profile builds get INTERNET from Flutter's templates. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Object Storage transfers in the background (OBJ-007, OBJ-009,
          OBJ-021): progress notification, Android 14+ user initiated data
          transfer jobs, foreground service before that. -->
@@ -7,8 +9,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <application
-        android:label="falco"
+        android:label="Falco"
         android:name="${applicationName}"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:networkSecurityConfig="@xml/network_security_config">
         <activity

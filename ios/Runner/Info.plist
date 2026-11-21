@@ -10,6 +10,8 @@
 	<string>Falco</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Face ID unlocks Falco and protects your access data.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>

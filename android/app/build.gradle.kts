@@ -1,8 +1,21 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Upload key for release builds: android/key.properties locally (Flutter
+// convention, git ignored) or FALCO_* environment variables in CI. Without
+// either, release packaging fails on the missing storeFile; debug builds are
+// unaffected.
+val keyProperties = Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+fun signing(key: String, env: String): String? = keyProperties.getProperty(key) ?: System.getenv(env)
 
 android {
     namespace = "de.kiefer_networks.falco"
@@ -15,18 +28,22 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // Same as Falco 2, so existing installs receive Falco 3 as an update.
         applicationId = "de.kiefer_networks.falco"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
-        // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
-        // You can force using the value of versionCode by specifying the `-P force-version-code-ignoring-abi=true`
-        // flag during build.
+        // Both from `version:` in pubspec.yaml (name+code).
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    signingConfigs {
+        create("release") {
+            signing("storeFile", "FALCO_STORE_FILE")?.let { storeFile = file(it) }
+            storePassword = signing("storePassword", "FALCO_STORE_PASSWORD")
+            keyAlias = signing("keyAlias", "FALCO_KEY_ALIAS")
+            keyPassword = signing("keyPassword", "FALCO_KEY_PASSWORD")
+        }
     }
 
     buildTypes {
@@ -35,9 +52,10 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
         }
     }
 }

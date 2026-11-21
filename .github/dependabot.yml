@@ -5,6 +5,7 @@
 #  - pub (Dart / Flutter packages, pubspec.yaml + pubspec.lock)
 #  - Gradle (Android host project under android/)
 #  - GitHub Actions (pinned by SHA in the workflows)
+#  - Bundler (fastlane for the store uploads)
 # The Flutter SDK itself is kept current by .github/workflows/flutter-sdk.yml.
 #
 # Cooldown: 7 days for version updates (security updates are immediate).
@@ -69,3 +70,25 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+
+  # fastlane for the store uploads in release.yml (Gemfile.lock)
+  - package-ecosystem: bundler
+    directory: "/"
+    target-branch: next
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    labels: [dependencies, ruby]
+    commit-message:
+      prefix: "build"
+      include: scope
+    groups:
+      bundler-non-major:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: [patch, minor]
