@@ -13,7 +13,7 @@ void main() {
       .cast<String, Object?>();
   final pins = nativePins(state);
 
-  test('QRS-017 the native pins are the Object Storage roots', () {
+  test('QRS-017 the native pins are the Object Storage CA pins', () {
     expect(pins, isNotEmpty);
     final android = File(androidPath).readAsStringSync();
     final ios = File(iosPath).readAsStringSync();

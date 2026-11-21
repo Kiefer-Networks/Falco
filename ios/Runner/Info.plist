@@ -55,7 +55,19 @@
 					</dict>
 					<dict>
 						<key>SPKI-SHA256-BASE64</key>
+						<string>brzvtCELCIZUo4sD/qPX0ccRtPsd3DY6RfmxpOU9oB4=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
 						<string>diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>s/tdAOmUzd8syaTuqfgGvFcn6DzA5Cmb+Vby1ST+U3Y=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>sCkq5UWXjg+7mKu9lMhhYF5bGLsy7VI/UNW3tccdR7w=</string>
 					</dict>
 				</array>
 			</dict>

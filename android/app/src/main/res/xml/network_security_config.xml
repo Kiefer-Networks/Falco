@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Background transfers run in the platform's HTTP stack, not in Dart, so
-     Object Storage gets its pins here too: the root pins of tool/pins.json,
+     Object Storage gets its pins here too: every CA pin of tool/pins.json,
      written by tool/pins.dart (pins.yml). No expiration, so a foreign CA
      fails the transfer instead of passing silently. -->
 <network-security-config>
@@ -9,7 +9,10 @@
         <domain includeSubdomains="true">your-objectstorage.com</domain>
         <pin-set>
             <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
+            <pin digest="SHA-256">brzvtCELCIZUo4sD/qPX0ccRtPsd3DY6RfmxpOU9oB4=</pin>
             <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
+            <pin digest="SHA-256">s/tdAOmUzd8syaTuqfgGvFcn6DzA5Cmb+Vby1ST+U3Y=</pin>
+            <pin digest="SHA-256">sCkq5UWXjg+7mKu9lMhhYF5bGLsy7VI/UNW3tccdR7w=</pin>
         </pin-set>
     </domain-config>
 </network-security-config>
