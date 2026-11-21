@@ -643,6 +643,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server and its disk are deleted. This cannot be undone.'**
   String get deleteConsequence;
+
+  /// No description provided for @scopeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to show in this scope yet.'**
+  String get scopeEmpty;
+
+  /// No description provided for @lockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Falco is locked.'**
+  String get lockTitle;
+
+  /// No description provided for @lockUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get lockUnlock;
+
+  /// No description provided for @lockReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock Falco to access your servers'**
+  String get lockReason;
+
+  /// No description provided for @errorUnauthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'The access data was rejected. Check the token or the credentials.'**
+  String get errorUnauthorized;
+
+  /// No description provided for @errorForbidden.
+  ///
+  /// In en, this message translates to:
+  /// **'This access lacks the permission for this action, for example a read only token.'**
+  String get errorForbidden;
+
+  /// No description provided for @errorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This resource no longer exists.'**
+  String get errorNotFound;
+
+  /// No description provided for @errorConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'The resource is protected, locked or busy. Try again later.'**
+  String get errorConflict;
+
+  /// No description provided for @errorRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests. Wait a moment and try again.'**
+  String get errorRateLimited;
+
+  /// No description provided for @errorInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The input was rejected. Check the marked fields.'**
+  String get errorInvalid;
+
+  /// No description provided for @errorPinning.
+  ///
+  /// In en, this message translates to:
+  /// **'The server certificate is not trusted. The connection was stopped to protect your access data.'**
+  String get errorPinning;
+
+  /// No description provided for @errorServer.
+  ///
+  /// In en, this message translates to:
+  /// **'The server reported an error. Try again later.'**
+  String get errorServer;
 }
 
 class _AppLocalizationsDelegate

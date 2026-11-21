@@ -1,0 +1,105 @@
+name: API specs
+
+# Downloads the Hetzner OpenAPI specs, regenerates the API packages
+# (tool/specs.sh) and opens a PR when anything changed. Analyzer and
+# contract test results go into the PR body, because PRs created with
+# GITHUB_TOKEN start no workflows: close and reopen the PR to run CI.
+
+on:
+  schedule:
+    - cron: "53 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: specs-update
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  update:
+    name: Regenerate API packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # push the update branch
+      pull-requests: write # open the PR
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: true # the last step pushes a branch
+
+      # Same installation as ci.yml: the official repo at the pinned version.
+      - name: Install Flutter
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^  flutter: *//p' pubspec.yaml)
+          git clone --quiet --depth 1 --branch "$version" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/flutter/bin/flutter" --disable-analytics
+          "$RUNNER_TEMP/flutter/bin/flutter" --version
+
+      - name: Download and generate
+        run: |
+          set -euo pipefail
+          flutter pub get --enforce-lockfile
+          tool/specs.sh
+          # Generated packages may need other dependency versions.
+          flutter pub get
+
+      - name: Check generated code
+        id: check
+        run: |
+          set -uo pipefail
+          analyze=passed; contract=passed
+          flutter analyze --fatal-infos >"$RUNNER_TEMP/analyze.txt" 2>&1 || analyze=failed
+          flutter test test/contract >"$RUNNER_TEMP/contract.txt" 2>&1 || contract=failed
+          echo "analyze=$analyze" >> "$GITHUB_OUTPUT"
+          echo "contract=$contract" >> "$GITHUB_OUTPUT"
+
+      - name: Open PR on change
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.ref_name }}
+          ANALYZE: ${{ steps.check.outputs.analyze }}
+          CONTRACT: ${{ steps.check.outputs.contract }}
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain -- spec packages pubspec.lock)" ]; then
+            echo "Specs unchanged"
+            exit 0
+          fi
+          branch="specs/update-$(date -u +%Y-%m-%d)"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            echo "Branch $branch exists already"
+            exit 0
+          fi
+          {
+            echo "Hetzner changed an OpenAPI spec; the API packages are regenerated."
+            echo
+            echo "- Analyzer: $ANALYZE"
+            echo "- Contract tests: $CONTRACT"
+            echo
+            echo "Changelog: https://docs.hetzner.cloud/changelog"
+            echo
+            echo '```'
+            git diff --stat -- spec | tail -n 5
+            echo '```'
+            if [ "$CONTRACT" != passed ]; then
+              echo
+              echo '```'
+              tail -n 60 "$RUNNER_TEMP/contract.txt"
+              echo '```'
+            fi
+            echo
+            echo "Close and reopen this PR to run CI."
+          } > "$RUNNER_TEMP/body.md"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add spec packages pubspec.lock
+          git commit -m "chore: Update Hetzner API specs"
+          git push origin "$branch"
+          gh pr create --base "$BASE" --head "$branch" \
+            --title "chore: Update Hetzner API specs" \
+            --body-file "$RUNNER_TEMP/body.md"

@@ -1,0 +1,99 @@
+// Generated code - do not modify by hand
+
+// ignore_for_file: no_leading_underscores_for_library_prefixes
+
+import 'dart:convert' as _i5;
+import 'dart:core' as _i3;
+
+import 'package:hetzner_cloud_api/src/model/pricing_get200_body_pricing_volume_price_per_gb_month_model.dart'
+    as _i4;
+import 'package:meta/meta.dart' as _i2;
+import 'package:tonik_util/tonik_util.dart' as _i1;
+
+/// Price of [Volumes](#tag/volumes).
+@_i2.immutable
+class PricingGet200BodyPricingVolumeModel extends _i1.ObjectParameterEncodable
+    implements _i1.UriEncodable {
+  const PricingGet200BodyPricingVolumeModel({required this.pricePerGbMonth});
+
+  factory PricingGet200BodyPricingVolumeModel.fromSimple(
+    _i3.String? value, {
+    required _i3.bool explode,
+    _i3.bool isHeader = false,
+  }) {
+    throw _i1.SimpleDecodingException(
+      r'Simple encoding not supported for PricingGet200BodyPricingVolumeModel: contains complex types',
+    );
+  }
+
+  factory PricingGet200BodyPricingVolumeModel.fromJson(_i3.Object? json) {
+    final _$map = json.decodeMap(
+      context: r'PricingGet200BodyPricingVolumeModel',
+    );
+    return PricingGet200BodyPricingVolumeModel(
+      pricePerGbMonth:
+          _i4.PricingGet200BodyPricingVolumePricePerGbMonthModel.fromJson(
+            _$map[r'price_per_gb_month'],
+          ),
+    );
+  }
+
+  factory PricingGet200BodyPricingVolumeModel.fromForm(
+    _i3.String? value, {
+    required _i3.bool explode,
+  }) {
+    throw _i1.FormDecodingException(
+      r'Form encoding not supported for PricingGet200BodyPricingVolumeModel: contains complex types',
+    );
+  }
+
+  /// Price of [Volumes](#tag/volumes) per GB/month.
+  final _i4.PricingGet200BodyPricingVolumePricePerGbMonthModel pricePerGbMonth;
+
+  @_i3.override
+  _i3.Object? toJson() => {
+    r'price_per_gb_month': this.pricePerGbMonth.toJson(),
+  };
+
+  PricingGet200BodyPricingVolumeModel Function({
+    _i4.PricingGet200BodyPricingVolumePricePerGbMonthModel? pricePerGbMonth,
+  })
+  get copyWith {
+    return ({
+      _i4.PricingGet200BodyPricingVolumePricePerGbMonthModel? pricePerGbMonth,
+    }) => PricingGet200BodyPricingVolumeModel(
+      pricePerGbMonth: pricePerGbMonth ?? this.pricePerGbMonth,
+    );
+  }
+
+  @_i3.override
+  _i3.bool operator ==(_i3.Object other) {
+    if (_i3.identical(this, other)) return true;
+    return other is PricingGet200BodyPricingVolumeModel &&
+        other.pricePerGbMonth == this.pricePerGbMonth;
+  }
+
+  @_i3.override
+  _i3.int get hashCode => this.pricePerGbMonth.hashCode;
+
+  _i1.EncodingShape get currentEncodingShape => _i1.EncodingShape.complex;
+
+  @_i3.override
+  _i3.Map<_i3.String, _i1.PropertyValue> parameterProperties({
+    _i3.bool allowEmpty = true,
+  }) => throw _i1.EncodingException(
+    r'parameterProperties not supported for PricingGet200BodyPricingVolumeModel: contains complex types',
+  );
+
+  @_i3.override
+  _i3.String uriEncode({
+    required _i3.bool allowEmpty,
+    required _i5.Encoding textEncoding,
+    _i3.bool useQueryComponent = false,
+    _i3.bool allowReserved = false,
+  }) {
+    throw _i1.EncodingException(
+      r'Cannot uriEncode PricingGet200BodyPricingVolumeModel: complex types cannot be URI-encoded',
+    );
+  }
+}

@@ -100,5 +100,17 @@
   "rebootConsequence": "The server restarts through ACPI. Open connections drop while it boots, usually for less than a minute.",
   "deleteTitle": "Delete {name}?",
   "@deleteTitle": {"placeholders": {"name": {"type": "String"}}},
-  "deleteConsequence": "The server and its disk are deleted. This cannot be undone."
+  "deleteConsequence": "The server and its disk are deleted. This cannot be undone.",
+  "scopeEmpty": "Nothing to show in this scope yet.",
+  "lockTitle": "Falco is locked.",
+  "lockUnlock": "Unlock",
+  "lockReason": "Unlock Falco to access your servers",
+  "errorUnauthorized": "The access data was rejected. Check the token or the credentials.",
+  "errorForbidden": "This access lacks the permission for this action, for example a read only token.",
+  "errorNotFound": "This resource no longer exists.",
+  "errorConflict": "The resource is protected, locked or busy. Try again later.",
+  "errorRateLimited": "Too many requests. Wait a moment and try again.",
+  "errorInvalid": "The input was rejected. Check the marked fields.",
+  "errorPinning": "The server certificate is not trusted. The connection was stopped to protect your access data.",
+  "errorServer": "The server reported an error. Try again later."
 }

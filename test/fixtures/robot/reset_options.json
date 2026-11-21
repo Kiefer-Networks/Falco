@@ -1,0 +1,9 @@
+{
+  "reset": {
+    "server_ip": "123.123.123.123",
+    "server_ipv6_net": "2a01:f48:111:4221::",
+    "server_number": 321,
+    "type": ["sw", "hw", "man"],
+    "operating_status": "not supported"
+  }
+}
