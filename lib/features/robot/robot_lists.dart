@@ -12,89 +12,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The Robot area of an account: dedicated servers, failover IPs,
-/// vSwitches, reverse DNS, SSH keys, IPs, subnets and firewall templates
-/// as tabs (ROB-001).
-class RobotPage extends StatefulWidget {
-  const new({required this.accountId, super.key});
-
-  final String accountId;
-
-  @override
-  State<RobotPage> createState() => _RobotPageState();
-}
-
-class _RobotPageState extends State<RobotPage>
-    with SingleTickerProviderStateMixin {
-  late final _tabs = TabController(length: 8, vsync: this)
-    ..addListener(() => setState(() {}));
-
-  @override
-  void dispose() {
-    _tabs.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final a = widget.accountId;
-    final create = switch (_tabs.index) {
-      2 => (RobotCreateKind.vswitch, l10n.vswitchCreate),
-      3 => (RobotCreateKind.rdns, l10n.rdnsCreate),
-      4 => (RobotCreateKind.key, l10n.sshKeyAdd),
-      7 => (RobotCreateKind.template, l10n.templateCreate),
-      _ => null,
-    };
-    return Scaffold(
-      floatingActionButton: switch (create) {
-        (final kind, final label) => FloatingActionButton.extended(
-          heroTag: kind,
-          onPressed: () =>
-              RobotCreateRoute(accountId: a, kind: kind).push<void>(context),
-          icon: const Icon(Icons.add),
-          label: Text(label),
-        ),
-        null => null,
-      },
-      body: Column(
-        children: [
-          TabBar(
-            controller: _tabs,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            tabs: [
-              Tab(text: l10n.robotServers),
-              Tab(text: l10n.robotFailover),
-              Tab(text: l10n.robotVSwitches),
-              Tab(text: l10n.reverseDns),
-              Tab(text: l10n.resourceSshKeys),
-              Tab(text: l10n.robotIps),
-              Tab(text: l10n.robotSubnets),
-              Tab(text: l10n.robotTemplates),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabs,
-              children: [
-                RobotServerList(accountId: a),
-                FailoverList(accountId: a),
-                VSwitchList(accountId: a),
-                RdnsList(accountId: a),
-                RobotKeyList(accountId: a),
-                AddressList(accountId: a, kind: AddressKind.ip),
-                AddressList(accountId: a, kind: AddressKind.subnet),
-                TemplateList(accountId: a),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// A Robot list: loading, the access hint for a section the login may
 /// not use (ROB-002), empty, search.
 class _RobotList<T> extends ConsumerWidget {
@@ -165,25 +82,37 @@ class RobotServerList extends ConsumerWidget {
         ResourceFilter(l10n.filterAll, (_) => true),
         ResourceFilter(l10n.filterCancelled, (s) => s.cancelled),
       ],
-      itemBuilder: (context, s) => GestureDetector(
-        onLongPress: () => quickActions(context, ref, accountId, s),
-        child: ResourceRow(
-          status: serverStatus(s),
-          name: s.label,
-          monoLine: [
-            ?s.ipv4,
-            ?s.ipv6Net,
-            s.dc,
-            l10n.robotPaidUntil(s.paidUntil),
-          ].join(' · '),
-          onTap: () => openDetail(
-            context,
-            RobotServerRoute(accountId: accountId, number: s.number),
-          ),
-        ),
-      ),
+      itemBuilder: (context, s) => robotServerRow(context, ref, accountId, s),
     );
   }
+}
+
+/// The row of dedicated server [s]: name, IPv4, IPv6 net, data center,
+/// paid until; long press offers reset and Wake on LAN (ROB-004, ROB-005).
+Widget robotServerRow(
+  BuildContext context,
+  WidgetRef ref,
+  String accountId,
+  RobotServer s,
+) {
+  final l10n = AppLocalizations.of(context);
+  return GestureDetector(
+    onLongPress: () => quickActions(context, ref, accountId, s),
+    child: ResourceRow(
+      status: serverStatus(s),
+      name: s.label,
+      monoLine: [
+        ?s.ipv4,
+        ?s.ipv6Net,
+        s.dc,
+        l10n.robotPaidUntil(s.paidUntil),
+      ].join(' · '),
+      onTap: () => openDetail(
+        context,
+        RobotServerRoute(accountId: accountId, number: s.number),
+      ),
+    ),
+  );
 }
 
 /// Reset or Wake on LAN from the list row (ROB-005); reset types come
@@ -273,14 +202,7 @@ class VSwitchList extends ConsumerWidget {
       title: l10n.robotVSwitches,
       provider: provider,
       future: provider.future,
-      empty: EmptyHint(
-        message: l10n.vswitchEmpty,
-        actionLabel: l10n.vswitchCreate,
-        onAction: () => RobotCreateRoute(
-          accountId: accountId,
-          kind: RobotCreateKind.vswitch,
-        ).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.vswitchEmpty),
       searchText: (v) => '${v.name} ${v.vlan} ${v.id}',
       itemBuilder: (context, v) => ResourceRow(
         status: v.cancelled ? ResourceStatus.cancelled : ResourceStatus.active,
@@ -310,14 +232,7 @@ class RdnsList extends ConsumerWidget {
       title: l10n.reverseDns,
       provider: provider,
       future: provider.future,
-      empty: EmptyHint(
-        message: l10n.rdnsEmpty,
-        actionLabel: l10n.rdnsCreate,
-        onAction: () => RobotCreateRoute(
-          accountId: accountId,
-          kind: RobotCreateKind.rdns,
-        ).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.rdnsEmpty),
       searchText: (r) => '${r.ip} ${r.ptr}',
       itemBuilder: (context, r) => Row(
         children: [
@@ -354,14 +269,7 @@ class RobotKeyList extends ConsumerWidget {
       title: l10n.resourceSshKeys,
       provider: provider,
       future: provider.future,
-      empty: EmptyHint(
-        message: l10n.robotKeysEmpty,
-        actionLabel: l10n.sshKeyAdd,
-        onAction: () => RobotCreateRoute(
-          accountId: accountId,
-          kind: RobotCreateKind.key,
-        ).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.robotKeysEmpty),
       searchText: (k) => '${k.name} ${k.fingerprint}',
       itemBuilder: (context, k) => ResourceRow(
         status: ResourceStatus.available,
@@ -428,14 +336,7 @@ class TemplateList extends ConsumerWidget {
       title: l10n.robotTemplates,
       provider: provider,
       future: provider.future,
-      empty: EmptyHint(
-        message: l10n.templatesEmpty,
-        actionLabel: l10n.templateCreate,
-        onAction: () => RobotCreateRoute(
-          accountId: accountId,
-          kind: RobotCreateKind.template,
-        ).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.templatesEmpty),
       searchText: (t) => t.name,
       itemBuilder: (context, t) => ResourceRow(
         status: ResourceStatus.available,

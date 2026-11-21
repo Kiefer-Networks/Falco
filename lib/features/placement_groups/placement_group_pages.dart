@@ -36,14 +36,7 @@ class PlacementGroupList extends ConsumerWidget {
           ? errorText(toFalcoError(async.error!), l10n)
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
-      empty: EmptyHint(
-        message: l10n.emptyPlacementGroups,
-        actionLabel: l10n.placementGroupCreate,
-        onAction: () => CreateRoute.of(
-          scope,
-          CreateKind.placementGroup,
-        ).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.emptyPlacementGroups),
       searchText: (g) => g.name,
       sorts: [ResourceSort(l10n.sortName, (a, b) => a.name.compareTo(b.name))],
       itemBuilder: (context, g) => ResourceRow(
@@ -106,7 +99,7 @@ class PlacementGroupDetailPage extends ConsumerWidget {
         ids: [g.type],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => editNameAndLabels(

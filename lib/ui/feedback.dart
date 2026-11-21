@@ -57,27 +57,71 @@ class ErrorCard extends StatelessWidget {
   }
 }
 
-/// Empty state without illustration: one sentence and one clear action.
+/// The one empty state: icon and one sentence. Never a button: creating
+/// sits in the screen's one floating action button, so an empty list
+/// never shows a second create entry.
 class EmptyHint extends StatelessWidget {
-  /// Shows [message] and, if given, a button [actionLabel].
+  /// Shows [message] under [icon].
   const new({
     required this.message,
-    this.actionLabel,
-    this.onAction,
+    this.icon = Icons.inbox_outlined,
     super.key,
   });
 
   /// What is empty, in one sentence.
   final String message;
 
-  /// Label of the single action (e.g. "Create server").
-  final String? actionLabel;
+  /// Icon above the message.
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) =>
+      _CenteredHint(icon: icon, message: message);
+}
+
+/// A state that blocks the whole screen until the user does one thing:
+/// unlock, add missing access, open a just added account. One sentence
+/// and exactly one button; never used for empty lists (see [EmptyHint]).
+class ActionHint extends StatelessWidget {
+  /// Shows [message] with the button [actionLabel].
+  const new({
+    required this.message,
+    required this.actionLabel,
+    required this.onAction,
+    this.icon = Icons.info_outline,
+    super.key,
+  });
+
+  /// What blocks the screen, in one sentence.
+  final String message;
+
+  /// Label of the one action.
+  final String actionLabel;
 
   /// Action callback.
-  final VoidCallback? onAction;
+  final VoidCallback onAction;
+
+  /// Icon above the message.
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => _CenteredHint(
+    icon: icon,
+    message: message,
+    action: FilledButton(onPressed: onAction, child: Text(actionLabel)),
+  );
+}
+
+class _CenteredHint extends StatelessWidget {
+  const new({required this.icon, required this.message, this.action});
+
+  final IconData icon;
+  final String message;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
+    final c = FalcoColors.of(context);
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -87,14 +131,16 @@ class EmptyHint extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Icon(icon, size: 40, color: c.textMuted),
+          const SizedBox(height: FalcoSpacing.m),
           Text(
             message,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyLarge,
           ),
-          if (actionLabel != null) ...[
+          if (action case final action?) ...[
             const SizedBox(height: FalcoSpacing.l),
-            FilledButton(onPressed: onAction, child: Text(actionLabel!)),
+            action,
           ],
         ],
       ),

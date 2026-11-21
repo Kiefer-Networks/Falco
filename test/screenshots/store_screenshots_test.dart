@@ -41,12 +41,7 @@ const _devices = <String, (Size, double, String)>{
 
 Future<void> _area(WidgetTester tester, String name, [String? tab]) async {
   await tap(tester, name);
-  if (tab != null) {
-    await tester.ensureVisible(find.widgetWithText(Tab, tab));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(Tab, tab));
-    await tester.pumpAndSettle();
-  }
+  if (tab != null) await openList(tester, tab);
 }
 
 final _screens = <String, (List<Account>, FakeCloud Function(), Steps)>{

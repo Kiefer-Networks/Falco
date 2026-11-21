@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/core/http/http.dart';
+import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/core/settings/settings.dart';
+import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/main.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/services.dart';
@@ -114,7 +116,7 @@ void main() {
   testWidgets('SET-012 without a screen lock the app explains it', (
     tester,
   ) async {
-    seedSecrets(const []);
+    seedSecrets(const [Account(id: 'a1', name: 'Acme')]);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -128,7 +130,7 @@ void main() {
     expect(find.textContaining('no screen lock'), findsOneWidget);
     await tester.tap(find.text('Continue without app lock'));
     await tester.pumpAndSettle();
-    expect(find.text('Choose your language'), findsOneWidget);
+    expect(find.byType(ProjectSetupPage), findsOneWidget);
   });
 
   testWidgets('ONB-040 ONB-041 about shows version, links and licenses', (

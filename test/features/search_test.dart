@@ -306,7 +306,7 @@ void main() {
         await tester.tap(find.text(area).last);
         await tester.pumpAndSettle();
         expect(find.text('prod'), findsOneWidget);
-        expect(find.widgetWithText(Tab, tab), findsOneWidget);
+        expect(find.text(tab), findsOneWidget);
       });
     }
   });

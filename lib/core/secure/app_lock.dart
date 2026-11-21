@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/core/scope/scope_repository.dart';
 import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:flutter/services.dart';
@@ -46,6 +47,9 @@ enum AppLockState {
 
 /// App lock: locked at start and after the auto lock time in background,
 /// both only while the lock is on in the settings (SET-007, SET-010).
+/// Before the first account there is nothing to protect: [unlock] then
+/// opens without asking, so a first start never prompts (SET-023). The
+/// first secret goes into the vault with the platform's own check.
 @Riverpod(keepAlive: true)
 class AppLock extends _$AppLock {
   DateTime? _pausedAt;
@@ -61,11 +65,15 @@ class AppLock extends _$AppLock {
   Future<void>? _pending;
 
   /// Asks for authentication; unlocks on success. Concurrent calls share
-  /// one prompt.
+  /// one prompt. Without any account it unlocks without a prompt.
   Future<void> unlock(String reason) {
     if (state == AppLockState.unlocked) return Future.value();
     return _pending ??= () async {
       try {
+        if ((await ref.read(scopeRepositoryProvider).accounts()).isEmpty) {
+          state = AppLockState.unlocked;
+          return;
+        }
         state = switch (await ref.read(authenticatorProvider)(reason)) {
           true => AppLockState.unlocked,
           false => AppLockState.locked,

@@ -127,12 +127,12 @@ class RobotFailoverPage extends ConsumerWidget {
         ids: [f.netmask],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.alt_route,
             label: l10n.failoverRoute,
             onTap: route,
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.link_off,
             label: l10n.failoverUnroute,
             onTap: active == null
@@ -300,12 +300,12 @@ class RobotVSwitchPage extends ConsumerWidget {
         ids: ['VLAN ${v.vlan}', '#${v.id}'],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.add_link,
             label: l10n.vswitchAddServer,
             onTap: v.cancelled ? null : add,
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => FormSheet.show(
@@ -419,7 +419,7 @@ class RobotKeyPage extends ConsumerWidget {
         ids: [k.fingerprint],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => FormSheet.show(
@@ -636,17 +636,17 @@ class RobotAddressPage extends ConsumerWidget {
         ids: [names[x.serverNumber] ?? '#${x.serverNumber}'],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.notifications_outlined,
             label: l10n.trafficWarnings,
             onTap: warnings,
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.settings_ethernet,
             label: mac?.$2 == null ? l10n.macOn : l10n.macOff,
             onTap: macPossible ? toggleMac : null,
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.swap_vert,
             label: l10n.trafficTitle,
             onTap: () => RobotTrafficRoute(
@@ -836,15 +836,6 @@ class _RobotFirewallPageState extends ConsumerState<RobotFirewallPage> {
 
     return FalcoScaffold(
       title: l10n.robotFirewall,
-      moreMenu: MoreMenu(
-        items: [
-          MoreMenuItem(
-            label: l10n.firewallUseTemplate,
-            icon: Icons.copy_all,
-            onSelected: useTemplate,
-          ),
-        ],
-      ),
       body: DetailPage(
         status: switch (f.status) {
           'active' => ResourceStatus.active,
@@ -859,15 +850,20 @@ class _RobotFirewallPageState extends ConsumerState<RobotFirewallPage> {
           await refreshQuietly(ref, provider.future);
         },
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.save_outlined,
             label: l10n.firewallApply,
             onTap: _draft == null ? null : apply,
           ),
-          ActionTile(
+          DetailAction(
             icon: active ? Icons.shield : Icons.shield_outlined,
             label: active ? l10n.firewallDisable : l10n.firewallEnable,
             onTap: () => edit(copy(status: active ? 'disabled' : 'active')),
+          ),
+          DetailAction(
+            label: l10n.firewallUseTemplate,
+            icon: Icons.copy_all,
+            onTap: useTemplate,
           ),
         ],
         sections: [
@@ -960,7 +956,7 @@ class _RobotTemplatePageState extends ConsumerState<RobotTemplatePage> {
           await refreshQuietly(ref, provider.future);
         },
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.save_outlined,
             label: l10n.commonSave,
             onTap: _draft == null
@@ -984,7 +980,7 @@ class _RobotTemplatePageState extends ConsumerState<RobotTemplatePage> {
                     if (done && mounted) setState(() => _draft = null);
                   },
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => FormSheet.show(

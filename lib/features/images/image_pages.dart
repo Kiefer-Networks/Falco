@@ -157,7 +157,7 @@ class ImageDetailPage extends ConsumerWidget {
         ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => editNameAndLabels(
@@ -170,13 +170,13 @@ class ImageDetailPage extends ConsumerWidget {
               nameLabel: l10n.fieldImageDescription,
             ),
           ),
-          ActionTile(
+          DetailAction(
             icon: i.protectDelete ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
             onTap: busy ? null : protect,
           ),
           if (i.kind == ImageKind.backup)
-            ActionTile(
+            DetailAction(
               icon: Icons.photo_camera_outlined,
               label: l10n.imageConvert,
               onTap: convert,

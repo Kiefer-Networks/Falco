@@ -81,12 +81,7 @@ class ZoneList extends ConsumerWidget {
           ? errorText(toFalcoError(async.error!), l10n)
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
-      empty: EmptyHint(
-        message: l10n.emptyZones,
-        actionLabel: l10n.zoneCreate,
-        onAction: () =>
-            CreateRoute.of(scope, CreateKind.zone).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.emptyZones),
       searchText: (z) => z.name,
       sorts: [ResourceSort(l10n.sortName, (a, b) => a.name.compareTo(b.name))],
       itemBuilder: (context, z) => ResourceRow(
@@ -408,27 +403,6 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
 
     return FalcoScaffold(
       title: l10n.resourceZone,
-      moreMenu: MoreMenu(
-        items: [
-          MoreMenuItem(
-            label: l10n.recordsSelect,
-            icon: Icons.checklist,
-            onSelected: () => setState(() => _selected = {}),
-          ),
-          if (!z.secondary)
-            MoreMenuItem(
-              label: l10n.zoneImport,
-              icon: Icons.upload_file,
-              onSelected: () => _import(z),
-            ),
-          if (z.secondary)
-            MoreMenuItem(
-              label: l10n.primaryAdd,
-              icon: Icons.add,
-              onSelected: () => _primary(z),
-            ),
-        ],
-      ),
       body: DetailPage(
         status: busy ? ResourceStatus.inProgress : z.resourceStatus,
         statusDetail: busy
@@ -438,19 +412,19 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
         ids: [l10n.ttlValue(z.ttl), ...z.nameservers],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.add,
             label: l10n.recordAdd,
             onTap: busy || z.secondary
                 ? null
                 : () => showRecordSheet(context, ref, _scope, z, sets),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: busy ? null : () => _edit(z),
           ),
-          ActionTile(
+          DetailAction(
             icon: z.protectDelete ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
             onTap: busy
@@ -464,11 +438,28 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
                         changeZone(api, z.id, ProtectZone(delete: p)),
                   ),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.download,
             label: l10n.zoneExport,
             onTap: () => _export(z),
           ),
+          DetailAction(
+            label: l10n.recordsSelect,
+            icon: Icons.checklist,
+            onTap: () => setState(() => _selected = {}),
+          ),
+          if (!z.secondary)
+            DetailAction(
+              label: l10n.zoneImport,
+              icon: Icons.upload_file,
+              onTap: () => _import(z),
+            ),
+          if (z.secondary)
+            DetailAction(
+              label: l10n.primaryAdd,
+              icon: Icons.add,
+              onTap: () => _primary(z),
+            ),
         ],
         sections: [
           DetailSection(
@@ -708,7 +699,7 @@ class RRSetDetailPage extends ConsumerWidget {
         ids: [?zone?.name, l10n.ttlValue(s.ttl ?? zone?.ttl ?? 3600)],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.add,
             label: l10n.valueAdd,
             onTap: locked
@@ -730,7 +721,7 @@ class RRSetDetailPage extends ConsumerWidget {
                         change(AddRecords(recordsOf(s.type, v['values']!))),
                   ),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: busy
@@ -769,7 +760,7 @@ class RRSetDetailPage extends ConsumerWidget {
                     },
                   ),
           ),
-          ActionTile(
+          DetailAction(
             icon: s.protectChange ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
             onTap: busy

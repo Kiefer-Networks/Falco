@@ -170,6 +170,24 @@ abstract class AppLocalizations {
   /// **'More actions'**
   String get moreActions;
 
+  /// No description provided for @commonMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get commonMore;
+
+  /// No description provided for @overviewUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get overviewUnavailable;
+
+  /// No description provided for @overviewStatusCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{status}: {count}'**
+  String overviewStatusCount(String status, int count);
+
   /// No description provided for @listSort.
   ///
   /// In en, this message translates to:

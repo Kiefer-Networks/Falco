@@ -205,6 +205,8 @@ void main() {
   });
 
   group('AppLock', () {
+    setUp(() => seedSecrets(const [Account(id: 'a1', name: 'Acme')]));
+
     Future<ProviderContainer> container(
       List<bool?> answers, {
       Map<String, Object> prefs = const {},
@@ -232,6 +234,16 @@ void main() {
         expect(c.read(appLockProvider), AppLockState.unlocked);
       },
     );
+
+    test('SET-023 asks nothing before the first account', () async {
+      seedSecrets(const []);
+      final answers = <bool?>[false];
+      final c = await container(answers);
+      expect(c.read(appLockProvider), AppLockState.locked);
+      await c.read(appLockProvider.notifier).unlock('why');
+      expect(c.read(appLockProvider), AppLockState.unlocked);
+      expect(answers, [false], reason: 'no prompt without an account');
+    });
 
     test('starts unlocked when the lock is off (SET-007)', () async {
       final c = await container([], prefs: {'lock': false});

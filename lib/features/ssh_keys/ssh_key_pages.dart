@@ -35,12 +35,7 @@ class SshKeyList extends ConsumerWidget {
           ? errorText(toFalcoError(async.error!), l10n)
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
-      empty: EmptyHint(
-        message: l10n.emptySshKeys,
-        actionLabel: l10n.sshKeyAdd,
-        onAction: () =>
-            CreateRoute.of(scope, CreateKind.sshKey).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.emptySshKeys),
       searchText: (k) => '${k.name} ${k.fingerprint}',
       sorts: [ResourceSort(l10n.sortName, (a, b) => a.name.compareTo(b.name))],
       itemBuilder: (context, k) => ResourceRow(
@@ -92,7 +87,7 @@ class SshKeyDetailPage extends ConsumerWidget {
         ids: [k.fingerprint],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => editNameAndLabels(

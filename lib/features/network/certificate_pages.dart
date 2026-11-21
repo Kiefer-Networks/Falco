@@ -46,12 +46,7 @@ class CertificateList extends ConsumerWidget {
           ? errorText(toFalcoError(async.error!), l10n)
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
-      empty: EmptyHint(
-        message: l10n.emptyCertificates,
-        actionLabel: l10n.certificateCreate,
-        onAction: () =>
-            CreateRoute.of(scope, CreateKind.certificate).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.emptyCertificates),
       searchText: (c) => '${c.name} ${c.domains.join(' ')}',
       sorts: [
         ResourceSort(l10n.sortName, (a, b) => a.name.compareTo(b.name)),
@@ -137,7 +132,7 @@ class CertificateDetailPage extends ConsumerWidget {
         ids: [_type(c, l10n), ...c.domains],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => editNameAndLabels(
@@ -150,7 +145,7 @@ class CertificateDetailPage extends ConsumerWidget {
             ),
           ),
           if (c.managed)
-            ActionTile(
+            DetailAction(
               icon: Icons.refresh,
               label: l10n.certificateRetry,
               onTap: c.failed && !busy

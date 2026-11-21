@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/features/compute/compute_ui.dart';
+import 'package:falco/features/placement_groups/placement_groups.dart';
+import 'package:falco/ui/ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -21,27 +24,32 @@ Future<FakeCloud> openServer(
 
 void main() {
   group('create server', () {
-    testWidgets('CMP-001 CMP-007 Compute has its tabs and a create button', (
-      tester,
-    ) async {
+    testWidgets('CMP-001 CMP-007 the Compute overview counts its types, '
+        'the list has the one create button', (tester) async {
       await pumpFalco(tester, FakeCloud());
-      for (final tab in [
+      for (final type in [
         'Servers',
         'Volumes',
         'Images',
         'Placement groups',
         'SSH keys',
       ]) {
-        expect(find.text(tab), findsWidgets);
+        expect(find.text(type), findsOneWidget);
       }
+      expect(find.text('Create server'), findsNothing);
+      expect(find.text('running: 1 · off: 1'), findsOneWidget);
+      await openList(tester, 'Servers');
       expect(find.text('Create server'), findsOneWidget);
     });
 
-    testWidgets('CMP-004 the empty list offers to create a server', (
-      tester,
-    ) async {
+    testWidgets('CMP-004 the empty list shows a hint, creating is the button '
+        'at the bottom', (tester) async {
       await pumpFalco(tester, FakeCloud(servers: []));
-      await tester.tap(find.widgetWithText(FilledButton, 'Create server'));
+      await openList(tester, 'Servers');
+      expect(find.byType(FilledButton), findsNothing);
+      await tester.tap(
+        find.widgetWithText(FloatingActionButton, 'Create server'),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Location'), findsWidgets);
     });
@@ -52,6 +60,7 @@ void main() {
       final cloud = FakeCloud();
       setSurface(tester);
       await pumpFalco(tester, cloud);
+      await openList(tester, 'Servers');
       await tap(tester, 'Create server');
       expect(
         cloud.calls,
@@ -137,6 +146,7 @@ void main() {
       });
       setSurface(tester);
       await pumpFalco(tester, cloud);
+      await openList(tester, 'Servers');
       await tap(tester, 'Create server');
       await tap(tester, 'fsn1');
       await tap(tester, 'Next');
@@ -199,7 +209,7 @@ void main() {
 
     testWidgets('CMP-026 console shows URL and password', (tester) async {
       final cloud = await openServer(tester);
-      await tap(tester, 'Console');
+      await more(tester, 'Console');
       expect(cloud.calls, contains('POST /servers/1/actions/request_console'));
       expect(find.text('Websocket URL'), findsOneWidget);
       expect(find.text('VNC password'), findsOneWidget);
@@ -336,6 +346,9 @@ void main() {
       cloud.collections['placement_groups']!.add(
         placementGroupJson(id: 41, name: 'spread-1'),
       );
+      // Created elsewhere: the overview keeps the old list until a refresh.
+      ProviderScope.containerOf(tester.element(find.byType(DetailPage)))
+          .invalidate(placementGroupsProvider);
       await more(tester, 'Add to placement group');
       await tap(tester, 'spread-1');
       expect(cloud.body('POST /servers/1/actions/add_to_placement_group'), {

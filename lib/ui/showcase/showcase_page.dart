@@ -92,11 +92,7 @@ Widget _list(
       ResourceSort(l10n.sortName, (a, b) => a.name.compareTo(b.name)),
       ResourceSort(l10n.sortCreated, (a, b) => 0),
     ],
-    empty: EmptyHint(
-      message: l10n.emptyServers,
-      actionLabel: l10n.actionCreateServer,
-      onAction: () {},
-    ),
+    empty: EmptyHint(message: l10n.emptyServers),
   );
 }
 
@@ -240,22 +236,82 @@ List<ShowcaseCase> showcaseCases() => [
         initiallyVisible: visible,
       ),
     ),
-  for (final enabled in [true, false])
-    (
-      id: 'action_tile_${enabled ? 'enabled' : 'disabled'}',
-      height: 80,
-      builder: (context) => Align(
-        alignment: Alignment.centerLeft,
-        child: SizedBox(
-          width: 84,
-          child: ActionTile(
-            icon: Icons.restart_alt,
-            label: AppLocalizations.of(context).actionReboot,
-            onTap: enabled ? () {} : null,
-          ),
+  (
+    id: 'detail_action_bar',
+    height: 100,
+    builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return Align(
+        alignment: Alignment.bottomCenter,
+        child: DetailActionBar(
+          actions: [
+            DetailAction(
+              icon: Icons.refresh,
+              label: l10n.actionReboot,
+              onTap: () {},
+            ),
+            DetailAction(
+              icon: Icons.power_settings_new,
+              label: l10n.actionShutdown,
+              onTap: null,
+            ),
+            DetailAction(
+              icon: Icons.scatter_plot_outlined,
+              label: l10n.placementGroupRemove,
+              onTap: () {},
+            ),
+            DetailAction(
+              icon: Icons.terminal,
+              label: l10n.actionConsole,
+              onTap: () {},
+            ),
+          ],
         ),
-      ),
-    ),
+      );
+    },
+  ),
+  (
+    id: 'area_overview',
+    height: 520,
+    builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      return AreaOverview(
+        onRefresh: () async {},
+        tiles: [
+          OverviewTile(
+            icon: Icons.dns_outlined,
+            label: l10n.resourceServers,
+            onTap: () {},
+            count: 3,
+            statuses: [for (final s in _servers.take(3)) s.status],
+            preview: [for (final s in _servers.take(3)) _row(s)],
+          ),
+          OverviewTile(
+            icon: Icons.save_outlined,
+            label: l10n.resourceVolumes,
+            onTap: () {},
+            count: 2,
+            statuses: const [
+              ResourceStatus.available,
+              ResourceStatus.available,
+            ],
+          ),
+          OverviewTile(
+            icon: Icons.scatter_plot_outlined,
+            label: l10n.resourcePlacementGroups,
+            onTap: () {},
+            count: 0,
+          ),
+          OverviewTile(
+            icon: Icons.photo_library_outlined,
+            label: l10n.resourceImages,
+            onTap: () {},
+            note: l10n.overviewUnavailable,
+          ),
+        ],
+      );
+    },
+  ),
   for (final s in [_servers[0], _servers[2], _servers[3], _servers[4]])
     (id: 'resource_row_${s.status.name}', height: 72, builder: (_) => _row(s)),
   (
@@ -269,11 +325,8 @@ List<ShowcaseCase> showcaseCases() => [
   (
     id: 'empty_hint',
     height: 160,
-    builder: (context) => EmptyHint(
-      message: AppLocalizations.of(context).emptyServers,
-      actionLabel: AppLocalizations.of(context).actionCreateServer,
-      onAction: () {},
-    ),
+    builder: (context) =>
+        EmptyHint(message: AppLocalizations.of(context).emptyServers),
   ),
   (
     id: 'error_banner',
@@ -362,67 +415,70 @@ List<ShowcaseCase> showcaseCases() => [
     height: 900,
     builder: (context) {
       final l10n = AppLocalizations.of(context);
-      return DetailPage(
-        status: ResourceStatus.running,
-        statusDetail: formatRelative(
-          DateTime(2026, 11, 9),
-          DateTime(2026, 11, 21),
-          l10n,
+      return FalcoScaffold(
+        title: l10n.resourceServer,
+        body: DetailPage(
+          status: ResourceStatus.running,
+          statusDetail: formatRelative(
+            DateTime(2026, 11, 9),
+            DateTime(2026, 11, 21),
+            l10n,
+          ),
+          name: 'db-primary',
+          ids: const ['116.203.88.4', '2a01:4f8:c17:3b2::/64'],
+          onRefresh: _noop,
+          actions: [
+            DetailAction(
+              icon: Icons.restart_alt,
+              label: l10n.actionReboot,
+              onTap: () {},
+            ),
+            DetailAction(
+              icon: Icons.power_settings_new,
+              label: l10n.actionShutdown,
+              onTap: () {},
+            ),
+            DetailAction(
+              icon: Icons.terminal,
+              label: l10n.actionConsole,
+              onTap: () {},
+            ),
+            DetailAction(
+              icon: Icons.photo_camera_outlined,
+              label: l10n.actionSnapshot,
+              onTap: null,
+            ),
+          ],
+          sections: [
+            DetailSection(
+              title: l10n.sectionOverview,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const CopyableValue('116.203.88.4'),
+                  Mono(formatBytes(80 * 1024 * 1024 * 1024, l10n.localeName)),
+                ],
+              ),
+            ),
+            DetailSection(
+              title: l10n.sectionMetrics,
+              child: _chart(
+                context,
+                headline: '38%',
+                series: [
+                  MetricSeries(
+                    label: l10n.metricCpu,
+                    points: _samples([12, 14, 11, 20, 24, 38, 52, 47, 40]),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          dangerZone: [
+            OutlinedButton(onPressed: () {}, child: Text(l10n.actionRebuild)),
+            OutlinedButton(onPressed: () {}, child: Text(l10n.actionDelete)),
+          ],
         ),
-        name: 'db-primary',
-        ids: const ['116.203.88.4', '2a01:4f8:c17:3b2::/64'],
-        onRefresh: _noop,
-        actions: [
-          ActionTile(
-            icon: Icons.restart_alt,
-            label: l10n.actionReboot,
-            onTap: () {},
-          ),
-          ActionTile(
-            icon: Icons.power_settings_new,
-            label: l10n.actionShutdown,
-            onTap: () {},
-          ),
-          ActionTile(
-            icon: Icons.terminal,
-            label: l10n.actionConsole,
-            onTap: () {},
-          ),
-          ActionTile(
-            icon: Icons.photo_camera_outlined,
-            label: l10n.actionSnapshot,
-            onTap: null,
-          ),
-        ],
-        sections: [
-          DetailSection(
-            title: l10n.sectionOverview,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const CopyableValue('116.203.88.4'),
-                Mono(formatBytes(80 * 1024 * 1024 * 1024, l10n.localeName)),
-              ],
-            ),
-          ),
-          DetailSection(
-            title: l10n.sectionMetrics,
-            child: _chart(
-              context,
-              headline: '38%',
-              series: [
-                MetricSeries(
-                  label: l10n.metricCpu,
-                  points: _samples([12, 14, 11, 20, 24, 38, 52, 47, 40]),
-                ),
-              ],
-            ),
-          ),
-        ],
-        dangerZone: [
-          OutlinedButton(onPressed: () {}, child: Text(l10n.actionRebuild)),
-          OutlinedButton(onPressed: () {}, child: Text(l10n.actionDelete)),
-        ],
       );
     },
   ),

@@ -371,7 +371,7 @@ class _AccountWizardPageState extends ConsumerState<AccountWizardPage> {
       return Scaffold(
         body: SafeArea(
           child: Center(
-            child: EmptyHint(
+            child: ActionHint(
               message: l10n.accountDone(account.name),
               actionLabel: l10n.accountOpen,
               onAction: () => scopeRoute(firstScope(account)!).go(context),

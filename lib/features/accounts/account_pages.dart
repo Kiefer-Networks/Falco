@@ -32,13 +32,11 @@ class AccountsPage extends ConsumerWidget {
     void add() => const SetupRoute().push<void>(context);
     return FalcoScaffold(
       title: l10n.accountsTitle,
-      floatingActionButton: accounts == null || accounts.isEmpty
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: add,
-              icon: const Icon(Icons.person_add_alt),
-              label: Text(l10n.accountAdd),
-            ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: add,
+        icon: const Icon(Icons.person_add_alt),
+        label: Text(l10n.accountAdd),
+      ),
       body: switch (accounts) {
         null when async.hasError => Padding(
           padding: const EdgeInsets.all(FalcoSpacing.l),
@@ -48,11 +46,7 @@ class AccountsPage extends ConsumerWidget {
           ),
         ),
         null => const Center(child: CircularProgressIndicator()),
-        [] => EmptyHint(
-          message: l10n.accountsEmpty,
-          actionLabel: l10n.accountAdd,
-          onAction: add,
-        ),
+        [] => EmptyHint(message: l10n.accountsEmpty),
         _ => ListView(
           padding: const EdgeInsets.only(bottom: 96),
           children: [
@@ -123,19 +117,19 @@ class AccountPage extends ConsumerWidget {
         name: account.name,
         ids: [if (account.description.isNotEmpty) account.description],
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.open_in_browser,
             label: l10n.accountOpen,
             onTap: firstScope(account) == null
                 ? null
                 : () => scopeRoute(firstScope(account)!).go(context),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: ops.edit,
           ),
-          ActionTile(
+          DetailAction(
             icon: isDefault ? Icons.star : Icons.star_outline,
             label: l10n.accountDefault,
             onTap: () => ref
@@ -146,7 +140,7 @@ class AccountPage extends ConsumerWidget {
                   ),
                 ),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.add,
             label: l10n.projectAdd,
             onTap: () =>

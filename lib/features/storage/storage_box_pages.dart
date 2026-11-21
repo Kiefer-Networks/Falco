@@ -152,12 +152,7 @@ class StorageBoxList extends ConsumerWidget {
           ? errorText(toFalcoError(async.error!), l10n)
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
-      empty: EmptyHint(
-        message: l10n.emptyStorageBoxes,
-        actionLabel: l10n.storageBoxCreate,
-        onAction: () =>
-            CreateRoute.of(scope, CreateKind.storageBox).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.emptyStorageBoxes),
       searchText: (b) => '${b.name} ${b.username}',
       filters: [
         ResourceFilter(l10n.filterAll, (_) => true),
@@ -223,53 +218,6 @@ class StorageBoxDetailPage extends ConsumerWidget {
 
     return FalcoScaffold(
       title: l10n.resourceStorageBox,
-      moreMenu: MoreMenu(
-        items: [
-          MoreMenuItem(
-            label: l10n.boxAccessSettings,
-            icon: Icons.tune,
-            onSelected: () => FormSheet.show(
-              context,
-              title: l10n.boxAccessSettings,
-              fields: (_) => accessFields(l10n, boxAccessKeys, b.access),
-              valid: (_) => true,
-              onSave: (v) => startBoxTracked(
-                ref,
-                scope,
-                (api) =>
-                    updateBoxAccess(api, b.id, accessFrom(v, boxAccessKeys)),
-              ),
-            ),
-          ),
-          MoreMenuItem(
-            label: l10n.boxSnapshotPlan,
-            icon: Icons.schedule,
-            onSelected: () => _plan(context, ref, b),
-          ),
-          MoreMenuItem(
-            label: l10n.boxChangeType,
-            icon: Icons.swap_vert,
-            onSelected: () => _changeType(context, ref, b),
-          ),
-          MoreMenuItem(
-            label: b.protectDelete ? l10n.protectOff : l10n.protectOn,
-            icon: b.protectDelete ? Icons.lock_open : Icons.lock,
-            onSelected: () async {
-              if (await confirmProtection(
-                    context,
-                    t,
-                    protect: !b.protectDelete,
-                  ) &&
-                  context.mounted) {
-                await act(
-                  (api) =>
-                      protectStorageBox(api, b.id, delete: !b.protectDelete),
-                );
-              }
-            },
-          ),
-        ],
-      ),
       body: DetailPage(
         status: busy ? ResourceStatus.inProgress : b.status,
         statusDetail: busy ? '${progress.progress} %' : null,
@@ -283,7 +231,7 @@ class StorageBoxDetailPage extends ConsumerWidget {
           await refreshQuietly(ref, provider.future);
         },
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.photo_camera_outlined,
             label: l10n.actionSnapshot,
             onTap: busy
@@ -306,12 +254,12 @@ class StorageBoxDetailPage extends ConsumerWidget {
                     ),
                   ),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.person_add_alt,
             label: l10n.subaccountCreate,
             onTap: busy ? null : () => _createSubaccount(context, ref, b),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.password,
             label: l10n.boxResetPassword,
             onTap: busy
@@ -328,7 +276,7 @@ class StorageBoxDetailPage extends ConsumerWidget {
                     ),
                   ),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => FormSheet.show(
@@ -350,6 +298,49 @@ class StorageBoxDetailPage extends ConsumerWidget {
                 refreshResource(ref.invalidate, scope, storageBoxType, b.id);
               },
             ),
+          ),
+          DetailAction(
+            label: l10n.boxAccessSettings,
+            icon: Icons.tune,
+            onTap: () => FormSheet.show(
+              context,
+              title: l10n.boxAccessSettings,
+              fields: (_) => accessFields(l10n, boxAccessKeys, b.access),
+              valid: (_) => true,
+              onSave: (v) => startBoxTracked(
+                ref,
+                scope,
+                (api) =>
+                    updateBoxAccess(api, b.id, accessFrom(v, boxAccessKeys)),
+              ),
+            ),
+          ),
+          DetailAction(
+            label: l10n.boxSnapshotPlan,
+            icon: Icons.schedule,
+            onTap: () => _plan(context, ref, b),
+          ),
+          DetailAction(
+            label: l10n.boxChangeType,
+            icon: Icons.swap_vert,
+            onTap: () => _changeType(context, ref, b),
+          ),
+          DetailAction(
+            label: b.protectDelete ? l10n.protectOff : l10n.protectOn,
+            icon: b.protectDelete ? Icons.lock_open : Icons.lock,
+            onTap: () async {
+              if (await confirmProtection(
+                    context,
+                    t,
+                    protect: !b.protectDelete,
+                  ) &&
+                  context.mounted) {
+                await act(
+                  (api) =>
+                      protectStorageBox(api, b.id, delete: !b.protectDelete),
+                );
+              }
+            },
           ),
         ],
         sections: [
@@ -688,7 +679,7 @@ class BoxSnapshotPage extends ConsumerWidget {
         ids: [formatDateTime(s.created, locale)],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => FormSheet.show(
@@ -830,7 +821,7 @@ class SubaccountPage extends ConsumerWidget {
         ids: [s.username, s.server],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => FormSheet.show(
@@ -861,7 +852,7 @@ class SubaccountPage extends ConsumerWidget {
               },
             ),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.folder_outlined,
             label: l10n.fieldHomeDirectory,
             onTap: busy
@@ -884,7 +875,7 @@ class SubaccountPage extends ConsumerWidget {
                     );
                   },
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.tune,
             label: l10n.boxAccessSettings,
             onTap: busy
@@ -905,7 +896,7 @@ class SubaccountPage extends ConsumerWidget {
                     ),
                   ),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.password,
             label: l10n.boxResetPassword,
             onTap: busy

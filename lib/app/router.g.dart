@@ -22,6 +22,7 @@ List<RouteBase> get $appRoutes => [
   $searchRoute,
   $allProjectsRoute,
   $robotRoute,
+  $resourcesRoute,
   $createRoute,
   $volumeRoute,
   $imageRoute,
@@ -513,6 +514,71 @@ mixin $RobotRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
+RouteBase get $resourcesRoute => GoRouteData.$route(
+  path: '/a/:accountId/list/:kind',
+  hasOverriddenOnExit: false,
+  factory: $ResourcesRoute._fromState,
+);
+
+mixin $ResourcesRoute on GoRouteData {
+  static ResourcesRoute _fromState(GoRouterState state) => ResourcesRoute(
+    accountId: state.pathParameters['accountId']!,
+    kind: _$ResourceKindEnumMap._$fromName(state.pathParameters['kind']!)!,
+    projectId: state.uri.queryParameters['project-id'],
+  );
+
+  ResourcesRoute get _self => this as ResourcesRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/list/${Uri.encodeComponent(_$ResourceKindEnumMap[_self.kind]!)}',
+    queryParams: {if (_self.projectId != null) 'project-id': _self.projectId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+const _$ResourceKindEnumMap = {
+  ResourceKind.servers: 'servers',
+  ResourceKind.volumes: 'volumes',
+  ResourceKind.images: 'images',
+  ResourceKind.placementGroups: 'placement-groups',
+  ResourceKind.sshKeys: 'ssh-keys',
+  ResourceKind.networks: 'networks',
+  ResourceKind.firewalls: 'firewalls',
+  ResourceKind.floatingIps: 'floating-ips',
+  ResourceKind.primaryIps: 'primary-ips',
+  ResourceKind.loadBalancers: 'load-balancers',
+  ResourceKind.certificates: 'certificates',
+  ResourceKind.zones: 'zones',
+  ResourceKind.storageBoxes: 'storage-boxes',
+  ResourceKind.buckets: 'buckets',
+  ResourceKind.robotServers: 'robot-servers',
+  ResourceKind.failover: 'failover',
+  ResourceKind.vswitches: 'vswitches',
+  ResourceKind.rdns: 'rdns',
+  ResourceKind.robotKeys: 'robot-keys',
+  ResourceKind.robotIps: 'robot-ips',
+  ResourceKind.robotSubnets: 'robot-subnets',
+  ResourceKind.robotTemplates: 'robot-templates',
+};
+
+extension<T extends Enum> on Map<T, String> {
+  T? _$fromName(String? value) =>
+      entries.where((element) => element.value == value).firstOrNull?.key;
+}
+
 RouteBase get $createRoute => GoRouteData.$route(
   path: '/a/:accountId/create/:kind',
   hasOverriddenOnExit: false,
@@ -563,11 +629,6 @@ const _$CreateKindEnumMap = {
   CreateKind.storageBox: 'storage-box',
   CreateKind.bucket: 'bucket',
 };
-
-extension<T extends Enum> on Map<T, String> {
-  T? _$fromName(String? value) =>
-      entries.where((element) => element.value == value).firstOrNull?.key;
-}
 
 RouteBase get $volumeRoute => GoRouteData.$route(
   path: '/a/:accountId/p/:projectId/volumes/:volumeId',

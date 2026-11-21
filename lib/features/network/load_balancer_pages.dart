@@ -45,12 +45,7 @@ class LoadBalancerList extends ConsumerWidget {
           ? errorText(toFalcoError(async.error!), l10n)
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
-      empty: EmptyHint(
-        message: l10n.emptyLoadBalancers,
-        actionLabel: l10n.loadBalancerCreate,
-        onAction: () =>
-            CreateRoute.of(scope, CreateKind.loadBalancer).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.emptyLoadBalancers),
       searchText: (lb) => '${lb.name} ${lb.ipv4 ?? ''}',
       sorts: [ResourceSort(l10n.sortName, (a, b) => a.name.compareTo(b.name))],
       itemBuilder: (context, lb) => ResourceRow(
@@ -380,12 +375,73 @@ class LoadBalancerDetailPage extends ConsumerWidget {
 
     return FalcoScaffold(
       title: l10n.resourceLoadBalancer,
-      moreMenu: MoreMenu(
-        items: [
-          MoreMenuItem(
+      body: DetailPage(
+        status: busy ? ResourceStatus.inProgress : lb.status,
+        statusDetail: busy
+            ? '${progress.progress} %'
+            : (lb.protectDelete ? l10n.protected : null),
+        name: lb.name,
+        ids: [
+          if (lb.ipv4 case final ip?) formatIp(ip),
+          lb.type.name.toUpperCase(),
+          lb.location,
+        ],
+        onRefresh: () => refreshQuietly(ref, provider.future),
+        actions: [
+          DetailAction(
+            icon: Icons.add_link,
+            label: l10n.serviceAdd,
+            onTap: busy
+                ? null
+                : () => showServiceSheet(
+                    context,
+                    ref,
+                    scope,
+                    save: (s) => change(AddService(s)),
+                  ),
+          ),
+          DetailAction(
+            icon: Icons.add_circle_outline,
+            label: l10n.targetAdd,
+            onTap: busy
+                ? null
+                : () => showTargetSheet(
+                    context,
+                    ref,
+                    scope,
+                    save: (target) => change(AddTarget(target)),
+                  ),
+          ),
+          DetailAction(
+            icon: Icons.edit_outlined,
+            label: l10n.commonEdit,
+            onTap: () => editNameAndLabels(
+              context,
+              ref,
+              t,
+              lb.labels,
+              (api, name, labels) =>
+                  updateLoadBalancer(api, lb.id, name: name, labels: labels),
+            ),
+          ),
+          DetailAction(
+            icon: lb.protectDelete ? Icons.lock : Icons.lock_open,
+            label: l10n.fieldProtection,
+            onTap: busy
+                ? null
+                : () => toggleProtection(
+                    context,
+                    ref,
+                    t,
+                    protected: lb.protectDelete,
+                    start: (api, p) =>
+                        changeLoadBalancer(api, lb.id, ProtectLb(delete: p)),
+                  ),
+          ),
+          DetailAction(
             label: l10n.lbAlgorithm,
             icon: Icons.shuffle,
-            onSelected: () => FormSheet.show(
+            onTap: () => FormSheet.show(
               context,
               title: l10n.lbAlgorithm,
               fields: (_) => [
@@ -403,20 +459,20 @@ class LoadBalancerDetailPage extends ConsumerWidget {
               onSave: (v) => change(ChangeAlgorithm(v['algorithm']!)),
             ),
           ),
-          MoreMenuItem(
+          DetailAction(
             label: l10n.lbChangeType,
             icon: Icons.swap_vert,
-            onSelected: changeType,
+            onTap: changeType,
           ),
-          MoreMenuItem(
+          DetailAction(
             label: l10n.networkAttach,
             icon: Icons.hub_outlined,
-            onSelected: attachNetwork,
+            onTap: attachNetwork,
           ),
-          MoreMenuItem(
+          DetailAction(
             label: lb.publicEnabled ? l10n.lbPublicOff : l10n.lbPublicOn,
             icon: Icons.public,
-            onSelected: () => lb.publicEnabled
+            onTap: () => lb.publicEnabled
                 ? confirmAction(
                     context,
                     ref,
@@ -433,10 +489,10 @@ class LoadBalancerDetailPage extends ConsumerWidget {
                   )
                 : run(const SetPublicInterface(enabled: true)),
           ),
-          MoreMenuItem(
+          DetailAction(
             label: l10n.reverseDns,
             icon: Icons.dns_outlined,
-            onSelected: () => FormSheet.show(
+            onTap: () => FormSheet.show(
               context,
               title: l10n.reverseDns,
               fields: (_) => [
@@ -451,71 +507,6 @@ class LoadBalancerDetailPage extends ConsumerWidget {
               valid: (v) => (v['ip'] ?? '').trim().isNotEmpty,
               onSave: (v) => change(SetLbDnsPtr(v['ip']!, v['ptr'] ?? '')),
             ),
-          ),
-        ],
-      ),
-      body: DetailPage(
-        status: busy ? ResourceStatus.inProgress : lb.status,
-        statusDetail: busy
-            ? '${progress.progress} %'
-            : (lb.protectDelete ? l10n.protected : null),
-        name: lb.name,
-        ids: [
-          if (lb.ipv4 case final ip?) formatIp(ip),
-          lb.type.name.toUpperCase(),
-          lb.location,
-        ],
-        onRefresh: () => refreshQuietly(ref, provider.future),
-        actions: [
-          ActionTile(
-            icon: Icons.add_link,
-            label: l10n.serviceAdd,
-            onTap: busy
-                ? null
-                : () => showServiceSheet(
-                    context,
-                    ref,
-                    scope,
-                    save: (s) => change(AddService(s)),
-                  ),
-          ),
-          ActionTile(
-            icon: Icons.add_circle_outline,
-            label: l10n.targetAdd,
-            onTap: busy
-                ? null
-                : () => showTargetSheet(
-                    context,
-                    ref,
-                    scope,
-                    save: (target) => change(AddTarget(target)),
-                  ),
-          ),
-          ActionTile(
-            icon: Icons.edit_outlined,
-            label: l10n.commonEdit,
-            onTap: () => editNameAndLabels(
-              context,
-              ref,
-              t,
-              lb.labels,
-              (api, name, labels) =>
-                  updateLoadBalancer(api, lb.id, name: name, labels: labels),
-            ),
-          ),
-          ActionTile(
-            icon: lb.protectDelete ? Icons.lock : Icons.lock_open,
-            label: l10n.fieldProtection,
-            onTap: busy
-                ? null
-                : () => toggleProtection(
-                    context,
-                    ref,
-                    t,
-                    protected: lb.protectDelete,
-                    start: (api, p) =>
-                        changeLoadBalancer(api, lb.id, ProtectLb(delete: p)),
-                  ),
           ),
         ],
         sections: [

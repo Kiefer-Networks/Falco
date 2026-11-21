@@ -64,8 +64,7 @@ Future<FakeCloud> openStorage(
   await pumpFalco(tester, c, s3: s3);
   await tester.tap(find.text('Storage'));
   await tester.pumpAndSettle();
-  await tester.tap(find.widgetWithText(Tab, tab));
-  await tester.pumpAndSettle();
+  await openList(tester, tab);
   return c;
 }
 

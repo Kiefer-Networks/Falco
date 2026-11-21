@@ -75,15 +75,24 @@ String _$authenticatorHash() => r'dabdb5356210605ca20e0681f418819743f9afef';
 
 /// App lock: locked at start and after the auto lock time in background,
 /// both only while the lock is on in the settings (SET-007, SET-010).
+/// Before the first account there is nothing to protect: [unlock] then
+/// opens without asking, so a first start never prompts (SET-023). The
+/// first secret goes into the vault with the platform's own check.
 
 @ProviderFor(AppLock)
 final appLockProvider = AppLockProvider._();
 
 /// App lock: locked at start and after the auto lock time in background,
 /// both only while the lock is on in the settings (SET-007, SET-010).
+/// Before the first account there is nothing to protect: [unlock] then
+/// opens without asking, so a first start never prompts (SET-023). The
+/// first secret goes into the vault with the platform's own check.
 final class AppLockProvider extends $NotifierProvider<AppLock, AppLockState> {
   /// App lock: locked at start and after the auto lock time in background,
   /// both only while the lock is on in the settings (SET-007, SET-010).
+  /// Before the first account there is nothing to protect: [unlock] then
+  /// opens without asking, so a first start never prompts (SET-023). The
+  /// first secret goes into the vault with the platform's own check.
   AppLockProvider._()
     : super(
         from: null,
@@ -111,10 +120,13 @@ final class AppLockProvider extends $NotifierProvider<AppLock, AppLockState> {
   }
 }
 
-String _$appLockHash() => r'3e69596a197ac10182793b962562cdf6057b83c5';
+String _$appLockHash() => r'a6463e627fc62a2c65c6d36b20bc0f42a0bd5c30';
 
 /// App lock: locked at start and after the auto lock time in background,
 /// both only while the lock is on in the settings (SET-007, SET-010).
+/// Before the first account there is nothing to protect: [unlock] then
+/// opens without asking, so a first start never prompts (SET-023). The
+/// first secret goes into the vault with the platform's own check.
 
 abstract class _$AppLock extends $Notifier<AppLockState> {
   AppLockState build();
