@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/scope/scope_repository.dart';
 import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
@@ -13,7 +14,9 @@ part 'app_lock.g.dart';
 /// the user cancelled and null when the device has no screen lock at all.
 /// With a hardware bound vault, opening it is the check, so the user sees
 /// one prompt (SET-015); it is read again, so an open vault never answers
-/// for the user. Overridden in tests.
+/// for the user. A vault the system invalidated (new fingerprints) is reset
+/// by that read; the device check then decides (SET-013). Overridden in
+/// tests.
 @Riverpod(keepAlive: true)
 Future<bool?> Function(String reason) authenticator(Ref ref) {
   final auth = LocalAuthentication();
@@ -21,12 +24,17 @@ Future<bool?> Function(String reason) authenticator(Ref ref) {
   return (reason) async {
     if (!await auth.isDeviceSupported()) return null;
     try {
-      if (await secrets.bound) return await secrets.verify();
+      if (await secrets.bound) {
+        await secrets.verify();
+        if (await secrets.bound) return true;
+      }
       return await auth.authenticate(
         localizedReason: reason,
         persistAcrossBackgrounding: true,
       );
     } on LocalAuthException {
+      return false;
+    } on Locked {
       return false;
     } on PlatformException {
       return false;
@@ -55,6 +63,9 @@ enum AppLockState {
 class AppLock extends _$AppLock {
   (DateTime, Duration)? _pausedAt;
   int _prompts = 0;
+
+  /// The app returned while a check ran; a failed check applies it.
+  bool _resumedInCheck = false;
 
   /// Wall clock, replaceable in tests.
   DateTime Function() now = DateTime.now;
@@ -104,13 +115,24 @@ class AppLock extends _$AppLock {
 
   /// Asks the user through the system prompt, also while unlocked (turning
   /// the lock off). The app leaving the foreground for the prompt does not
-  /// count as background time.
+  /// count as background time once the check succeeds; a failed or
+  /// cancelled check keeps it, so leaving during the prompt still locks.
   Future<bool?> check(String reason) async {
     _prompts++;
+    bool? ok;
     try {
-      return await ref.read(authenticatorProvider)(reason);
+      return ok = await ref.read(authenticatorProvider)(reason);
     } finally {
       _prompts--;
+      if (_prompts == 0) {
+        final resumedInCheck = _resumedInCheck;
+        _resumedInCheck = false;
+        if (ok ?? false) {
+          _pausedAt = null;
+        } else if (resumedInCheck) {
+          resumed();
+        }
+      }
     }
   }
 
@@ -124,14 +146,19 @@ class AppLock extends _$AppLock {
 
   /// Call when the app goes to background.
   void paused() {
-    if (_prompts == 0) _pausedAt ??= (now(), uptime());
+    _pausedAt ??= (now(), uptime());
   }
 
   /// Call when the app returns; locks after the auto lock time and then
   /// returns true. Both clocks count: the monotonic one ignores a device
   /// time set back, the wall clock also runs while the device sleeps. A
-  /// wall clock that went back gives no usable time and locks.
+  /// wall clock that went back gives no usable time and locks. While a
+  /// check runs, its result decides (see [check]).
   bool resumed() {
+    if (_prompts > 0) {
+      _resumedInCheck = _pausedAt != null;
+      return false;
+    }
     final pausedAt = _pausedAt;
     _pausedAt = null;
     final settings = ref.read(appSettingsProvider);

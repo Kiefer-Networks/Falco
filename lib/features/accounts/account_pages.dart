@@ -281,6 +281,18 @@ class _AccountOps {
     if (saved && context.mounted) FalcoScaffold.showSnack(context, message);
   }
 
+  /// Runs a confirmed delete; a failure, like a cancelled system check,
+  /// is shown and leaves everything as it was.
+  Future<void> _guarded(Future<void> Function() change) async {
+    try {
+      await change();
+    } on FalcoError catch (e) {
+      if (context.mounted) {
+        FalcoScaffold.showSnack(context, errorText(e, l10n));
+      }
+    }
+  }
+
   Future<void> edit() async => _done(
     await FormSheet.show(
       context,
@@ -367,8 +379,10 @@ class _AccountOps {
       destructive: true,
     );
     if (!confirmed) return;
-    await _secrets.deleteS3(p.id);
-    container.invalidate(projectS3Provider(p.id));
+    await _guarded(() async {
+      await _secrets.deleteS3(p.id);
+      container.invalidate(projectS3Provider(p.id));
+    });
   }
 
   Future<void> deleteProject(Project p) async {
@@ -382,10 +396,12 @@ class _AccountOps {
       destructive: true,
     );
     if (!confirmed) return;
-    await _repo.deleteProject(account.id, p.id);
-    container
-      ..invalidate(accountsProvider)
-      ..invalidate(projectS3Provider(p.id));
+    await _guarded(() async {
+      await _repo.deleteProject(account.id, p.id);
+      container
+        ..invalidate(accountsProvider)
+        ..invalidate(projectS3Provider(p.id));
+    });
   }
 
   Future<void> robot() async => _done(
@@ -414,8 +430,10 @@ class _AccountOps {
       destructive: true,
     );
     if (!confirmed) return;
-    await _secrets.deleteRobot(account.id);
-    await _save(account.copyWith(hasRobot: false));
+    await _guarded(() async {
+      await _secrets.deleteRobot(account.id);
+      await _save(account.copyWith(hasRobot: false));
+    });
   }
 
   Future<void> delete() async {
@@ -429,14 +447,16 @@ class _AccountOps {
       destructive: true,
     );
     if (!confirmed) return;
-    await _repo.deleteAccount(account.id);
-    final settings = container.read(appSettingsProvider);
-    if (settings.defaultAccount == account.id) {
-      await container
-          .read(appSettingsProvider.notifier)
-          .update(settings.copyWith(defaultAccount: () => null));
-    }
-    container.invalidate(accountsProvider);
-    if (context.mounted) const HomeRoute().go(context);
+    await _guarded(() async {
+      await _repo.deleteAccount(account.id);
+      final settings = container.read(appSettingsProvider);
+      if (settings.defaultAccount == account.id) {
+        await container
+            .read(appSettingsProvider.notifier)
+            .update(settings.copyWith(defaultAccount: () => null));
+      }
+      container.invalidate(accountsProvider);
+      if (context.mounted) const HomeRoute().go(context);
+    });
   }
 }

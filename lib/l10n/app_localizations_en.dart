@@ -397,6 +397,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorServer => 'The server reported an error. Try again later.';
 
   @override
+  String get errorLocked =>
+      'Access data stays locked: the system check was cancelled. Nothing was changed.';
+
+  @override
   String get statusInProgress => 'in progress';
 
   @override

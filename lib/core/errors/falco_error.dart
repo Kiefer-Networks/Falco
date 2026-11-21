@@ -30,6 +30,7 @@ sealed class FalcoError implements Exception {
       Network() => 'Network',
       PinningFailed() => 'PinningFailed',
       Server() => 'Server',
+      Locked() => 'Locked',
     };
     return code == null ? name : '$name($code)';
   }
@@ -97,6 +98,14 @@ final class Server extends FalcoError {
   const new({super.code});
 }
 
+/// The vault stayed closed: the user cancelled the system check, or the
+/// app is locked and a request may not ask for one. Nothing was read or
+/// changed; never retried, it needs the user (SET-015).
+final class Locked extends FalcoError {
+  /// Creates the error.
+  const new();
+}
+
 /// Maps any error thrown by dio or a generated client to a [FalcoError].
 FalcoError toFalcoError(Object error) {
   if (error is FalcoError) return error;
@@ -112,10 +121,15 @@ FalcoError toFalcoError(Object error) {
     }
     return toFalcoError(error.error ?? const Network());
   }
-  if (error is HandshakeException || error is TlsException) {
+  // Only a certificate the pinned roots reject is a pinning failure; any
+  // other broken handshake is the connection.
+  if (error is CertificateException ||
+      (error is TlsException && '$error'.contains('CERTIFICATE_VERIFY'))) {
     return const PinningFailed();
   }
-  if (error is SocketException || error is HttpException) {
+  if (error is TlsException ||
+      error is SocketException ||
+      error is HttpException) {
     return const Network();
   }
   return const Server();
@@ -215,7 +229,8 @@ Map<String, List<String>> _fields(Map<String, Object?>? error) {
 Duration? retryDelay(int retryCount, Object error) {
   if (retryCount >= 5) return null;
   final backoff = Duration(milliseconds: 200 * (1 << retryCount));
-  return switch (error) {
+  // Robot and S3 failures arrive as the DioException that carries them.
+  return switch (error is DioException ? toFalcoError(error) : error) {
     RateLimited(:final retryAfter) => retryAfter ?? backoff,
     Network() || Server() => backoff,
     _ => null,

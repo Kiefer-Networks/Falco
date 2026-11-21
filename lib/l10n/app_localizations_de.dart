@@ -401,6 +401,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der Server hat einen Fehler gemeldet. Versuche es später erneut.';
 
   @override
+  String get errorLocked =>
+      'Die Zugangsdaten bleiben gesperrt: die Prüfung des Systems wurde abgebrochen. Nichts wurde geändert.';
+
+  @override
   String get statusInProgress => 'läuft';
 
   @override

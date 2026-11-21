@@ -8,13 +8,17 @@ import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Covers [child] while the app is locked and asks for authentication at
 /// start and when a return from background locked it. With "block
-/// screenshots" on, the content is also covered while the app is inactive,
-/// so the iOS app switcher shows no data (SET-014). After the first unlock
+/// screenshots" on, the content is also covered while the app is away:
+/// on iOS already when inactive, so the app switcher shows no data; on
+/// Android FLAG_SECURE hides it there and only hidden or paused cover, so
+/// a system dialog does not flash the cover (SET-014). While locked, back
+/// does nothing. After the first unlock
 /// [child] stays mounted below the cover: pages, forms and sheets survive.
 class LockGate extends ConsumerStatefulWidget {
   /// Creates the gate.
@@ -58,7 +62,14 @@ class _LockGateState extends ConsumerState<LockGate>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final lock = ref.read(appLockProvider.notifier);
-    setState(() => _inactive = state != AppLifecycleState.resumed);
+    setState(
+      () => _inactive = switch (state) {
+        AppLifecycleState.resumed => false,
+        AppLifecycleState.inactive =>
+          defaultTargetPlatform == TargetPlatform.iOS,
+        _ => true,
+      },
+    );
     switch (state) {
       case AppLifecycleState.paused || AppLifecycleState.hidden:
         lock.paused();
@@ -69,6 +80,11 @@ class _LockGateState extends ConsumerState<LockGate>
       case _:
     }
   }
+
+  /// Back stays on the cover: the pages below must not pop while locked.
+  @override
+  Future<bool> didPopRoute() async =>
+      ref.read(appLockProvider) != AppLockState.unlocked;
 
   void _unlock() {
     if (!mounted) return;
@@ -148,7 +164,11 @@ class _LockGateState extends ConsumerState<LockGate>
     );
   }
 
-  Widget _cover(AppLockState state) {
+  /// Its own messenger keeps snackbars of the pages off the cover.
+  Widget _cover(AppLockState state) =>
+      ScaffoldMessenger(child: _coverPage(state));
+
+  Widget _coverPage(AppLockState state) {
     if (_unlocking) return const Scaffold();
     final l10n = AppLocalizations.of(context);
     return Scaffold(

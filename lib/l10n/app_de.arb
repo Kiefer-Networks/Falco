@@ -112,6 +112,7 @@
   "errorInvalid": "Die Eingabe wurde abgelehnt. Prüfe die markierten Felder.",
   "errorPinning": "Dem Serverzertifikat wird nicht vertraut. Die Verbindung wurde gestoppt, um deine Zugangsdaten zu schützen.",
   "errorServer": "Der Server hat einen Fehler gemeldet. Versuche es später erneut.",
+  "errorLocked": "Die Zugangsdaten bleiben gesperrt: die Prüfung des Systems wurde abgebrochen. Nichts wurde geändert.",
   "statusInProgress": "läuft",
   "statusDone": "erledigt",
   "statusFailed": "fehlgeschlagen",

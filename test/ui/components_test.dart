@@ -381,7 +381,7 @@ void main() {
     final calls = <MethodCall>[];
     String? clip;
 
-    void mock(WidgetTester tester, {required bool native}) {
+    void mock(WidgetTester tester, {required bool native, bool? marks}) {
       final messenger = tester.binding.defaultBinaryMessenger
         ..setMockMethodCallHandler(const MethodChannel('falco/clipboard'), (
           call,
@@ -389,7 +389,7 @@ void main() {
           calls.add(call);
           // A platform without the channel answers nothing.
           if (!native) throw MissingPluginException();
-          return null;
+          return marks;
         })
         ..setMockMethodCallHandler(SystemChannels.platform, (call) async {
           if (call.method == 'Clipboard.setData') {
@@ -424,6 +424,18 @@ void main() {
         find.text('Copied. The clipboard clears in 60 s.'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('SET-020 Android before 13 cannot mark the copy and the user '
+        'is told (K5)', (tester) async {
+      mock(tester, native: true, marks: false);
+      await tester.pumpWidget(
+        testApp(const SecretReveal(label: 'Root password', secret: 's3cret')),
+      );
+      await tester.tap(find.byTooltip('Copy'));
+      await tester.pump();
+      expect(calls.single.method, 'setSensitive');
+      expect(find.textContaining('cannot hide it'), findsOneWidget);
     });
 
     testWidgets('SET-019 SET-020 without the platform a plain copy is '

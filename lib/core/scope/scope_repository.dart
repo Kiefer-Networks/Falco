@@ -41,15 +41,18 @@ class ScopeRepository {
     await _write(all);
   }
 
-  /// Deletes an account with all its project and Robot secrets.
+  /// Deletes an account with all its project and Robot secrets, in one
+  /// vault write (one system check).
   Future<void> deleteAccount(String accountId) async {
     final all = await accounts();
     final account = all.where((a) => a.id == accountId).firstOrNull;
     if (account == null) return;
-    for (final p in account.projects) {
-      await _secrets.deleteProject(p.id);
-    }
-    await _secrets.deleteRobot(accountId);
+    await _secrets.apply((c) {
+      for (final p in account.projects) {
+        c.deleteProject(p.id);
+      }
+      c.deleteRobot(accountId);
+    });
     await _write(all..removeWhere((a) => a.id == accountId));
   }
 

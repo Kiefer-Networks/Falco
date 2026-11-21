@@ -91,6 +91,39 @@ void main() {
     expect(tester.element(find.byType(ProjectSetupPage)), same(page));
   });
 
+  testWidgets('SET-011 while locked back stays on the cover and snackbars '
+      'stay below it (K10, K11)', (tester) async {
+    seedSecrets(const [Account(id: 'a1', name: 'Acme')]);
+    await tester.pumpWidget(await app([true, false]));
+    await tester.pumpAndSettle();
+    final page = tester.element(find.byType(ProjectSetupPage));
+    final lock = ProviderScope.containerOf(page).read(appLockProvider.notifier);
+    var now = DateTime(2026);
+    lock.now = () => now;
+    [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+    ].forEach(tester.binding.handleAppLifecycleStateChanged);
+    now = now.add(const Duration(hours: 1));
+    [
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ].forEach(tester.binding.handleAppLifecycleStateChanged);
+    await tester.pumpAndSettle();
+    expect(find.text('Falco is locked.'), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(tester.element(find.byType(ProjectSetupPage)), same(page));
+
+    FalcoScaffold.showSnack(page, 'Saved');
+    await tester.pumpAndSettle();
+    expect(find.text('Saved'), findsOneWidget, reason: 'not on the cover');
+    expect(find.text('Saved').hitTestable(), findsNothing);
+  });
+
   testWidgets('L6 names the accounts whose access data the system deleted', (
     tester,
   ) async {

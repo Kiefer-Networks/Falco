@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:async';
+
+import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/scope/scope_repository.dart';
 import 'package:falco/core/secure/app_lock.dart';
@@ -139,11 +142,13 @@ void main() {
   group('SET-015 hardware bound secrets', () {
     late _Bound bound;
     late SecretStore secrets;
+    late bool deviceLock;
 
     setUp(() {
       FlutterSecureStorage.setMockInitialValues({});
       bound = _Bound();
-      secrets = SecretStore(null, bound);
+      deviceLock = true;
+      secrets = SecretStore(null, bound, () async => deviceLock);
     });
 
     test('one system check per unlock, again after close', () async {
@@ -152,10 +157,12 @@ void main() {
       expect(await secrets.bound, isTrue);
       secrets.close();
       bound.reads = 0;
+      await secrets.open();
       expect(await secrets.cloudToken('p1'), 't1');
       expect(await secrets.cloudToken('p2'), 't2');
       expect(bound.reads, 1);
       secrets.close();
+      await secrets.open();
       expect(await secrets.cloudToken('p1'), 't1');
       expect(bound.reads, 2);
       // Nothing secret outside the vault, only the names of its entries.
@@ -186,6 +193,7 @@ void main() {
         secrets.robot('a1'),
       ]);
       secrets.close();
+      await secrets.open();
       expect(await secrets.cloudToken('p1'), 't1');
       expect(await secrets.cloudToken('p2'), 't2');
       expect((await secrets.robot('a1'))?.user, 'u');
@@ -210,21 +218,111 @@ void main() {
       expect(secrets.lost.value, isEmpty, reason: 'reported once');
     });
 
-    test('a cancelled prompt on Android keeps the vault bound', () async {
+    test('a cancelled prompt on Android keeps the vault bound and fails as '
+        'Locked', () async {
       bound.fail = true;
       await expectLater(
         secrets.setCloudToken('p1', 't1'),
-        throwsA(isA<PlatformException>()),
+        throwsA(isA<Locked>()),
       );
       expect(await const FlutterSecureStorage().readAll(), isEmpty);
+    });
+
+    test('a cancelled read fails as Locked (K1)', () async {
+      await secrets.setCloudToken('p1', 't1');
+      bound.readError = PlatformException(code: 'cancel');
+      await expectLater(secrets.verify(), throwsA(isA<Locked>()));
+      bound.readError = null;
+      expect(await secrets.cloudToken('p1'), 't1');
+    });
+
+    test('deleting an account writes the vault once, a cancelled write '
+        'changes nothing (K1)', () async {
+      final repo = ScopeRepository(secrets);
+      await repo.save(
+        const Account(
+          id: 'a1',
+          name: 'Work',
+          hasRobot: true,
+          projects: [
+            Project(id: 'p1', name: 'Prod'),
+            Project(id: 'p2', name: 'Staging'),
+          ],
+        ),
+      );
+      await secrets.apply(
+        (c) => c
+          ..cloudToken('p1', 't1')
+          ..cloudToken('p2', 't2')
+          ..robot('a1', const RobotCredentials(user: 'u', password: 'p')),
+      );
+      expect(bound.writes, 1);
+      bound.fail = true;
+      await expectLater(repo.deleteAccount('a1'), throwsA(isA<Locked>()));
+      expect(await repo.accounts(), hasLength(1));
+      expect(await secrets.cloudToken('p2'), 't2');
+      bound.fail = false;
+      await repo.deleteAccount('a1');
+      expect(bound.writes, 2);
+      expect(await repo.accounts(), isEmpty);
+      expect(await secrets.cloudToken('p1'), isNull);
+      expect(await secrets.robot('a1'), isNull);
+    });
+
+    test('an iOS write failure with a screen lock is a cancel, not a move '
+        'out of the vault (W1)', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      await secrets.setCloudToken('p1', 't1');
+      bound.fail = true;
+      await expectLater(
+        secrets.setCloudToken('p1', 't2'),
+        throwsA(isA<Locked>()),
+      );
+      expect(await secrets.bound, isTrue);
+      expect(await secrets.cloudToken('p1'), 't1');
+    });
+
+    test('a close during a running read discards it (W2)', () async {
+      await secrets.setCloudToken('p1', 't1');
+      secrets.close();
+      bound.gate = Completer();
+      final opening = secrets.open();
+      await pumpEventQueue();
+      secrets.close();
+      bound.gate!.complete();
+      await opening;
+      bound.gate = null;
+      final reads = bound.reads;
+      await expectLater(secrets.cloudToken('p1'), throwsA(isA<Locked>()));
+      expect(bound.reads, reads, reason: 'closed: no prompt from background');
+    });
+
+    test('an invalidated key resets the vault and names what is lost '
+        '(K8)', () async {
+      await secrets.setCloudToken('p1', 't1');
+      bound.readError = PlatformException(
+        code: 'Exception encountered',
+        details: 'KeyPermanentlyInvalidatedException: Key invalidated',
+      );
+      expect(await secrets.verify(), isTrue);
+      bound.readError = null;
+      // Not bound any more: the app lock asks the device check instead.
+      expect(await secrets.bound, isFalse);
+      expect(secrets.lost.value, {'cloud.p1'});
+      expect(await secrets.cloudToken('p1'), isNull);
     });
 
     test('a device without screen lock keeps a working vault', () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      await secrets.setCloudToken('p0', 't0');
+      deviceLock = false;
       bound.fail = true;
       await secrets.setCloudToken('p1', 't1');
       expect(await secrets.bound, isFalse);
+      // The stale bound vault is gone (W1).
+      expect(bound.data, isEmpty);
       secrets.close();
       expect(await secrets.cloudToken('p1'), 't1');
       bound.fail = false;
@@ -246,10 +344,12 @@ void main() {
         overrides: [
           preferencesProvider.overrideWithValue(await testPrefs()),
           secretStoreProvider.overrideWithValue(secrets),
-          authenticatorProvider.overrideWithValue((_) async => true),
+          authenticatorProvider.overrideWithValue((_) => secrets.verify()),
         ],
       );
       addTearDown(c.dispose);
+      await ScopeRepository(secrets)
+          .save(const Account(id: 'a1', name: 'Acme'));
       await secrets.setCloudToken('p1', 't1');
       final lock = c.read(appLockProvider.notifier);
       var now = DateTime(2026);
@@ -259,7 +359,11 @@ void main() {
       now = now.add(const Duration(minutes: 5));
       expect(lock.resumed(), isTrue);
       final before = bound.reads;
-      await secrets.cloudToken('p1');
+      // A background request while locked asks nothing (K3).
+      await expectLater(secrets.cloudToken('p1'), throwsA(isA<Locked>()));
+      expect(bound.reads, before);
+      await lock.unlock('why');
+      expect(await secrets.cloudToken('p1'), 't1');
       expect(bound.reads, before + 1);
     });
   });
@@ -363,6 +467,37 @@ void main() {
       expect(c.read(appLockProvider), AppLockState.locked);
     });
 
+    test('SET-010 leaving during a check that fails still locks after the '
+        'auto lock time (K2)', () async {
+      late AppLock lock;
+      var now = DateTime(2026);
+      var first = true;
+      final c = ProviderContainer(
+        overrides: [
+          preferencesProvider.overrideWithValue(
+            await testPrefs({'lockTimeout': 300}),
+          ),
+          authenticatorProvider.overrideWithValue((_) async {
+            if (first) {
+              first = false;
+              return true;
+            }
+            // The user leaves while the prompt is up and returns later.
+            lock.paused();
+            now = now.add(const Duration(minutes: 10));
+            expect(lock.resumed(), isFalse, reason: 'the check decides');
+            return false;
+          }),
+        ],
+      );
+      addTearDown(c.dispose);
+      lock = c.read(appLockProvider.notifier)..now = (() => now);
+      await lock.unlock('why');
+      expect(c.read(appLockProvider), AppLockState.unlocked);
+      expect(await lock.check('turn off'), isFalse);
+      expect(c.read(appLockProvider), AppLockState.locked);
+    });
+
     test('concurrent unlocks share one prompt', () async {
       final answers = <bool?>[true];
       final c = await container(answers);
@@ -432,8 +567,36 @@ void main() {
 class _Bound extends FlutterSecureStorage {
   final data = <String, String>{};
   int reads = 0;
+  int writes = 0;
   bool fail = false;
   AndroidOptions? android;
+
+  /// Thrown by the next reads, like a cancelled or invalidated key.
+  PlatformException? readError;
+
+  /// Holds reads until completed.
+  Completer<void>? gate;
+
+  @override
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async => data.remove(key);
+
+  @override
+  Future<void> deleteAll({
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async => data.clear();
 
   @override
   Future<String?> read({
@@ -447,6 +610,8 @@ class _Bound extends FlutterSecureStorage {
   }) async {
     reads++;
     android = aOptions;
+    await gate?.future;
+    if (readError case final e?) throw e;
     return data[key];
   }
 
@@ -462,6 +627,7 @@ class _Bound extends FlutterSecureStorage {
     WindowsOptions? wOptions,
   }) async {
     if (fail) throw PlatformException(code: 'no_passcode');
+    writes++;
     data[key] = value!;
   }
 

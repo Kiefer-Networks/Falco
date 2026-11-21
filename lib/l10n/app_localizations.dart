@@ -764,6 +764,12 @@ abstract class AppLocalizations {
   /// **'The server reported an error. Try again later.'**
   String get errorServer;
 
+  /// No description provided for @errorLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Access data stays locked: the system check was cancelled. Nothing was changed.'**
+  String get errorLocked;
+
   /// No description provided for @statusInProgress.
   ///
   /// In en, this message translates to:

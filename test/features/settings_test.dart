@@ -6,6 +6,7 @@ import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/main.dart';
 import 'package:falco/ui/ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -105,10 +106,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(calls.last, isTrue);
 
-    // Covered, not rebuilt: the page keeps its state (L1).
+    // Android: FLAG_SECURE hides the app switcher, a system dialog
+    // (inactive) leaves the page visible (K9).
     final page = tester.element(find.text('Settings'));
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
     await tester.pump();
+    expect(find.text('Settings').hitTestable(), findsOneWidget);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    // iOS: covered already when inactive, not rebuilt: the page keeps its
+    // state (L1).
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+    debugDefaultTargetPlatformOverride = null;
     expect(find.text('Settings').hitTestable(), findsNothing);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();

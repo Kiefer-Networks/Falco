@@ -125,6 +125,7 @@
   "errorInvalid": "The input was rejected. Check the marked fields.",
   "errorPinning": "The server certificate is not trusted. The connection was stopped to protect your access data.",
   "errorServer": "The server reported an error. Try again later.",
+  "errorLocked": "Access data stays locked: the system check was cancelled. Nothing was changed.",
   "statusInProgress": "in progress",
   "statusDone": "done",
   "statusFailed": "failed",
