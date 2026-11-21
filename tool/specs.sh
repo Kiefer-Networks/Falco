@@ -18,9 +18,14 @@ if [ "${1:-}" != "--offline" ]; then
 fi
 
 generate() { # spec package
-  rm -rf "packages/$2"
+  # Generate next to the old package first: `dart run` resolves the app's
+  # dependencies, which include the existing path package.
+  tmp=$(mktemp -d)
   (cd spec && dart run tonik --spec "$1.spec.json" \
-    --package-name "$2" --output-dir ../packages)
+    --package-name "$2" --output-dir "$tmp")
+  rm -rf "packages/$2"
+  mv "$tmp/$2" "packages/$2"
+  rm -rf "$tmp"
 }
 generate cloud hetzner_cloud_api
 generate hetzner hetzner_storage_box_api
