@@ -3010,6 +3010,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get firewallRules => 'Regeln';
 
   @override
+  String get firewallTemplateApplyConsequence =>
+      'Alle Regeln der Server Firewall werden durch die Regeln der Vorlage ersetzt.';
+
+  @override
+  String firewallTemplateApplyTitle(String name) {
+    return 'Vorlage $name anwenden?';
+  }
+
+  @override
   String get firewallUnsaved => 'noch nicht übernommen';
 
   @override

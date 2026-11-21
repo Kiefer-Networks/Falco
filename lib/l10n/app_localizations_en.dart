@@ -2995,6 +2995,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get firewallRules => 'Rules';
 
   @override
+  String get firewallTemplateApplyConsequence =>
+      'All rules of the server firewall are replaced by the rules of the template.';
+
+  @override
+  String firewallTemplateApplyTitle(String name) {
+    return 'Apply template $name?';
+  }
+
+  @override
   String get firewallUnsaved => 'not applied yet';
 
   @override

@@ -820,6 +820,8 @@
   "firewallFilterIpv6": "IPv6 filtern",
   "firewallHetznerServices": "Hetzner Dienste erlauben",
   "firewallRules": "Regeln",
+  "firewallTemplateApplyConsequence": "Alle Regeln der Server Firewall werden durch die Regeln der Vorlage ersetzt.",
+  "firewallTemplateApplyTitle": "Vorlage {name} anwenden?",
   "firewallUnsaved": "noch nicht übernommen",
   "firewallUseTemplate": "Vorlage anwenden",
   "installConsequence": "Beim nächsten Reset startet die Installation und löscht alle Daten auf den Platten.",

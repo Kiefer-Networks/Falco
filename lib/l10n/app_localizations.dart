@@ -5012,6 +5012,18 @@ abstract class AppLocalizations {
   /// **'Rules'**
   String get firewallRules;
 
+  /// No description provided for @firewallTemplateApplyConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'All rules of the server firewall are replaced by the rules of the template.'**
+  String get firewallTemplateApplyConsequence;
+
+  /// No description provided for @firewallTemplateApplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply template {name}?'**
+  String firewallTemplateApplyTitle(String name);
+
   /// No description provided for @firewallUnsaved.
   ///
   /// In en, this message translates to:

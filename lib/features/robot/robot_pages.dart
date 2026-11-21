@@ -790,26 +790,50 @@ class _RobotFirewallPageState extends ConsumerState<RobotFirewallPage> {
     }
 
     Future<void> useTemplate() async {
-      final List<RobotFirewall> templates;
-      try {
-        templates = await ref.read(robotTemplatesProvider(a).future);
-      } on Object catch (e) {
-        if (context.mounted) {
-          FalcoScaffold.showSnack(
-            context,
-            robotErrorText(toFalcoError(e), l10n),
-          );
+      Future<T?> load<T>(Future<T> future) async {
+        try {
+          return await future;
+        } on Object catch (e) {
+          if (context.mounted) {
+            FalcoScaffold.showSnack(
+              context,
+              robotErrorText(toFalcoError(e), l10n),
+            );
+          }
+          return null;
         }
-        return;
       }
-      if (!context.mounted) return;
+
+      final templates = await load(ref.read(robotTemplatesProvider(a).future));
+      if (templates == null || !context.mounted) return;
       final pick = await ChoiceList.show(
         context,
         title: l10n.firewallUseTemplate,
         selected: '',
         options: {for (final t in templates) '${t.id}': t.name},
       );
-      if (pick != null) await apply(template: int.parse(pick));
+      if (pick == null) return;
+      // The list carries no rules; the confirmation counts them.
+      final t = await load(
+        ref.read(robotTemplateProvider(a, int.parse(pick)).future),
+      );
+      if (t == null || !context.mounted) return;
+      final ok = await ConfirmSheet.show(
+        context,
+        title: l10n.firewallTemplateApplyTitle(t.name),
+        consequence: l10n.firewallTemplateApplyConsequence,
+        confirmLabel: l10n.firewallUseTemplate,
+        resourceName: t.name,
+        level: ConfirmLevel.typeName,
+        facts: [
+          ConfirmFact(
+            l10n.firewallRules,
+            '${t.rules.values.fold(0, (n, r) => n + r.length)}',
+          ),
+        ],
+        destructive: true,
+      );
+      if (ok && context.mounted) await apply(template: t.id);
     }
 
     Future<void> clear() async {

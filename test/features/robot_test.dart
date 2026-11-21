@@ -641,8 +641,15 @@ void main() {
       ]);
       expect(sent, contains(('rules[input][1][dst_port]', '443')));
       expect(sent, contains(('rules[input][1][protocol]', 'tcp')));
+      int applied() =>
+          cloud.calls.where((c) => c == 'POST /firewall/321').length;
+      final before = applied();
       await more(tester, 'Apply template');
       await tap(tester, 'web');
+      expect(find.text('Apply template web?'), findsOneWidget);
+      expect(applied(), before);
+      await typeName(tester, 'web');
+      await confirm(tester, 'Apply template');
       expect(
         sentForm(cloud, 'POST /firewall/321'),
         contains(('template_id', '1')),
