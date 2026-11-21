@@ -68,7 +68,7 @@ final class StorageBoxesProvider
   }
 }
 
-String _$storageBoxesHash() => r'f893dba6a86ed4519e402481d77abdf247c07d6c';
+String _$storageBoxesHash() => r'76858b6a1a6a327152122168337e456d26097d27';
 
 /// All Storage Boxes of [scope] (STB-001).
 

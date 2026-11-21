@@ -14,6 +14,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+export 'package:falco/core/scope/scope_repository.dart' show accountsProvider;
+
 part 'accounts.g.dart';
 
 /// Hetzner Cloud Console page for API tokens (ONB-013).
@@ -24,11 +26,6 @@ const robotSettingsUrl = 'https://robot.hetzner.com/preferences/index';
 
 /// Longest account or project name (ONB-008).
 const maxNameLength = 64;
-
-/// All accounts; invalidated after every change.
-@Riverpod(keepAlive: true)
-Future<List<Account>> accounts(Ref ref) =>
-    ref.watch(scopeRepositoryProvider).accounts();
 
 /// Object Storage location of a project, null without keys.
 @riverpod

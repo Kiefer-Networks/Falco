@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/core/scope/scope.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/feedback.dart';
 import 'package:falco/ui/theme/falco_colors.dart';
@@ -48,7 +49,8 @@ class ResourceSort<T> {
 
 /// The one list pattern: header with title and count, search, filter
 /// chips, sort menu, pull to refresh, skeleton rows on first load,
-/// [EmptyHint], [ErrorCard], and [ErrorBanner] over stale data.
+/// [EmptyHint], [ErrorCard], and [ErrorBanner] over stale data or over
+/// a [PartialList] of "All projects" that misses failed projects.
 ///
 /// State comes from the caller: [items] null means not loaded yet,
 /// [error] a localized failure, [loading] a refresh in flight.
@@ -67,6 +69,7 @@ class ResourceList<T> extends StatefulWidget {
     this.sorts = const [],
     this.menuFilters = const [],
     this.groupOf,
+    this.failedProjects,
     super.key,
   });
 
@@ -106,6 +109,10 @@ class ResourceList<T> extends StatefulWidget {
   /// Section header of an item; a header shows wherever it changes, so
   /// [items] come ordered by group.
   final String Function(T item)? groupOf;
+
+  /// Projects that could not be loaded; defaults to those of [items] when
+  /// it is a [PartialList]. Lists that derive their items pass them.
+  final List<Project>? failedProjects;
 
   @override
   State<ResourceList<T>> createState() => _ResourceListState<T>();
@@ -152,6 +159,9 @@ class _ResourceListState<T> extends State<ResourceList<T>> {
     final items = widget.items;
     final error = widget.error;
     final visible = items == null ? null : _visible(items);
+    final failed =
+        widget.failedProjects ??
+        (items is PartialList<T> ? items.failed : const <Project>[]);
 
     final Widget content;
     if (items == null && error != null) {
@@ -273,6 +283,16 @@ class _ResourceListState<T> extends State<ResourceList<T>> {
               ? const LinearProgressIndicator()
               : null,
         ),
+        if (failed.isNotEmpty && error == null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+            child: ErrorBanner(
+              message: l10n.listProjectsFailed(
+                failed.map((p) => p.name).join(', '),
+              ),
+              onRetry: widget.onRefresh,
+            ),
+          ),
         if (items != null && error != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),

@@ -65,21 +65,6 @@ class ScopeRepository {
     await _write(all);
   }
 
-  /// Projects a [scope] covers; empty for Robot or unknown scopes.
-  Future<List<Project>> projectsOf(Scope scope) async {
-    final account = (await accounts())
-        .where((a) => a.id == scope.accountId)
-        .firstOrNull;
-    if (account == null) return const [];
-    return switch (scope) {
-      ProjectScope(:final projectId) => [
-        ...account.projects.where((p) => p.id == projectId),
-      ],
-      AllProjectsScope() => account.projects,
-      RobotScope() => const [],
-    };
-  }
-
   Future<void> _write(List<Account> all) =>
       _secrets.write(_key, jsonEncode([for (final a in all) a.toJson()]));
 }
@@ -97,3 +82,9 @@ String newId() {
 @Riverpod(keepAlive: true)
 ScopeRepository scopeRepository(Ref ref) =>
     ScopeRepository(ref.watch(secretStoreProvider));
+
+/// All accounts; invalidated after every change. Lists of a scope watch
+/// it, so adding or deleting a project reaches them.
+@Riverpod(keepAlive: true)
+Future<List<Account>> accounts(Ref ref) =>
+    ref.watch(scopeRepositoryProvider).accounts();

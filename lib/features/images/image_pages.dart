@@ -40,6 +40,10 @@ class ImageList extends ConsumerWidget {
     return ResourceList<CloudImage>(
       title: l10n.resourceImages,
       items: async.value?.where((i) => i.own).toList(),
+      failedProjects: switch (async.value) {
+        final PartialList<CloudImage> l => l.failed,
+        _ => null,
+      },
       loading: async.isLoading,
       error: async.hasError
           ? errorText(toFalcoError(async.error!), l10n)

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/core/scope/scope.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -211,6 +212,23 @@ void main() {
       );
       expect(find.byType(ErrorBanner), findsOneWidget);
       expect(find.byType(ErrorCard), findsNothing);
+      expect(find.byType(ListTile), findsNWidgets(3));
+    });
+
+    testWidgets('names the projects a partial list misses', (tester) async {
+      await tester.pumpWidget(
+        testApp(
+          list(
+            items: PartialList(items.toList(), const [
+              Project(id: 'p2', name: 'staging'),
+            ]),
+          ),
+        ),
+      );
+      expect(
+        find.text('Could not load: staging. Showing the other projects.'),
+        findsOneWidget,
+      );
       expect(find.byType(ListTile), findsNWidgets(3));
     });
 

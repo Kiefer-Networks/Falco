@@ -117,7 +117,7 @@ final class BucketsProvider
   }
 }
 
-String _$bucketsHash() => r'508f3d24f30be0e92250db333f8e02052c2d5a53';
+String _$bucketsHash() => r'1c6ca3a1254368710cb1492530796416911adf1f';
 
 /// Buckets of every project of [scope] with S3 keys, at all locations
 /// (OBJ-001, OBJ-020). Null when no project has keys.

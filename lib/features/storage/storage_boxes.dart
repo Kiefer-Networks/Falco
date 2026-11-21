@@ -11,7 +11,6 @@ import 'package:falco/api/cloud/cloud.dart';
 import 'package:falco/core/actions/action_tracker.dart';
 import 'package:falco/core/http/pagination.dart';
 import 'package:falco/core/scope/scope.dart';
-import 'package:falco/core/scope/scope_repository.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hetzner_storage_box_api/hetzner_storage_box_api.dart' as box;
@@ -221,20 +220,15 @@ BoxType _type(Json t) => (
 
 /// All Storage Boxes of [scope] (STB-001).
 @riverpod
-Future<List<StorageBox>> storageBoxes(Ref ref, Scope scope) async {
-  final projects = await ref.watch(scopeRepositoryProvider).projectsOf(scope);
-  final lists = await Future.wait([
-    for (final p in projects)
-      fetchAllJson(
-        (page) =>
-            box.StorageBoxesApi(ref.watch(storageBoxApiProvider(p.id)))
-                .listStorageBoxes(page: page, perPage: maxPerPage),
+Future<List<StorageBox>> storageBoxes(Ref ref, Scope scope) =>
+    forProjects(ref, scope, (p) {
+      final api = box.StorageBoxesApi(ref.watch(storageBoxApiProvider(p.id)));
+      return fetchAllJson(
+        (page) => api.listStorageBoxes(page: page, perPage: maxPerPage),
         'storage_boxes',
         (j) => StorageBox.fromJson(j, p.id),
-      ),
-  ]);
-  return [for (final l in lists) ...l];
-}
+      );
+    });
 
 /// One Storage Box (STB-005).
 @riverpod

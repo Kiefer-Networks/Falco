@@ -3,6 +3,8 @@
 /// `Scope + type + id`; there is no implicit active project (BUG-007).
 library;
 
+import 'dart:collection';
+
 import 'package:flutter/foundation.dart';
 
 /// A Cloud project of an account. Its API token lives in the SecretStore.
@@ -159,4 +161,48 @@ final class RobotScope extends Scope {
 
   @override
   int get hashCode => Object.hash(RobotScope, accountId);
+}
+
+/// Projects [scope] covers in [accounts]; empty for Robot or unknown
+/// scopes.
+List<Project> projectsIn(List<Account> accounts, Scope scope) {
+  final account = accounts.where((a) => a.id == scope.accountId).firstOrNull;
+  if (account == null) return const [];
+  return switch (scope) {
+    ProjectScope(:final projectId) => [
+      ...account.projects.where((p) => p.id == projectId),
+    ],
+    AllProjectsScope() => account.projects,
+    RobotScope() => const [],
+  };
+}
+
+/// A list of "All projects" without the projects in [failed]: they could
+/// not be loaded, the others could. Lists name them in a banner.
+class PartialList<T> extends ListBase<T> {
+  /// Wraps the loaded items.
+  new(this._items, this.failed);
+
+  final List<T> _items;
+
+  /// Projects whose part is missing.
+  final List<Project> failed;
+
+  @override
+  int get length => _items.length;
+
+  @override
+  set length(int length) => _items.length = length;
+
+  @override
+  T operator [](int index) => _items[index];
+
+  @override
+  void operator []=(int index, T value) => _items[index] = value;
+
+  @override
+  void add(T element) => _items.add(element);
+
+  @override
+  void addAll(Iterable<T> iterable) => _items.addAll(iterable);
 }

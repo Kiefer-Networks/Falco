@@ -73,6 +73,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktualisieren fehlgeschlagen. Angezeigt werden die zuletzt geladenen Daten.';
 
   @override
+  String listProjectsFailed(String projects) {
+    return 'Nicht geladen: $projects. Angezeigt werden die übrigen Projekte.';
+  }
+
+  @override
   String get errorTitle => 'Etwas ist schiefgelaufen';
 
   @override

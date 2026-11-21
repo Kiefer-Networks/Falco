@@ -549,15 +549,15 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | QRS-017 | Zertifikat Pinning | api.hetzner.cloud, api.hetzner.com, robot-ws.your-server.de, fsn1/hel1/nbg1.your-objectstorage.com | `D/api/Pins.kt:52` |  | 2 | Integration |
 | QRS-018 | TLS Mindestversion | TLS 1.2 und 1.3, restriktive Cipher | `D/api/HttpClientFactory.kt:40` |  | 2 | Unit |
 | QRS-019 | Klartext verboten | http für S3 abgelehnt | `D/api/S3Client.kt:32` |  | 2 | Unit |
-| QRS-020 | Zeitlimits | Connect 15 s, Read/Write 30 s, kein automatischer Retry von POST | `D/api/HttpClientFactory.kt:58` |  | 2 | Unit |
+| QRS-020 | Zeitlimits | Connect 15 s, Read/Write 30 s, kein automatischer Retry von POST; Laden wiederholt nur Netzwerk, 5xx und 429 (nach Retry-After), nie 4xx | `D/api/HttpClientFactory.kt:58` |  | 2 | Unit |
 | QRS-021 | Rechtefehler | 403 Cloud als PermissionDenied klar gemeldet | `D/api/PermissionDeniedException.kt` |  | 2 | Unit |
-| QRS-022 | Aggregat Laden | Listen über alle Projekte parallel, Projekt ID pro Eintrag | `D/repo/CloudRepo.kt:193` |  | 3 | Unit |
+| QRS-022 | Aggregat Laden | Listen über alle Projekte parallel, Projekt ID pro Eintrag; ein fehlschlagendes Projekt lässt die übrigen stehen und wird im Banner genannt; neue oder gelöschte Projekte und S3 Schlüssel erreichen Listen und Suche sofort | `D/repo/CloudRepo.kt:193` |  | 3 | Unit |
 | QRS-023 | Benachrichtigungen | Nur Uploads (Kanal falco_uploads) | `D/s3/UploadService.kt:176` |  | 6 | Integration |
 | QRS-024 | Teilen | System Share Sheet für Freigabelinks | `S/s3/ShareLinkDialog.kt:176` |  | 6 | Widget |
 | QRS-025 | Dateiauswahl | SSH Key aus Datei, Zonendatei Import, Upload Quelle | `S/cloud/CloudSshKeysTab.kt:167` |  | 4 | Integration |
 | QRS-026 | Barrierefreiheit | Screenreader Labels, Kontraste, Schriftgrößen |  |  | 9 | Widget |
 | QRS-027 | Tablet Layout | Liste und Detail nebeneinander, Navigation Rail |  |  | 9 | Golden |
-| QRS-028 | Action Tracker | Laufende Actions bis Ende verfolgen, betroffene Ressource neu laden, Fortschritt am Objekt | `D/repo/DnsRepo.kt:61` | `GET /actions/{id}` | 2 | Unit |
+| QRS-028 | Action Tracker | Laufende Actions bis Ende verfolgen, betroffene Ressource neu laden, Fortschritt am Objekt; Netzwerk, 429 (mit Retry-After) und 5xx beim Abfragen überbrückt, erst nach mehreren Fehlern in Folge oder bei 401, 403, 404 Ende mit Fehler | `D/repo/DnsRepo.kt:61` | `GET /actions/{id}` | 2 | Unit |
 | QRS-029 | Bereichsübersicht | Jeder Bereich der unteren Navigation öffnet eine Übersicht: pro Ressourcentyp eine Kachel mit Anzahl und Status, Server mit ihren ersten Zeilen; keine scrollenden Tabs |  |  | 9 | Golden |
 | QRS-030 | Aktionsleiste im Detail | Alle Aktionen einer Ressource unten: höchstens drei als Knopf mit vollem Text, der Rest im Blatt "Mehr"; genau ein Anlegen pro Screen (FAB), leere Listen ohne Knopf |  |  | 9 | Golden |
 
