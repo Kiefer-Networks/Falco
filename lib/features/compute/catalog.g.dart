@@ -152,7 +152,7 @@ final class ServerTypesProvider
   }
 }
 
-String _$serverTypesHash() => r'a76276fbfff1f584eb233cfe18e66a9eef79e4b7';
+String _$serverTypesHash() => r'177f9d6201ac1d05ee2938d9d0ebde781d240f8d';
 
 /// Server types with prices per location.
 

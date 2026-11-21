@@ -40,6 +40,7 @@ class ServerType {
     required this.diskGb,
     required this.architecture,
     required this.prices,
+    this.storageType = 'local',
     this.deprecated = false,
   });
 
@@ -51,6 +52,9 @@ class ServerType {
 
   /// `x86` or `arm`.
   final String architecture;
+
+  /// `local` or `network`; a server keeps its storage type (CMP-033).
+  final String storageType;
 
   /// Location name to monthly gross price; a location without price
   /// does not offer the type.
@@ -107,6 +111,7 @@ Future<List<ServerType>> serverTypes(Ref ref, ProjectScope scope) {
             memoryGb: t.memory,
             diskGb: t.disk,
             architecture: t.architecture.name,
+            storageType: t.storageType.name,
             // Deprecation is per location now; deprecated everywhere means
             // the type is gone.
             deprecated: t.locations.every((l) => l.deprecation != null),

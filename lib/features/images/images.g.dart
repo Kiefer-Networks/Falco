@@ -151,7 +151,7 @@ final class ImageProvider
   }
 }
 
-String _$imageHash() => r'f47f606df3e063c7f635b3a40d5ef9323863d095';
+String _$imageHash() => r'c2767b79baaac2395c7098d601a935b3c9e110b1';
 
 /// One image (CMP-093).
 

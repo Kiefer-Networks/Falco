@@ -154,7 +154,7 @@ final class ServerProvider
   }
 }
 
-String _$serverHash() => r'a43000d38e0e2b5d0e56d24364836c81695dce86';
+String _$serverHash() => r'34a32821857d1ae616b03b96544b648ccb76a242';
 
 /// One server.
 

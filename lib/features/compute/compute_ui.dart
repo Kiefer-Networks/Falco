@@ -29,11 +29,22 @@ Future<bool> runAction(
   WidgetRef ref,
   ProjectScope scope,
   Future<int> Function(cloud.Server api) start,
+) => runActions(context, ref, scope, (api) async => [await start(api)]);
+
+/// [runAction] for a call that starts several actions (a create and its
+/// next actions); all are tracked.
+Future<bool> runActions(
+  BuildContext context,
+  WidgetRef ref,
+  ProjectScope scope,
+  Future<List<int>> Function(cloud.Server api) start,
 ) async {
   final l10n = AppLocalizations.of(context);
+  // Read before the first await: the page may be gone when it returns.
+  final api = ref.read(cloudApiProvider(scope.projectId));
+  final tracker = ref.read(actionTrackerProvider(scope));
   try {
-    final id = await start(ref.read(cloudApiProvider(scope.projectId)));
-    ref.read(actionTrackerProvider(scope)).track(id);
+    (await start(api)).forEach(tracker.track);
     return true;
   } on FalcoError catch (e) {
     if (context.mounted) FalcoScaffold.showSnack(context, errorText(e, l10n));
@@ -48,8 +59,11 @@ Future<void> startTracked(
   ProjectScope scope,
   Future<int> Function(cloud.Server api) start,
 ) async {
-  final id = await start(ref.read(cloudApiProvider(scope.projectId)));
-  ref.read(actionTrackerProvider(scope)).track(id);
+  // Read before the first await: the page may be gone when it returns.
+  final api = ref.read(cloudApiProvider(scope.projectId));
+  final tracker = ref.read(actionTrackerProvider(scope));
+  final id = await start(api);
+  tracker.track(id);
 }
 
 /// Level 1 confirmation, then [start] as a tracked action (remove,
@@ -125,9 +139,12 @@ Future<bool> runChange(
   String? done,
 }) async {
   final l10n = AppLocalizations.of(context);
+  // Read before the first await: the page may be gone when it returns.
+  final api = ref.read(cloudApiProvider(t.scope.projectId));
+  final container = ProviderScope.containerOf(context, listen: false);
   try {
-    await change(ref.read(cloudApiProvider(t.scope.projectId)));
-    refreshResource(ref.invalidate, t.scope, t.type, t.id);
+    await change(api);
+    refreshResource(container.invalidate, t.scope, t.type, t.id);
     if (context.mounted) {
       FalcoScaffold.showSnack(context, done ?? l10n.savedMessage);
     }
@@ -184,6 +201,9 @@ Future<void> editNameAndLabels(
   String? nameLabel,
 }) {
   final l10n = AppLocalizations.of(context);
+  // Read before the sheet opens: the page may be gone when it saves.
+  final api = ref.read(cloudApiProvider(t.scope.projectId));
+  final container = ProviderScope.containerOf(context, listen: false);
   return FormSheet.show(
     context,
     title: l10n.commonEdit,
@@ -198,12 +218,8 @@ Future<void> editNameAndLabels(
     ],
     valid: (v) => (v['name'] ?? '').trim().isNotEmpty && validLabels(v),
     onSave: (v) async {
-      await save(
-        ref.read(cloudApiProvider(t.scope.projectId)),
-        v['name']!.trim(),
-        parseLabels(v['labels'] ?? '')!,
-      );
-      refreshResource(ref.invalidate, t.scope, t.type, t.id);
+      await save(api, v['name']!.trim(), parseLabels(v['labels'] ?? '')!);
+      refreshResource(container.invalidate, t.scope, t.type, t.id);
     },
   );
 }

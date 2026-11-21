@@ -1,13 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:async';
+
 import 'package:falco/core/actions/action_tracker.dart';
+import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/activity/activity.dart';
 import 'package:falco/features/activity/activity_page.dart';
+import 'package:falco/features/volumes/volumes.dart';
 import 'package:falco/l10n/app_localizations_en.dart';
+import 'package:falco/ui/ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../fake_cloud.dart';
+import '../helpers.dart' show testApp;
 import '../search_steps.dart';
 import '../steps.dart';
 
@@ -43,6 +52,39 @@ List<Map<String, Object?>> _perType({String status = 'success'}) => [
 
 void main() {
   setUpAll(() => initializeDateFormatting('en'));
+
+  test('QRS-028 a server change reloads the volumes too', () {
+    final invalidated = <ProviderOrFamily>[];
+    refreshResource(invalidated.add, _scope, CloudType.server, 1);
+    expect(invalidated, containsAll(<Object>[volumesProvider, volumeProvider]));
+  });
+
+  testWidgets('SUC-011 the preview of a detail says loading and failure', (
+    tester,
+  ) async {
+    final failing = Completer<List<ActionProgress>>();
+    Widget preview() => ProviderScope(
+      overrides: [
+        activityProvider(
+          _scope,
+          type: CloudType.server,
+          id: 1,
+        ).overrideWith((ref) => failing.future),
+      ],
+      child: testApp(
+        SingleChildScrollView(
+          child: activitySection(_en, _scope, CloudType.server, 1).child,
+        ),
+      ),
+    );
+    await tester.pumpWidget(preview());
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.text(_en.activityEmpty), findsNothing);
+    failing.completeError(const Server());
+    await tester.pump();
+    expect(find.byType(ErrorBanner), findsOneWidget);
+    expect(find.text(_en.activityEmpty), findsNothing);
+  });
 
   group('lists', () {
     test('SUC-006 STB-022 project activity: every resource type', () async {

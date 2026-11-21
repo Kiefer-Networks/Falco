@@ -99,9 +99,15 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
     if (_creating) return;
     setState(() => _creating = true);
     final l10n = AppLocalizations.of(context);
+    // Read before the first await: the page may be gone when it returns,
+    // the one time root password must still be shown (root navigator).
+    final api = ref.read(cloudApiProvider(scope.projectId));
+    final tracker = ref.read(actionTrackerProvider(scope));
+    final container = ProviderScope.containerOf(context, listen: false);
+    final navigator = Navigator.of(context, rootNavigator: true);
     try {
       final r = await createServer(
-        ref.read(cloudApiProvider(scope.projectId)),
+        api,
         ServerDraft(
           name: _values['name']!.trim(),
           location: _location,
@@ -122,12 +128,11 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
           startAfterCreate: _start,
         ),
       );
-      ref.read(actionTrackerProvider(scope)).track(r.action);
-      refreshResource(ref.invalidate, scope, CloudType.server, r.id);
-      if (!mounted) return;
-      if (r.rootPassword case final password?) {
+      r.actions.forEach(tracker.track);
+      refreshResource(container.invalidate, scope, CloudType.server, r.id);
+      if (r.rootPassword case final password? when navigator.mounted) {
         await showSecretSheet(
-          context,
+          navigator.context,
           title: l10n.rootPasswordTitle,
           note: l10n.rootPasswordNote,
           secrets: {l10n.fieldRootPassword: password},
@@ -379,7 +384,7 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
                 maxLines: 8,
                 autocorrect: false,
                 style: FalcoText.of(context).mono,
-                onChanged: (v) => _userData = v,
+                onChanged: (v) => setState(() => _userData = v),
                 decoration: InputDecoration(
                   labelText: l10n.fieldUserData,
                   helperText: l10n.userDataHint,

@@ -116,11 +116,12 @@ Future<List<CloudImage>> images(Ref ref, Scope scope) => perProject(
 @riverpod
 Future<CloudImage> image(Ref ref, ProjectScope scope, int imageId) async {
   final api = cloud.ImagesApi(ref.watch(cloudApiProvider(scope.projectId)));
-  final r = await unwrap(api.getImage(id: imageId));
-  final i = r is cloud.GetImageResponse200 ? r.body.image : null;
-  if (i == null) throw const NotFound();
+  // Decoded from the raw body like the list: re-encoding the model throws
+  // on enum values the spec does not know yet.
+  final i = json((await cloudJson(api.getImage(id: imageId)))['image']);
+  if (i.isEmpty) throw const NotFound();
   return CloudImage.fromModel(
-    cloud.ImagesGet200BodyImagesArrayModel.fromJson(i.toJson()),
+    cloud.ImagesGet200BodyImagesArrayModel.fromJson(i),
     scope.projectId,
   );
 }

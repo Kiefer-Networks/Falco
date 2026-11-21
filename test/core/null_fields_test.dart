@@ -42,7 +42,7 @@ void main() {
     final api = cloudServer(
       fakeDio(cloud.adapter, auth: bearerAuth(fakeToken)),
     );
-    await createServer(
+    final r = await createServer(
       api,
       const ServerDraft(
         name: 'a',
@@ -51,6 +51,8 @@ void main() {
         image: 'debian-12',
       ),
     );
+    // The start after create is a next action and tracked as well.
+    expect(r.actions, hasLength(2));
     expect(cloud.body('POST /servers')['public_net'], {
       'enable_ipv4': true,
       'enable_ipv6': true,

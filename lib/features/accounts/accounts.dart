@@ -99,7 +99,7 @@ List<FieldSpec> robotFields(AppLocalizations l10n) => [
 ];
 
 /// Checks a Cloud token against the API (ONB-017).
-Future<void> checkToken(WidgetRef ref, String token) =>
+Future<void> checkToken(ProviderContainer ref, String token) =>
     checkCloudToken(ref.read(cloudDioProvider)(bearerAuth(token.trim())));
 
 /// S3 credentials from form [values], null when no location is picked.
@@ -115,7 +115,7 @@ S3Credentials? s3FromValues(Map<String, String> values) {
 }
 
 /// Checks S3 keys with ListBuckets.
-Future<void> checkS3Keys(WidgetRef ref, S3Credentials c) =>
+Future<void> checkS3Keys(ProviderContainer ref, S3Credentials c) =>
     checkS3(ref.read(s3DioProvider)(c));
 
 /// Robot credentials from form [values].
@@ -126,12 +126,15 @@ RobotCredentials robotFromValues(Map<String, String> values) =>
     );
 
 /// Checks Robot credentials (ONB-039).
-Future<void> checkRobotLogin(WidgetRef ref, RobotCredentials c) =>
+Future<void> checkRobotLogin(ProviderContainer ref, RobotCredentials c) =>
     checkRobot(ref.read(robotDioProvider)(basicAuth(c.user, c.password)));
 
 /// Stores the secrets of a checked project draft and returns the project.
 /// Secrets go first: an account never points at a project without them.
-Future<Project> storeProject(WidgetRef ref, Map<String, String> values) async {
+Future<Project> storeProject(
+  ProviderContainer ref,
+  Map<String, String> values,
+) async {
   final secrets = ref.read(secretStoreProvider);
   final project = Project(id: newId(), name: _v(values, 'name'));
   await secrets.setCloudToken(project.id, _v(values, 'token'));
@@ -189,31 +192,34 @@ class _ProjectSetupPageState extends ConsumerState<ProjectSetupPage> {
       _error = null;
     });
     final l10n = AppLocalizations.of(context);
+    // Read before the first await, so leaving the page cannot stop the
+    // save half way.
+    final container = ProviderScope.containerOf(context, listen: false);
     try {
-      final repo = ref.read(scopeRepositoryProvider);
+      final repo = container.read(scopeRepositoryProvider);
       final account = (await repo.accounts())
           .where((a) => a.id == widget.accountId)
           .firstOrNull;
       if (account == null) throw const NotFound();
       await _labelled(
         l10n.projectStep,
-        () => checkToken(ref, _v(_values, 'token')),
+        () => checkToken(container, _v(_values, 'token')),
         l10n,
       );
       if (s3FromValues(_values) case final s3?) {
-        await _labelled(l10n.s3Step, () => checkS3Keys(ref, s3), l10n);
+        await _labelled(l10n.s3Step, () => checkS3Keys(container, s3), l10n);
       }
-      final project = await storeProject(ref, _values);
+      final project = await storeProject(container, _values);
       await repo.save(
         account.copyWith(projects: [...account.projects, project]),
       );
-      ref.invalidate(accountsProvider);
+      container.invalidate(accountsProvider);
       if (!mounted) return;
       ProjectRoute(accountId: account.id, projectId: project.id).go(context);
     } on _LabelledError catch (e) {
-      setState(() => _error = '$e');
+      if (mounted) setState(() => _error = '$e');
     } on FalcoError catch (e) {
-      setState(() => _error = errorText(e, l10n));
+      if (mounted) setState(() => _error = errorText(e, l10n));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -228,6 +234,8 @@ class _ProjectSetupPageState extends ConsumerState<ProjectSetupPage> {
       createLabel: l10n.tokenCheckSave,
       creating: _saving,
       onCreate: _save,
+      // The only route of an account without projects and Robot.
+      onLeave: () => AccountRoute(accountId: widget.accountId).go(context),
       steps: [
         WizardStep(
           title: l10n.projectStep,
@@ -315,15 +323,22 @@ class _AccountWizardPageState extends ConsumerState<AccountWizardPage> {
       _error = null;
     });
     final l10n = AppLocalizations.of(context);
+    // Read before the first await, so leaving the page cannot stop the
+    // save half way.
+    final container = ProviderScope.containerOf(context, listen: false);
     try {
       final projects = _cloud ? _projects : const <Map<String, String>>[];
       for (final p in projects) {
         final name = _v(p, 'name');
-        await _labelled(name, () => checkToken(ref, _v(p, 'token')), l10n);
+        await _labelled(
+          name,
+          () => checkToken(container, _v(p, 'token')),
+          l10n,
+        );
         if (s3FromValues(p) case final s3?) {
           await _labelled(
             '$name, ${l10n.s3Step}',
-            () => checkS3Keys(ref, s3),
+            () => checkS3Keys(container, s3),
             l10n,
           );
         }
@@ -331,14 +346,16 @@ class _AccountWizardPageState extends ConsumerState<AccountWizardPage> {
       if (_hasRobot) {
         await _labelled(
           l10n.scopeRobot,
-          () => checkRobotLogin(ref, robotFromValues(_robot)),
+          () => checkRobotLogin(container, robotFromValues(_robot)),
           l10n,
         );
       }
       final id = newId();
-      final stored = [for (final p in projects) await storeProject(ref, p)];
+      final stored = [
+        for (final p in projects) await storeProject(container, p),
+      ];
       if (_hasRobot) {
-        await ref
+        await container
             .read(secretStoreProvider)
             .setRobot(id, robotFromValues(_robot));
       }
@@ -349,13 +366,13 @@ class _AccountWizardPageState extends ConsumerState<AccountWizardPage> {
         projects: stored,
         hasRobot: _hasRobot,
       );
-      await ref.read(scopeRepositoryProvider).save(account);
-      ref.invalidate(accountsProvider);
+      await container.read(scopeRepositoryProvider).save(account);
+      container.invalidate(accountsProvider);
       if (mounted) setState(() => _done = account);
     } on _LabelledError catch (e) {
-      setState(() => _error = '$e');
+      if (mounted) setState(() => _error = '$e');
     } on FalcoError catch (e) {
-      setState(() => _error = errorText(e, l10n));
+      if (mounted) setState(() => _error = errorText(e, l10n));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:async';
+
 import 'package:falco/features/compute/compute_ui.dart';
 import 'package:falco/features/placement_groups/placement_groups.dart';
 import 'package:falco/ui/ui.dart';
@@ -245,6 +247,27 @@ void main() {
       await settleAction(tester);
     });
 
+    testWidgets('CMP-030 the password survives leaving the page meanwhile', (
+      tester,
+    ) async {
+      final cloud = await openServer(tester);
+      await more(tester, 'Reset root password');
+      final gate = Completer<void>();
+      cloud.adapter.gate = gate.future;
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Reset root password'),
+      );
+      await tester.pump();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.text('web-1'), findsOneWidget);
+      cloud.adapter.gate = null;
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Root password'), findsWidgets);
+      await settleAction(tester);
+    });
+
     testWidgets('CMP-031 CMP-032 CMP-077 rebuild picks an image, needs the '
         'name, shows the password', (tester) async {
       final cloud = FakeCloud(
@@ -369,13 +392,14 @@ void main() {
       await settleAction(tester);
     });
 
-    testWidgets('CMP-046 delete and rebuild protection apart', (tester) async {
+    testWidgets('CMP-046 delete and rebuild protection as one switch', (
+      tester,
+    ) async {
       final cloud = await openServer(tester);
       await more(tester, 'Protection');
-      await tap(tester, 'Yes');
-      await tap(tester, 'Save');
+      await confirm(tester, 'Protect');
       expect(cloud.body('POST /servers/1/actions/change_protection'), {
-        'delete': false,
+        'delete': true,
         'rebuild': true,
       });
       await settleAction(tester);

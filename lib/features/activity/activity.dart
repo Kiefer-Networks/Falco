@@ -56,14 +56,16 @@ void refreshResource(
     case CloudType.server:
       invalidate(serverProvider(scope, id));
       invalidate(serversProvider);
-      // Placement group members, volume attachments, IP assignees,
-      // network members and firewall targets follow servers.
+      // Placement group members, volume attachments (both sides), IP
+      // assignees, network members and firewall targets follow servers.
       invalidate(placementGroupsProvider);
       invalidate(placementGroupProvider);
       invalidate(publicIpsProvider);
       invalidate(publicIpProvider);
       invalidate(networkMembersProvider);
       invalidate(firewallProvider);
+      invalidate(volumesProvider);
+      invalidate(volumeProvider);
     case CloudType.volume:
       invalidate(volumeProvider(scope, id));
       invalidate(volumesProvider);

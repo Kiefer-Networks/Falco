@@ -17,7 +17,25 @@ import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/error_text.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hetzner_cloud_api/hetzner_cloud_api.dart' as cloud;
 import 'package:material_ui/material_ui.dart';
+
+/// Types server [s] can change to: offered at its location, same
+/// architecture and storage type, a disk at least as large as its own
+/// (disks never shrink), not deprecated unless it is the current one
+/// (CMP-033).
+List<ServerType> changeTypeOptions(List<ServerType> all, CloudServer s) {
+  final current = all.where((t) => t.name == s.type).firstOrNull;
+  return [
+    for (final t in all)
+      if (t.prices.containsKey(s.location) &&
+          t.architecture == s.architecture &&
+          t.diskGb >= s.diskGb &&
+          (current == null || t.storageType == current.storageType) &&
+          (!t.deprecated || t.name == s.type))
+        t,
+  ];
+}
 
 /// The flows of a server detail page: every action asks per the
 /// confirmation rule (level 1, or level 2 for rebuild and delete), runs,
@@ -67,14 +85,26 @@ class ServerOps {
     (api) => changeServer(api, server.id, change),
   );
 
-  /// Shows a one time root password that came back with an action.
-  Future<void> _password(String? password) async {
-    if (password == null || !context.mounted) return;
+  /// Runs [start] as a tracked action and shows the one time root password
+  /// it returns. The password is shown on the root navigator, read before
+  /// the action starts, so it is not lost when the page closes meanwhile.
+  Future<void> _withPassword(
+    Future<PasswordAction> Function(cloud.Server api) start,
+  ) async {
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final texts = l10n;
+    String? password;
+    final started = await runAction(context, ref, scope, (api) async {
+      final r = await start(api);
+      password = r.password;
+      return r.action;
+    });
+    if (!started || password == null || !navigator.mounted) return;
     await showSecretSheet(
-      context,
-      title: l10n.rootPasswordTitle,
-      note: l10n.rootPasswordNote,
-      secrets: {l10n.fieldRootPassword: password},
+      navigator.context,
+      title: texts.rootPasswordTitle,
+      note: texts.rootPasswordNote,
+      secrets: {texts.fieldRootPassword: password!},
     );
   }
 
@@ -156,16 +186,20 @@ class ServerOps {
     ],
     valid: validLabels,
     onSave: (v) async {
-      final id = await changeServer(
-        ref.read(cloudApiProvider(scope.projectId)),
-        server.id,
-        CreateSnapshot(
-          v['description']!.trim(),
-          parseLabels(v['labels'] ?? '')!,
+      final container = ProviderScope.containerOf(context, listen: false);
+      await startTracked(
+        ref,
+        scope,
+        (api) => changeServer(
+          api,
+          server.id,
+          CreateSnapshot(
+            v['description']!.trim(),
+            parseLabels(v['labels'] ?? '')!,
+          ),
         ),
       );
-      ref.read(actionTrackerProvider(scope)).track(id);
-      refreshResource(ref.invalidate, scope, CloudType.image, 0);
+      refreshResource(container.invalidate, scope, CloudType.image, 0);
     },
   );
 
@@ -194,13 +228,7 @@ class ServerOps {
       level: ConfirmLevel.typeName,
     );
     if (!ok || !context.mounted) return;
-    String? password;
-    final started = await runAction(context, ref, scope, (api) async {
-      final r = await rebuildServer(api, server.id, image);
-      password = r.password;
-      return r.action;
-    });
-    if (started) await _password(password);
+    await _withPassword((api) => rebuildServer(api, server.id, image));
   }
 
   /// Rescue mode on (password once) or off (CMP-039).
@@ -224,13 +252,7 @@ class ServerOps {
         !context.mounted) {
       return;
     }
-    String? password;
-    final started = await runAction(context, ref, scope, (api) async {
-      final r = await enableRescue(api, server.id);
-      password = r.password;
-      return r.action;
-    });
-    if (started) await _password(password);
+    await _withPassword((api) => enableRescue(api, server.id));
   }
 
   /// New root password, shown once (CMP-030).
@@ -243,13 +265,7 @@ class ServerOps {
         !context.mounted) {
       return;
     }
-    String? password;
-    final started = await runAction(context, ref, scope, (api) async {
-      final r = await resetPassword(api, server.id);
-      password = r.password;
-      return r.action;
-    });
-    if (started) await _password(password);
+    await _withPassword((api) => resetPassword(api, server.id));
   }
 
   /// Insert an ISO (search, deprecated marked) or eject it
@@ -295,15 +311,12 @@ class ServerOps {
       FalcoScaffold.showSnack(context, l10n.changeTypeNeedsOff);
       return;
     }
-    final types = [
-      for (final t in await ref.read(serverTypesProvider(scope).future))
-        if (t.prices.containsKey(server.location) &&
-            t.architecture == server.architecture &&
-            (!t.deprecated || t.name == server.type))
-          t,
-    ];
-    final currency = (await ref.read(pricingProvider(scope).future)).currency;
+    // Both read before the first await.
+    final pricing = ref.read(pricingProvider(scope).future);
+    final all = await ref.read(serverTypesProvider(scope).future);
+    final currency = (await pricing).currency;
     if (!context.mounted) return;
+    final types = changeTypeOptions(all, server);
     final picked = await ChoiceList.show(
       context,
       title: l10n.changeType,
@@ -338,12 +351,15 @@ class ServerOps {
       ],
       valid: (_) => true,
       onSave: (v) async {
-        final id = await changeServer(
-          ref.read(cloudApiProvider(scope.projectId)),
-          server.id,
-          ChangeType(picked, upgradeDisk: v['upgradeDisk'] == 'true'),
+        await startTracked(
+          ref,
+          scope,
+          (api) => changeServer(
+            api,
+            server.id,
+            ChangeType(picked, upgradeDisk: v['upgradeDisk'] == 'true'),
+          ),
         );
-        ref.read(actionTrackerProvider(scope)).track(id);
       },
     );
   }
@@ -395,34 +411,15 @@ class ServerOps {
     }
   }
 
-  /// Delete and rebuild protection, each on its own (CMP-046).
-  Future<void> protection() => FormSheet.show(
+  /// Delete and rebuild protection as one switch: the API rejects
+  /// different values (CMP-046). Partly protected counts as off.
+  Future<void> protection() => toggleProtection(
     context,
-    title: l10n.fieldProtection,
-    fields: (_) => [
-      for (final (key, label, on) in [
-        ('delete', l10n.fieldDeleteProtection, server.protectDelete),
-        ('rebuild', l10n.fieldRebuildProtection, server.protectRebuild),
-      ])
-        FieldSpec(
-          key,
-          label,
-          initial: '$on',
-          options: {'true': l10n.commonYes, 'false': l10n.commonNo},
-        ),
-    ],
-    valid: (_) => true,
-    onSave: (v) async {
-      final id = await changeServer(
-        ref.read(cloudApiProvider(scope.projectId)),
-        server.id,
-        SetServerProtection(
-          delete: v['delete'] == 'true',
-          rebuild: v['rebuild'] == 'true',
-        ),
-      );
-      ref.read(actionTrackerProvider(scope)).track(id);
-    },
+    ref,
+    target,
+    protected: server.protectDelete && server.protectRebuild,
+    start: (api, protect) =>
+        changeServer(api, server.id, SetServerProtection(protect)),
   );
 
   /// Name and labels (CMP-047, CMP-087).
@@ -450,12 +447,15 @@ class ServerOps {
     ],
     valid: (v) => (v['ip'] ?? '').trim().isNotEmpty,
     onSave: (v) async {
-      final id = await changeServer(
-        ref.read(cloudApiProvider(scope.projectId)),
-        server.id,
-        ChangeDnsPtr(v['ip']!.trim(), v['ptr'] ?? ''),
+      await startTracked(
+        ref,
+        scope,
+        (api) => changeServer(
+          api,
+          server.id,
+          ChangeDnsPtr(v['ip']!.trim(), v['ptr'] ?? ''),
+        ),
       );
-      ref.read(actionTrackerProvider(scope)).track(id);
     },
   );
 
@@ -485,16 +485,19 @@ class ServerOps {
       ],
       valid: (v) => (v['network'] ?? '').isNotEmpty,
       onSave: (v) async {
-        final id = await changeServer(
-          ref.read(cloudApiProvider(scope.projectId)),
-          server.id,
-          AttachToNetwork(
-            int.parse(v['network']!),
-            ip: v['ip'] ?? '',
-            aliasIps: splitIps(v['alias'] ?? ''),
+        await startTracked(
+          ref,
+          scope,
+          (api) => changeServer(
+            api,
+            server.id,
+            AttachToNetwork(
+              int.parse(v['network']!),
+              ip: v['ip'] ?? '',
+              aliasIps: splitIps(v['alias'] ?? ''),
+            ),
           ),
         );
-        ref.read(actionTrackerProvider(scope)).track(id);
       },
     );
   }
@@ -526,12 +529,15 @@ class ServerOps {
     ],
     valid: (_) => true,
     onSave: (v) async {
-      final id = await changeServer(
-        ref.read(cloudApiProvider(scope.projectId)),
-        server.id,
-        ChangeAliasIps(network, splitIps(v['alias'] ?? '')),
+      await startTracked(
+        ref,
+        scope,
+        (api) => changeServer(
+          api,
+          server.id,
+          ChangeAliasIps(network, splitIps(v['alias'] ?? '')),
+        ),
       );
-      ref.read(actionTrackerProvider(scope)).track(id);
     },
   );
 
