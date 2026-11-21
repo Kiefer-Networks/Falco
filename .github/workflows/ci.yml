@@ -30,13 +30,17 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2  # v2.23.0
-        with:
-          channel: stable
-          flutter-version-file: pubspec.yaml
-          # Its built-in cache calls actions/cache by tag, which the repo's
-          # SHA pinning rule rejects.
-          cache: false
+      # Flutter straight from the official repo at the exact version pinned
+      # in pubspec.yaml. No third-party setup action: subosito/flutter-action
+      # references actions/cache by tag, which the SHA pinning rule rejects.
+      - name: Install Flutter
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^  flutter: *//p' pubspec.yaml)
+          git clone --quiet --depth 1 --branch "$version" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/flutter/bin/flutter" --disable-analytics
+          "$RUNNER_TEMP/flutter/bin/flutter" --version
 
       - name: Dependencies
         run: flutter pub get --enforce-lockfile
@@ -67,13 +71,17 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2  # v2.23.0
-        with:
-          channel: stable
-          flutter-version-file: pubspec.yaml
-          # Its built-in cache calls actions/cache by tag, which the repo's
-          # SHA pinning rule rejects.
-          cache: false
+      # Flutter straight from the official repo at the exact version pinned
+      # in pubspec.yaml. No third-party setup action: subosito/flutter-action
+      # references actions/cache by tag, which the SHA pinning rule rejects.
+      - name: Install Flutter
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^  flutter: *//p' pubspec.yaml)
+          git clone --quiet --depth 1 --branch "$version" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/flutter/bin/flutter" --disable-analytics
+          "$RUNNER_TEMP/flutter/bin/flutter" --version
 
       - name: Build debug APK
         run: |
@@ -99,13 +107,17 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2  # v2.23.0
-        with:
-          channel: stable
-          flutter-version-file: pubspec.yaml
-          # Its built-in cache calls actions/cache by tag, which the repo's
-          # SHA pinning rule rejects.
-          cache: false
+      # Flutter straight from the official repo at the exact version pinned
+      # in pubspec.yaml. No third-party setup action: subosito/flutter-action
+      # references actions/cache by tag, which the SHA pinning rule rejects.
+      - name: Install Flutter
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^  flutter: *//p' pubspec.yaml)
+          git clone --quiet --depth 1 --branch "$version" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/flutter/bin/flutter" --disable-analytics
+          "$RUNNER_TEMP/flutter/bin/flutter" --version
 
       - name: Build iOS without code signing
         run: |
