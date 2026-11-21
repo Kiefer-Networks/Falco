@@ -21,7 +21,9 @@
 //
 // Background transfers to Object Storage run in the platform HTTP stacks,
 // so every CA pin of those hosts also goes into the Android network
-// security config and the iOS NSPinnedDomains.
+// security config and the iOS NSPinnedDomains. Their roots also become the
+// Android trust anchors (res/raw), since Android 7.0 lacks the ISRG roots.
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -40,6 +42,7 @@ const statePath = 'tool/pins.json';
 const outputPath = 'lib/core/pins/pins.g.dart';
 const androidPath = 'android/app/src/main/res/xml/network_security_config.xml';
 const iosPath = 'ios/Runner/Info.plist';
+const rawPath = 'android/app/src/main/res/raw';
 
 Future<void> main(List<String> args) async {
   String? option(String name) {
@@ -86,12 +89,20 @@ Future<void> main(List<String> args) async {
   );
   File(outputPath).writeAsStringSync(_generate(next));
   final pins = nativePins(next);
+  final roots = nativeRoots(next);
   for (final (path, write) in [
-    (androidPath, androidPins),
-    (iosPath, iosPins),
+    (androidPath, (String xml) => androidPins(xml, pins, roots.keys)),
+    (iosPath, (String plist) => iosPins(plist, pins)),
   ]) {
     final file = File(path);
-    file.writeAsStringSync(write(file.readAsStringSync(), pins));
+    file.writeAsStringSync(write(file.readAsStringSync()));
+  }
+  final raw = Directory(rawPath)..createSync(recursive: true);
+  for (final f in raw.listSync().whereType<File>()) {
+    if (f.uri.pathSegments.last.startsWith('pin_')) f.deleteSync();
+  }
+  for (final MapEntry(:key, :value) in roots.entries) {
+    File('$rawPath/$key.der').writeAsBytesSync(base64.decode(value));
   }
 }
 
@@ -184,16 +195,45 @@ List<String> nativePins(Map<String, Object?> state) => {
       for (final key in (state[host]! as Map).keys) key as String,
 }.toList()..sort();
 
-/// [xml] with its pin-set holding [pins].
-String androidPins(String xml, List<String> pins) => _replaceOnce(
-  xml,
-  RegExp(r'<pin-set>[\s\S]*?</pin-set>'),
-  [
-    '<pin-set>',
-    for (final p in pins) '            <pin digest="SHA-256">$p</pin>',
-    '        </pin-set>',
-  ].join('\n'),
-);
+/// The roots (base64 DER) of the Object Storage hosts, retired ones
+/// included, by Android raw resource name (`pin_` plus the first pin bytes).
+SplayTreeMap<String, String> nativeRoots(Map<String, Object?> state) =>
+    SplayTreeMap.of({
+      for (final host in hosts)
+        if (host.endsWith('.your-objectstorage.com'))
+          for (final MapEntry(:key, :value)
+              in (state[host]! as Map)
+                  .cast<String, Map<String, Object?>>()
+                  .entries)
+            if (value['der'] case final String der) 'pin_${_hex(key)}': der,
+    });
+
+String _hex(String pin) => [
+  for (final b in base64.decode(pin).take(8))
+    b.toRadixString(16).padLeft(2, '0'),
+].join();
+
+/// [xml] with its pin-set holding [pins] and its trust anchors holding the
+/// raw certificates [roots] plus the system store.
+String androidPins(String xml, List<String> pins, Iterable<String> roots) =>
+    _replaceOnce(
+      _replaceOnce(
+        xml,
+        RegExp(r'<pin-set>[\s\S]*?</pin-set>'),
+        [
+          '<pin-set>',
+          for (final p in pins) '            <pin digest="SHA-256">$p</pin>',
+          '        </pin-set>',
+        ].join('\n'),
+      ),
+      RegExp(r'<trust-anchors>[\s\S]*?</trust-anchors>'),
+      [
+        '<trust-anchors>',
+        for (final r in roots) '            <certificates src="@raw/$r" />',
+        '            <certificates src="system" />',
+        '        </trust-anchors>',
+      ].join('\n'),
+    );
 
 /// [plist] with its NSPinnedCAIdentities holding [pins].
 String iosPins(String plist, List<String> pins) => _replaceOnce(

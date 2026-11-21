@@ -79,4 +79,27 @@ void main() {
       expect(pins, containsAll((state[host]! as Map).keys), reason: host);
     }
   });
+
+  test('the Android config anchors the Object Storage roots', () {
+    final roots = nativeRoots(state);
+    expect(roots, isNotEmpty);
+    for (final MapEntry(:key, :value) in roots.entries) {
+      expect(key, matches(RegExp(r'^pin_[0-9a-f]{16}$')));
+      final der = base64.decode(value);
+      expect(X509Parts.parse(der).selfIssued, isTrue, reason: key);
+      expect(File('$rawPath/$key.der').readAsBytesSync(), der, reason: key);
+    }
+    expect(
+      androidPins(File(androidPath).readAsStringSync(), ['p='], ['pin_a']),
+      allOf(
+        contains('<pin digest="SHA-256">p=</pin>\n        </pin-set>'),
+        contains(
+          '<trust-anchors>\n'
+          '            <certificates src="@raw/pin_a" />\n'
+          '            <certificates src="system" />\n'
+          '        </trust-anchors>',
+        ),
+      ),
+    );
+  });
 }
