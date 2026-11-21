@@ -13,7 +13,9 @@ part of 'app_lock.dart';
 /// the user cancelled and null when the device has no screen lock at all.
 /// With a hardware bound vault, opening it is the check, so the user sees
 /// one prompt (SET-015); it is read again, so an open vault never answers
-/// for the user. Overridden in tests.
+/// for the user. A vault the system invalidated (new fingerprints) is reset
+/// by that read; the device check then decides (SET-013). Overridden in
+/// tests.
 
 @ProviderFor(authenticator)
 final authenticatorProvider = AuthenticatorProvider._();
@@ -23,7 +25,9 @@ final authenticatorProvider = AuthenticatorProvider._();
 /// the user cancelled and null when the device has no screen lock at all.
 /// With a hardware bound vault, opening it is the check, so the user sees
 /// one prompt (SET-015); it is read again, so an open vault never answers
-/// for the user. Overridden in tests.
+/// for the user. A vault the system invalidated (new fingerprints) is reset
+/// by that read; the device check then decides (SET-013). Overridden in
+/// tests.
 
 final class AuthenticatorProvider
     extends
@@ -38,7 +42,9 @@ final class AuthenticatorProvider
   /// the user cancelled and null when the device has no screen lock at all.
   /// With a hardware bound vault, opening it is the check, so the user sees
   /// one prompt (SET-015); it is read again, so an open vault never answers
-  /// for the user. Overridden in tests.
+  /// for the user. A vault the system invalidated (new fingerprints) is reset
+  /// by that read; the device check then decides (SET-013). Overridden in
+  /// tests.
   AuthenticatorProvider._()
     : super(
         from: null,
@@ -74,7 +80,7 @@ final class AuthenticatorProvider
   }
 }
 
-String _$authenticatorHash() => r'eb1c4e0588070d0f940d45c9760886ccabd48a70';
+String _$authenticatorHash() => r'dfe8b4eec0b4621bffaeddce09deb23c2cef50b8';
 
 /// App lock: locked at start and after the auto lock time in background,
 /// both only while the lock is on in the settings (SET-007, SET-010).
@@ -123,7 +129,7 @@ final class AppLockProvider extends $NotifierProvider<AppLock, AppLockState> {
   }
 }
 
-String _$appLockHash() => r'e0cc7fff9713667de17a6ea6cc3b4b0b6342599d';
+String _$appLockHash() => r'd95ba0353ae7b62f033610484f212f31e5ba2da0';
 
 /// App lock: locked at start and after the auto lock time in background,
 /// both only while the lock is on in the settings (SET-007, SET-010).
