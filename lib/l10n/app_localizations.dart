@@ -971,7 +971,7 @@ abstract class AppLocalizations {
   /// No description provided for @actionCommand.
   ///
   /// In en, this message translates to:
-  /// **'{command, select, start_server{Power on server} stop_server{Power off server} poweron_server{Power on server} poweroff_server{Power off server} shutdown_server{Shut down server} reboot_server{Reboot server} reset_server{Reset server} create_server{Create server} delete_server{Delete server} rebuild_server{Rebuild server} change_server_type{Change server type} enable_rescue{Enable rescue mode} disable_rescue{Disable rescue mode} attach_iso{Attach ISO} detach_iso{Detach ISO} create_image{Create image} enable_backup{Enable backups} disable_backup{Disable backups} change_protection{Change protection} change_dns_ptr{Change reverse DNS} reset_password{Reset root password} request_console{Open console} attach_volume{Attach volume} detach_volume{Detach volume} resize_volume{Resize volume} create_volume{Create volume} attach_to_network{Attach to network} detach_from_network{Detach from network} add_to_placement_group{Add to placement group} remove_from_placement_group{Remove from placement group} assign_floating_ip{Assign Floating IP} unassign_floating_ip{Unassign Floating IP} assign_primary_ip{Assign Primary IP} unassign_primary_ip{Unassign Primary IP} apply_firewall{Apply firewall} remove_firewall{Remove firewall} set_firewall_rules{Set firewall rules} create{Create} delete{Delete} change_type{Change type} update_access_settings{Change access} rollback_snapshot{Roll back snapshot} enable_snapshot_plan{Enable snapshot plan} disable_snapshot_plan{Disable snapshot plan} create_snapshot{Create snapshot} delete_snapshot{Delete snapshot} create_subaccount{Add subaccount} delete_subaccount{Delete subaccount} reset_subaccount_password{Reset subaccount password} change_home_directory{Change home directory} other{}}'**
+  /// **'{command, select, start_server{Power on server} stop_server{Power off server} poweron_server{Power on server} poweroff_server{Power off server} shutdown_server{Shut down server} reboot_server{Reboot server} reset_server{Reset server} create_server{Create server} delete_server{Delete server} rebuild_server{Rebuild server} change_server_type{Change server type} enable_rescue{Enable rescue mode} disable_rescue{Disable rescue mode} attach_iso{Attach ISO} detach_iso{Detach ISO} create_image{Create image} enable_backup{Enable backups} disable_backup{Disable backups} change_protection{Change protection} change_dns_ptr{Change reverse DNS} reset_password{Reset root password} request_console{Open console} attach_volume{Attach volume} detach_volume{Detach volume} resize_volume{Resize volume} create_volume{Create volume} attach_to_network{Attach to network} detach_from_network{Detach from network} add_to_placement_group{Add to placement group} remove_from_placement_group{Remove from placement group} assign_floating_ip{Assign Floating IP} unassign_floating_ip{Unassign Floating IP} assign_primary_ip{Assign Primary IP} unassign_primary_ip{Unassign Primary IP} apply_firewall{Apply firewall} remove_firewall{Remove firewall} set_firewall_rules{Set firewall rules} create{Create} delete{Delete} change_type{Change type} update_access_settings{Change access} rollback_snapshot{Roll back snapshot} enable_snapshot_plan{Enable snapshot plan} disable_snapshot_plan{Disable snapshot plan} create_snapshot{Create snapshot} delete_snapshot{Delete snapshot} create_subaccount{Add subaccount} delete_subaccount{Delete subaccount} reset_subaccount_password{Reset subaccount password} change_home_directory{Change home directory} robot_reset{Reset} robot_wol{Wake on LAN} robot_boot_on{Activate boot configuration} robot_boot_off{Deactivate boot configuration} robot_rename{Rename server} robot_cancel{Cancel} robot_withdraw{Withdraw cancellation} robot_rdns{Change reverse DNS} robot_failover{Change failover routing} robot_vswitch{Change vSwitch} robot_key{Change SSH key} robot_address{Change IP settings} robot_firewall{Change firewall} other{}}'**
   String actionCommand(String command);
 
   /// No description provided for @accountManage.
@@ -4597,6 +4597,954 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No versions.'**
   String get versionsEmpty;
+
+  /// No description provided for @addressCancelConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The address is cancelled at the chosen date and then no longer routed to the server.'**
+  String get addressCancelConsequence;
+
+  /// No description provided for @bootActivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get bootActivate;
+
+  /// No description provided for @bootActivated.
+  ///
+  /// In en, this message translates to:
+  /// **'Active at the next reset'**
+  String get bootActivated;
+
+  /// No description provided for @bootDeactivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get bootDeactivate;
+
+  /// No description provided for @bootDist.
+  ///
+  /// In en, this message translates to:
+  /// **'Distribution'**
+  String get bootDist;
+
+  /// No description provided for @bootKeysHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Robot keys for the root login; without keys a password is used.'**
+  String get bootKeysHint;
+
+  /// No description provided for @bootLang.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get bootLang;
+
+  /// No description provided for @bootLastLinux.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Linux installation'**
+  String get bootLastLinux;
+
+  /// No description provided for @bootLastRescue.
+  ///
+  /// In en, this message translates to:
+  /// **'Last rescue activation'**
+  String get bootLastRescue;
+
+  /// No description provided for @bootLinux.
+  ///
+  /// In en, this message translates to:
+  /// **'Linux installation'**
+  String get bootLinux;
+
+  /// No description provided for @bootNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No boot configuration active.'**
+  String get bootNone;
+
+  /// No description provided for @bootOffConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The next reset boots from the disks again.'**
+  String get bootOffConsequence;
+
+  /// No description provided for @bootOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate {config} for {name}?'**
+  String bootOffTitle(String config, String name);
+
+  /// No description provided for @bootOs.
+  ///
+  /// In en, this message translates to:
+  /// **'Operating system'**
+  String get bootOs;
+
+  /// No description provided for @bootPasswordNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Active at the next reset. Copy the password now; Falco does not store it.'**
+  String get bootPasswordNote;
+
+  /// No description provided for @bootRescue.
+  ///
+  /// In en, this message translates to:
+  /// **'Rescue system'**
+  String get bootRescue;
+
+  /// No description provided for @bootVnc.
+  ///
+  /// In en, this message translates to:
+  /// **'VNC installation'**
+  String get bootVnc;
+
+  /// No description provided for @bootWindows.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows installation'**
+  String get bootWindows;
+
+  /// No description provided for @cancelAtDate.
+  ///
+  /// In en, this message translates to:
+  /// **'At a date (from {date})'**
+  String cancelAtDate(String date);
+
+  /// No description provided for @cancelConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The server is cancelled at the chosen date. Its data is deleted then.'**
+  String get cancelConsequence;
+
+  /// No description provided for @cancelDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation date'**
+  String get cancelDate;
+
+  /// No description provided for @cancelEarliest.
+  ///
+  /// In en, this message translates to:
+  /// **'Earliest date'**
+  String get cancelEarliest;
+
+  /// No description provided for @cancelNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Immediately'**
+  String get cancelNow;
+
+  /// No description provided for @cancelReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (optional)'**
+  String get cancelReason;
+
+  /// No description provided for @cancelReserve.
+  ///
+  /// In en, this message translates to:
+  /// **'Reserve location'**
+  String get cancelReserve;
+
+  /// No description provided for @cancelReserveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps the rack location for a new server.'**
+  String get cancelReserveHint;
+
+  /// No description provided for @cancelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel {name}?'**
+  String cancelTitle(String name);
+
+  /// No description provided for @cancelWithdraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw cancellation'**
+  String get cancelWithdraw;
+
+  /// No description provided for @cancelWithdrawConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The cancellation is withdrawn; the contract continues.'**
+  String get cancelWithdrawConsequence;
+
+  /// No description provided for @cancelWithdrawTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw the cancellation of {name}?'**
+  String cancelWithdrawTitle(String name);
+
+  /// No description provided for @cancellation.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation'**
+  String get cancellation;
+
+  /// No description provided for @cancelledOn.
+  ///
+  /// In en, this message translates to:
+  /// **'cancelled for {date}'**
+  String cancelledOn(String date);
+
+  /// No description provided for @failoverActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active on'**
+  String get failoverActive;
+
+  /// No description provided for @failoverActiveOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Active on {server}'**
+  String failoverActiveOn(String server);
+
+  /// No description provided for @failoverEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No failover IPs.'**
+  String get failoverEmpty;
+
+  /// No description provided for @failoverNoTargets.
+  ///
+  /// In en, this message translates to:
+  /// **'No other server to route to.'**
+  String get failoverNoTargets;
+
+  /// No description provided for @failoverOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered with'**
+  String get failoverOwner;
+
+  /// No description provided for @failoverRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Route'**
+  String get failoverRoute;
+
+  /// No description provided for @failoverRouteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic to the address goes to the new server within seconds. The address must be configured there.'**
+  String get failoverRouteConsequence;
+
+  /// No description provided for @failoverRouteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Route {ip} to {server}?'**
+  String failoverRouteTitle(String ip, String server);
+
+  /// No description provided for @failoverUnroute.
+  ///
+  /// In en, this message translates to:
+  /// **'Unroute'**
+  String get failoverUnroute;
+
+  /// No description provided for @failoverUnrouteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The address is routed nowhere; services on it become unreachable.'**
+  String get failoverUnrouteConsequence;
+
+  /// No description provided for @failoverUnrouteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unroute {ip}?'**
+  String failoverUnrouteTitle(String ip);
+
+  /// No description provided for @failoverUnrouted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not routed'**
+  String get failoverUnrouted;
+
+  /// No description provided for @fileTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is too large.'**
+  String get fileTooLarge;
+
+  /// No description provided for @filterCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get filterCancelled;
+
+  /// No description provided for @firewallClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear firewall'**
+  String get firewallClear;
+
+  /// No description provided for @firewallClearConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'All rules of the server firewall are removed.'**
+  String get firewallClearConsequence;
+
+  /// No description provided for @firewallClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the firewall?'**
+  String get firewallClearTitle;
+
+  /// No description provided for @firewallDisable.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable'**
+  String get firewallDisable;
+
+  /// No description provided for @firewallEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get firewallEnable;
+
+  /// No description provided for @firewallFilterIpv6.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter IPv6'**
+  String get firewallFilterIpv6;
+
+  /// No description provided for @firewallHetznerServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Hetzner services'**
+  String get firewallHetznerServices;
+
+  /// No description provided for @firewallRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules'**
+  String get firewallRules;
+
+  /// No description provided for @firewallUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'not applied yet'**
+  String get firewallUnsaved;
+
+  /// No description provided for @firewallUseTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply template'**
+  String get firewallUseTemplate;
+
+  /// No description provided for @installConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'At the next reset the installation starts and deletes all data on the disks.'**
+  String get installConsequence;
+
+  /// No description provided for @installTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reinstall {name}?'**
+  String installTitle(String name);
+
+  /// No description provided for @keyBits.
+  ///
+  /// In en, this message translates to:
+  /// **'Bits'**
+  String get keyBits;
+
+  /// No description provided for @keyFromFile.
+  ///
+  /// In en, this message translates to:
+  /// **'From file'**
+  String get keyFromFile;
+
+  /// No description provided for @macOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove MAC'**
+  String get macOff;
+
+  /// No description provided for @macOffConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The address uses the MAC of the server again.'**
+  String get macOffConsequence;
+
+  /// No description provided for @macOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the separate MAC of {ip}?'**
+  String macOffTitle(String ip);
+
+  /// No description provided for @macOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate MAC'**
+  String get macOn;
+
+  /// No description provided for @macOnConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Robot creates a separate MAC address, e.g. for a virtual machine.'**
+  String get macOnConsequence;
+
+  /// No description provided for @macOnTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a separate MAC for {ip}?'**
+  String macOnTitle(String ip);
+
+  /// No description provided for @macUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'not possible'**
+  String get macUnavailable;
+
+  /// No description provided for @notCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Not cancelled'**
+  String get notCancelled;
+
+  /// No description provided for @rdnsCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Add reverse DNS'**
+  String get rdnsCreate;
+
+  /// No description provided for @rdnsDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default reverse DNS'**
+  String get rdnsDefault;
+
+  /// No description provided for @rdnsDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The address answers with the Hetzner default again.'**
+  String get rdnsDeleteConsequence;
+
+  /// No description provided for @rdnsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the reverse DNS of {ip}?'**
+  String rdnsDeleteTitle(String ip);
+
+  /// No description provided for @rdnsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No reverse DNS entries.'**
+  String get rdnsEmpty;
+
+  /// No description provided for @resetHw.
+  ///
+  /// In en, this message translates to:
+  /// **'Hardware reset'**
+  String get resetHw;
+
+  /// No description provided for @resetMan.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual reset by support'**
+  String get resetMan;
+
+  /// No description provided for @resetManConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'A technician resets the server by hand; this can take a while.'**
+  String get resetManConsequence;
+
+  /// No description provided for @resetPower.
+  ///
+  /// In en, this message translates to:
+  /// **'Power button'**
+  String get resetPower;
+
+  /// No description provided for @resetPowerLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Power button, long press'**
+  String get resetPowerLong;
+
+  /// No description provided for @resetSw.
+  ///
+  /// In en, this message translates to:
+  /// **'Software reset (Ctrl+Alt+Del)'**
+  String get resetSw;
+
+  /// No description provided for @robotActivityEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No Robot changes in this session yet.'**
+  String get robotActivityEmpty;
+
+  /// No description provided for @robotBoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Boot configuration'**
+  String get robotBoot;
+
+  /// No description provided for @robotBroadcast.
+  ///
+  /// In en, this message translates to:
+  /// **'Broadcast'**
+  String get robotBroadcast;
+
+  /// No description provided for @robotCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel contract'**
+  String get robotCancel;
+
+  /// No description provided for @robotDatacenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Data center'**
+  String get robotDatacenter;
+
+  /// No description provided for @robotDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Action completed'**
+  String get robotDone;
+
+  /// No description provided for @robotFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Action failed: {reason}'**
+  String robotFailed(String reason);
+
+  /// No description provided for @robotFailover.
+  ///
+  /// In en, this message translates to:
+  /// **'Failover'**
+  String get robotFailover;
+
+  /// No description provided for @robotFirewall.
+  ///
+  /// In en, this message translates to:
+  /// **'Firewall'**
+  String get robotFirewall;
+
+  /// No description provided for @robotIp.
+  ///
+  /// In en, this message translates to:
+  /// **'IP address'**
+  String get robotIp;
+
+  /// No description provided for @robotIps.
+  ///
+  /// In en, this message translates to:
+  /// **'IPs'**
+  String get robotIps;
+
+  /// No description provided for @robotIpsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No single IPs.'**
+  String get robotIpsEmpty;
+
+  /// No description provided for @robotIpv6Net.
+  ///
+  /// In en, this message translates to:
+  /// **'IPv6 net'**
+  String get robotIpv6Net;
+
+  /// No description provided for @robotKeyDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The key is deleted from Robot. Servers keep keys installed earlier.'**
+  String get robotKeyDeleteConsequence;
+
+  /// No description provided for @robotKeysEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No SSH keys in Robot yet.'**
+  String get robotKeysEmpty;
+
+  /// No description provided for @robotLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get robotLocked;
+
+  /// No description provided for @robotMac.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate MAC'**
+  String get robotMac;
+
+  /// No description provided for @robotNetmask.
+  ///
+  /// In en, this message translates to:
+  /// **'Netmask'**
+  String get robotNetmask;
+
+  /// No description provided for @robotNoAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has no Robot access.'**
+  String get robotNoAccess;
+
+  /// No description provided for @robotNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Number'**
+  String get robotNumber;
+
+  /// No description provided for @robotPaidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'paid until {date}'**
+  String robotPaidUntil(String date);
+
+  /// No description provided for @robotPaidUntilLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid until'**
+  String get robotPaidUntilLabel;
+
+  /// No description provided for @robotProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get robotProduct;
+
+  /// No description provided for @robotResetConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The server restarts; unsaved data is lost.'**
+  String get robotResetConsequence;
+
+  /// No description provided for @robotSectionDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable this section for the webservice user in Hetzner Robot.'**
+  String get robotSectionDisabled;
+
+  /// No description provided for @robotServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedicated server'**
+  String get robotServer;
+
+  /// No description provided for @robotServers.
+  ///
+  /// In en, this message translates to:
+  /// **'Servers'**
+  String get robotServers;
+
+  /// No description provided for @robotServersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No dedicated servers.'**
+  String get robotServersEmpty;
+
+  /// No description provided for @robotSubnet.
+  ///
+  /// In en, this message translates to:
+  /// **'Subnet'**
+  String get robotSubnet;
+
+  /// No description provided for @robotSubnets.
+  ///
+  /// In en, this message translates to:
+  /// **'Subnets'**
+  String get robotSubnets;
+
+  /// No description provided for @robotTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Firewall template'**
+  String get robotTemplate;
+
+  /// No description provided for @robotTemplates.
+  ///
+  /// In en, this message translates to:
+  /// **'Firewall templates'**
+  String get robotTemplates;
+
+  /// No description provided for @robotTrafficQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic included'**
+  String get robotTrafficQuota;
+
+  /// No description provided for @robotVSwitch.
+  ///
+  /// In en, this message translates to:
+  /// **'vSwitch'**
+  String get robotVSwitch;
+
+  /// No description provided for @robotVSwitches.
+  ///
+  /// In en, this message translates to:
+  /// **'vSwitches'**
+  String get robotVSwitches;
+
+  /// No description provided for @robotWol.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake on LAN'**
+  String get robotWol;
+
+  /// No description provided for @ruleAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'accept'**
+  String get ruleAccept;
+
+  /// No description provided for @ruleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get ruleAction;
+
+  /// No description provided for @ruleAny.
+  ///
+  /// In en, this message translates to:
+  /// **'any'**
+  String get ruleAny;
+
+  /// No description provided for @ruleDestIp.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination IP'**
+  String get ruleDestIp;
+
+  /// No description provided for @ruleDestPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination port'**
+  String get ruleDestPort;
+
+  /// No description provided for @ruleDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'discard'**
+  String get ruleDiscard;
+
+  /// No description provided for @ruleFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'from'**
+  String get ruleFrom;
+
+  /// No description provided for @ruleInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming'**
+  String get ruleInput;
+
+  /// No description provided for @ruleIpVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'IP version'**
+  String get ruleIpVersion;
+
+  /// No description provided for @ruleOutput.
+  ///
+  /// In en, this message translates to:
+  /// **'Outgoing'**
+  String get ruleOutput;
+
+  /// No description provided for @ruleSourceIp.
+  ///
+  /// In en, this message translates to:
+  /// **'Source IP'**
+  String get ruleSourceIp;
+
+  /// No description provided for @ruleSourcePort.
+  ///
+  /// In en, this message translates to:
+  /// **'Source port'**
+  String get ruleSourcePort;
+
+  /// No description provided for @ruleTcpFlags.
+  ///
+  /// In en, this message translates to:
+  /// **'TCP flags'**
+  String get ruleTcpFlags;
+
+  /// No description provided for @ruleTo.
+  ///
+  /// In en, this message translates to:
+  /// **'to'**
+  String get ruleTo;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'cancelled'**
+  String get statusCancelled;
+
+  /// No description provided for @templateCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create template'**
+  String get templateCreate;
+
+  /// No description provided for @templateDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default template'**
+  String get templateDefault;
+
+  /// No description provided for @templateDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The template is deleted. Server firewalls keep their rules.'**
+  String get templateDeleteConsequence;
+
+  /// No description provided for @templatesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No firewall templates.'**
+  String get templatesEmpty;
+
+  /// No description provided for @trafficDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily limit (MB)'**
+  String get trafficDaily;
+
+  /// No description provided for @trafficDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get trafficDay;
+
+  /// No description provided for @trafficHourly.
+  ///
+  /// In en, this message translates to:
+  /// **'Hourly limit (MB)'**
+  String get trafficHourly;
+
+  /// No description provided for @trafficIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming'**
+  String get trafficIn;
+
+  /// No description provided for @trafficMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic this month'**
+  String get trafficMonth;
+
+  /// No description provided for @trafficMonthType.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get trafficMonthType;
+
+  /// No description provided for @trafficMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly limit (GB)'**
+  String get trafficMonthly;
+
+  /// No description provided for @trafficNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No traffic data for this period.'**
+  String get trafficNone;
+
+  /// No description provided for @trafficOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Outgoing'**
+  String get trafficOut;
+
+  /// No description provided for @trafficSum.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get trafficSum;
+
+  /// No description provided for @trafficTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic'**
+  String get trafficTitle;
+
+  /// No description provided for @trafficWarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic warnings'**
+  String get trafficWarnings;
+
+  /// No description provided for @trafficWarningsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'warnings on'**
+  String get trafficWarningsOn;
+
+  /// No description provided for @trafficYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get trafficYear;
+
+  /// No description provided for @vlanHint.
+  ///
+  /// In en, this message translates to:
+  /// **'VLAN ID from 4000 to 4091'**
+  String get vlanHint;
+
+  /// No description provided for @vswitchAddServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Add server'**
+  String get vswitchAddServer;
+
+  /// No description provided for @vswitchCancelConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The vSwitch is cancelled at the chosen date; its servers lose the connection.'**
+  String get vswitchCancelConsequence;
+
+  /// No description provided for @vswitchCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create vSwitch'**
+  String get vswitchCreate;
+
+  /// No description provided for @vswitchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No vSwitches yet.'**
+  String get vswitchEmpty;
+
+  /// No description provided for @vswitchNoServers.
+  ///
+  /// In en, this message translates to:
+  /// **'No servers in this vSwitch.'**
+  String get vswitchNoServers;
+
+  /// No description provided for @vswitchRemoveConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The server leaves the VLAN; its traffic there stops.'**
+  String get vswitchRemoveConsequence;
+
+  /// No description provided for @vswitchRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {server} from {vswitch}?'**
+  String vswitchRemoveTitle(String server, String vswitch);
+
+  /// No description provided for @wolConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'A Wake on LAN packet is sent to the server.'**
+  String get wolConsequence;
+
+  /// No description provided for @wolTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake {name}?'**
+  String wolTitle(String name);
 }
 
 class _AppLocalizationsDelegate

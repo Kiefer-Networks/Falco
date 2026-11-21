@@ -1,0 +1,9 @@
+{
+  "error": {
+    "status": 403,
+    "code": "RATE_LIMIT_EXCEEDED",
+    "max_request": 200,
+    "interval": 3600,
+    "message": "rate limit exceeded"
+  }
+}

@@ -557,6 +557,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'delete_subaccount': 'Subaccount löschen',
       'reset_subaccount_password': 'Subaccount Passwort zurücksetzen',
       'change_home_directory': 'Home Verzeichnis ändern',
+      'robot_reset': 'Reset',
+      'robot_wol': 'Wake on LAN',
+      'robot_boot_on': 'Boot Konfiguration aktivieren',
+      'robot_boot_off': 'Boot Konfiguration deaktivieren',
+      'robot_rename': 'Server umbenennen',
+      'robot_cancel': 'Kündigen',
+      'robot_withdraw': 'Kündigung zurückziehen',
+      'robot_rdns': 'Reverse DNS ändern',
+      'robot_failover': 'Failover Routing ändern',
+      'robot_vswitch': 'vSwitch ändern',
+      'robot_key': 'SSH Key ändern',
+      'robot_address': 'IP Einstellungen ändern',
+      'robot_firewall': 'Firewall ändern',
       'other': '',
     });
     return '$_temp0';
@@ -2749,4 +2762,532 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get versionsEmpty => 'Keine Versionen.';
+
+  @override
+  String get addressCancelConsequence =>
+      'Die Adresse wird zum gewählten Datum gekündigt und danach nicht mehr zum Server geleitet.';
+
+  @override
+  String get bootActivate => 'Aktivieren';
+
+  @override
+  String get bootActivated => 'Aktiv beim nächsten Reset';
+
+  @override
+  String get bootDeactivate => 'Deaktivieren';
+
+  @override
+  String get bootDist => 'Distribution';
+
+  @override
+  String get bootKeysHint =>
+      'Robot Keys für den Root Login; ohne Keys gilt ein Passwort.';
+
+  @override
+  String get bootLang => 'Sprache';
+
+  @override
+  String get bootLastLinux => 'Letzte Linux Installation';
+
+  @override
+  String get bootLastRescue => 'Letzte Rescue Aktivierung';
+
+  @override
+  String get bootLinux => 'Linux Installation';
+
+  @override
+  String get bootNone => 'Keine Boot Konfiguration aktiv.';
+
+  @override
+  String get bootOffConsequence =>
+      'Der nächste Reset startet wieder von den Platten.';
+
+  @override
+  String bootOffTitle(String config, String name) {
+    return '$config für $name deaktivieren?';
+  }
+
+  @override
+  String get bootOs => 'Betriebssystem';
+
+  @override
+  String get bootPasswordNote =>
+      'Aktiv beim nächsten Reset. Kopiere das Passwort jetzt; Falco speichert es nicht.';
+
+  @override
+  String get bootRescue => 'Rescue System';
+
+  @override
+  String get bootVnc => 'VNC Installation';
+
+  @override
+  String get bootWindows => 'Windows Installation';
+
+  @override
+  String cancelAtDate(String date) {
+    return 'Zu einem Datum (ab $date)';
+  }
+
+  @override
+  String get cancelConsequence =>
+      'Der Server wird zum gewählten Datum gekündigt. Seine Daten werden dann gelöscht.';
+
+  @override
+  String get cancelDate => 'Kündigungsdatum';
+
+  @override
+  String get cancelEarliest => 'Frühestes Datum';
+
+  @override
+  String get cancelNow => 'Sofort';
+
+  @override
+  String get cancelReason => 'Grund (optional)';
+
+  @override
+  String get cancelReserve => 'Standort reservieren';
+
+  @override
+  String get cancelReserveHint =>
+      'Hält den Platz im Rack für einen neuen Server frei.';
+
+  @override
+  String cancelTitle(String name) {
+    return '$name kündigen?';
+  }
+
+  @override
+  String get cancelWithdraw => 'Kündigung zurückziehen';
+
+  @override
+  String get cancelWithdrawConsequence =>
+      'Die Kündigung wird zurückgezogen; der Vertrag läuft weiter.';
+
+  @override
+  String cancelWithdrawTitle(String name) {
+    return 'Kündigung von $name zurückziehen?';
+  }
+
+  @override
+  String get cancellation => 'Kündigung';
+
+  @override
+  String cancelledOn(String date) {
+    return 'gekündigt zum $date';
+  }
+
+  @override
+  String get failoverActive => 'Aktiv auf';
+
+  @override
+  String failoverActiveOn(String server) {
+    return 'Aktiv auf $server';
+  }
+
+  @override
+  String get failoverEmpty => 'Keine Failover IPs.';
+
+  @override
+  String get failoverNoTargets => 'Kein anderer Server als Ziel.';
+
+  @override
+  String get failoverOwner => 'Bestellt mit';
+
+  @override
+  String get failoverRoute => 'Umleiten';
+
+  @override
+  String get failoverRouteConsequence =>
+      'Verkehr an die Adresse geht in Sekunden zum neuen Server. Die Adresse muss dort konfiguriert sein.';
+
+  @override
+  String failoverRouteTitle(String ip, String server) {
+    return '$ip zu $server leiten?';
+  }
+
+  @override
+  String get failoverUnroute => 'Routing aufheben';
+
+  @override
+  String get failoverUnrouteConsequence =>
+      'Die Adresse zeigt auf keinen Server mehr; Dienste darauf sind nicht mehr erreichbar.';
+
+  @override
+  String failoverUnrouteTitle(String ip) {
+    return 'Routing von $ip aufheben?';
+  }
+
+  @override
+  String get failoverUnrouted => 'Nicht geroutet';
+
+  @override
+  String get fileTooLarge => 'Die Datei ist zu groß.';
+
+  @override
+  String get filterCancelled => 'Gekündigt';
+
+  @override
+  String get firewallClear => 'Firewall leeren';
+
+  @override
+  String get firewallClearConsequence =>
+      'Alle Regeln der Server Firewall werden entfernt.';
+
+  @override
+  String get firewallClearTitle => 'Firewall leeren?';
+
+  @override
+  String get firewallDisable => 'Ausschalten';
+
+  @override
+  String get firewallEnable => 'Einschalten';
+
+  @override
+  String get firewallFilterIpv6 => 'IPv6 filtern';
+
+  @override
+  String get firewallHetznerServices => 'Hetzner Dienste erlauben';
+
+  @override
+  String get firewallRules => 'Regeln';
+
+  @override
+  String get firewallUnsaved => 'noch nicht übernommen';
+
+  @override
+  String get firewallUseTemplate => 'Vorlage anwenden';
+
+  @override
+  String get installConsequence =>
+      'Beim nächsten Reset startet die Installation und löscht alle Daten auf den Platten.';
+
+  @override
+  String installTitle(String name) {
+    return '$name neu installieren?';
+  }
+
+  @override
+  String get keyBits => 'Bits';
+
+  @override
+  String get keyFromFile => 'Aus Datei';
+
+  @override
+  String get macOff => 'MAC entfernen';
+
+  @override
+  String get macOffConsequence =>
+      'Die Adresse nutzt wieder die MAC des Servers.';
+
+  @override
+  String macOffTitle(String ip) {
+    return 'Eigene MAC von $ip entfernen?';
+  }
+
+  @override
+  String get macOn => 'Eigene MAC';
+
+  @override
+  String get macOnConsequence =>
+      'Robot erzeugt eine eigene MAC Adresse, etwa für eine virtuelle Maschine.';
+
+  @override
+  String macOnTitle(String ip) {
+    return 'Eigene MAC für $ip anlegen?';
+  }
+
+  @override
+  String get macUnavailable => 'nicht möglich';
+
+  @override
+  String get notCancelled => 'Nicht gekündigt';
+
+  @override
+  String get rdnsCreate => 'Reverse DNS anlegen';
+
+  @override
+  String get rdnsDefault => 'Standard Reverse DNS';
+
+  @override
+  String get rdnsDeleteConsequence =>
+      'Die Adresse antwortet wieder mit dem Hetzner Standard.';
+
+  @override
+  String rdnsDeleteTitle(String ip) {
+    return 'Reverse DNS von $ip löschen?';
+  }
+
+  @override
+  String get rdnsEmpty => 'Keine Reverse DNS Einträge.';
+
+  @override
+  String get resetHw => 'Hardware Reset';
+
+  @override
+  String get resetMan => 'Manueller Reset durch den Support';
+
+  @override
+  String get resetManConsequence =>
+      'Ein Techniker setzt den Server von Hand zurück; das kann dauern.';
+
+  @override
+  String get resetPower => 'Power Taste';
+
+  @override
+  String get resetPowerLong => 'Power Taste, lang gedrückt';
+
+  @override
+  String get resetSw => 'Software Reset (Strg+Alt+Entf)';
+
+  @override
+  String get robotActivityEmpty =>
+      'Noch keine Robot Änderungen in dieser Sitzung.';
+
+  @override
+  String get robotBoot => 'Boot Konfiguration';
+
+  @override
+  String get robotBroadcast => 'Broadcast';
+
+  @override
+  String get robotCancel => 'Kündigen';
+
+  @override
+  String get robotDatacenter => 'Rechenzentrum';
+
+  @override
+  String get robotDone => 'Aktion ausgeführt';
+
+  @override
+  String robotFailed(String reason) {
+    return 'Aktion fehlgeschlagen: $reason';
+  }
+
+  @override
+  String get robotFailover => 'Failover';
+
+  @override
+  String get robotFirewall => 'Firewall';
+
+  @override
+  String get robotIp => 'IP Adresse';
+
+  @override
+  String get robotIps => 'IPs';
+
+  @override
+  String get robotIpsEmpty => 'Keine einzelnen IPs.';
+
+  @override
+  String get robotIpv6Net => 'IPv6 Netz';
+
+  @override
+  String get robotKeyDeleteConsequence =>
+      'Der Key wird aus Robot gelöscht. Server behalten früher installierte Keys.';
+
+  @override
+  String get robotKeysEmpty => 'Noch keine SSH Keys in Robot.';
+
+  @override
+  String get robotLocked => 'Gesperrt';
+
+  @override
+  String get robotMac => 'Eigene MAC';
+
+  @override
+  String get robotNetmask => 'Netzmaske';
+
+  @override
+  String get robotNoAccess => 'Dieser Account hat keinen Robot Zugang.';
+
+  @override
+  String get robotNumber => 'Nummer';
+
+  @override
+  String robotPaidUntil(String date) {
+    return 'bezahlt bis $date';
+  }
+
+  @override
+  String get robotPaidUntilLabel => 'Bezahlt bis';
+
+  @override
+  String get robotProduct => 'Produkt';
+
+  @override
+  String get robotResetConsequence =>
+      'Der Server startet neu; nicht gespeicherte Daten gehen verloren.';
+
+  @override
+  String get robotSectionDisabled =>
+      'Schalte diesen Bereich für den Webservice Benutzer in Hetzner Robot frei.';
+
+  @override
+  String get robotServer => 'Dedicated Server';
+
+  @override
+  String get robotServers => 'Server';
+
+  @override
+  String get robotServersEmpty => 'Keine Dedicated Server.';
+
+  @override
+  String get robotSubnet => 'Subnetz';
+
+  @override
+  String get robotSubnets => 'Subnetze';
+
+  @override
+  String get robotTemplate => 'Firewall Vorlage';
+
+  @override
+  String get robotTemplates => 'Firewall Vorlagen';
+
+  @override
+  String get robotTrafficQuota => 'Inklusiv Traffic';
+
+  @override
+  String get robotVSwitch => 'vSwitch';
+
+  @override
+  String get robotVSwitches => 'vSwitches';
+
+  @override
+  String get robotWol => 'Wake on LAN';
+
+  @override
+  String get ruleAccept => 'erlauben';
+
+  @override
+  String get ruleAction => 'Aktion';
+
+  @override
+  String get ruleAny => 'alle';
+
+  @override
+  String get ruleDestIp => 'Ziel IP';
+
+  @override
+  String get ruleDestPort => 'Ziel Port';
+
+  @override
+  String get ruleDiscard => 'verwerfen';
+
+  @override
+  String get ruleFrom => 'von';
+
+  @override
+  String get ruleInput => 'Eingehend';
+
+  @override
+  String get ruleIpVersion => 'IP Version';
+
+  @override
+  String get ruleOutput => 'Ausgehend';
+
+  @override
+  String get ruleSourceIp => 'Quell IP';
+
+  @override
+  String get ruleSourcePort => 'Quell Port';
+
+  @override
+  String get ruleTcpFlags => 'TCP Flags';
+
+  @override
+  String get ruleTo => 'nach';
+
+  @override
+  String get statusCancelled => 'gekündigt';
+
+  @override
+  String get templateCreate => 'Vorlage anlegen';
+
+  @override
+  String get templateDefault => 'Standardvorlage';
+
+  @override
+  String get templateDeleteConsequence =>
+      'Die Vorlage wird gelöscht. Server Firewalls behalten ihre Regeln.';
+
+  @override
+  String get templatesEmpty => 'Keine Firewall Vorlagen.';
+
+  @override
+  String get trafficDaily => 'Tageslimit (MB)';
+
+  @override
+  String get trafficDay => 'Tag';
+
+  @override
+  String get trafficHourly => 'Stundenlimit (MB)';
+
+  @override
+  String get trafficIn => 'Eingehend';
+
+  @override
+  String get trafficMonth => 'Traffic diesen Monat';
+
+  @override
+  String get trafficMonthType => 'Monat';
+
+  @override
+  String get trafficMonthly => 'Monatslimit (GB)';
+
+  @override
+  String get trafficNone => 'Keine Trafficdaten für diesen Zeitraum.';
+
+  @override
+  String get trafficOut => 'Ausgehend';
+
+  @override
+  String get trafficSum => 'Gesamt';
+
+  @override
+  String get trafficTitle => 'Traffic';
+
+  @override
+  String get trafficWarnings => 'Traffic Warnungen';
+
+  @override
+  String get trafficWarningsOn => 'Warnungen an';
+
+  @override
+  String get trafficYear => 'Jahr';
+
+  @override
+  String get vlanHint => 'VLAN ID von 4000 bis 4091';
+
+  @override
+  String get vswitchAddServer => 'Server hinzufügen';
+
+  @override
+  String get vswitchCancelConsequence =>
+      'Der vSwitch wird zum gewählten Datum gekündigt; seine Server verlieren die Verbindung.';
+
+  @override
+  String get vswitchCreate => 'vSwitch anlegen';
+
+  @override
+  String get vswitchEmpty => 'Noch keine vSwitches.';
+
+  @override
+  String get vswitchNoServers => 'Keine Server in diesem vSwitch.';
+
+  @override
+  String get vswitchRemoveConsequence =>
+      'Der Server verlässt das VLAN; sein Verkehr dort endet.';
+
+  @override
+  String vswitchRemoveTitle(String server, String vswitch) {
+    return '$server aus $vswitch entfernen?';
+  }
+
+  @override
+  String get wolConsequence => 'Ein Wake on LAN Paket geht an den Server.';
+
+  @override
+  String wolTitle(String name) {
+    return '$name aufwecken?';
+  }
 }

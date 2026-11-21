@@ -1,0 +1,16 @@
+{
+  "ip": {
+    "ip": "123.123.123.123",
+    "gateway": "123.123.123.97",
+    "mask": 27,
+    "broadcast": "123.123.123.127",
+    "server_ip": "123.123.123.123",
+    "server_number": 321,
+    "locked": false,
+    "separate_mac": null,
+    "traffic_warnings": false,
+    "traffic_hourly": 50,
+    "traffic_daily": 50,
+    "traffic_monthly": 8
+  }
+}

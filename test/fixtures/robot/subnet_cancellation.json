@@ -1,0 +1,10 @@
+{
+  "cancellation": {
+    "ip": "123.123.123.123",
+    "mask": "29",
+    "server_number": 321,
+    "earliest_cancellation_date": "2022-02-11",
+    "cancelled": false,
+    "cancellation-date": null
+  }
+}

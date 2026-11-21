@@ -26,6 +26,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_http.dart';
 import 'fake_network.dart';
+import 'fake_robot.dart';
 import 'fake_storage.dart';
 
 export 'fake_network.dart';
@@ -42,6 +43,14 @@ const fakeRobotPassword = 'fake-robot-password';
 
 /// Made up S3 access key; the secret key is not checked by the fake.
 const fakeAccessKey = 'FAKEACCESSKEY';
+
+/// [acme] with Robot access.
+const acmeRobot = Account(
+  id: 'a1',
+  name: 'Acme',
+  hasRobot: true,
+  projects: [Project(id: 'p1', name: 'prod')],
+);
 
 /// One account "Acme" with project "prod" (ids a1, p1).
 const acme = Account(
@@ -360,6 +369,9 @@ class FakeCloud {
   /// Storage Boxes (api.hetzner.com) and Object Storage (S3).
   final FakeStorage storage;
 
+  /// The Robot webservice.
+  final robot = FakeRobot();
+
   /// The last imported zone file.
   String? importedZonefile;
 
@@ -449,24 +461,8 @@ class FakeCloud {
     final auth0 = '${o.headers['authorization']}';
     if (o.uri.host == 'robot-ws.your-server.de') {
       final login = utf8.encode('$fakeRobotUser:$fakeRobotPassword');
-      final valid = 'Basic ${base64.encode(login)}';
-      return auth0 == valid
-          ? (
-              200,
-              [
-                {
-                  'server': {
-                    'server_number': 321,
-                    'server_name': 'metal-1',
-                    'server_ip': '198.51.100.7',
-                    'product': 'AX41-NVMe',
-                    'dc': 'FSN1-DC14',
-                    'status': 'ready',
-                    'cancelled': false,
-                  },
-                },
-              ],
-            )
+      return auth0 == 'Basic ${base64.encode(login)}'
+          ? robot.handle(o)
           : (
               401,
               {
@@ -1109,6 +1105,12 @@ void seedSecrets(List<Account> accounts, {bool s3 = false}) {
       'accounts': jsonEncode([for (final a in accounts) a.toJson()]),
     for (final a in accounts)
       for (final p in a.projects) 'cloud.${p.id}': fakeToken,
+    for (final a in accounts)
+      if (a.hasRobot)
+        'robot.${a.id}': jsonEncode({
+          'user': fakeRobotUser,
+          'password': fakeRobotPassword,
+        }),
   });
 }
 
@@ -1187,7 +1189,13 @@ Future<ProviderContainer> pumpFalco(
   final container = ProviderContainer(
     overrides: [
       preferencesProvider.overrideWithValue(
-        await testPrefs({'variant': variant.name, ...prefs}),
+        await testPrefs({
+          'variant': variant.name,
+          // Integration tests run on devices in any language; the tests
+          // read English labels.
+          if (tester.binding is LiveTestWidgetsFlutterBinding) 'language': 'en',
+          ...prefs,
+        }),
       ),
       authenticatorProvider.overrideWithValue(
         (_) async => answers == null ? true : answers.removeAt(0),

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Background transfers run in the platform's HTTP stack, not in Dart, so
-     Object Storage gets its pins here too: the ISRG roots of
-     tool/pins.json (ISRG Root X1 until 2035, X2 until 2040). No expiration,
-     so a foreign CA fails the transfer instead of passing silently. -->
+     Object Storage gets its pins here too: the root pins of tool/pins.json,
+     written by tool/pins.dart (pins.yml). No expiration, so a foreign CA
+     fails the transfer instead of passing silently. -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false" />
     <domain-config cleartextTrafficPermitted="false">

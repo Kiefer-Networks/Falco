@@ -1,0 +1,7 @@
+{
+  "error": {
+    "status": 404,
+    "code": "MAC_NOT_FOUND",
+    "message": "There is no separate MAC address set"
+  }
+}

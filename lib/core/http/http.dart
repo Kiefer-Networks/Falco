@@ -186,6 +186,24 @@ Interceptor basicAuth(String user, String password) {
   );
 }
 
+/// Like [basicAuth], but reads user and password per request, so they
+/// never stay in app state. Missing credentials fail as [Unauthorized].
+Interceptor storedBasicAuth(Future<(String, String)?> Function() login) =>
+    InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final value = await login();
+        if (value == null) {
+          return handler.reject(
+            DioException(requestOptions: options, error: const Unauthorized()),
+          );
+        }
+        final (user, password) = value;
+        options.headers[HttpHeaders.authorizationHeader] =
+            'Basic ${base64.encode(utf8.encode('$user:$password'))}';
+        handler.next(options);
+      },
+    );
+
 /// Turns every error response into a [FalcoError] carried by the
 /// [DioException]. Generated clients accept every status code, so the
 /// mapping has to happen here, once, before they decode a body.

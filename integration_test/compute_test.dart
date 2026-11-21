@@ -15,7 +15,7 @@ void main() {
   testWidgets('CMP-013 CMP-020 CMP-048 create a server, reboot it, delete '
       'it', (tester) async {
     final cloud = FakeCloud(sshKeys: [sshKeyJson(id: 61, name: 'laptop')]);
-    await pumpFalco(tester, cloud, prefs: const {'language': 'en'});
+    await pumpFalco(tester, cloud);
 
     // Create: location, type, image, key, defaults, name.
     await tap(tester, 'Create server');

@@ -1,0 +1,75 @@
+{
+  "boot": {
+    "rescue": {
+      "server_ip": "123.123.123.123",
+      "server_ipv6_net": "2a01:4f8:111:4221::",
+      "server_number": 321,
+      "os": [
+        "linux",
+        "vkvm"
+      ],
+      "arch": [
+        64,
+        32
+      ],
+      "active": false,
+      "password": null,
+      "authorized_key": [],
+      "host_key": []
+    },
+    "linux": {
+      "server_ip": "123.123.123.123",
+      "server_ipv6_net": "2a01:4f8:111:4221::",
+      "server_number": 321,
+      "dist": [
+        "CentOS 5.5 minimal",
+        "Debian 7.8 minimal"
+      ],
+      "arch": [
+        64,
+        32
+      ],
+      "lang": [
+        "en"
+      ],
+      "active": false,
+      "password": null,
+      "authorized_key": [],
+      "host_key": []
+    },
+    "vnc": {
+      "server_ip": "123.123.123.123",
+      "server_ipv6_net": "2a01:4f8:111:4221::",
+      "server_number": 321,
+      "dist": [
+        "centOS-5.0",
+        "Fedora-6",
+        "openSUSE-10.2"
+      ],
+      "arch": [
+        64,
+        32
+      ],
+      "lang": [
+        "de_DE",
+        "en_US"
+      ],
+      "active": false,
+      "password": null
+    },
+    "windows": {
+      "server_ip": "123.123.123.123",
+      "server_ipv6_net": "2a01:4f8:111:4221::",
+      "server_number": 321,
+      "dist": null,
+      "os": [
+        "Windows Server 2022 Standard Edition",
+        "Windows Server 2019 Standard Edition",
+        "Windows Server 2016 Standard Edition"
+      ],
+      "lang": null,
+      "active": false,
+      "password": null
+    }
+  }
+}
