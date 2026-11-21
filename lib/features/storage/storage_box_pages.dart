@@ -42,8 +42,11 @@ Future<void> startBoxTracked(
   ProjectScope scope,
   Future<int> Function(box.Server api) start,
 ) async {
-  final id = await start(ref.read(storageBoxApiProvider(scope.projectId)));
-  ref.read(storageBoxTrackerProvider(scope)).track(id);
+  // Read before the first await: the page may be gone when it returns.
+  final api = ref.read(storageBoxApiProvider(scope.projectId));
+  final tracker = ref.read(storageBoxTrackerProvider(scope));
+  final id = await start(api);
+  tracker.track(id);
 }
 
 /// Label of an access setting.
@@ -289,13 +292,22 @@ class StorageBoxDetailPage extends ConsumerWidget {
               valid: (v) =>
                   (v['name'] ?? '').trim().isNotEmpty && validLabels(v),
               onSave: (v) async {
+                final container = ProviderScope.containerOf(
+                  context,
+                  listen: false,
+                );
                 await updateStorageBox(
                   ref.read(storageBoxApiProvider(scope.projectId)),
                   b.id,
                   name: v['name']?.trim(),
                   labels: parseLabels(v['labels'] ?? ''),
                 );
-                refreshResource(ref.invalidate, scope, storageBoxType, b.id);
+                refreshResource(
+                  container.invalidate,
+                  scope,
+                  storageBoxType,
+                  b.id,
+                );
               },
             ),
           ),
@@ -990,6 +1002,7 @@ class _CreateStorageBoxPageState extends ConsumerState<CreateStorageBoxPage> {
   Future<void> _create(ProjectScope scope) async {
     if (_creating) return;
     setState(() => _creating = true);
+    final container = ProviderScope.containerOf(context, listen: false);
     final ok = await runBoxAction(
       context,
       ref,
@@ -1004,8 +1017,8 @@ class _CreateStorageBoxPageState extends ConsumerState<CreateStorageBoxPage> {
         labels: parseLabels(_values['labels'] ?? '') ?? const {},
       ),
     );
+    container.invalidate(storageBoxesProvider);
     if (!mounted) return;
-    ref.invalidate(storageBoxesProvider);
     setState(() => _creating = false);
     if (ok) Navigator.pop(context);
   }

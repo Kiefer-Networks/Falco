@@ -3,7 +3,10 @@ import 'package:falco/core/format/format.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/activity/activity.dart';
 import 'package:falco/features/compute/catalog.dart';
+import 'package:falco/features/images/images.dart';
 import 'package:falco/features/placement_groups/placement_groups.dart';
+import 'package:falco/features/servers/server_actions.dart';
+import 'package:falco/features/servers/servers.dart';
 import 'package:falco/features/ssh_keys/ssh_keys.dart';
 import 'package:falco/features/volumes/volume_pages.dart';
 import 'package:falco/features/volumes/volumes.dart';
@@ -411,6 +414,47 @@ void main() {
       expect(sshKeyProblem('  '), SshKeyProblem.empty);
     });
   });
+
+  test('CMP-017 CMP-057 CMP-093 details read enum values the spec does not '
+      'know yet', () async {
+    final cloud = FakeCloud(volumes: [volumeJson(id: 31, name: 'data')]);
+    cloud.servers.first['status'] = 'hibernating';
+    cloud.volumes.first['status'] = 'resizing';
+    cloud.images.first['status'] = 'importing';
+    final c = await fakeContainer(cloud);
+    final s = cloud.servers.first['id']! as int;
+    final v = cloud.volumes.first['id']! as int;
+    final i = cloud.images.first['id']! as int;
+    expect((await c.read(serverProvider(_scope, s).future)).id, s);
+    expect((await c.read(volumeProvider(_scope, v).future)).id, v);
+    expect((await c.read(imageProvider(_scope, i).future)).id, i);
+  });
+
+  test(
+    'CMP-033 change type offers no smaller disk and no other storage',
+    () async {
+      final c = await fakeContainer(FakeCloud());
+      final server = await c.read(serverProvider(_scope, 1).future);
+      ServerType type(String name, num disk, [String storage = 'local']) =>
+          ServerType(
+            id: name.hashCode,
+            name: name,
+            cores: 2,
+            memoryGb: 4,
+            diskGb: disk,
+            architecture: server.architecture,
+            prices: {server.location: 5},
+            storageType: storage,
+          );
+      final options = changeTypeOptions([
+        type(server.type, server.diskGb),
+        type('small', server.diskGb - 1),
+        type('ceph', server.diskGb * 2, 'network'),
+        type('big', server.diskGb * 2),
+      ], server);
+      expect([for (final t in options) t.name], [server.type, 'big']);
+    },
+  );
 
   group('catalog and activity', () {
     test('CMP-009 CMP-078 CMP-079 CMP-080 CMP-092 CMP-097 CMP-098 options of '

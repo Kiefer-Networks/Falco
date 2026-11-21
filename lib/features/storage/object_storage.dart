@@ -6,11 +6,12 @@ library;
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:falco/api/cloud/cloud.dart';
 import 'package:falco/api/s3/s3.dart';
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/scope/scope.dart';
-import 'package:falco/core/scope/scope_repository.dart';
 import 'package:falco/core/secure/secret_store.dart';
+import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/accounts/checks.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -34,10 +35,6 @@ class S3Access {
       secretKey: k.secretKey,
     );
   }
-
-  /// Whether the project has S3 keys.
-  Future<bool> hasKeys(String projectId) async =>
-      await _secrets.s3(projectId) != null;
 
   /// Runs [f] with a client for [location] of [projectId]; failures
   /// arrive as [FalcoError].
@@ -98,15 +95,16 @@ typedef Bucket = ({
 @riverpod
 Future<List<Bucket>?> buckets(Ref ref, Scope scope) async {
   final s3 = ref.watch(s3AccessProvider);
-  final projects = [
-    for (final p in await ref.watch(scopeRepositoryProvider).projectsOf(scope))
-      if (await s3.hasKeys(p.id)) p.id,
-  ];
-  if (projects.isEmpty) return null;
-  final lists = await Future.wait([
-    for (final p in projects) _projectBuckets(s3, p),
-  ]);
-  return [for (final l in lists) ...l];
+  var keys = false;
+  // The keys are watched, so adding or deleting them reaches the list.
+  final list = await forProjects(ref, scope, (p) async {
+    if (await ref.watch(projectS3Provider(p.id).future) == null) {
+      return const <Bucket>[];
+    }
+    keys = true;
+    return await _projectBuckets(s3, p.id);
+  });
+  return keys ? list : null;
 }
 
 Future<List<Bucket>> _projectBuckets(S3Access s3, String projectId) async {

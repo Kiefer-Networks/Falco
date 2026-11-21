@@ -592,7 +592,10 @@ class FakeCloud {
           {
             'server': s,
             'action': _start('create_server', id, 'server'),
-            'next_actions': <Object?>[],
+            'next_actions': [
+              if (body['start_after_create'] != false)
+                _start('start_server', id, 'server'),
+            ],
             'root_password': (body['ssh_keys'] as List? ?? []).isEmpty
                 ? 'fake-root-password'
                 : null,
@@ -612,7 +615,10 @@ class FakeCloud {
           {
             'volume': v,
             'action': _start('create_volume', id, 'volume'),
-            'next_actions': <Object?>[],
+            'next_actions': [
+              if (body['assignee'] != null)
+                _start('attach_volume', id, 'volume'),
+            ],
           },
         );
       case ('POST', [final coll]) when collections.containsKey(coll):

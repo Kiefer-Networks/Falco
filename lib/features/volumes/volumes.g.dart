@@ -146,7 +146,7 @@ final class VolumeProvider
   }
 }
 
-String _$volumeHash() => r'eece544177f320d0aab6e98f0a79a40535ac1907';
+String _$volumeHash() => r'b36d47d3fe85e2a99f3056e0bccda8a6a48701c6';
 
 /// One volume (CMP-057, CMP-058).
 

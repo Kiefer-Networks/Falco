@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import 'package:falco/api/cloud/cloud.dart';
 import 'package:falco/app/router.dart';
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/format/format.dart';
@@ -260,16 +259,16 @@ class VolumeDetailPage extends ConsumerWidget {
         ),
       ],
       valid: (values) => (values['server'] ?? '').isNotEmpty,
-      onSave: (values) async {
-        final api = ref.read(cloudApiProvider(scope.projectId));
-        final id = await attachVolume(
+      onSave: (values) => startTracked(
+        ref,
+        scope,
+        (api) => attachVolume(
           api,
           v.id,
           int.parse(values['server']!),
           automount: values['automount'] == 'true',
-        );
-        ref.read(actionTrackerProvider(scope)).track(id);
-      },
+        ),
+      ),
     );
   }
 
@@ -308,12 +307,11 @@ class VolumeDetailPage extends ConsumerWidget {
       ],
       valid: (values) => validResize(values['size'], v.sizeGb),
       onSave: (values) async {
-        final id = await resizeVolume(
-          ref.read(cloudApiProvider(scope.projectId)),
-          v.id,
-          int.parse(values['size']!.trim()),
+        await startTracked(
+          ref,
+          scope,
+          (api) => resizeVolume(api, v.id, int.parse(values['size']!.trim())),
         );
-        ref.read(actionTrackerProvider(scope)).track(id);
       },
     );
   }
@@ -350,7 +348,8 @@ class _CreateVolumePageState extends ConsumerState<CreateVolumePage> {
     final server = _target.startsWith('server:')
         ? int.parse(_target.substring(7))
         : null;
-    final ok = await runAction(
+    final container = ProviderScope.containerOf(context, listen: false);
+    final ok = await runActions(
       context,
       ref,
       scope,
@@ -365,9 +364,9 @@ class _CreateVolumePageState extends ConsumerState<CreateVolumePage> {
         labels: parseLabels(_values['labels'] ?? '') ?? const {},
       ),
     );
-    if (!mounted) return;
     // The new volume shows at once; the tracker refreshes it when ready.
-    ref.invalidate(volumesProvider);
+    container.invalidate(volumesProvider);
+    if (!mounted) return;
     setState(() => _creating = false);
     if (ok) Navigator.pop(context);
   }

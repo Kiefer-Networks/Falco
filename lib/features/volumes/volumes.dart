@@ -103,10 +103,12 @@ Future<List<Volume>> volumes(Ref ref, Scope scope) => perProject(
 @riverpod
 Future<Volume> volume(Ref ref, ProjectScope scope, int volumeId) async {
   final api = cloud.VolumesApi(ref.watch(cloudApiProvider(scope.projectId)));
-  final r = await unwrap(api.getVolume(id: volumeId));
-  if (r is! cloud.GetVolumeResponse200) throw const NotFound();
+  // Decoded from the raw body like the list: re-encoding the model throws
+  // on enum values the spec does not know yet.
+  final v = json((await cloudJson(api.getVolume(id: volumeId)))['volume']);
+  if (v.isEmpty) throw const NotFound();
   return Volume.fromModel(
-    cloud.VolumesGet200BodyVolumesArrayModel.fromJson(r.body.volume.toJson()),
+    cloud.VolumesGet200BodyVolumesArrayModel.fromJson(v),
     scope.projectId,
   );
 }
@@ -116,8 +118,9 @@ Future<Volume> volume(Ref ref, ProjectScope scope, int volumeId) async {
     (gross: p.volumeGross * sizeGb, net: p.volumeNet * sizeGb);
 
 /// Creates a volume in [location] or next to [server] (CMP-051 to
-/// CMP-056).
-Future<int> createVolume(
+/// CMP-056). Returns the create action and the next actions (attach),
+/// all to be tracked.
+Future<List<int>> createVolume(
   cloud.Server api, {
   required String name,
   required int sizeGb,
@@ -126,22 +129,25 @@ Future<int> createVolume(
   String format = '',
   bool automount = false,
   Map<String, String> labels = const {},
-}) => actionOf(
-  cloud.VolumesApi(api).createVolume(
-    body: cloud.VolumesPostBodyBodyModel.fromJson({
-      'name': name,
-      'size': sizeGb,
-      if (server == null)
-        'location': location
-      else
-        'assignee': {'id': server, 'type': 'server'},
-      if (server != null) 'automount': automount,
-      if (format.isNotEmpty) 'format': format,
-      'labels': labels,
-    }),
-  ),
-  (r) => r is cloud.CreateVolumeResponse201 ? r.body.action.id : null,
-);
+}) async {
+  final r = await unwrap(
+    cloud.VolumesApi(api).createVolume(
+      body: cloud.VolumesPostBodyBodyModel.fromJson({
+        'name': name,
+        'size': sizeGb,
+        if (server == null)
+          'location': location
+        else
+          'assignee': {'id': server, 'type': 'server'},
+        if (server != null) 'automount': automount,
+        if (format.isNotEmpty) 'format': format,
+        'labels': labels,
+      }),
+    ),
+  );
+  if (r is! cloud.CreateVolumeResponse201) throw const Server();
+  return [r.body.action.id, for (final a in r.body.nextActions) a.id];
+}
 
 /// Renames or relabels a volume (CMP-062, CMP-088).
 Future<void> updateVolume(

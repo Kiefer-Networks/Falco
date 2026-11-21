@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/core/scope/scope.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -130,6 +131,103 @@ void main() {
     expect(find.text('Copied to clipboard'), findsOneWidget);
   });
 
+  group('CreateWizard', () {
+    Widget wizard({bool creating = false, VoidCallback? onLeave}) =>
+        CreateWizard(
+          title: 'Create',
+          creating: creating,
+          onLeave: onLeave,
+          onCreate: () {},
+          summary: const Text('summary'),
+          steps: [
+            WizardStep(
+              title: 'Image',
+              child: ChoiceList(
+                options: const {'a': 'alpha', 'b': 'beta'},
+                selected: '',
+                searchable: true,
+                onSelected: (_) {},
+              ),
+            ),
+            WizardStep(
+              title: 'Type',
+              child: ChoiceList(
+                options: const {'x': 'xray', 'y': 'yankee'},
+                selected: '',
+                onSelected: (_) {},
+              ),
+            ),
+          ],
+        );
+
+    testWidgets('CMP-013 steps do not share a search query', (tester) async {
+      await tester.pumpWidget(testApp(wizard()));
+      await tester.enterText(find.byType(TextField), 'alp');
+      await tester.pump();
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(find.text('xray'), findsOneWidget);
+      expect(find.text('yankee'), findsOneWidget);
+    });
+
+    testWidgets('CMP-013 close leaves the only route, not while creating', (
+      tester,
+    ) async {
+      var left = 0;
+      await tester.pumpWidget(testApp(wizard(onLeave: () => left++)));
+      await tester.tap(find.byType(CloseButton));
+      await tester.pump();
+      expect(left, 1);
+      await tester.pumpWidget(
+        testApp(wizard(creating: true, onLeave: () => left++)),
+      );
+      expect(
+        tester.widget<CloseButton>(find.byType(CloseButton)).onPressed,
+        isNull,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(CreateWizard),
+          matching: find.byWidgetPredicate((w) => w is PopScope && !w.canPop),
+        ),
+        findsOneWidget,
+      );
+    });
+  });
+
+  testWidgets('QRS-026 rows and action bar buttons take a screen reader tap', (
+    tester,
+  ) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      testApp(
+        Column(
+          children: [
+            ResourceRow(
+              status: ResourceStatus.running,
+              name: 'web-1',
+              monoLine: 'cx22',
+              onTap: () => taps++,
+            ),
+            DetailActionBar(
+              actions: [
+                DetailAction(
+                  icon: Icons.refresh,
+                  label: 'Reboot',
+                  onTap: () => taps++,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    for (final label in [RegExp('^web-1'), RegExp('^Reboot')]) {
+      tester.semantics.tap(find.semantics.byLabel(label));
+    }
+    expect(taps, 2);
+  });
+
   group('ResourceList', () {
     const items = <_Item>[
       (name: 'beta', on: true),
@@ -212,6 +310,48 @@ void main() {
       expect(find.byType(ErrorBanner), findsOneWidget);
       expect(find.byType(ErrorCard), findsNothing);
       expect(find.byType(ListTile), findsNWidgets(3));
+    });
+
+    testWidgets('names the projects a partial list misses', (tester) async {
+      await tester.pumpWidget(
+        testApp(
+          list(
+            items: PartialList(items.toList(), const [
+              Project(id: 'p2', name: 'staging'),
+            ]),
+          ),
+        ),
+      );
+      expect(
+        find.text('Could not load: staging. Showing the other projects.'),
+        findsOneWidget,
+      );
+      expect(find.byType(ListTile), findsNWidgets(3));
+    });
+
+    testWidgets('a filter menu keeps its choice when options move', (
+      tester,
+    ) async {
+      Widget menu(List<ResourceFilter<_Item>> options) => ResourceList<_Item>(
+        title: 'Servers',
+        items: items,
+        onRefresh: () async {},
+        itemBuilder: (_, i) => ListTile(title: Text(i.name)),
+        empty: const EmptyHint(message: 'Nothing here'),
+        menuFilters: [ResourceMenuFilter('Type', options)],
+      );
+      final all = ResourceFilter<_Item>('All', (_) => true);
+      final on = ResourceFilter<_Item>('On', (i) => i.on);
+      final off = ResourceFilter<_Item>('Off', (i) => !i.on);
+      await tester.pumpWidget(testApp(menu([all, on, off])));
+      await tester.tap(find.text('Type: All'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Off').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Type: Off'), findsOneWidget);
+      await tester.pumpWidget(testApp(menu([all, off, on])));
+      expect(find.text('Type: Off'), findsOneWidget);
+      expect(find.byType(ListTile), findsOneWidget);
     });
 
     testWidgets('QRS-004 pull to refresh calls onRefresh', (tester) async {

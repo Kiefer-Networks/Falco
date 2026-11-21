@@ -305,6 +305,9 @@ class _BarButton extends StatelessWidget {
       button: true,
       enabled: onTap != null,
       label: label,
+      // The InkWell's tap is excluded with its semantics: TalkBack and
+      // VoiceOver activate through this node.
+      onTap: onTap,
       excludeSemantics: true,
       child: InkWell(
         borderRadius: BorderRadius.circular(FalcoRadius.card),

@@ -89,6 +89,32 @@ void main() {
       expect(last.status, ActionStatus.success);
     });
 
+    test('rides out rate limits and server errors', () async {
+      final errors = <FalcoError>[
+        const RateLimited(retryAfter: Duration.zero),
+        const Server(),
+        const RateLimited(),
+        const Network(),
+      ];
+      final tracker = ActionTracker((_) async {
+        if (errors.isNotEmpty) throw errors.removeAt(0);
+        return action(ActionStatus.success, 100);
+      }, interval: Duration.zero);
+      final last = await tracker.track(1).last;
+      expect(last.status, ActionStatus.success);
+    });
+
+    test('gives up after repeated transient failures', () async {
+      var calls = 0;
+      final tracker = ActionTracker((_) async {
+        calls++;
+        throw const Server();
+      }, interval: Duration.zero);
+      final last = await tracker.track(1).last;
+      expect(last.status, ActionStatus.error);
+      expect(calls, tracker.maxFailures);
+    });
+
     test('ends with an error when the action is gone', () async {
       final done = <ActionProgress>[];
       final tracker = ActionTracker(

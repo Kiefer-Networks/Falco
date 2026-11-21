@@ -10,6 +10,26 @@ Map<String, Object?> cloudError(String code, [Object? details]) => {
 };
 
 void main() {
+  test('QRS-020 retryDelay retries only transient errors', () {
+    expect(retryDelay(0, const Network()), isNotNull);
+    expect(retryDelay(0, const Server()), isNotNull);
+    expect(
+      retryDelay(0, const RateLimited(retryAfter: Duration(seconds: 7))),
+      const Duration(seconds: 7),
+    );
+    expect(retryDelay(5, const Network()), isNull);
+    for (final e in <Object>[
+      const NotFound(),
+      const Unauthorized(),
+      const Forbidden(),
+      const Invalid(),
+      const Conflict(),
+      StateError('bug'),
+    ]) {
+      expect(retryDelay(0, e), isNull, reason: '$e');
+    }
+  });
+
   group('fromResponse', () {
     test('maps Cloud error codes before status codes', () {
       expect(

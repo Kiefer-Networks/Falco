@@ -174,10 +174,52 @@ Future<List<T>> perProject<T>(
   Ref ref,
   Scope scope,
   Future<List<T>> Function(cloud.Server api, String projectId) load,
+) => forProjects(
+  ref,
+  scope,
+  (p) => load(ref.watch(cloudApiProvider(p.id)), p.id),
+);
+
+/// Loads [load] for every project of [scope] and joins the lists.
+///
+/// The projects are watched: adding or deleting one reloads the list. A
+/// project that fails leaves the others standing: the result is then a
+/// [PartialList] naming it. Only when every project fails (or the scope is
+/// one project) the error is thrown.
+///
+/// The provider is kept alive until the lists are in: a caller reading
+/// it once (`ref.read(provider.future)`) does not listen, so it would be
+/// disposed while waiting and [load] could no longer watch the APIs.
+Future<List<T>> forProjects<T>(
+  Ref ref,
+  Scope scope,
+  Future<List<T>> Function(Project project) load,
 ) async {
-  final projects = await ref.watch(scopeRepositoryProvider).projectsOf(scope);
-  final lists = await Future.wait([
-    for (final p in projects) load(ref.watch(cloudApiProvider(p.id)), p.id),
-  ]);
-  return [for (final l in lists) ...l];
+  final link = ref.keepAlive();
+  try {
+    final projects = projectsIn(
+      await ref.watch(accountsProvider.future),
+      scope,
+    );
+    final results = await Future.wait([
+      for (final p in projects)
+        load(p).then<({List<T> items, (Object, StackTrace)? error})>(
+          (l) => (items: l, error: null),
+          onError: (Object e, StackTrace s) => (items: <T>[], error: (e, s)),
+        ),
+    ]);
+    final failed = [
+      for (final (i, r) in results.indexed)
+        if (r.error != null) projects[i],
+    ];
+    final items = [for (final r in results) ...r.items];
+    if (failed.isEmpty) return items;
+    if (scope is ProjectScope || failed.length == projects.length) {
+      final (error, stack) = results.firstWhere((r) => r.error != null).error!;
+      Error.throwWithStackTrace(error, stack);
+    }
+    return PartialList(items, failed);
+  } finally {
+    link.close();
+  }
 }

@@ -40,6 +40,7 @@ class ServerType {
     required this.diskGb,
     required this.architecture,
     required this.prices,
+    this.storageType = 'local',
     this.deprecated = false,
   });
 
@@ -51,6 +52,9 @@ class ServerType {
 
   /// `x86` or `arm`.
   final String architecture;
+
+  /// `local` or `network`; a server keeps its storage type (CMP-033).
+  final String storageType;
 
   /// Location name to monthly gross price; a location without price
   /// does not offer the type.
@@ -70,58 +74,63 @@ num _num(Object decimal) => num.parse('$decimal');
 
 /// Locations of the project.
 @riverpod
-Future<List<Named>> locations(Ref ref, ProjectScope scope) =>
-    fetchAll((page) async {
-      final r = await unwrap(
-        cloud.LocationsApi(ref.watch(cloudApiProvider(scope.projectId)))
-            .listLocations(page: page, perPage: maxPerPage),
-      );
-      if (r is! cloud.ListLocationsResponse200) throw const Server();
-      return (
-        items: [
-          for (final l in r.body.locations) Named(l.id, l.name, l.description),
-        ],
-        nextPage: r.body.meta.pagination.nextPage,
-      );
-    });
+Future<List<Named>> locations(Ref ref, ProjectScope scope) {
+  // Resolved before the first await: later pages run after it.
+  final api = cloud.LocationsApi(ref.watch(cloudApiProvider(scope.projectId)));
+  return fetchAll((page) async {
+    final r = await unwrap(api.listLocations(page: page, perPage: maxPerPage));
+    if (r is! cloud.ListLocationsResponse200) throw const Server();
+    return (
+      items: [
+        for (final l in r.body.locations) Named(l.id, l.name, l.description),
+      ],
+      nextPage: r.body.meta.pagination.nextPage,
+    );
+  });
+}
 
 /// Server types with prices per location.
 @riverpod
-Future<List<ServerType>> serverTypes(Ref ref, ProjectScope scope) =>
-    fetchAll((page) async {
-      final r = await unwrap(
-        cloud.ServerTypesApi(ref.watch(cloudApiProvider(scope.projectId)))
-            .listServerTypes(page: page, perPage: maxPerPage),
-      );
-      if (r is! cloud.ListServerTypesResponse200) throw const Server();
-      return (
-        items: [
-          for (final t in r.body.serverTypes)
-            ServerType(
-              id: t.id,
-              name: t.name,
-              cores: t.cores.toInt(),
-              memoryGb: t.memory,
-              diskGb: t.disk,
-              architecture: t.architecture.name,
-              // Deprecation is per location now; deprecated everywhere means
-              // the type is gone.
-              deprecated: t.locations.every((l) => l.deprecation != null),
-              prices: {
-                for (final p in t.prices)
-                  if (t.locations.any(
-                    (l) =>
-                        l.name == p.location &&
-                        l.available &&
-                        l.deprecation == null,
-                  ))
-                    p.location: _num(p.priceMonthly.gross),
-              },
-            ),
-        ],
-        nextPage: r.body.meta.pagination.nextPage,
-      );
-    });
+Future<List<ServerType>> serverTypes(Ref ref, ProjectScope scope) {
+  // Resolved before the first await: later pages run after it.
+  final api = cloud.ServerTypesApi(
+    ref.watch(cloudApiProvider(scope.projectId)),
+  );
+  return fetchAll((page) async {
+    final r = await unwrap(
+      api.listServerTypes(page: page, perPage: maxPerPage),
+    );
+    if (r is! cloud.ListServerTypesResponse200) throw const Server();
+    return (
+      items: [
+        for (final t in r.body.serverTypes)
+          ServerType(
+            id: t.id,
+            name: t.name,
+            cores: t.cores.toInt(),
+            memoryGb: t.memory,
+            diskGb: t.disk,
+            architecture: t.architecture.name,
+            storageType: t.storageType.name,
+            // Deprecation is per location now; deprecated everywhere means
+            // the type is gone.
+            deprecated: t.locations.every((l) => l.deprecation != null),
+            prices: {
+              for (final p in t.prices)
+                if (t.locations.any(
+                  (l) =>
+                      l.name == p.location &&
+                      l.available &&
+                      l.deprecation == null,
+                ))
+                  p.location: _num(p.priceMonthly.gross),
+            },
+          ),
+      ],
+      nextPage: r.body.meta.pagination.nextPage,
+    );
+  });
+}
 
 /// ISOs of the project (public and private), deprecated ones marked in
 /// [Named.detail] by the caller (CMP-035).
@@ -129,24 +138,25 @@ Future<List<ServerType>> serverTypes(Ref ref, ProjectScope scope) =>
 Future<List<({Named iso, bool deprecated, String? architecture})>> isos(
   Ref ref,
   ProjectScope scope,
-) => fetchAll((page) async {
-  final r = await unwrap(
-    cloud.IsOsApi(ref.watch(cloudApiProvider(scope.projectId)))
-        .listIsos(page: page, perPage: maxPerPage),
-  );
-  if (r is! cloud.ListIsosResponse200) throw const Server();
-  return (
-    items: [
-      for (final i in r.body.isos)
-        (
-          iso: Named(i.id, i.name ?? i.description, i.description),
-          deprecated: i.deprecation != null,
-          architecture: i.architecture?.name,
-        ),
-    ],
-    nextPage: r.body.meta.pagination.nextPage,
-  );
-});
+) {
+  // Resolved before the first await: later pages run after it.
+  final api = cloud.IsOsApi(ref.watch(cloudApiProvider(scope.projectId)));
+  return fetchAll((page) async {
+    final r = await unwrap(api.listIsos(page: page, perPage: maxPerPage));
+    if (r is! cloud.ListIsosResponse200) throw const Server();
+    return (
+      items: [
+        for (final i in r.body.isos)
+          (
+            iso: Named(i.id, i.name ?? i.description, i.description),
+            deprecated: i.deprecation != null,
+            architecture: i.architecture?.name,
+          ),
+      ],
+      nextPage: r.body.meta.pagination.nextPage,
+    );
+  });
+}
 
 /// Currency and volume prices of the project (CMP-078).
 @riverpod

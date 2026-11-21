@@ -21,6 +21,8 @@
   "@listSortBy": {"placeholders": {"field": {"type": "String"}}},
   "listNoMatches": "No results for this search or filter.",
   "listStaleBanner": "Could not refresh. Showing the last loaded data.",
+  "listProjectsFailed": "Could not load: {projects}. Showing the other projects.",
+  "@listProjectsFailed": {"placeholders": {"projects": {"type": "String"}}},
   "errorTitle": "Something went wrong",
   "errorNetwork": "No connection to the server. Check your network.",
   "detailPick": "Pick an entry to see its details.",

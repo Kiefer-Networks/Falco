@@ -109,7 +109,12 @@ class AccountPage extends ConsumerWidget {
             : EmptyHint(message: l10n.errorNotFound),
       );
     }
-    final ops = _AccountOps(context, ref, account, l10n);
+    final ops = _AccountOps(
+      context,
+      ProviderScope.containerOf(context, listen: false),
+      account,
+      l10n,
+    );
     final isDefault = settings.defaultAccount == account.id;
     return FalcoScaffold(
       title: l10n.accountTitle,
@@ -255,19 +260,21 @@ class _ProjectTile extends ConsumerWidget {
 /// The changes of one account. Every access is checked before it is
 /// stored; every delete asks first and removes the secrets.
 class _AccountOps {
-  const new(this.context, this.ref, this.account, this.l10n);
+  const new(this.context, this.container, this.account, this.l10n);
 
   final BuildContext context;
-  final WidgetRef ref;
+
+  /// Outlives the page, so a save that ends after it closed completes.
+  final ProviderContainer container;
   final Account account;
   final AppLocalizations l10n;
 
-  ScopeRepository get _repo => ref.read(scopeRepositoryProvider);
-  SecretStore get _secrets => ref.read(secretStoreProvider);
+  ScopeRepository get _repo => container.read(scopeRepositoryProvider);
+  SecretStore get _secrets => container.read(secretStoreProvider);
 
   Future<void> _save(Account next) async {
     await _repo.save(next);
-    ref.invalidate(accountsProvider);
+    container.invalidate(accountsProvider);
   }
 
   void _done(bool saved, String message) {
@@ -327,7 +334,7 @@ class _AccountOps {
       valid: (v) => v['token']!.trim().isNotEmpty,
       onSave: (v) async {
         final token = v['token']!.trim();
-        await checkToken(ref, token);
+        await checkToken(container, token);
         await _secrets.setCloudToken(p.id, token);
       },
     ),
@@ -342,11 +349,11 @@ class _AccountOps {
       valid: (v) => v['s3']!.isNotEmpty && validS3(v),
       onSave: (v) async {
         final c = s3FromValues(v)!;
-        await checkS3Keys(ref, c);
+        await checkS3Keys(container, c);
         await _secrets.setS3(p.id, c);
       },
     );
-    ref.invalidate(projectS3Provider(p.id));
+    container.invalidate(projectS3Provider(p.id));
     _done(saved, l10n.savedMessage);
   }
 
@@ -361,7 +368,7 @@ class _AccountOps {
     );
     if (!confirmed) return;
     await _secrets.deleteS3(p.id);
-    ref.invalidate(projectS3Provider(p.id));
+    container.invalidate(projectS3Provider(p.id));
   }
 
   Future<void> deleteProject(Project p) async {
@@ -376,7 +383,7 @@ class _AccountOps {
     );
     if (!confirmed) return;
     await _repo.deleteProject(account.id, p.id);
-    ref
+    container
       ..invalidate(accountsProvider)
       ..invalidate(projectS3Provider(p.id));
   }
@@ -389,7 +396,7 @@ class _AccountOps {
       valid: validRobot,
       onSave: (v) async {
         final c = robotFromValues(v);
-        await checkRobotLogin(ref, c);
+        await checkRobotLogin(container, c);
         await _secrets.setRobot(account.id, c);
         await _save(account.copyWith(hasRobot: true));
       },
@@ -423,13 +430,13 @@ class _AccountOps {
     );
     if (!confirmed) return;
     await _repo.deleteAccount(account.id);
-    final settings = ref.read(appSettingsProvider);
+    final settings = container.read(appSettingsProvider);
     if (settings.defaultAccount == account.id) {
-      await ref
+      await container
           .read(appSettingsProvider.notifier)
           .update(settings.copyWith(defaultAccount: () => null));
     }
-    ref.invalidate(accountsProvider);
+    container.invalidate(accountsProvider);
     if (context.mounted) const HomeRoute().go(context);
   }
 }

@@ -207,3 +207,17 @@ Map<String, List<String>> _fields(Map<String, Object?>? error) {
   }
   return result;
 }
+
+/// Retry rule of the provider container: only failures that may pass by
+/// themselves (network, 5xx, rate limit after its Retry-After) are retried,
+/// up to 5 times with growing delay. Client errors (401, 403, 404, 4xx)
+/// never are: they fail the same way again and cost rate limit.
+Duration? retryDelay(int retryCount, Object error) {
+  if (retryCount >= 5) return null;
+  final backoff = Duration(milliseconds: 200 * (1 << retryCount));
+  return switch (error) {
+    RateLimited(:final retryAfter) => retryAfter ?? backoff,
+    Network() || Server() => backoff,
+    _ => null,
+  };
+}

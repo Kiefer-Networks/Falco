@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:falco/app/lock_gate.dart';
 import 'package:falco/app/router.dart';
+import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/storage/transfers.dart';
 import 'package:falco/l10n/app_localizations.dart';
@@ -16,6 +17,7 @@ Future<void> main() async {
   registerFontLicenses();
   final prefs = await SharedPreferences.getInstance();
   final container = ProviderContainer(
+    retry: retryDelay,
     overrides: [preferencesProvider.overrideWithValue(prefs)],
   );
   // Picks up transfers that went on while Falco was closed.

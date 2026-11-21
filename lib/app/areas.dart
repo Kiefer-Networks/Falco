@@ -412,16 +412,23 @@ class ResourceListPage extends StatelessWidget {
     final create = kind.create(l10n, scope);
     return FalcoScaffold(
       title: kind.label(l10n),
-      floatingActionButton: switch (create) {
-        (final label, final route) => FloatingActionButton.extended(
-          heroTag: kind,
-          onPressed: () => route.push<void>(context),
-          icon: const Icon(Icons.add),
-          label: Text(label),
+      // The create button belongs to the list pane: on tablets it must not
+      // cover the action bar of the detail beside it.
+      body: ListDetail(
+        list: Scaffold(
+          backgroundColor: Colors.transparent,
+          floatingActionButton: switch (create) {
+            (final label, final route) => FloatingActionButton.extended(
+              heroTag: kind,
+              onPressed: () => route.push<void>(context),
+              icon: const Icon(Icons.add),
+              label: Text(label),
+            ),
+            null => null,
+          },
+          body: kind.list(scope),
         ),
-        null => null,
-      },
-      body: ListDetail(list: kind.list(scope)),
+      ),
     );
   }
 }

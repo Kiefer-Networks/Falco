@@ -39,6 +39,7 @@ class CreateWizard extends StatefulWidget {
     this.createLabel,
     this.creating = false,
     this.initialStep = 0,
+    this.onLeave,
     super.key,
   });
 
@@ -66,6 +67,10 @@ class CreateWizard extends StatefulWidget {
   /// Step to open at (showcase and tests).
   final int initialStep;
 
+  /// Where close leads when there is no page to go back to (the wizard
+  /// is the only route, e.g. an account without projects).
+  final VoidCallback? onLeave;
+
   /// Jumps the enclosing wizard to [step], e.g. from the summary.
   static void goTo(BuildContext context, int step) =>
       context.findAncestorStateOfType<_CreateWizardState>()?._go(step);
@@ -78,6 +83,15 @@ class _CreateWizardState extends State<CreateWizard> {
   late int _index = widget.initialStep;
 
   void _go(int step) => setState(() => _index = step);
+
+  void _close() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      widget.onLeave?.call();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,74 +106,83 @@ class _CreateWizardState extends State<CreateWizard> {
     final step = steps[index];
     final last = index == steps.length - 1;
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: CloseButton(color: c.text),
-        title: Text(widget.title),
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LinearProgressIndicator(value: (index + 1) / steps.length),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-            child: Text(
-              l10n.wizardStep(index + 1, steps.length).toUpperCase(),
-              style: FalcoText.of(context).sectionLabel,
-            ),
+    // A create in flight cannot be left half way (CMP-013).
+    return PopScope(
+      canPop: !widget.creating,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: CloseButton(
+            color: c.text,
+            onPressed: widget.creating ? null : _close,
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Semantics(
-              header: true,
+          title: Text(widget.title),
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            LinearProgressIndicator(value: (index + 1) / steps.length),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
               child: Text(
-                step.title,
-                style: Theme.of(context).textTheme.titleLarge,
+                l10n.wizardStep(index + 1, steps.length).toUpperCase(),
+                style: FalcoText.of(context).sectionLabel,
               ),
             ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(FalcoSpacing.l),
-              child: step.child,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Semantics(
+                header: true,
+                child: Text(
+                  step.title,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Row(
-            spacing: FalcoSpacing.s,
-            children: [
-              if (index > 0)
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(FalcoSpacing.l),
+                // Keyed per step: steps of the same widget type must not
+                // share state (a search query of one list in the next).
+                child: KeyedSubtree(key: ValueKey(index), child: step.child),
+              ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Row(
+              spacing: FalcoSpacing.s,
+              children: [
+                if (index > 0)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => setState(() => _index = index - 1),
+                      child: Text(l10n.commonBack),
+                    ),
+                  ),
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => setState(() => _index = index - 1),
-                    child: Text(l10n.commonBack),
+                  flex: 2,
+                  child: FilledButton(
+                    onPressed: !step.canContinue || widget.creating
+                        ? null
+                        : last
+                        ? widget.onCreate
+                        : () => setState(() => _index = index + 1),
+                    child: widget.creating
+                        ? const SizedBox.square(
+                            dimension: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            last
+                                ? widget.createLabel ?? l10n.commonCreate
+                                : l10n.commonNext,
+                          ),
                   ),
                 ),
-              Expanded(
-                flex: 2,
-                child: FilledButton(
-                  onPressed: !step.canContinue || widget.creating
-                      ? null
-                      : last
-                      ? widget.onCreate
-                      : () => setState(() => _index = index + 1),
-                  child: widget.creating
-                      ? const SizedBox.square(
-                          dimension: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          last
-                              ? widget.createLabel ?? l10n.commonCreate
-                              : l10n.commonNext,
-                        ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

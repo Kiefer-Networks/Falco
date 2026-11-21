@@ -121,7 +121,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | CMP-010 | Server anlegen Typkarte | Name, Kerne, RAM, Disk; nur an Location verfügbare Typen | `S/cloud/CreateServerSheet.kt:140` | `GET /server_types` | 4 | Golden |
 | CMP-011 | Server anlegen SSH Schritt | Mehrfachauswahl; Hinweis wenn keine Keys, Schritt überspringbar | `S/cloud/CreateServerSheet.kt:167` | `GET /ssh_keys` | 4 | Widget |
 | CMP-012 | Server anlegen Details | Name Pflicht, cloud-init User Data optional, "Start after create" | `S/cloud/CreateServerSheet.kt:201` | `POST /servers` | 4 | Widget |
-| CMP-013 | Server anlegen Ausführung | Erstellt Server, Doppelklick gesperrt, Liste neu laden | `S/cloud/CloudViewModel.kt:87`<br>`D/repo/CloudRepo.kt:219` | `POST /servers` | 4 | Integration |
+| CMP-013 | Server anlegen Ausführung | Erstellt Server, Doppelklick gesperrt, Verlassen während des Anlegens gesperrt, Folgeaktionen verfolgt, Liste neu laden | `S/cloud/CloudViewModel.kt:87`<br>`D/repo/CloudRepo.kt:219` | `POST /servers` | 4 | Integration |
 | CMP-014 | Root Passwort nach Anlegen | Einmalig im Reveal Sheet wenn kein SSH Key gewählt | `S/cloud/CloudScreen.kt:159`<br>`S/cloud/CloudViewModel.kt:49` | `POST /servers` | 4 | Widget |
 | CMP-015 | Serverdetail Laden | Server, Metriken, Aktivität laden, Pull to Refresh | `S/cloud/CloudServerDetailViewModel.kt:91` | `GET /servers/{id}` | 4 | Unit |
 | CMP-016 | Serverdetail Kopf | Name, Status, Schutz Badge | `S/cloud/CloudServerDetailScreen.kt:205` | `GET /servers/{id}` | 4 | Golden |
@@ -138,7 +138,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | CMP-027 | Server Metriken | CPU %, Disk Durchsatz lesen/schreiben, Netzwerk ein/aus | `S/cloud/CloudServerDetailScreen.kt:288` | `GET /servers/{id}/metrics` | 4 | Golden |
 | CMP-028 | Metrik Zeiträume | 1h, 24h, 7d, 30d umschaltbar | `S/cloud/CloudServerDetailScreen.kt:1020`<br>`S/cloud/CloudServerDetailViewModel.kt:115` | `GET /servers/{id}/metrics` | 4 | Unit |
 | CMP-029 | Metrik Kennzahlen | Min, Max, Durchschnitt pro Serie, Einheit automatisch (B/s, KB/s, ...) | `S/cloud/CloudServerDetailScreen.kt:1118`<br>`D/repo/CloudRepo.kt:68` |  | 4 | Unit |
-| CMP-030 | Root Passwort zurücksetzen | Bestätigung, neues Passwort einmalig im Reveal Sheet | `S/cloud/CloudServerDetailScreen.kt:385`<br>`S/cloud/CloudServerDetailViewModel.kt:204` | `POST /servers/{id}/actions/reset_password` | 4 | Widget |
+| CMP-030 | Root Passwort zurücksetzen | Bestätigung, neues Passwort einmalig im Reveal Sheet, auch wenn die Seite inzwischen geschlossen wurde | `S/cloud/CloudServerDetailScreen.kt:385`<br>`S/cloud/CloudServerDetailViewModel.kt:204` | `POST /servers/{id}/actions/reset_password` | 4 | Widget |
 | CMP-031 | Server Neuaufsetzen | Image wählen (Reiter System oder Snapshot/Backup), veraltete markiert, Warnung Datenverlust; Neu: Stufe 2 | `S/cloud/RebuildDialog.kt:63`<br>`S/cloud/CloudServerDetailViewModel.kt:178` | `GET /images`<br>`POST /servers/{id}/actions/rebuild` | 4 | Integration |
 | CMP-032 | Neuaufsetzen Root Passwort | Rückgabe Root Passwort einmalig anzeigen | `S/cloud/CloudServerDetailScreen.kt:735` | `POST /servers/{id}/actions/rebuild` | 4 | Widget |
 | CMP-033 | Servertyp ändern | Liste mit aktuellem Typ markiert, Kerne, RAM, Disk; Server muss aus sein | `S/cloud/ChangeTypeDialog.kt:55`<br>`S/cloud/CloudServerDetailViewModel.kt:212` | `GET /server_types`<br>`POST /servers/{id}/actions/change_type` | 4 | Widget |
@@ -154,7 +154,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | CMP-043 | Placement Group zuordnen | Gruppe wählen; Hinweis wenn keine vorhanden | `S/cloud/CloudServerDetailScreen.kt:1350`<br>`S/cloud/CloudServerDetailViewModel.kt:276` | `GET /placement_groups`<br>`POST /servers/{id}/actions/add_to_placement_group` | 4 | Widget |
 | CMP-044 | Placement Group entfernen | Bestätigung mit Gruppenname | `S/cloud/CloudServerDetailScreen.kt:699`<br>`S/cloud/CloudServerDetailViewModel.kt:282` | `POST /servers/{id}/actions/remove_from_placement_group` | 4 | Unit |
 | CMP-045 | Server Aktivität | Letzte 30 Actions des Servers | `S/cloud/CloudServerDetailScreen.kt:476`<br>`S/cloud/CloudServerDetailViewModel.kt:323` | `GET /servers/{id}/actions` | 8 | Widget |
-| CMP-046 | Server Schutz | Lösch und Rebuild Schutz getrennt schaltbar | `S/cloud/CloudServerDetailScreen.kt:1225`<br>`S/cloud/CloudServerDetailViewModel.kt:216` | `POST /servers/{id}/actions/change_protection` | 4 | Widget |
+| CMP-046 | Server Schutz | Lösch und Rebuild Schutz gemeinsam schaltbar (die API lehnt verschiedene Werte ab) | `S/cloud/CloudServerDetailScreen.kt:1225`<br>`S/cloud/CloudServerDetailViewModel.kt:216` | `POST /servers/{id}/actions/change_protection` | 4 | Widget |
 | CMP-047 | Server umbenennen | Bottom Sheet mit Name | `S/cloud/CloudServerDetailScreen.kt:1202`<br>`S/cloud/CloudServerDetailViewModel.kt:185` | `PUT /servers/{id}` | 4 | Widget |
 | CMP-048 | Server löschen | Stufe 2: Servername eintippen; Hinweis nicht externe Volumes | `S/cloud/CloudServerDetailScreen.kt:586`<br>`S/cloud/CloudServerDetailViewModel.kt:220` | `DELETE /servers/{id}` | 4 | Integration |
 | CMP-049 | Server Gefahrenzone | Löschen ganz unten getrennt | `S/cloud/CloudServerDetailScreen.kt:503` |  | 4 | Golden |
@@ -549,15 +549,15 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | QRS-017 | Zertifikat Pinning | api.hetzner.cloud, api.hetzner.com, robot-ws.your-server.de, fsn1/hel1/nbg1.your-objectstorage.com | `D/api/Pins.kt:52` |  | 2 | Integration |
 | QRS-018 | TLS Mindestversion | TLS 1.2 und 1.3, restriktive Cipher | `D/api/HttpClientFactory.kt:40` |  | 2 | Unit |
 | QRS-019 | Klartext verboten | http für S3 abgelehnt | `D/api/S3Client.kt:32` |  | 2 | Unit |
-| QRS-020 | Zeitlimits | Connect 15 s, Read/Write 30 s, kein automatischer Retry von POST | `D/api/HttpClientFactory.kt:58` |  | 2 | Unit |
+| QRS-020 | Zeitlimits | Connect 15 s, Read/Write 30 s, kein automatischer Retry von POST; Laden wiederholt nur Netzwerk, 5xx und 429 (nach Retry-After), nie 4xx | `D/api/HttpClientFactory.kt:58` |  | 2 | Unit |
 | QRS-021 | Rechtefehler | 403 Cloud als PermissionDenied klar gemeldet | `D/api/PermissionDeniedException.kt` |  | 2 | Unit |
-| QRS-022 | Aggregat Laden | Listen über alle Projekte parallel, Projekt ID pro Eintrag | `D/repo/CloudRepo.kt:193` |  | 3 | Unit |
+| QRS-022 | Aggregat Laden | Listen über alle Projekte parallel, Projekt ID pro Eintrag; ein fehlschlagendes Projekt lässt die übrigen stehen und wird im Banner genannt; neue oder gelöschte Projekte und S3 Schlüssel erreichen Listen und Suche sofort | `D/repo/CloudRepo.kt:193` |  | 3 | Unit |
 | QRS-023 | Benachrichtigungen | Nur Uploads (Kanal falco_uploads) | `D/s3/UploadService.kt:176` |  | 6 | Integration |
 | QRS-024 | Teilen | System Share Sheet für Freigabelinks | `S/s3/ShareLinkDialog.kt:176` |  | 6 | Widget |
 | QRS-025 | Dateiauswahl | SSH Key aus Datei, Zonendatei Import, Upload Quelle | `S/cloud/CloudSshKeysTab.kt:167` |  | 4 | Integration |
 | QRS-026 | Barrierefreiheit | Screenreader Labels, Kontraste, Schriftgrößen |  |  | 9 | Widget |
-| QRS-027 | Tablet Layout | Liste und Detail nebeneinander, Navigation Rail |  |  | 9 | Golden |
-| QRS-028 | Action Tracker | Laufende Actions bis Ende verfolgen, betroffene Ressource neu laden, Fortschritt am Objekt | `D/repo/DnsRepo.kt:61` | `GET /actions/{id}` | 2 | Unit |
+| QRS-027 | Tablet Layout | Liste und Detail nebeneinander, Navigation Rail; der Anlegen FAB gehört zur Liste und verdeckt nie die Aktionsleiste des Details |  |  | 9 | Golden |
+| QRS-028 | Action Tracker | Laufende Actions bis Ende verfolgen, betroffene Ressource neu laden, Fortschritt am Objekt; Netzwerk, 429 (mit Retry-After) und 5xx beim Abfragen überbrückt, erst nach mehreren Fehlern in Folge oder bei 401, 403, 404 Ende mit Fehler | `D/repo/DnsRepo.kt:61` | `GET /actions/{id}` | 2 | Unit |
 | QRS-029 | Bereichsübersicht | Jeder Bereich der unteren Navigation öffnet eine Übersicht: pro Ressourcentyp eine Kachel mit Anzahl und Status, Server mit ihren ersten Zeilen; keine scrollenden Tabs |  |  | 9 | Golden |
 | QRS-030 | Aktionsleiste im Detail | Alle Aktionen einer Ressource unten: höchstens drei als Knopf mit vollem Text, der Rest im Blatt "Mehr"; genau ein Anlegen pro Screen (FAB), leere Listen ohne Knopf |  |  | 9 | Golden |
 

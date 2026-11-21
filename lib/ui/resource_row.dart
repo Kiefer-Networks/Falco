@@ -43,6 +43,7 @@ class ResourceRow extends StatelessWidget {
     return Semantics(
       button: onTap != null,
       label: '$name, $word, $monoLine',
+      onTap: onTap,
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,

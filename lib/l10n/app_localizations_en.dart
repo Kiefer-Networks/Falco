@@ -72,6 +72,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not refresh. Showing the last loaded data.';
 
   @override
+  String listProjectsFailed(String projects) {
+    return 'Could not load: $projects. Showing the other projects.';
+  }
+
+  @override
   String get errorTitle => 'Something went wrong';
 
   @override

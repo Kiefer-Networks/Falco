@@ -20,6 +20,9 @@ class FakeAdapter implements HttpClientAdapter {
   /// Body bytes as sent, per request in [requests].
   final bodies = <List<int>>[];
 
+  /// When set, requests wait for it before they are answered.
+  Future<void>? gate;
+
   @override
   Future<ResponseBody> fetch(
     RequestOptions options,
@@ -45,6 +48,7 @@ class FakeAdapter implements HttpClientAdapter {
         },
       );
     }
+    if (gate case final g?) await g;
     final (status, body) = handler(options);
     // S3 answers XML (a String), optionally with headers (HeadObject).
     final (text, headers) = switch (body) {

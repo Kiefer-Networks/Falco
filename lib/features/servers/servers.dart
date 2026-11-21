@@ -178,11 +178,12 @@ Future<List<CloudServer>> servers(Ref ref, Scope scope) => perProject(
 @riverpod
 Future<CloudServer> server(Ref ref, ProjectScope scope, int serverId) async {
   final api = cloud.ServersApi(ref.watch(cloudApiProvider(scope.projectId)));
-  final r = await unwrap(api.getServer(id: serverId));
-  final s = r is cloud.GetServerResponse200 ? r.body.server : null;
-  if (s == null) throw const NotFound();
+  // Decoded from the raw body like the list: re-encoding the model throws
+  // on enum values the spec does not know yet.
+  final s = json((await cloudJson(api.getServer(id: serverId)))['server']);
+  if (s.isEmpty) throw const NotFound();
   return CloudServer.fromModel(
-    cloud.ServersGet200BodyServersArrayModel.fromJson(s.toJson()),
+    cloud.ServersGet200BodyServersArrayModel.fromJson(s),
     scope.projectId,
   );
 }
@@ -334,8 +335,9 @@ class ServerDraft {
 }
 
 /// Creates a server; the root password comes back when no SSH key was
-/// given (CMP-013, CMP-014).
-Future<({int id, int action, String? rootPassword})> createServer(
+/// given (CMP-013, CMP-014). The actions are the create action and the
+/// next actions (start, attach networks), all to be tracked.
+Future<({int id, List<int> actions, String? rootPassword})> createServer(
   cloud.Server api,
   ServerDraft d,
 ) async {
@@ -369,7 +371,7 @@ Future<({int id, int action, String? rootPassword})> createServer(
   if (r is! cloud.CreateServerResponse201) throw const Server();
   return (
     id: r.body.server.id,
-    action: r.body.action.id,
+    actions: [r.body.action.id, for (final a in r.body.nextActions) a.id],
     rootPassword: r.body.rootPassword,
   );
 }
@@ -503,11 +505,12 @@ final class SetBackups extends ServerChange {
   final bool enabled;
 }
 
+/// Delete and rebuild protection together; the API takes only equal
+/// values (CMP-046).
 final class SetServerProtection extends ServerChange {
-  const new({required this.delete, required this.rebuild});
+  const new(this.protect);
 
-  final bool delete;
-  final bool rebuild;
+  final bool protect;
 }
 
 final class CreateSnapshot extends ServerChange {
@@ -603,12 +606,12 @@ Future<int> changeServer(cloud.Server api, int id, ServerChange change) {
       (r) =>
           r is cloud.DisableServerBackupResponse201 ? r.body.action.id : null,
     ),
-    SetServerProtection(:final delete, :final rebuild) => actionOf(
+    SetServerProtection(:final protect) => actionOf(
       a.changeServerProtection(
         id: id,
         body: cloud.ServersIdActionsChangeProtectionPostBodyBodyModel.fromJson({
-          'delete': delete,
-          'rebuild': rebuild,
+          'delete': protect,
+          'rebuild': protect,
         }),
       ),
       (r) => r is cloud.ChangeServerProtectionResponse201

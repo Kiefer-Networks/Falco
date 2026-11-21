@@ -61,10 +61,11 @@ class ActivityPage extends ConsumerWidget {
             if (type == null)
               ResourceMenuFilter(l10n.activityType, [
                 ResourceFilter(l10n.filterAll, (_) => true),
+                // Sorted, so the order does not follow the newest action.
                 for (final t in {
                   for (final a in items ?? const <ActionProgress>[])
                     for (final (t, _) in a.resources) t,
-                })
+                }.toList()..sort())
                   ResourceFilter(
                     resourceTypeText(t, l10n),
                     (a) => a.resources.any((r) => r.$1 == t),
@@ -181,9 +182,19 @@ class _ActivityPreview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final actions =
-        ref.watch(activityProvider(scope, type: type, id: id)).value ??
-        const [];
+    final provider = activityProvider(scope, type: type, id: id);
+    final async = ref.watch(provider);
+    // "No activity" only once it is known: loading and failure say so.
+    if (async.value == null) {
+      return switch (async.error) {
+        null => const LinearProgressIndicator(),
+        final e => ErrorBanner(
+          message: errorText(toFalcoError(e), l10n),
+          onRetry: () => ref.invalidate(provider),
+        ),
+      };
+    }
+    final actions = async.value!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

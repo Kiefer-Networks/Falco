@@ -19,6 +19,7 @@
   "listSortBy": "Sortierung: {field}",
   "listNoMatches": "Keine Treffer für diese Suche oder diesen Filter.",
   "listStaleBanner": "Aktualisieren fehlgeschlagen. Angezeigt werden die zuletzt geladenen Daten.",
+  "listProjectsFailed": "Nicht geladen: {projects}. Angezeigt werden die übrigen Projekte.",
   "errorTitle": "Etwas ist schiefgelaufen",
   "errorNetwork": "Keine Verbindung zum Server. Prüfe dein Netzwerk.",
   "detailPick": "Wähle einen Eintrag, um seine Details zu sehen.",

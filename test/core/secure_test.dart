@@ -39,15 +39,13 @@ void main() {
     test('stores accounts and resolves scopes', () async {
       await repo.save(account);
       expect(await repo.accounts(), [account]);
-      expect(await repo.projectsOf(const ProjectScope('a1', 'p2')), [
+      final all = await repo.accounts();
+      expect(projectsIn(all, const ProjectScope('a1', 'p2')), [
         account.projects[1],
       ]);
-      expect(
-        await repo.projectsOf(const AllProjectsScope('a1')),
-        account.projects,
-      );
-      expect(await repo.projectsOf(const RobotScope('a1')), isEmpty);
-      expect(await repo.projectsOf(const AllProjectsScope('nope')), isEmpty);
+      expect(projectsIn(all, const AllProjectsScope('a1')), account.projects);
+      expect(projectsIn(all, const RobotScope('a1')), isEmpty);
+      expect(projectsIn(all, const AllProjectsScope('nope')), isEmpty);
     });
 
     test('save replaces by id', () async {

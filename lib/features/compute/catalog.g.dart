@@ -68,7 +68,7 @@ final class LocationsProvider
   }
 }
 
-String _$locationsHash() => r'b28287dd55c4654134448b7714844dc485dc8ace';
+String _$locationsHash() => r'976a0b1d754b500c85a623297a88469b52e70cd1';
 
 /// Locations of the project.
 
@@ -152,7 +152,7 @@ final class ServerTypesProvider
   }
 }
 
-String _$serverTypesHash() => r'4b8e1df9e2095d22178ac3440768d2126f1523d6';
+String _$serverTypesHash() => r'177f9d6201ac1d05ee2938d9d0ebde781d240f8d';
 
 /// Server types with prices per location.
 
@@ -250,7 +250,7 @@ final class IsosProvider
   }
 }
 
-String _$isosHash() => r'ad1dcc04e33f39558a674a95c276aece556ec95f';
+String _$isosHash() => r'fb7b80b21e9df35145acd0bbc49f29824813a755';
 
 /// ISOs of the project (public and private), deprecated ones marked in
 /// [Named.detail] by the caller (CMP-035).

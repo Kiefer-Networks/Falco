@@ -212,6 +212,12 @@ abstract class AppLocalizations {
   /// **'Could not refresh. Showing the last loaded data.'**
   String get listStaleBanner;
 
+  /// No description provided for @listProjectsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load: {projects}. Showing the other projects.'**
+  String listProjectsFailed(String projects);
+
   /// No description provided for @errorTitle.
   ///
   /// In en, this message translates to:
