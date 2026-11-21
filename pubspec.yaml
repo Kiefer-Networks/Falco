@@ -1,0 +1,26 @@
+name: falco
+description: "Hetzner Cloud, Robot, DNS and Storage manager"
+publish_to: "none"
+
+# Build number continues above Falco 2 (last Android versionCode 250) so
+# existing Android installs receive Falco 3 as an update.
+version: 3.0.0+300
+
+environment:
+  sdk: ^3.14.0
+  # Exact Flutter SDK for local builds and CI (read by subosito/flutter-action).
+  # Kept current by .github/workflows/flutter-sdk.yml.
+  flutter: 3.50.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  material_ui: ^1.11.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^11.0.0
+
+flutter:
+  uses-material-design: true
