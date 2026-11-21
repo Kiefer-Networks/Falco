@@ -22,12 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      contents: write # push the update branch
+      contents: write # create the update branch and commit
       pull-requests: write # open the PR
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          persist-credentials: true # the last step pushes a branch
+          persist-credentials: false # the commit goes through the API
 
       # Same installation as ci.yml: the official repo at the pinned version.
       - name: Install Flutter
@@ -77,13 +77,39 @@ jobs:
             git diff -- tool/pins.json | grep -v '"der"'
             echo '```'
             echo
-            echo "Close and reopen this PR to run CI."
+            echo "Close and reopen this PR to run CI. When squash merging,"
+            echo "remove the Co-authored-by line of the bot from the message."
           } > "$RUNNER_TEMP/body.md"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -c "$branch"
-          git commit -m "chore: Update certificate pins" -- "${files[@]}"
-          git push origin "$branch"
+          # Commit through the API so GitHub signs it; the author stays
+          # github-actions[bot].
+          git add -- "${files[@]}"
+          head=$(git rev-parse HEAD)
+          : > "$RUNNER_TEMP/additions.jsonl"
+          while IFS= read -r -d '' f; do
+            base64 -w0 -- "$f" > "$RUNNER_TEMP/content.b64"
+            jq -cn --arg path "$f" --rawfile contents "$RUNNER_TEMP/content.b64" \
+              '{path: $path, contents: $contents}' >> "$RUNNER_TEMP/additions.jsonl"
+          done < <(git diff --cached --name-only --diff-filter=d -z)
+          git diff --cached --name-only --diff-filter=D -z \
+            | jq -Rs 'split("\u0000") | map(select(. != "") | {path: .})' \
+            > "$RUNNER_TEMP/deletions.json"
+          jq -n --arg repo "$GITHUB_REPOSITORY" --arg branch "$branch" \
+            --arg head "$head" --arg message "chore: Update certificate pins" \
+            --slurpfile additions "$RUNNER_TEMP/additions.jsonl" \
+            --slurpfile deletions "$RUNNER_TEMP/deletions.json" \
+            '{query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }",
+              variables: {input: {
+                branch: {repositoryNameWithOwner: $repo, branchName: $branch},
+                expectedHeadOid: $head, message: {headline: $message},
+                fileChanges: {additions: $additions, deletions: $deletions[0]}}}}' \
+            > "$RUNNER_TEMP/commit.json"
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/heads/$branch" -f sha="$head" > /dev/null
+          if ! gh api graphql --input "$RUNNER_TEMP/commit.json" \
+            --jq .data.createCommitOnBranch.commit.oid; then
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
+            exit 1
+          fi
           gh pr create --base "$BASE" --head "$branch" \
             --title "chore: Update certificate pins" \
             --body-file "$RUNNER_TEMP/body.md"

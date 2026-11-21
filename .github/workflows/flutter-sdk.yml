@@ -21,12 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write # push the update branch
+      contents: write # create the update branch and commit
       pull-requests: write # open the PR
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          persist-credentials: true # the step below pushes a branch
+          persist-credentials: false # the commit goes through the API
 
       - name: Compare and open PR
         env:
@@ -47,11 +47,26 @@ jobs:
             exit 0
           fi
           sed -i "s/^  flutter: .*/  flutter: $latest/" pubspec.yaml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -c "$branch"
-          git commit -am "build(deps): Update Flutter to $latest"
-          git push origin "$branch"
+          # Commit through the API so GitHub signs it; the author stays
+          # github-actions[bot].
+          head=$(git rev-parse HEAD)
+          base64 -w0 pubspec.yaml > "$RUNNER_TEMP/content.b64"
+          jq -n --arg repo "$GITHUB_REPOSITORY" --arg branch "$branch" \
+            --arg head "$head" --arg message "build(deps): Update Flutter to $latest" \
+            --rawfile contents "$RUNNER_TEMP/content.b64" \
+            '{query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }",
+              variables: {input: {
+                branch: {repositoryNameWithOwner: $repo, branchName: $branch},
+                expectedHeadOid: $head, message: {headline: $message},
+                fileChanges: {additions: [{path: "pubspec.yaml", contents: $contents}]}}}}' \
+            > "$RUNNER_TEMP/commit.json"
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/heads/$branch" -f sha="$head" > /dev/null
+          if ! gh api graphql --input "$RUNNER_TEMP/commit.json" \
+            --jq .data.createCommitOnBranch.commit.oid; then
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
+            exit 1
+          fi
           gh pr create --base "$BASE" --head "$branch" \
             --title "build(deps): Update Flutter to $latest" \
-            --body "Flutter $current to $latest. Close and reopen this PR to run CI."
+            --body "Flutter $current to $latest. Close and reopen this PR to run CI. When squash merging, remove the Co-authored-by line of the bot from the message."
