@@ -91,25 +91,50 @@ typedef Bucket = ({
 });
 
 /// Buckets of every project of [scope] with S3 keys, at all locations
-/// (OBJ-001, OBJ-020). Null when no project has keys.
+/// (OBJ-001, OBJ-020). Null when no project has keys. A location that
+/// fails leaves the others standing: the result is then a [PartialList]
+/// naming it with its project.
 @riverpod
 Future<List<Bucket>?> buckets(Ref ref, Scope scope) async {
   final s3 = ref.watch(s3AccessProvider);
   var keys = false;
+  final failed = <Project>[];
   // The keys are watched, so adding or deleting them reaches the list.
   final list = await forProjects(ref, scope, (p) async {
     if (await ref.watch(projectS3Provider(p.id).future) == null) {
       return const <Bucket>[];
     }
     keys = true;
-    return await _projectBuckets(s3, p.id);
+    return await _projectBuckets(s3, p, failed);
   });
-  return keys ? list : null;
+  if (!keys) return null;
+  if (failed.isEmpty) return list;
+  return PartialList(list, [
+    if (list case PartialList(failed: final projects)) ...projects,
+    ...failed,
+  ]);
 }
 
-Future<List<Bucket>> _projectBuckets(S3Access s3, String projectId) async {
+/// Buckets of [project]; adds locations that fail to [failed], unless
+/// all fail.
+Future<List<Bucket>> _projectBuckets(
+  S3Access s3,
+  Project project,
+  List<Project> failed,
+) async {
+  final projectId = project.id;
+  final errors = <String, FalcoError>{};
   final found = await Future.wait([
-    for (final l in s3Locations) s3.run(projectId, l, (c) => c.buckets()),
+    for (final l in s3Locations)
+      s3.run(projectId, l, (c) => c.buckets()).catchError((Object e) {
+        errors[l] = toFalcoError(e);
+        return <({String name, DateTime? created})>[];
+      }),
+  ]);
+  if (errors.length == s3Locations.length) throw errors.values.first;
+  failed.addAll([
+    for (final l in errors.keys)
+      Project(id: projectId, name: '${project.name} $l'),
   ]);
   final seen = <String, List<String>>{};
   final created = <String, DateTime?>{};

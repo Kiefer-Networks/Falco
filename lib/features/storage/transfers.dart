@@ -42,12 +42,15 @@ class ObjectTransfers {
     this.onUploaded,
     this.partSize = defaultPartSize,
     String? partsRoot,
+    this._jobsRoot,
   }) : _s3 = s3,
        partsRoot = partsRoot ?? '${Directory.systemTemp.path}/falco-parts';
 
-  /// Folder of the part files, one folder per multipart upload with its
-  /// `job.json` until the upload is joined or aborted.
+  /// Folder of the part copies, one folder per multipart upload until it
+  /// is joined or aborted.
   final String partsRoot;
+
+  final String? _jobsRoot;
 
   /// Size of upload parts; larger files upload in parts (OBJ-022).
   final int partSize;
@@ -62,6 +65,9 @@ class ObjectTransfers {
   /// Multipart uploads already joined or aborted.
   final _completing = <String>{};
 
+  /// Multipart uploads still being handed to the platform.
+  final _starting = <String>{};
+
   /// Part events per upload, handled one after the other so two parts
   /// finishing together neither join twice nor both see the other
   /// missing.
@@ -70,6 +76,14 @@ class ObjectTransfers {
 
   /// Finished transfers.
   Stream<TransferEvent> get events => _events.stream;
+
+  /// Folder of the multipart jobs (`<name>.json`) until they are joined
+  /// or aborted. Application support, not temporary space: the system
+  /// clears that, and a job lost there leaves billed parts behind.
+  Future<String> jobsRoot() async =>
+      _jobsRoot ??
+      '${await Task.baseDirectoryPath(BaseDirectory.applicationSupport)}'
+          '/falco-uploads';
 
   /// Connects to the platform's transfers, including those that finished
   /// while Falco was closed. Safe to call more than once.
@@ -137,7 +151,9 @@ class ObjectTransfers {
       url: '${await _link(projectId, location, bucket, key, query)}',
       httpRequestMethod: 'PUT',
       mimeType: contentType,
-      headers: {'Content-Type': contentType},
+      // An empty Content-Disposition keeps background_downloader from
+      // sending `attachment`, which S3 would store with the object.
+      headers: {'Content-Type': contentType, 'Content-Disposition': ''},
       displayName: baseName(key),
       metaData: jsonEncode(m),
       group: 'upload',
@@ -151,26 +167,48 @@ class ObjectTransfers {
       await enqueue([await task(file, null, meta)]);
       return;
     }
+    final created = DateTime.now().millisecondsSinceEpoch;
     final uploadId = await _s3.run(
       projectId,
       location,
       (c) => c.createMultipart(bucket, key, contentType),
     );
+    final name = '${uploadId.hashCode}';
     final parts = (size / partSize).ceil();
-    final dir = await Directory('$partsRoot/${uploadId.hashCode}')
-        .create(recursive: true);
-    final job = {...meta, 'u': uploadId, 'n': parts, 'd': dir.path};
-    // What a later retry of the join needs (S3 keys stay in the store).
-    await File('${dir.path}/job.json').writeAsString(jsonEncode(job));
-    // ponytail: parts are copies, so a large upload needs its size again
-    // in temporary space until it is joined.
-    await enqueue([
-      for (var n = 1; n <= parts; n++)
-        await task(await _part(file, n, dir), {
-          'partNumber': '$n',
-          'uploadId': uploadId,
-        }, job),
-    ]);
+    final job = {...meta, 'u': uploadId, 'n': parts, 'd': name, 't': created};
+    final jobFile = await _jobFile(name);
+    _starting.add(uploadId);
+    try {
+      // What a later join or abort needs (S3 keys stay in the store).
+      // Without the enqueued mark retryJoins aborts it: Falco was closed
+      // before the parts were handed over.
+      await jobFile.parent.create(recursive: true);
+      await jobFile.writeAsString(jsonEncode(job));
+      final dir = await Directory('$partsRoot/$name').create(recursive: true);
+      // ponytail: parts are copies, so a large upload needs its size again
+      // in temporary space until it is joined.
+      await enqueue([
+        for (var n = 1; n <= parts; n++)
+          await task(await _part(file, n, dir), {
+            'partNumber': '$n',
+            'uploadId': uploadId,
+          }, job),
+      ]);
+      // In line with the part events: a job already joined stays gone.
+      await _queue(uploadId, () async {
+        if (jobFile.existsSync()) {
+          await jobFile.writeAsString(jsonEncode({...job, 'e': true}));
+        }
+      });
+    } on Object {
+      await _queue(
+        uploadId,
+        () => _joinParts(job, uploadId, ok: false, report: false),
+      );
+      rethrow;
+    } finally {
+      _starting.remove(uploadId);
+    }
   }
 
   Future<Uri> _link(
@@ -195,6 +233,9 @@ class ObjectTransfers {
     await file.openRead(start, start + partSize).pipe(part.openWrite());
     return part;
   }
+
+  Future<File> _jobFile(String name) async =>
+      File('${await jobsRoot()}/$name.json');
 
   /// Downloads [key] (or one version of it) in the background (OBJ-012,
   /// OBJ-021, OBJ-023).
@@ -268,17 +309,18 @@ class ObjectTransfers {
   }
 
   /// Joins (or aborts) multipart uploads whose join failed before, e.g.
-  /// offline or before the unlock (OBJ-022).
+  /// offline or before the unlock, and aborts those Falco never handed to
+  /// the platform (OBJ-022).
   Future<void> retryJoins() async {
-    final root = Directory(partsRoot);
+    final root = Directory(await jobsRoot());
     if (!root.existsSync()) return;
-    await for (final dir in root.list()) {
-      final file = File('${dir.path}/job.json');
-      if (!file.existsSync()) continue;
+    await for (final file in root.list()) {
+      if (file is! File || !file.path.endsWith('.json')) continue;
       final job = (jsonDecode(await file.readAsString()) as Map)
           .cast<String, Object?>();
-      final abort = job['abort'] == true;
       final id = job['u']! as String;
+      if (_starting.contains(id)) continue;
+      final abort = job['abort'] == true || job['e'] != true;
       await _queue(id, () => _joinParts(job, id, ok: !abort, report: !abort));
     }
   }
@@ -296,50 +338,110 @@ class ObjectTransfers {
       m['b']! as String,
       m['k']! as String,
     );
-    final dir = Directory(m['d']! as String);
-    var done = false;
     _completing.add(uploadId);
+    var aborting = false;
+    final bool joined;
     try {
-      if (!ok) {
-        await _s3.run(p, l, (c) => c.abortMultipart(b, k, uploadId));
-      } else {
-        final parts = await _s3.run(p, l, (c) => c.parts(b, k, uploadId));
-        if (parts.length < (m['n']! as int)) {
-          _completing.remove(uploadId);
-          return;
-        }
-        await _s3.run(p, l, (c) => c.completeMultipart(b, k, uploadId, parts));
-        done = true;
-      }
-    } on Object catch (e) {
-      // S3 refused for good: nothing to retry. Anything else (offline,
-      // locked, a server error) keeps the parts and the upload id for
-      // retryJoins.
-      // ponytail: a server error that never ends keeps the parts in
-      // temporary space; add a retry limit if that shows up.
-      if (e is! Invalid &&
-          e is! NotFound &&
-          e is! Forbidden &&
-          e is! Conflict) {
+      final j = ok ? await _join(m, uploadId) : false;
+      if (j == null) {
         _completing.remove(uploadId);
-        final file = File('${dir.path}/job.json');
-        if (!ok && file.existsSync()) {
-          await file.writeAsString(jsonEncode({...m, 'abort': true}));
-        }
-        if (report) _events.add((upload: true, ok: false, name: baseName(k)));
         return;
       }
-      // Giving up: abort first, so S3 keeps no billed parts.
-      if (ok) {
-        await _s3
-            .run(p, l, (c) => c.abortMultipart(b, k, uploadId))
-            .catchError((Object _) {});
+      joined = j;
+      if (!joined) {
+        // Giving up: abort first, so S3 keeps no billed parts. The job
+        // stays until S3 dropped them.
+        aborting = true;
+        try {
+          await _s3.run(p, l, (c) => c.abortMultipart(b, k, uploadId));
+        } on NotFound catch (_) {}
       }
+    } on Object catch (e) {
+      // Kept for retryJoins: offline, locked, a server error. Without
+      // keys (Unauthorized) the job waits silently until they are back.
+      // ponytail: a server error that never ends keeps the parts in
+      // temporary space; add a retry limit if that shows up.
+      _completing.remove(uploadId);
+      final file = await _jobFile(m['d']! as String);
+      if (aborting && file.existsSync()) {
+        await file.writeAsString(jsonEncode({...m, 'abort': true}));
+      }
+      if (report && e is! Unauthorized) {
+        _events.add((upload: true, ok: false, name: baseName(k)));
+      }
+      return;
     }
-    await dir.delete(recursive: true).catchError((Object _) => dir);
-    if (done) onUploaded?.call();
-    if (report) _events.add((upload: true, ok: done, name: baseName(k)));
+    await _remove(m['d']! as String);
+    if (joined) onUploaded?.call();
+    if (report) _events.add((upload: true, ok: joined, name: baseName(k)));
   }
+
+  /// Joins the parts of [m]: true once joined, null while parts are
+  /// still coming, false when S3 refused for good.
+  Future<bool?> _join(Map<String, Object?> m, String uploadId) async {
+    final (p, l, b, k) = (
+      m['p']! as String,
+      m['l']! as String,
+      m['b']! as String,
+      m['k']! as String,
+    );
+    final created = switch (m['t']) {
+      final int t => DateTime.fromMillisecondsSinceEpoch(t),
+      _ => null,
+    };
+    try {
+      final parts = await _s3.run(p, l, (c) => c.parts(b, k, uploadId));
+      if (parts.length < (m['n']! as int)) {
+        // Past the link expiry the missing parts never come.
+        return created != null &&
+                DateTime.now().difference(created) > transferLinkExpiry
+            ? false
+            : null;
+      }
+      await _s3.run(p, l, (c) => c.completeMultipart(b, k, uploadId, parts));
+      return true;
+    } on NotFound catch (_) {
+      // Gone: joined by a join whose answer was lost, or dropped. The
+      // object tells: a multipart ETag (`"…-n"`) or written after the job.
+      try {
+        final o = await _s3.run(p, l, (c) => c.head(b, k));
+        return (o.etag ?? '').contains('-') ||
+            (created != null && (o.modified?.isAfter(created) ?? false));
+      } on NotFound catch (_) {
+        return false;
+      }
+    } on Invalid catch (_) {
+      return false;
+    } on Forbidden catch (_) {
+      return false;
+    } on Conflict catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _remove(String name) async {
+    for (final e in <FileSystemEntity>[
+      Directory('$partsRoot/$name'),
+      await _jobFile(name),
+    ]) {
+      try {
+        await e.delete(recursive: true);
+      } on FileSystemException catch (_) {}
+    }
+  }
+}
+
+/// [name] as a file or folder name: no `\` (a path separator to
+/// background_downloader) and at most 255 bytes, the extension kept.
+String _safeName(String name) {
+  final s = name.replaceAll(r'\', '_');
+  final dot = s.lastIndexOf('.');
+  final ext = dot > 0 && s.length - dot <= 16 ? s.substring(dot) : '';
+  final base = s.substring(0, s.length - ext.length).runes.toList();
+  while (utf8.encode(String.fromCharCodes(base) + ext).length > 255) {
+    base.removeLast();
+  }
+  return String.fromCharCodes(base) + ext;
 }
 
 /// Folder of a download below Falco's documents: one per bucket and
@@ -347,17 +449,19 @@ class ObjectTransfers {
 String downloadDirectory(String bucket, String key) => [
   bucket,
   ...(key.split('/')..removeLast()),
-].where((s) => s.isNotEmpty).join('/');
+].where((s) => s.isNotEmpty).map(_safeName).join('/');
 
 /// File name of a download; an older version gets its id, so it does not
 /// replace the current one.
 String downloadName(String key, String? versionId) {
   final name = baseName(key);
-  if (versionId == null) return name;
+  if (versionId == null) return _safeName(name);
   final dot = name.lastIndexOf('.');
-  return dot <= 0
-      ? '$name ($versionId)'
-      : '${name.substring(0, dot)} ($versionId)${name.substring(dot)}';
+  return _safeName(
+    dot <= 0
+        ? '$name ($versionId)'
+        : '${name.substring(0, dot)} ($versionId)${name.substring(dot)}',
+  );
 }
 
 /// The app's transfers; finished uploads refresh the listings.

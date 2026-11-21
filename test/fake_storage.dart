@@ -139,6 +139,9 @@ class FakeObject {
 
   int size;
   String version;
+
+  /// ETag when not the default, e.g. `"j-2"` of a joined upload.
+  String? etag;
   final DateTime modified = DateTime.utc(2026, 2, 3, 10);
 
   /// Older versions as (id, size).
@@ -195,6 +198,15 @@ class FakeStorage {
 
   /// Whether copies answer 200 with an error body.
   bool failCopy = false;
+
+  /// Joins that succeed but whose answer is lost (a server error).
+  int loseJoin = 0;
+
+  /// Whether aborting a multipart upload fails with a server error.
+  bool failAbort = false;
+
+  /// Locations whose every S3 request fails with a server error.
+  final failing = <String>{};
 
   /// Versions per page of a version listing.
   int versionPage = 1000;
@@ -415,6 +427,9 @@ class FakeStorage {
         );
     if (!signed) return (403, '<Error><Code>AccessDenied</Code></Error>');
     final location = o.uri.host.split('.').first;
+    if (failing.contains(location)) {
+      return (500, '<Error><Code>InternalError</Code></Error>');
+    }
     final at = buckets[location] ??= {};
     final q = o.uri.queryParameters;
     final seg = o.uri.pathSegments;
@@ -564,11 +579,19 @@ class FakeStorage {
           return (200, '<Error><Code>InternalError</Code></Error>');
         }
         _store(b, key, u.$3.values.fold(0, (a, s) => a + s));
+        b.objects[key]!.etag = '"j-${u.$3.length}"';
+        if (loseJoin > 0) {
+          loseJoin--;
+          return (500, '<Error><Code>InternalError</Code></Error>');
+        }
         return (
           200,
           '<CompleteMultipartUploadResult><ETag>"j"</ETag></CompleteMultipartUploadResult>',
         );
       case 'DELETE' when q.containsKey('uploadId'):
+        if (failAbort) {
+          return (500, '<Error><Code>InternalError</Code></Error>');
+        }
         uploads.remove(q['uploadId']);
         return (204, null);
       case 'HEAD':
@@ -579,7 +602,7 @@ class FakeStorage {
           FakeResponse('', {
             'content-length': ['${obj.size}'],
             'last-modified': ['Tue, 03 Feb 2026 10:00:00 GMT'],
-            'etag': ['"e$key"'],
+            'etag': [obj.etag ?? '"e$key"'],
             'content-type': ['text/plain'],
           }),
         );
@@ -641,6 +664,7 @@ class FakeTransfers extends ObjectTransfers {
     : super(
         partSize: storage.partSize,
         partsRoot: Directory.systemTemp.createTempSync('falco-parts').path,
+        jobsRoot: Directory.systemTemp.createTempSync('falco-jobs').path,
       );
 
   final FakeStorage storage;
@@ -648,14 +672,22 @@ class FakeTransfers extends ObjectTransfers {
   /// Download tasks handed to the platform.
   final downloadTasks = <DownloadTask>[];
 
+  /// Upload tasks handed to the platform.
+  final uploadTasks = <UploadTask>[];
+
+  /// Whether the platform refuses the next tasks.
+  bool refuse = false;
+
   @override
   Future<void> start() async {}
 
   @override
   Future<void> enqueue(List<Task> tasks) async {
+    if (refuse) throw StateError('enqueue failed');
     for (final t in tasks) {
       final url = Uri.parse(t.url);
       if (t is UploadTask) {
+        uploadTasks.add(t);
         storage.upload(url, await File(await t.filePath()).length());
       } else {
         storage.downloads.add(url);

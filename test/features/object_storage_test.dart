@@ -10,6 +10,7 @@ import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/storage/object_storage.dart';
 import 'package:falco/features/storage/transfers.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -43,6 +44,33 @@ File tempFile(String name, String content) =>
     File('${Directory.systemTemp.createTempSync('falco-test').path}/$name')
       ..writeAsStringSync(content);
 
+/// Writes job [name] of a new multipart upload of `media/x` in fsn1,
+/// changed by [extra]; returns its file.
+Future<File> job(
+  ProviderContainer c,
+  String name,
+  Map<String, Object?> extra,
+) async {
+  final id = await c
+      .read(s3AccessProvider)
+      .run('p1', 'fsn1', (s) => s.createMultipart('media', 'x', 'a/b'));
+  final root = await c.read(transfersProvider).jobsRoot();
+  return File('$root/$name.json')
+    ..createSync(recursive: true)
+    ..writeAsStringSync(
+      jsonEncode({
+        'p': 'p1',
+        'l': 'fsn1',
+        'b': 'media',
+        'k': 'x',
+        'u': id,
+        'n': 2,
+        'd': name,
+        ...extra,
+      }),
+    );
+}
+
 void main() {
   group('buckets', () {
     testWidgets('OBJ-001 OBJ-020 buckets of all locations', (tester) async {
@@ -56,6 +84,16 @@ void main() {
       }
       await tap(tester, 'hel1');
       expect(find.text('media'), findsNothing);
+    });
+
+    testWidgets('a failing location leaves the others standing', (
+      tester,
+    ) async {
+      final cloud = storageCloud()..storage.failing.add('hel1');
+      await openStorage(tester, 'Object Storage', cloud: cloud);
+      expect(find.text('media'), findsOneWidget);
+      expect(find.textContaining('Could not load: '), findsOneWidget);
+      expect(find.textContaining(' hel1.'), findsOneWidget);
     });
 
     testWidgets('OBJ-019 without S3 keys the project points to them', (
@@ -271,6 +309,54 @@ void main() {
       expect(find.text('Download saved: logo.png'), findsOneWidget);
     });
 
+    testWidgets('a finished transfer is shown once, by the folder on top', (
+      tester,
+    ) async {
+      final cloud = storageCloud();
+      cloud.storage.buckets['fsn1']!['media']!.objects['docs/b.txt'] =
+          FakeObject(1);
+      await openBucket(tester, cloud);
+      await tap(tester, 'docs');
+      await objectMenu(tester, 'a.txt', 'Download');
+      await objectMenu(tester, 'b.txt', 'Download');
+      // Every snackbar shown: with one per listening folder level the
+      // second would follow the first.
+      final shown = <SnackBar>{};
+      for (var i = 0; i < 400; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+        shown.addAll(tester.widgetList<SnackBar>(find.byType(SnackBar)));
+      }
+      expect(
+        shown.where((s) => (s.content as Text).data == 'Download saved: b.txt'),
+        hasLength(1),
+      );
+    });
+
+    testWidgets('a download the platform refuses shows an error', (
+      tester,
+    ) async {
+      await openBucket(tester);
+      final c = ProviderScope.containerOf(tester.element(find.text('docs')));
+      (c.read(transfersProvider) as FakeTransfers).refuse = true;
+      await objectMenu(tester, 'logo.png', 'Download');
+      await tester.pumpAndSettle();
+      expect(
+        find.text('The server reported an error. Try again later.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a share link of a dot segment key shows why not', (
+      tester,
+    ) async {
+      final cloud = storageCloud();
+      cloud.storage.buckets['fsn1']!['media']!.objects['..'] = FakeObject(1);
+      await openBucket(tester, cloud);
+      await objectMenu(tester, '..', 'Share link');
+      await tap(tester, '24 hours');
+      expect(find.textContaining('Falco cannot open this object'), findsOne);
+    });
+
     testWidgets('OBJ-013 copy to another key', (tester) async {
       final cloud = await openBucket(tester);
       await objectMenu(tester, 'notes.txt', 'Copy');
@@ -415,8 +501,9 @@ void main() {
       final id = await c
           .read(s3AccessProvider)
           .run('p1', 'fsn1', (s) => s.createMultipart('media', 'x', 'a/b'));
-      final dir = Directory.systemTemp.createTempSync('falco-parts');
-      final events = c.read(transfersProvider).events.first;
+      final transfers = c.read(transfersProvider);
+      final dir = Directory('${transfers.partsRoot}/x1')..createSync();
+      final events = transfers.events.first;
       await c
           .read(transfersProvider)
           .onStatus(
@@ -431,7 +518,7 @@ void main() {
                   'k': 'x',
                   'u': id,
                   'n': 2,
-                  'd': dir.path,
+                  'd': 'x1',
                 }),
               ),
               TaskStatus.failed,
@@ -462,6 +549,9 @@ void main() {
       expect(await event, (upload: true, ok: false, name: 'big.bin'));
       expect(cloud.storage.uploads, hasLength(1));
       expect(Directory(transfers.partsRoot).listSync(), hasLength(1));
+      // The job is kept apart from the part copies in temporary space.
+      final jobs = Directory(await transfers.jobsRoot());
+      expect(jobs.listSync(), hasLength(1));
       expect(s3Calls(cloud).where((c) => c.startsWith('DELETE')), isEmpty);
       event = transfers.events.first;
       await transfers.retryJoins();
@@ -471,6 +561,120 @@ void main() {
         20,
       );
       expect(Directory(transfers.partsRoot).listSync(), isEmpty);
+      expect(jobs.listSync(), isEmpty);
+    });
+
+    test('uploads send no Content-Disposition', () async {
+      final c = await fakeContainer(storageCloud(), s3: true);
+      final transfers = c.read(transfersProvider) as FakeTransfers;
+      final done = transfers.events.first;
+      await transfers.upload(
+        projectId: 'p1',
+        location: 'fsn1',
+        bucket: 'media',
+        key: 'a.txt',
+        file: tempFile('a.txt', 'hi'),
+        contentType: 'text/plain',
+      );
+      expect(transfers.uploadTasks.single.headers, {
+        'Content-Type': 'text/plain',
+        'Content-Disposition': '',
+      });
+      await done;
+    });
+
+    test('a multipart upload the platform refuses is aborted', () async {
+      final cloud = storageCloud();
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = (c.read(transfersProvider) as FakeTransfers)
+        ..refuse = true;
+      await expectLater(
+        transfers.upload(
+          projectId: 'p1',
+          location: 'fsn1',
+          bucket: 'media',
+          key: 'big.bin',
+          file: tempFile('big.bin', 'x' * 20),
+          contentType: 'application/octet-stream',
+        ),
+        throwsStateError,
+      );
+      expect(cloud.storage.uploads, isEmpty);
+      expect(Directory(transfers.partsRoot).listSync(), isEmpty);
+      expect(Directory(await transfers.jobsRoot()).listSync(), isEmpty);
+    });
+
+    test('jobs never enqueued or past the link expiry are aborted', () async {
+      final cloud = storageCloud();
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider);
+      final events = <TransferEvent>[];
+      transfers.events.listen(events.add);
+      final old = DateTime.now().subtract(const Duration(hours: 25));
+      await job(c, 'x1', {});
+      await job(c, 'x2', {'e': true, 't': old.millisecondsSinceEpoch});
+      await transfers.retryJoins();
+      expect(cloud.storage.uploads, isEmpty);
+      expect(Directory(await transfers.jobsRoot()).listSync(), isEmpty);
+      expect(events, [(upload: true, ok: false, name: 'x')]);
+    });
+
+    test('without keys a job waits silently', () async {
+      final c = await fakeContainer(storageCloud(), s3: true);
+      final transfers = c.read(transfersProvider);
+      final events = <TransferEvent>[];
+      transfers.events.listen(events.add);
+      final file = await job(c, 'x1', {'e': true, 'p': 'nokeys'});
+      await transfers.retryJoins();
+      await transfers.retryJoins();
+      expect(events, isEmpty);
+      expect(file.existsSync(), isTrue);
+    });
+
+    test('a job is dropped only once its abort went through', () async {
+      final cloud = storageCloud()..storage.failAbort = true;
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider);
+      final old = DateTime.now().subtract(const Duration(hours: 25));
+      final file = await job(c, 'x1', {
+        'e': true,
+        't': old.millisecondsSinceEpoch,
+      });
+      await transfers.retryJoins();
+      expect(cloud.storage.uploads, hasLength(1));
+      expect(jsonDecode(file.readAsStringSync()), containsPair('abort', true));
+      cloud.storage.failAbort = false;
+      await transfers.retryJoins();
+      expect(cloud.storage.uploads, isEmpty);
+      expect(file.existsSync(), isFalse);
+    });
+
+    test('a join whose answer was lost is found by the object', () async {
+      final cloud = storageCloud()..storage.loseJoin = 1;
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider);
+      var event = transfers.events.first;
+      await transfers.upload(
+        projectId: 'p1',
+        location: 'fsn1',
+        bucket: 'media',
+        key: 'big.bin',
+        file: tempFile('big.bin', 'x' * 20),
+        contentType: 'application/octet-stream',
+      );
+      expect(await event, (upload: true, ok: false, name: 'big.bin'));
+      event = transfers.events.first;
+      await transfers.retryJoins();
+      expect(await event, (upload: true, ok: true, name: 'big.bin'));
+      expect(Directory(await transfers.jobsRoot()).listSync(), isEmpty);
+    });
+
+    test('download names have no backslash and fit the file system', () {
+      expect(downloadName(r'a\b.txt', null), 'a_b.txt');
+      expect(downloadDirectory('media', r'x\y/a.txt'), 'media/x_y');
+      final long = downloadName('${'ä' * 300}.txt', 'v1');
+      expect(utf8.encode(long).length, lessThanOrEqualTo(255));
+      expect(long, endsWith('.txt'));
     });
 
     test('downloads of the same name do not replace each other', () async {

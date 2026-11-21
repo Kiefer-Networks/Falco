@@ -39,7 +39,9 @@ Future<bool> runS3(
       FalcoScaffold.showSnack(context, done);
     }
     return true;
-  } on FalcoError catch (e) {
+  } on Object catch (error) {
+    // Not only S3 answers: the platform refuses a transfer too.
+    final e = toFalcoError(error);
     if (context.mounted) {
       FalcoScaffold.showSnack(
         context,
@@ -279,6 +281,8 @@ class _BucketPageState extends ConsumerState<BucketPage> {
     final provider = objectsProvider(_p, _l, _b, widget.prefix);
     final async = ref.watch(provider);
     ref.listen(transferEventsProvider, (_, next) {
+      // Every folder level listens; only the one on top shows it.
+      if (ModalRoute.of(context)?.isCurrent == false) return;
       if (next.value case final e?) {
         FalcoScaffold.showSnack(context, switch (e) {
           (upload: true, ok: true, :final name) => l10n.uploadDone(name),
@@ -525,15 +529,21 @@ class _BucketPageState extends ConsumerState<BucketPage> {
       selected: '',
     );
     if (picked == null || !mounted) return;
-    final link = await _s3.presign(
-      _p,
-      _l,
-      'GET',
-      _b,
-      o.key,
-      expires: Duration(hours: int.parse(picked)),
+    Uri? link;
+    await runS3(
+      context,
+      () async => link = await _s3.presign(
+        _p,
+        _l,
+        'GET',
+        _b,
+        o.key,
+        expires: Duration(hours: int.parse(picked)),
+      ),
     );
-    if (mounted) await showLink(context, l10n.shareLink, '$link');
+    if (link != null && mounted) {
+      await showLink(context, l10n.shareLink, '$link');
+    }
   }
 
   Future<void> _uploadLink() {
