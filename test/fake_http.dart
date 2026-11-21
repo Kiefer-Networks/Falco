@@ -24,18 +24,39 @@ class FakeAdapter implements HttpClientAdapter {
   ) async {
     requests.add(options);
     final (status, body) = handler(options);
+    // S3 answers XML (a String), optionally with headers (HeadObject).
+    final (text, headers) = switch (body) {
+      FakeResponse(:final text, :final headers) => (text, headers),
+      final String xml => (xml, const <String, List<String>>{}),
+      null => ('', const <String, List<String>>{}),
+      _ => (jsonEncode(body), const <String, List<String>>{}),
+    };
     return ResponseBody.fromString(
-      body == null ? '' : jsonEncode(body),
+      text,
       status,
       headers: {
-        Headers.contentTypeHeader: ['application/json'],
+        Headers.contentTypeHeader: [
+          if (body is String || body is FakeResponse)
+            'application/xml'
+          else
+            'application/json',
+        ],
         if (status == 429) 'retry-after': ['7'],
+        ...headers,
       },
     );
   }
 
   @override
   void close({bool force = false}) {}
+}
+
+/// A raw response body with headers.
+class FakeResponse {
+  const new(this.text, [this.headers = const {}]);
+
+  final String text;
+  final Map<String, List<String>> headers;
 }
 
 /// A real [createDio] client whose transport is [adapter].

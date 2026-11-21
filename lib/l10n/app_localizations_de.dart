@@ -544,6 +544,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'apply_firewall': 'Firewall anwenden',
       'remove_firewall': 'Firewall entfernen',
       'set_firewall_rules': 'Firewall Regeln setzen',
+      'create': 'Erstellen',
+      'delete': 'Löschen',
+      'change_type': 'Typ ändern',
+      'update_access_settings': 'Zugriff ändern',
+      'rollback_snapshot': 'Snapshot zurücksetzen',
+      'enable_snapshot_plan': 'Snapshot Plan aktivieren',
+      'disable_snapshot_plan': 'Snapshot Plan abschalten',
+      'create_snapshot': 'Snapshot erstellen',
+      'delete_snapshot': 'Snapshot löschen',
+      'create_subaccount': 'Subaccount anlegen',
+      'delete_subaccount': 'Subaccount löschen',
+      'reset_subaccount_password': 'Subaccount Passwort zurücksetzen',
+      'change_home_directory': 'Home Verzeichnis ändern',
       'other': '',
     });
     return '$_temp0';
@@ -2325,4 +2338,415 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get zonefileTooLarge => 'Die Datei ist größer als 1 MiB.';
+
+  @override
+  String get accessExternal => 'Von außen erreichbar';
+
+  @override
+  String get accessReadonly => 'Nur lesen';
+
+  @override
+  String get accessSamba => 'Samba (SMB)';
+
+  @override
+  String get accessSsh => 'SSH und SFTP';
+
+  @override
+  String get accessWebdav => 'WebDAV';
+
+  @override
+  String get accessZfs => 'ZFS Snapshot Ordner';
+
+  @override
+  String get boxAccessSettings => 'Zugriff';
+
+  @override
+  String get boxAutomatic => 'Automatisch';
+
+  @override
+  String get boxAutomaticSnapshots => 'Automatische Snapshots';
+
+  @override
+  String get boxChangeType => 'Typ ändern';
+
+  @override
+  String get boxDeleteConsequence =>
+      'Die Storage Box, ihre Snapshots und Subaccounts werden mit allen Daten gelöscht. Das lässt sich nicht rückgängig machen.';
+
+  @override
+  String get boxEveryDay => 'Jeden Tag';
+
+  @override
+  String get boxMaxSnapshots => 'Aufzubewahrende Snapshots';
+
+  @override
+  String get boxNewFolder => 'Neuer Ordner';
+
+  @override
+  String get boxPasswordHint =>
+      '12 bis 128 Zeichen mit Groß- und Kleinbuchstaben, einer Ziffer und einem Sonderzeichen.';
+
+  @override
+  String boxPlanDaily(String time) {
+    return 'Täglich um $time';
+  }
+
+  @override
+  String get boxPlanHour => 'Stunde';
+
+  @override
+  String boxPlanKeeps(String when, int count) {
+    return '$when, behält $count';
+  }
+
+  @override
+  String get boxPlanMinute => 'Minute';
+
+  @override
+  String get boxPlanMonthday => 'Tag im Monat';
+
+  @override
+  String boxPlanMonthly(int day, String time) {
+    return 'Monatlich am $day. um $time';
+  }
+
+  @override
+  String get boxPlanUtc => 'Zeiten in UTC.';
+
+  @override
+  String get boxPlanWeekday => 'Wochentag';
+
+  @override
+  String boxPlanWeekly(String day, String time) {
+    return 'Jeden $day um $time';
+  }
+
+  @override
+  String get boxResetPassword => 'Passwort zurücksetzen';
+
+  @override
+  String get boxRollback => 'Zurücksetzen';
+
+  @override
+  String get boxRollbackConsequence =>
+      'Alle Daten der Storage Box werden durch den Stand dieses Snapshots ersetzt. Neuere Daten gehen verloren.';
+
+  @override
+  String boxRollbackTitle(String name) {
+    return 'Auf $name zurücksetzen?';
+  }
+
+  @override
+  String get boxSnapshotCreate => 'Snapshot erstellen';
+
+  @override
+  String get boxSnapshotDeleteConsequence =>
+      'Der Snapshot wird gelöscht. Das lässt sich nicht rückgängig machen.';
+
+  @override
+  String get boxSnapshotPlan => 'Snapshot Plan';
+
+  @override
+  String get boxUsage => 'Belegung';
+
+  @override
+  String get boxUsedData => 'Belegt durch Daten';
+
+  @override
+  String boxUsedOf(String used, String size) {
+    return '$used von $size belegt';
+  }
+
+  @override
+  String get boxUsedSnapshots => 'Belegt durch Snapshots';
+
+  @override
+  String get bucketCreate => 'Bucket erstellen';
+
+  @override
+  String get bucketDelete => 'Bucket löschen';
+
+  @override
+  String get bucketDeleteConsequence =>
+      'Der Bucket wird gelöscht. Er muss leer sein.';
+
+  @override
+  String get bucketNameHint =>
+      '3 bis 63 Kleinbuchstaben, Ziffern, Punkte und Bindestriche.';
+
+  @override
+  String get bucketNotEmpty =>
+      'Der Bucket ist nicht leer. Lösche zuerst seine Objekte.';
+
+  @override
+  String get bucketPrivate => 'Privat';
+
+  @override
+  String get bucketPublic => 'Öffentlich';
+
+  @override
+  String get bucketPublicHint =>
+      'Öffentlich: alle können die Objekte ohne Link lesen.';
+
+  @override
+  String get bucketSettings => 'Bucket Einstellungen';
+
+  @override
+  String get bucketVersioning => 'Versionierung';
+
+  @override
+  String get bucketVersioningHint =>
+      'Aktiviert behält jede Version eines Objekts. Ausgesetzt behält vorhandene Versionen, legt aber keine neuen an; ganz abschalten lässt sie sich nicht mehr.';
+
+  @override
+  String get bucketVisibility => 'Sichtbarkeit';
+
+  @override
+  String get commonShare => 'Teilen';
+
+  @override
+  String days(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Tage',
+      one: '1 Tag',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String downloadSaved(String name) {
+    return 'Download gespeichert: $name';
+  }
+
+  @override
+  String downloadStarted(String name) {
+    return '$name wird im Hintergrund geladen';
+  }
+
+  @override
+  String get emptyBoxSnapshots => 'Noch keine Snapshots.';
+
+  @override
+  String get emptyBuckets => 'Noch keine Buckets in diesem Projekt.';
+
+  @override
+  String get emptyObjects => 'Dieser Ordner ist leer.';
+
+  @override
+  String get emptyStorageBoxes => 'Noch keine Storage Boxen in diesem Projekt.';
+
+  @override
+  String get emptySubaccounts => 'Noch keine Subaccounts.';
+
+  @override
+  String get fieldContentType => 'Inhaltstyp';
+
+  @override
+  String get fieldEtag => 'ETag';
+
+  @override
+  String get fieldFolderName => 'Ordnername';
+
+  @override
+  String get fieldHomeDirectory => 'Home Verzeichnis';
+
+  @override
+  String get fieldKey => 'Schlüssel';
+
+  @override
+  String get fieldModified => 'Zuletzt geändert';
+
+  @override
+  String get fieldPassword => 'Passwort';
+
+  @override
+  String get fieldPasswordRepeat => 'Passwort wiederholen';
+
+  @override
+  String get fieldServer => 'Server';
+
+  @override
+  String get fieldUsername => 'Benutzer';
+
+  @override
+  String get folderCreate => 'Ordner anlegen';
+
+  @override
+  String hours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Stunden',
+      one: '1 Stunde',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get objectCopy => 'Kopieren';
+
+  @override
+  String get objectDeleteConsequence =>
+      'Die Objekte werden gelöscht. Mit Versionierung bleiben ältere Versionen erhalten.';
+
+  @override
+  String get objectDownload => 'Herunterladen';
+
+  @override
+  String get objectInfo => 'Info';
+
+  @override
+  String get objectKeyInvalid =>
+      'Diese Datei kann unter diesem Namen nicht gespeichert werden.';
+
+  @override
+  String get objectMove => 'Verschieben';
+
+  @override
+  String get objectUpload => 'Hochladen';
+
+  @override
+  String get objectVersions => 'Versionen';
+
+  @override
+  String objectsDeleteTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Objekte löschen?',
+      one: '1 Objekt löschen?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String objectsDeleted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Objekte gelöscht',
+      one: '1 Objekt gelöscht',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String objectsDeletedPartly(int deleted, int failed) {
+    return '$deleted gelöscht, $failed fehlgeschlagen und weiter ausgewählt';
+  }
+
+  @override
+  String get resourceBoxSnapshot => 'Snapshot';
+
+  @override
+  String get resourceBucket => 'Bucket';
+
+  @override
+  String get resourceBuckets => 'Buckets';
+
+  @override
+  String get resourceObjectStorage => 'Object Storage';
+
+  @override
+  String get resourceStorageBox => 'Storage Box';
+
+  @override
+  String get resourceStorageBoxes => 'Storage Boxen';
+
+  @override
+  String get resourceSubaccount => 'Subaccount';
+
+  @override
+  String get s3NoKeysHint =>
+      'Dieses Projekt hat keine S3 Schlüssel. Hinterlege sie am Projekt, um Object Storage zu nutzen.';
+
+  @override
+  String get sectionSnapshots => 'Snapshots';
+
+  @override
+  String get sectionSubaccounts => 'Subaccounts';
+
+  @override
+  String get selectionClear => 'Auswahl aufheben';
+
+  @override
+  String get shareExpiry => 'Gültig für';
+
+  @override
+  String get shareLink => 'Freigabelink';
+
+  @override
+  String get statusActive => 'aktiv';
+
+  @override
+  String get statusLocked => 'gesperrt';
+
+  @override
+  String get storageBoxCreate => 'Storage Box erstellen';
+
+  @override
+  String get subaccountCreate => 'Subaccount anlegen';
+
+  @override
+  String get subaccountDeleteConsequence =>
+      'Der Subaccount kann sich nicht mehr anmelden. Seine Dateien bleiben in der Storage Box.';
+
+  @override
+  String get transferDone => 'Übertragung fertig';
+
+  @override
+  String get transferFailed => 'Übertragung fehlgeschlagen';
+
+  @override
+  String transferFailedNamed(String name) {
+    return 'Übertragung von $name fehlgeschlagen';
+  }
+
+  @override
+  String get transferRunning => 'Wird übertragen';
+
+  @override
+  String uploadDone(String name) {
+    return 'Hochgeladen: $name';
+  }
+
+  @override
+  String get uploadLink => 'Upload Link';
+
+  @override
+  String uploadStarted(String name) {
+    return '$name wird im Hintergrund hochgeladen';
+  }
+
+  @override
+  String get versionDeleteMarker => 'gelöscht';
+
+  @override
+  String get versionLatest => 'aktuell';
+
+  @override
+  String get versionRestore => 'Wiederherstellen';
+
+  @override
+  String get versionRestoreConsequence =>
+      'Diese Version wird wieder das aktuelle Objekt; das aktuelle bleibt als ältere Version.';
+
+  @override
+  String versionRestoreTitle(String name) {
+    return 'Diese Version von $name wiederherstellen?';
+  }
+
+  @override
+  String get versioningEnabled => 'Aktiviert';
+
+  @override
+  String get versioningNever => 'Nie aktiviert';
+
+  @override
+  String get versioningSuspended => 'Ausgesetzt';
+
+  @override
+  String get versionsEmpty => 'Keine Versionen.';
 }

@@ -4,6 +4,7 @@ import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/compute/compute_page.dart';
 import 'package:falco/features/network/network_page.dart';
+import 'package:falco/features/storage/storage_page.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/foundation.dart';
@@ -157,10 +158,11 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
           ),
         ],
       ),
-      // Storage and Robot follow in Phases 6 and 7.
+      // Robot follows in Phase 7.
       body: switch (_area) {
         0 when scope is! RobotScope => ComputePage(scope: scope),
         1 when scope is! RobotScope => NetworkPage(scope: scope),
+        2 when scope is! RobotScope => StoragePage(scope: scope),
         _ => EmptyHint(message: l10n.scopeEmpty),
       },
     );

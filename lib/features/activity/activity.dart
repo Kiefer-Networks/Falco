@@ -18,6 +18,7 @@ import 'package:falco/features/network/networks.dart';
 import 'package:falco/features/placement_groups/placement_groups.dart';
 import 'package:falco/features/servers/servers.dart';
 import 'package:falco/features/ssh_keys/ssh_keys.dart';
+import 'package:falco/features/storage/storage_boxes.dart';
 import 'package:falco/features/volumes/volumes.dart';
 import 'package:hetzner_cloud_api/hetzner_cloud_api.dart' as cloud;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -104,6 +105,20 @@ void refreshResource(
       invalidate(zonesProvider);
       invalidate(rrsetsProvider);
       invalidate(rrsetProvider);
+    case storageBoxType:
+      invalidate(storageBoxProvider(scope, id));
+      invalidate(storageBoxesProvider);
+      invalidate(boxSnapshotsProvider(scope, id));
+      invalidate(subaccountsProvider(scope, id));
+      invalidate(boxActionsProvider(scope, id));
+      invalidate(boxFoldersProvider(scope, id));
+    // Their box id is not part of the action; reload them all.
+    case 'storage_box_snapshot':
+      invalidate(boxSnapshotsProvider);
+      invalidate(boxSnapshotProvider);
+    case 'storage_box_subaccount':
+      invalidate(subaccountsProvider);
+      invalidate(subaccountProvider);
   }
   invalidate(activityProvider);
 }
@@ -179,13 +194,17 @@ Future<List<ActionProgress>> activity(
     list(
       (p) => cloud.ZoneActionsApi(api).listZonesActions(page: p, perPage: n),
     ),
+    // Last: Storage Box action ids are their own series, kept apart so
+    // equal ids do not hide each other (STB-022).
+    allBoxActions(ref.watch(storageBoxApiProvider(scope.projectId))),
   ]);
+  final boxes = lists.removeLast();
   // An action touching a server and a volume is listed by both.
   final byId = {
     for (final l in lists)
       for (final a in l) a.id: a,
   };
-  final all = byId.values.toList()
+  final all = [...byId.values, ...boxes]
     ..sort(
       (a, b) => (b.started ?? DateTime(0)).compareTo(a.started ?? DateTime(0)),
     );
@@ -227,6 +246,20 @@ ActionTracker actionTracker(Ref ref, ProjectScope scope) => ActionTracker(
   },
 );
 
+/// Follows the Storage Box actions of one project (api.hetzner.com has
+/// its own action ids) and refreshes what they touched (STB-027).
+@Riverpod(keepAlive: true)
+ActionTracker storageBoxTracker(Ref ref, ProjectScope scope) => ActionTracker(
+  (id) =>
+      boxActionFetcher(ref.read(storageBoxApiProvider(scope.projectId)))(id),
+  onDone: (action) {
+    for (final (type, id) in action.resources) {
+      refreshResource(ref.invalidate, scope, type, id);
+    }
+    ref.invalidate(activityProvider);
+  },
+);
+
 /// The latest tracked action touching resource [type] [id]: the running
 /// one when the page opens, then every update until it ends. Read from
 /// the tracker, so progress survives leaving and reopening the page.
@@ -237,7 +270,9 @@ Stream<ActionProgress?> trackedAction(
   String type,
   int id,
 ) async* {
-  final tracker = ref.watch(actionTrackerProvider(scope));
+  final tracker = type == storageBoxType
+      ? ref.watch(storageBoxTrackerProvider(scope))
+      : ref.watch(actionTrackerProvider(scope));
   bool touches(ActionProgress a) => a.resources.contains((type, id));
   yield tracker.running.where(touches).lastOrNull;
   yield* tracker.changes.where(touches);

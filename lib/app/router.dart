@@ -24,6 +24,8 @@ import 'package:falco/features/servers/create_server_page.dart';
 import 'package:falco/features/servers/server_detail_page.dart';
 import 'package:falco/features/settings/settings_page.dart';
 import 'package:falco/features/ssh_keys/ssh_key_pages.dart';
+import 'package:falco/features/storage/object_pages.dart';
+import 'package:falco/features/storage/storage_box_pages.dart';
 import 'package:falco/features/volumes/volume_pages.dart';
 import 'package:falco/ui/showcase/showcase_page.dart';
 import 'package:falco/ui/ui.dart';
@@ -272,6 +274,8 @@ enum CreateKind {
   loadBalancer,
   certificate,
   zone,
+  storageBox,
+  bucket,
 }
 
 /// Create wizard of [kind] for a project, or for "All projects" when
@@ -311,6 +315,8 @@ class CreateRoute extends GoRouteData with $CreateRoute {
       CreateKind.loadBalancer => CreateLoadBalancerPage(scope: scope),
       CreateKind.certificate => CreateCertificatePage(scope: scope),
       CreateKind.zone => CreateZonePage(scope: scope),
+      CreateKind.storageBox => CreateStorageBoxPage(scope: scope),
+      CreateKind.bucket => CreateBucketPage(scope: scope),
     };
   }
 }
@@ -552,5 +558,107 @@ class RRSetRoute extends GoRouteData with $RRSetRoute {
     zoneId: zoneId,
     name: name,
     type: type,
+  );
+}
+
+/// One Storage Box.
+@TypedGoRoute<StorageBoxRoute>(
+  path: '/a/:accountId/p/:projectId/storage-boxes/:boxId',
+)
+class StorageBoxRoute extends GoRouteData with $StorageBoxRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.boxId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int boxId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      StorageBoxDetailPage(
+        scope: ProjectScope(accountId, projectId),
+        boxId: boxId,
+      );
+}
+
+/// One snapshot of a Storage Box.
+@TypedGoRoute<BoxSnapshotRoute>(
+  path: '/a/:accountId/p/:projectId/storage-boxes/:boxId/snapshots/:snapshotId',
+)
+class BoxSnapshotRoute extends GoRouteData with $BoxSnapshotRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.boxId,
+    required this.snapshotId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int boxId;
+  final int snapshotId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => BoxSnapshotPage(
+    scope: ProjectScope(accountId, projectId),
+    boxId: boxId,
+    snapshotId: snapshotId,
+  );
+}
+
+/// One subaccount of a Storage Box.
+@TypedGoRoute<SubaccountRoute>(
+  path: '/a/:accountId/p/:projectId/storage-boxes/:boxId/subaccounts/:subaccountId',
+)
+class SubaccountRoute extends GoRouteData with $SubaccountRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.boxId,
+    required this.subaccountId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int boxId;
+  final int subaccountId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => SubaccountPage(
+    scope: ProjectScope(accountId, projectId),
+    boxId: boxId,
+    subaccountId: subaccountId,
+  );
+}
+
+/// The object browser of a bucket at location [region], below
+/// `?prefix=`.
+@TypedGoRoute<BucketRoute>(
+  path: '/a/:accountId/p/:projectId/buckets/:region/:bucket',
+)
+class BucketRoute extends GoRouteData with $BucketRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.region,
+    required this.bucket,
+    this.prefix = '',
+  });
+
+  final String accountId;
+  final String projectId;
+  final String region;
+  final String bucket;
+  final String prefix;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => BucketPage(
+    scope: ProjectScope(accountId, projectId),
+    location: region,
+    bucket: bucket,
+    prefix: prefix,
   );
 }

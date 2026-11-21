@@ -76,7 +76,7 @@ final class ActivityProvider
   }
 }
 
-String _$activityHash() => r'60d7115cd02f3ca564f45d76a475115fe97435cd';
+String _$activityHash() => r'c1fd076eccfb881cfa56c1b303d71026d50a39cc';
 
 /// Actions of a project, newest first: every resource type with an
 /// action list. With [serverId] those of one server. All pages, like
@@ -199,6 +199,97 @@ final class ActionTrackerFamily extends $Family
   String toString() => r'actionTrackerProvider';
 }
 
+/// Follows the Storage Box actions of one project (api.hetzner.com has
+/// its own action ids) and refreshes what they touched (STB-027).
+
+@ProviderFor(storageBoxTracker)
+final storageBoxTrackerProvider = StorageBoxTrackerFamily._();
+
+/// Follows the Storage Box actions of one project (api.hetzner.com has
+/// its own action ids) and refreshes what they touched (STB-027).
+
+final class StorageBoxTrackerProvider
+    extends $FunctionalProvider<ActionTracker, ActionTracker, ActionTracker>
+    with $Provider<ActionTracker> {
+  /// Follows the Storage Box actions of one project (api.hetzner.com has
+  /// its own action ids) and refreshes what they touched (STB-027).
+  StorageBoxTrackerProvider._({
+    required StorageBoxTrackerFamily super.from,
+    required ProjectScope super.argument,
+  }) : super(
+         retry: null,
+         name: r'storageBoxTrackerProvider',
+         isAutoDispose: false,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$storageBoxTrackerHash();
+
+  @override
+  String toString() {
+    return r'storageBoxTrackerProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<ActionTracker> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ActionTracker create(Ref ref) {
+    final argument = this.argument as ProjectScope;
+    return storageBoxTracker(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ActionTracker value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ActionTracker>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is StorageBoxTrackerProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$storageBoxTrackerHash() => r'f1d6a78451326c4a4565a3935dd3ed9801039559';
+
+/// Follows the Storage Box actions of one project (api.hetzner.com has
+/// its own action ids) and refreshes what they touched (STB-027).
+
+final class StorageBoxTrackerFamily extends $Family
+    with $FunctionalFamilyOverride<ActionTracker, ProjectScope> {
+  StorageBoxTrackerFamily._()
+    : super(
+        retry: null,
+        name: r'storageBoxTrackerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: false,
+      );
+
+  /// Follows the Storage Box actions of one project (api.hetzner.com has
+  /// its own action ids) and refreshes what they touched (STB-027).
+
+  StorageBoxTrackerProvider call(ProjectScope scope) =>
+      StorageBoxTrackerProvider._(argument: scope, from: this);
+
+  @override
+  String toString() => r'storageBoxTrackerProvider';
+}
+
 /// The latest tracked action touching resource [type] [id]: the running
 /// one when the page opens, then every update until it ends. Read from
 /// the tracker, so progress survives leaving and reopening the page.
@@ -265,7 +356,7 @@ final class TrackedActionProvider
   }
 }
 
-String _$trackedActionHash() => r'911230b9e5c0a01b05e2a2938905e8dd60b4d107';
+String _$trackedActionHash() => r'7d467b4a3497ea72b2f186600251b64c4cfe1962';
 
 /// The latest tracked action touching resource [type] [id]: the running
 /// one when the page opens, then every update until it ends. Read from
