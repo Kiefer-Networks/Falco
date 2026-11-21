@@ -1,19 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/app/areas.dart';
 import 'package:falco/core/format/format.dart';
 import 'package:falco/core/scope/scope.dart';
+import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/activity/activity.dart';
 import 'package:falco/features/compute/catalog.dart';
 import 'package:falco/features/images/images.dart';
 import 'package:falco/features/placement_groups/placement_groups.dart';
+import 'package:falco/features/servers/create_server_page.dart';
 import 'package:falco/features/servers/server_actions.dart';
 import 'package:falco/features/servers/servers.dart';
 import 'package:falco/features/ssh_keys/ssh_keys.dart';
+import 'package:falco/features/storage/object_storage.dart';
+import 'package:falco/features/storage/storage_boxes.dart';
 import 'package:falco/features/volumes/volume_pages.dart';
 import 'package:falco/features/volumes/volumes.dart';
+import 'package:falco/l10n/app_localizations_en.dart';
+import 'package:falco/ui/ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../fake_cloud.dart';
+import '../helpers.dart' show testApp;
 import '../steps.dart';
 
 const _scope = ProjectScope('a1', 'p1');
@@ -177,6 +186,7 @@ void main() {
         volumeGross: 0.05,
         volumeNet: 0.04,
         vatRate: 19,
+        ipv4Gross: <String, num>{},
       );
       expect(volumePrice(100, p), (gross: 5.0, net: 4.0));
       expect(validResize('60', 50), isTrue);
@@ -242,6 +252,17 @@ void main() {
         'delete': true,
       });
       await settleAction(tester);
+    });
+
+    testWidgets('CMP-094 a description has no length limit', (tester) async {
+      final cloud = await openTab(tester, 'Images', cloud: withImages());
+      await tap(tester, 'auto');
+      await tap(tester, 'Edit');
+      final long = 'd' * 100;
+      await tester.enterText(find.byKey(const ValueKey('name')), long);
+      await tester.pumpAndSettle();
+      await tap(tester, 'Save');
+      expect(cloud.body('PUT /images/9')['description'], long);
     });
 
     testWidgets('CMP-095 delete needs the description', (tester) async {
@@ -455,6 +476,85 @@ void main() {
       expect([for (final t in options) t.name], [server.type, 'big']);
     },
   );
+
+  test(
+    'CMP-033 the current type stays without price at its location',
+    () async {
+      final c = await fakeContainer(FakeCloud());
+      final server = await c.read(serverProvider(_scope, 1).future);
+      final options = changeTypeOptions([
+        ServerType(
+          id: 1,
+          name: server.type,
+          cores: 2,
+          memoryGb: 4,
+          diskGb: server.diskGb,
+          architecture: server.architecture,
+          prices: const {},
+          deprecated: true,
+        ),
+      ], server);
+      expect([for (final t in options) t.name], [server.type]);
+    },
+  );
+
+  test('CMP-031 boot images are available and fit the disk', () {
+    CloudImage image(int id, {num disk = 5, ResourceStatus? status}) =>
+        CloudImage(
+          id: id,
+          projectId: 'p1',
+          kind: ImageKind.system,
+          description: 'image $id',
+          status: status ?? ResourceStatus.available,
+          architecture: 'x86',
+          created: DateTime(2026),
+          diskGb: disk,
+        );
+    final boot = bootImages(
+      [
+        image(1),
+        image(2, disk: 80),
+        image(3, status: ResourceStatus.initializing),
+      ],
+      'x86',
+      40,
+      AppLocalizationsEn(),
+    );
+    expect(boot.options.keys, ['1']);
+  });
+
+  testWidgets('the Images tile counts own images only', (tester) async {
+    final semantics = tester.ensureSemantics();
+    setSurface(tester);
+    await pumpFalco(tester, FakeCloud());
+    expect(find.bySemanticsLabel(RegExp(r'^Images, 0\b')), findsOneWidget);
+    semantics.dispose();
+  });
+
+  testWidgets('the overview names projects that could not load', (
+    tester,
+  ) async {
+    const all = AllProjectsScope('a1');
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          accountsProvider.overrideWith((ref) async => const [acme]),
+          storageBoxesProvider(all).overrideWith(
+            (ref) async => PartialList(<StorageBox>[], const [
+              Project(id: 'p2', name: 'staging'),
+            ]),
+          ),
+          bucketsProvider(all).overrideWith((ref) async => null),
+        ],
+        child: testApp(const AreaOverviewPage(scope: all, area: Area.storage)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Could not load: staging. Showing the other projects.'),
+      findsOneWidget,
+    );
+  });
 
   group('catalog and activity', () {
     test('CMP-009 CMP-078 CMP-079 CMP-080 CMP-092 CMP-097 CMP-098 options of '

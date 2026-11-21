@@ -163,11 +163,12 @@ Future<bool> showServiceSheet(
   LbService? initial,
 }) async {
   final l10n = AppLocalizations.of(context);
-  final certificates = {
-    for (final c in await ref.read(certificatesProvider(scope).future))
-      '${c.id}': c.name,
-  };
-  if (!context.mounted) return false;
+  final all = await loadForPicker(
+    context,
+    () => ref.read(certificatesProvider(scope).future),
+  );
+  if (all == null || !context.mounted) return false;
+  final certificates = {for (final c in all) '${c.id}': c.name};
   final values = initial == null ? _newService : serviceValues(initial);
   return await FormSheet.show(
     context,
@@ -190,8 +191,11 @@ Future<bool> showTargetSheet(
   required Future<void> Function(LbTarget target) save,
 }) async {
   final l10n = AppLocalizations.of(context);
-  final servers = await ref.read(serversProvider(scope).future);
-  if (!context.mounted) return false;
+  final servers = await loadForPicker(
+    context,
+    () => ref.read(serversProvider(scope).future),
+  );
+  if (servers == null || !context.mounted) return false;
   final yesNo = {'true': l10n.commonYes, 'false': l10n.commonNo};
   return await FormSheet.show(
     context,
@@ -328,8 +332,11 @@ class LoadBalancerDetailPage extends ConsumerWidget {
     );
 
     Future<void> changeType() async {
-      final types = await ref.read(loadBalancerTypesProvider(scope).future);
-      if (!context.mounted) return;
+      final types = await loadForPicker(
+        context,
+        () => ref.read(loadBalancerTypesProvider(scope).future),
+      );
+      if (types == null || !context.mounted) return;
       final pick = await ChoiceList.show(
         context,
         title: l10n.lbChangeType,
@@ -346,11 +353,15 @@ class LoadBalancerDetailPage extends ConsumerWidget {
     }
 
     Future<void> attachNetwork() async {
+      final networks = await loadForPicker(
+        context,
+        () => ref.read(networksProvider(scope).future),
+      );
+      if (networks == null || !context.mounted) return;
       final all = [
-        for (final n in await ref.read(networksProvider(scope).future))
+        for (final n in networks)
           if (!lb.privateNets.any((p) => p.network == n.id)) n,
       ];
-      if (!context.mounted) return;
       if (all.isEmpty) {
         FalcoScaffold.showSnack(context, l10n.serverNoNetworks);
         return;

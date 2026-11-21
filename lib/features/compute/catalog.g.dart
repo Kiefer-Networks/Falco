@@ -334,7 +334,7 @@ final class PricingProvider
   }
 }
 
-String _$pricingHash() => r'4d7548e4bdeef5656ebeeec700d63c967aacda6d';
+String _$pricingHash() => r'ef5af989bfa2b58f889ff0a5dcc3ed5380db3a2c';
 
 /// Currency and volume prices of the project (CMP-078).
 

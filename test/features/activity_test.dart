@@ -6,6 +6,7 @@ import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/activity/activity.dart';
 import 'package:falco/features/activity/activity_page.dart';
+import 'package:falco/features/images/images.dart';
 import 'package:falco/features/volumes/volumes.dart';
 import 'package:falco/l10n/app_localizations_en.dart';
 import 'package:falco/ui/ui.dart';
@@ -57,6 +58,12 @@ void main() {
     final invalidated = <ProviderOrFamily>[];
     refreshResource(invalidated.add, _scope, CloudType.server, 1);
     expect(invalidated, containsAll(<Object>[volumesProvider, volumeProvider]));
+  });
+
+  test('QRS-028 a server change reloads the images too', () {
+    final invalidated = <ProviderOrFamily>[];
+    refreshResource(invalidated.add, _scope, CloudType.server, 1);
+    expect(invalidated, containsAll(<Object>[imagesProvider, imageProvider]));
   });
 
   testWidgets('SUC-011 the preview of a detail says loading and failure', (

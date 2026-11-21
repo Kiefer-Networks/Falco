@@ -235,11 +235,23 @@ Map<String, Object?> sshKeyJson({required int id, required String name}) => {
 
 Map<String, Object?> _price(String v) => {'net': v, 'gross': v};
 
-/// A complete `pricing` object: EUR, volumes 0.0440 per GB and month.
+/// A complete `pricing` object: EUR, volumes 0.0440 per GB and month,
+/// a Primary IPv4 in fsn1 0.50 a month.
 final Map<String, Object?> pricingJson = {
   'currency': 'EUR',
   'vat_rate': '19.00',
-  'primary_ips': <Object?>[],
+  'primary_ips': [
+    {
+      'type': 'ipv4',
+      'prices': [
+        {
+          'location': 'fsn1',
+          'price_hourly': _price('0.0008000000'),
+          'price_monthly': _price('0.5000000000'),
+        },
+      ],
+    },
+  ],
   'floating_ips': <Object?>[],
   'image': {'price_per_gb_month': _price('0.0110000000')},
   'volume': {'price_per_gb_month': _price('0.0440000000')},
@@ -1203,7 +1215,8 @@ List<Override> fakeApis(FakeCloud cloud) => [
 ];
 
 /// Pumps the whole app against [cloud], unlocked, with [accounts] stored.
-/// Authentication succeeds, or answers from [answers] in order.
+/// Authentication succeeds, or answers from [answers] in order;
+/// [overrides] replace single providers.
 Future<ProviderContainer> pumpFalco(
   WidgetTester tester,
   FakeCloud cloud, {
@@ -1212,6 +1225,7 @@ Future<ProviderContainer> pumpFalco(
   Map<String, Object> prefs = const {},
   List<bool?>? answers,
   bool s3 = false,
+  List<Override> overrides = const [],
 }) async {
   seedSecrets(accounts, s3: s3);
   final container = ProviderContainer(
@@ -1229,6 +1243,7 @@ Future<ProviderContainer> pumpFalco(
         (_) async => answers == null ? true : answers.removeAt(0),
       ),
       ...fakeApis(cloud),
+      ...overrides,
     ],
   );
   addTearDown(container.dispose);
@@ -1244,12 +1259,14 @@ Future<ProviderContainer> fakeContainer(
   FakeCloud cloud, {
   List<Account> accounts = const [acme],
   bool s3 = false,
+  List<Override> overrides = const [],
 }) async {
   seedSecrets(accounts, s3: s3);
   final container = ProviderContainer(
     overrides: [
       preferencesProvider.overrideWithValue(await testPrefs()),
       ...fakeApis(cloud),
+      ...overrides,
     ],
   );
   addTearDown(container.dispose);

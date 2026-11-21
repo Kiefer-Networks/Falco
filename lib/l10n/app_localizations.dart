@@ -2030,6 +2030,24 @@ abstract class AppLocalizations {
   /// **'{price}/month'**
   String perMonth(String price);
 
+  /// No description provided for @priceServerOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} (server only)'**
+  String priceServerOnly(String price);
+
+  /// No description provided for @priceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'price not available'**
+  String get priceUnavailable;
+
+  /// No description provided for @typeCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'current'**
+  String get typeCurrent;
+
   /// No description provided for @priceMonthly.
   ///
   /// In en, this message translates to:
@@ -2065,6 +2083,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No placement groups in this project. Create one under Compute first.'**
   String get placementGroupNone;
+
+  /// No description provided for @placementGroupNeedsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Power off the server before adding it to a placement group.'**
+  String get placementGroupNeedsOff;
 
   /// No description provided for @placementGroupRemove.
   ///

@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/core/errors/falco_error.dart';
+import 'package:falco/core/scope/scope.dart';
+import 'package:falco/features/ssh_keys/ssh_keys.dart';
+import 'package:falco/ui/ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -6,6 +10,30 @@ import '../fake_cloud.dart';
 import '../steps.dart';
 
 void main() {
+  testWidgets('CMP-011 SSH keys that fail to load are an error, not none', (
+    tester,
+  ) async {
+    setSurface(tester);
+    await pumpFalco(
+      tester,
+      FakeCloud(),
+      overrides: [
+        sshKeysProvider(const ProjectScope('a1', 'p1'))
+            .overrideWith((ref) async => throw const Forbidden()),
+      ],
+    );
+    await openList(tester, 'Servers');
+    await tap(tester, 'Create server');
+    await tap(tester, 'fsn1');
+    await tap(tester, 'Next');
+    await tap(tester, 'CX22');
+    await tap(tester, 'Next');
+    await tap(tester, 'Debian 12');
+    await tap(tester, 'Next');
+    expect(find.byType(ErrorBanner), findsOneWidget);
+    expect(find.textContaining('No SSH keys in this project'), findsNothing);
+  });
+
   testWidgets('CMP-013 creating sends one POST despite a double tap and '
       'reloads the list', (tester) async {
     final cloud = FakeCloud(sshKeys: [sshKeyJson(id: 61, name: 'laptop')]);

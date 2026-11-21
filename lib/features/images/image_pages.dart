@@ -172,6 +172,8 @@ class ImageDetailPage extends ConsumerWidget {
               (api, name, labels) =>
                   updateImage(api, i.id, description: name, labels: labels),
               nameLabel: l10n.fieldImageDescription,
+              // The API sets no limit on an image description.
+              maxLength: null,
             ),
           ),
           DetailAction(

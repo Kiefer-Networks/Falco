@@ -29,16 +29,22 @@ String typeSpecs(ServerType t, AppLocalizations l10n) => [
   gb(t.diskGb, l10n.localeName),
 ].join(' · ');
 
-/// Images a server of [architecture] can boot: system images first, then
-/// own snapshots and backups; deprecated ones marked (CMP-031, CMP-077).
+/// Images a server of [architecture] with a disk of [diskGb] can boot:
+/// available ones that fit the disk, system images first, then own
+/// snapshots and backups; deprecated ones marked (CMP-031, CMP-077).
 ({Map<String, String> options, Map<String, String> details}) bootImages(
   List<CloudImage> images,
   String architecture,
+  num diskGb,
   AppLocalizations l10n,
 ) {
   final usable = [
     for (final i in images)
-      if (i.architecture == architecture && i.kind != ImageKind.app) i,
+      if (i.architecture == architecture &&
+          i.kind != ImageKind.app &&
+          i.status == ResourceStatus.available &&
+          i.diskGb <= diskGb)
+        i,
   ]..sort((a, b) => a.kind.index.compareTo(b.kind.index));
   return (
     options: {for (final i in usable) '${i.id}': i.description},
@@ -157,9 +163,22 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
     final l10n = AppLocalizations.of(context);
     final scope = targetScope(widget.scope, _project);
     // Options of the target project; empty until a project is picked.
+    AsyncValue<List<T>> watch<T>(
+      ProviderListenable<AsyncValue<List<T>>> Function(ProjectScope) p,
+    ) => scope == null ? AsyncData(List<T>.empty()) : ref.watch(p(scope));
     List<T> load<T>(
       ProviderListenable<AsyncValue<List<T>>> Function(ProjectScope) p,
-    ) => scope == null ? <T>[] : ref.watch(p(scope)).value ?? <T>[];
+    ) => watch(p).value ?? <T>[];
+    // Progress or the error of a list without data, else null: "none"
+    // is only for a list that loaded empty.
+    Widget? pending(AsyncValue<Object?> a, ProviderOrFamily retry) => a.hasValue
+        ? null
+        : a.hasError
+        ? ErrorBanner(
+            message: errorText(toFalcoError(a.error!), l10n),
+            onRetry: () => ref.invalidate(retry),
+          )
+        : const LinearProgressIndicator();
 
     final locations = load(locationsProvider.call);
     final types = [
@@ -171,17 +190,24 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
         ? null
         : ref.watch(pricingProvider(scope)).value;
     final currency = pricing?.currency ?? 'EUR';
-    String price(ServerType t) => l10n.perMonth(
-      formatMoney(t.prices[_location] ?? 0, currency, l10n.localeName),
-    );
+    String price(num gross) =>
+        l10n.perMonth(formatMoney(gross, currency, l10n.localeName));
+    // A new Primary IPv4 costs extra; IPv6 is free (CMP-010).
+    final ipv4Price = _ipv4 && _ipv4Id.isEmpty
+        ? pricing?.ipv4Gross[_location]
+        : 0;
     final images = bootImages(
       load(imagesProvider.call),
       type?.architecture ?? 'x86',
+      type?.diskGb ?? double.infinity,
       l10n,
     );
-    final keys = load(sshKeysProvider.call);
-    final networks = load(networksProvider.call);
-    final firewalls = load(firewallsProvider.call);
+    final keysAsync = watch(sshKeysProvider.call);
+    final networksAsync = watch(networksProvider.call);
+    final firewallsAsync = watch(firewallsProvider.call);
+    final keys = keysAsync.value ?? const <SshKey>[];
+    final networks = networksAsync.value ?? const <CloudNetwork>[];
+    final firewalls = firewallsAsync.value ?? const <Firewall>[];
     final volumes = [
       for (final v in load(volumesProvider.call))
         if (v.server == null && v.location == _location) v,
@@ -254,7 +280,8 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
             options: {for (final t in types) t.name: t.name.toUpperCase()},
             details: {
               for (final t in types)
-                t.name: '${typeSpecs(t, l10n)} · ${price(t)}',
+                t.name:
+                    '${typeSpecs(t, l10n)} · ${price(t.prices[_location]!)}',
             },
             selected: _type,
             onSelected: (v) => setState(() {
@@ -276,14 +303,16 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
         ),
         WizardStep(
           title: l10n.resourceSshKeys,
-          child: keys.isEmpty
-              ? Text(l10n.serverNoSshKeys)
-              : MultiChoiceList(
-                  options: keyNames,
-                  details: {for (final k in keys) '${k.id}': k.fingerprint},
-                  selected: _sshKeys,
-                  onChanged: (v) => setState(() => _sshKeys = v),
-                ),
+          child:
+              pending(keysAsync, sshKeysProvider) ??
+              (keys.isEmpty
+                  ? Text(l10n.serverNoSshKeys)
+                  : MultiChoiceList(
+                      options: keyNames,
+                      details: {for (final k in keys) '${k.id}': k.fingerprint},
+                      selected: _sshKeys,
+                      onChanged: (v) => setState(() => _sshKeys = v),
+                    )),
         ),
         WizardStep(
           title: l10n.wizardNetworking,
@@ -316,7 +345,10 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
                   onSelected: (v) => setState(() => _ipv6Id = v),
                 ),
               _Heading(l10n.resourceNetworks),
-              if (networks.isEmpty) Text(l10n.commonNone),
+              if (pending(networksAsync, networksProvider) case final w?)
+                w
+              else if (networks.isEmpty)
+                Text(l10n.commonNone),
               MultiChoiceList(
                 options: netNames,
                 details: {for (final n in networks) '${n.id}': n.ipRange},
@@ -324,7 +356,10 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
                 onChanged: (v) => setState(() => _networks = v),
               ),
               _Heading(l10n.resourceFirewalls),
-              if (firewalls.isEmpty) Text(l10n.commonNone),
+              if (pending(firewallsAsync, firewallsProvider) case final w?)
+                w
+              else if (firewalls.isEmpty)
+                Text(l10n.commonNone),
               MultiChoiceList(
                 options: fwNames,
                 selected: _firewalls,
@@ -438,7 +473,12 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
           yesNo(_userData.trim().isNotEmpty, l10n),
         ),
         ConfirmFact(l10n.startAfterCreate, yesNo(_start, l10n)),
-        if (type != null) ConfirmFact(l10n.fieldPrice, price(type)),
+        if (type != null)
+          ConfirmFact(l10n.fieldPrice, switch (ipv4Price) {
+            final ip? => price(type.prices[_location]! + ip),
+            // Without the IPv4 price the total would be too low.
+            null => l10n.priceServerOnly(price(type.prices[_location]!)),
+          }),
         if (_sshKeys.isEmpty)
           ConfirmFact(l10n.fieldRootPassword, l10n.rootPasswordAfter),
       ]),

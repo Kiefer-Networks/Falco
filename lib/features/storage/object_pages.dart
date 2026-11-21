@@ -663,9 +663,13 @@ class _BucketPageState extends ConsumerState<BucketPage> {
 
   Future<void> _copy(S3Object o, {required bool move}) async {
     final l10n = AppLocalizations.of(context);
-    final all =
-        await ref.read(bucketsProvider(widget.scope).future) ?? const [];
-    if (!mounted) return;
+    final all = await loadForPicker(
+      context,
+      () async =>
+          await ref.read(bucketsProvider(widget.scope).future) ??
+          const <Bucket>[],
+    );
+    if (all == null || !mounted) return;
     await FormSheet.show(
       context,
       title: move ? l10n.objectMove : l10n.objectCopy,

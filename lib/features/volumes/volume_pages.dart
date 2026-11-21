@@ -233,11 +233,15 @@ class VolumeDetailPage extends ConsumerWidget {
 
   Future<void> _attach(BuildContext context, WidgetRef ref, Volume v) async {
     final l10n = AppLocalizations.of(context);
+    final all = await loadForPicker(
+      context,
+      () => ref.read(serversProvider(scope).future),
+    );
+    if (all == null || !context.mounted) return;
     final servers = [
-      for (final s in await ref.read(serversProvider(scope).future))
+      for (final s in all)
         if (s.location == v.location) s,
     ];
-    if (!context.mounted) return;
     if (servers.isEmpty) {
       FalcoScaffold.showSnack(context, l10n.volumeNoServers(v.location));
       return;

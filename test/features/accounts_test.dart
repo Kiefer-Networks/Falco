@@ -393,6 +393,24 @@ void main() {
       expect(find.text('lab'), findsOneWidget);
     });
 
+    testWidgets('start skips an account without scope, leaving its '
+        '"Add project" opens the accounts', (tester) async {
+      const empty = Account(id: 'a0', name: 'Empty');
+      await pumpFalco(
+        tester,
+        FakeCloud(),
+        accounts: const [empty, acme],
+        prefs: {'defaultAccount': 'a0'},
+      );
+      expect(find.text('prod'), findsOneWidget);
+      const AddProjectRoute(accountId: 'a0')
+          .go(tester.element(find.byType(Scaffold).first));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(CloseButton));
+      await tester.pumpAndSettle();
+      expect(find.text('Add account'), findsOneWidget);
+    });
+
     testWidgets('ONB-028 open switches to the account', (tester) async {
       await openAccounts(tester);
       await tapText(tester, 'Lab');

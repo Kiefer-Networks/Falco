@@ -99,7 +99,8 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tap(tester, 'Next');
-      expect(find.text('€4.51/month'), findsOneWidget);
+      // Server and the new Primary IPv4 (CMP-010).
+      expect(find.text('€5.01/month'), findsOneWidget);
       // The create button spins until the password sheet is closed.
       await tester.tap(find.text('Create'));
       await pumpFrames(tester);
@@ -360,10 +361,20 @@ void main() {
       await settleAction(tester);
     });
 
-    testWidgets('CMP-043 CMP-044 placement group add, hint and remove', (
-      tester,
-    ) async {
+    testWidgets('CMP-043 CMP-044 placement group needs the server off, '
+        'hint, add and remove', (tester) async {
       final cloud = await openServer(tester);
+      await more(tester, 'Add to placement group');
+      expect(
+        find.text(
+          'Power off the server before adding it to a placement group.',
+        ),
+        findsOneWidget,
+      );
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('db-1'));
+      await tester.pumpAndSettle();
       await more(tester, 'Add to placement group');
       expect(find.textContaining('No placement groups'), findsOneWidget);
       cloud.collections['placement_groups']!.add(
@@ -374,20 +385,18 @@ void main() {
           .invalidate(placementGroupsProvider);
       await more(tester, 'Add to placement group');
       await tap(tester, 'spread-1');
-      expect(cloud.body('POST /servers/1/actions/add_to_placement_group'), {
+      expect(cloud.body('POST /servers/2/actions/add_to_placement_group'), {
         'placement_group': 41,
       });
-      cloud.servers.first['placement_group'] = placementGroupJson(
-        id: 41,
-        name: 'spread-1',
-      );
+      cloud.servers.firstWhere((s) => s['id'] == 2)['placement_group'] =
+          placementGroupJson(id: 41, name: 'spread-1');
       await settleAction(tester);
       await more(tester, 'Remove from placement group');
-      expect(find.text('Remove web-1 from spread-1?'), findsOneWidget);
+      expect(find.text('Remove db-1 from spread-1?'), findsOneWidget);
       await confirm(tester, 'Remove from placement group');
       expect(
         cloud.calls,
-        contains('POST /servers/1/actions/remove_from_placement_group'),
+        contains('POST /servers/2/actions/remove_from_placement_group'),
       );
       await settleAction(tester);
     });

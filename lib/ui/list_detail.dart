@@ -11,7 +11,8 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// The detail pane is a navigator of its own, so a detail page that
 /// closes itself (after a delete) only empties the pane, and system back
-/// closes the detail before it leaves the screen.
+/// pops the pane first (a sheet or page over the detail, then the
+/// detail) before it leaves the screen.
 class ListDetail extends StatefulWidget {
   /// Creates the frame around [list].
   const new({required this.list, super.key});
@@ -34,6 +35,7 @@ class ListDetailState extends State<ListDetail> {
   // Keeps the list's state (tab, scroll, search) when the window crosses
   // the breakpoint.
   final GlobalKey _listKey = GlobalKey();
+  final _pane = GlobalKey<NavigatorState>();
   var _wide = false;
   ({Object key, Widget page})? _detail;
 
@@ -56,11 +58,8 @@ class ListDetailState extends State<ListDetail> {
         // it as a page when rotating with an open detail matters.
         if (!_wide) return list;
         final detail = _detail;
-        return PopScope(
-          canPop: detail == null,
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) _close();
-          },
+        return NavigatorPopHandler<Object?>(
+          onPopWithResult: (_) => _pane.currentState?.maybePop(),
           child: Row(
             children: [
               SizedBox(
@@ -71,6 +70,7 @@ class ListDetailState extends State<ListDetail> {
               Expanded(
                 child: ClipRect(
                   child: Navigator(
+                    key: _pane,
                     pages: [
                       MaterialPage<void>(
                         child: Scaffold(

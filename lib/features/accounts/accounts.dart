@@ -188,8 +188,9 @@ class _ProjectSetupPageState extends ConsumerState<ProjectSetupPage> {
     });
     final l10n = AppLocalizations.of(context);
     // Read before the first await, so leaving the page cannot stop the
-    // save half way.
+    // save half way, and the values checked are the values stored.
     final container = ProviderScope.containerOf(context, listen: false);
+    final values = _values;
     try {
       final repo = container.read(scopeRepositoryProvider);
       final account = (await repo.accounts())
@@ -198,16 +199,16 @@ class _ProjectSetupPageState extends ConsumerState<ProjectSetupPage> {
       if (account == null) throw const NotFound();
       await _labelled(
         l10n.projectStep,
-        () => checkToken(container, _v(_values, 'token')),
+        () => checkToken(container, _v(values, 'token')),
         l10n,
       );
-      if (s3FromValues(_values) case final s3?) {
+      if (s3FromValues(values) case final s3?) {
         await _labelled(l10n.s3Step, () => checkS3Keys(container, s3), l10n);
       }
       late final Project project;
       await container
           .read(secretStoreProvider)
-          .apply((c) => project = storeProject(c, _values));
+          .apply((c) => project = storeProject(c, values));
       await repo.save(
         account.copyWith(projects: [...account.projects, project]),
       );
@@ -232,8 +233,9 @@ class _ProjectSetupPageState extends ConsumerState<ProjectSetupPage> {
       createLabel: l10n.tokenCheckSave,
       creating: _saving,
       onCreate: _save,
-      // The only route of an account without projects and Robot.
-      onLeave: () => AccountRoute(accountId: widget.accountId).go(context),
+      // The only route of an account without projects and Robot: the
+      // accounts, not this account, whose back would lead here again.
+      onLeave: () => AccountsRoute(active: widget.accountId).go(context),
       steps: [
         WizardStep(
           title: l10n.projectStep,
@@ -322,10 +324,14 @@ class _AccountWizardPageState extends ConsumerState<AccountWizardPage> {
     });
     final l10n = AppLocalizations.of(context);
     // Read before the first await, so leaving the page cannot stop the
-    // save half way.
+    // save half way, and the values checked are the values stored.
     final container = ProviderScope.containerOf(context, listen: false);
+    final projects = _cloud ? [..._projects] : const <Map<String, String>>[];
+    final hasRobot = _hasRobot;
+    final robot = _robot;
+    final accountName = _v(_account, 'name');
+    final description = _v(_account, 'description');
     try {
-      final projects = _cloud ? _projects : const <Map<String, String>>[];
       for (final p in projects) {
         final name = _v(p, 'name');
         await _labelled(
@@ -341,10 +347,10 @@ class _AccountWizardPageState extends ConsumerState<AccountWizardPage> {
           );
         }
       }
-      if (_hasRobot) {
+      if (hasRobot) {
         await _labelled(
           l10n.scopeRobot,
-          () => checkRobotLogin(container, robotFromValues(_robot)),
+          () => checkRobotLogin(container, robotFromValues(robot)),
           l10n,
         );
       }
@@ -353,14 +359,14 @@ class _AccountWizardPageState extends ConsumerState<AccountWizardPage> {
       final stored = <Project>[];
       await container.read(secretStoreProvider).apply((c) {
         stored.addAll([for (final p in projects) storeProject(c, p)]);
-        if (_hasRobot) c.robot(id, robotFromValues(_robot));
+        if (hasRobot) c.robot(id, robotFromValues(robot));
       });
       final account = Account(
         id: id,
-        name: _v(_account, 'name'),
-        description: _v(_account, 'description'),
+        name: accountName,
+        description: description,
         projects: stored,
-        hasRobot: _hasRobot,
+        hasRobot: hasRobot,
       );
       await container.read(scopeRepositoryProvider).save(account);
       container.invalidate(accountsProvider);

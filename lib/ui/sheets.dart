@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/l10n/app_localizations.dart';
+import 'package:falco/ui/error_text.dart';
+import 'package:falco/ui/falco_scaffold.dart';
 import 'package:falco/ui/theme/falco_colors.dart';
 import 'package:falco/ui/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -12,6 +15,29 @@ Future<R?> showFalcoSheet<R>(BuildContext context, Widget sheet) =>
       useSafeArea: true,
       builder: (_) => sheet,
     );
+
+// ponytail: one load at a time app wide; a picker opens from one screen.
+var _pickerLoading = false;
+
+/// Loads what a picker or sheet offers (usually a provider's future)
+/// before it opens. A failure shows as the screen's snackbar and gives
+/// null, as does a tap while a load runs, so the picker opens once.
+Future<T?> loadForPicker<T>(
+  BuildContext context,
+  Future<T> Function() load,
+) async {
+  if (_pickerLoading) return null;
+  _pickerLoading = true;
+  final l10n = AppLocalizations.of(context);
+  try {
+    return await load();
+  } on FalcoError catch (e) {
+    if (context.mounted) FalcoScaffold.showSnack(context, errorText(e, l10n));
+    return null;
+  } finally {
+    _pickerLoading = false;
+  }
+}
 
 /// Common frame: handle, title, content, buttons; padded above the
 /// keyboard. The frame of every Falco sheet.

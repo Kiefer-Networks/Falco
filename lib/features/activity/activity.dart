@@ -66,6 +66,9 @@ void refreshResource(
       invalidate(firewallProvider);
       invalidate(volumesProvider);
       invalidate(volumeProvider);
+      // Snapshots, backups and a rebuild change the images.
+      invalidate(imagesProvider);
+      invalidate(imageProvider);
     case CloudType.volume:
       invalidate(volumeProvider(scope, id));
       invalidate(volumesProvider);

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/ui/ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -81,14 +82,51 @@ void main() {
       expect(find.text('web-1'), findsOneWidget);
     });
 
-    testWidgets('a new area starts without detail', (tester) async {
+    testWidgets('a new area starts without detail; an overview without '
+        'rows uses the full width', (tester) async {
       size(tester, const Size(1280, 800));
       await pumpFalco(tester, FakeCloud());
       await tap(tester, 'web-1');
       await tester.tap(find.text('Network').last);
       await tester.pumpAndSettle();
       expect(find.text('Reboot'), findsNothing);
+      expect(find.text('Pick an entry to see its details.'), findsNothing);
+      await tester.tap(find.text('Compute').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Reboot'), findsNothing);
       expect(find.text('Pick an entry to see its details.'), findsOneWidget);
+    });
+
+    testWidgets('back closes a sheet over the detail before the detail', (
+      tester,
+    ) async {
+      size(tester, const Size(1280, 800));
+      await pumpFalco(tester, FakeCloud());
+      await tap(tester, 'web-1');
+      await tester.tap(find.text('Reboot'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.text('Reboot'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Reboot'), findsNothing);
+      expect(find.text('Pick an entry to see its details.'), findsOneWidget);
+    });
+
+    testWidgets('on phones a snackbar does not cover the create button', (
+      tester,
+    ) async {
+      size(tester, const Size(390, 844));
+      await pumpFalco(tester, FakeCloud());
+      await openList(tester, 'Servers');
+      final fab = find.byType(FloatingActionButton);
+      FalcoScaffold.showSnack(tester.element(fab), 'Saved');
+      await tester.pumpAndSettle();
+      final snack = tester.getRect(find.byType(SnackBar));
+      expect(snack.overlaps(tester.getRect(fab)), isFalse);
     });
 
     testWidgets('phones keep the bottom bar and open details as pages', (

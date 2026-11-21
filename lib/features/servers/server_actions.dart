@@ -22,17 +22,18 @@ import 'package:material_ui/material_ui.dart';
 
 /// Types server [s] can change to: offered at its location, same
 /// architecture and storage type, a disk at least as large as its own
-/// (disks never shrink), not deprecated unless it is the current one
-/// (CMP-033).
+/// (disks never shrink), not deprecated. The current type stays, even
+/// when its location no longer offers it (CMP-033).
 List<ServerType> changeTypeOptions(List<ServerType> all, CloudServer s) {
   final current = all.where((t) => t.name == s.type).firstOrNull;
   return [
     for (final t in all)
-      if (t.prices.containsKey(s.location) &&
-          t.architecture == s.architecture &&
-          t.diskGb >= s.diskGb &&
-          (current == null || t.storageType == current.storageType) &&
-          (!t.deprecated || t.name == s.type))
+      if (t.name == s.type ||
+          (t.prices.containsKey(s.location) &&
+              t.architecture == s.architecture &&
+              t.diskGb >= s.diskGb &&
+              (current == null || t.storageType == current.storageType) &&
+              !t.deprecated))
         t,
   ];
 }
@@ -205,12 +206,12 @@ class ServerOps {
 
   /// Rebuild from an image, level 2 (CMP-031, CMP-032).
   Future<void> rebuild() async {
-    final images = bootImages(
-      await ref.read(imagesProvider(scope).future),
-      server.architecture,
-      l10n,
+    final all = await loadForPicker(
+      context,
+      () => ref.read(imagesProvider(scope).future),
     );
-    if (!context.mounted) return;
+    if (all == null || !context.mounted) return;
+    final images = bootImages(all, server.architecture, server.diskGb, l10n);
     final image = await ChoiceList.show(
       context,
       title: l10n.rebuildPick,
@@ -282,11 +283,15 @@ class ServerOps {
       }
       return;
     }
+    final all = await loadForPicker(
+      context,
+      () => ref.read(isosProvider(scope).future),
+    );
+    if (all == null || !context.mounted) return;
     final isos = [
-      for (final i in await ref.read(isosProvider(scope).future))
+      for (final i in all)
         if (i.architecture == null || i.architecture == server.architecture) i,
     ];
-    if (!context.mounted) return;
     final picked = await ChoiceList.show(
       context,
       title: l10n.isoAttach,
@@ -311,12 +316,16 @@ class ServerOps {
       FalcoScaffold.showSnack(context, l10n.changeTypeNeedsOff);
       return;
     }
-    // Both read before the first await.
+    // Both read before the first await, both errors handled.
     final pricing = ref.read(pricingProvider(scope).future);
-    final all = await ref.read(serverTypesProvider(scope).future);
-    final currency = (await pricing).currency;
-    if (!context.mounted) return;
-    final types = changeTypeOptions(all, server);
+    final all = ref.read(serverTypesProvider(scope).future);
+    final loaded = await loadForPicker(
+      context,
+      () => Future.wait<Object>([all, pricing]),
+    );
+    if (loaded == null || !context.mounted) return;
+    final currency = (loaded[1] as Pricing).currency;
+    final types = changeTypeOptions(loaded[0] as List<ServerType>, server);
     final picked = await ChoiceList.show(
       context,
       title: l10n.changeType,
@@ -325,13 +334,13 @@ class ServerOps {
         for (final t in types)
           t.name: [
             typeSpecs(t, l10n),
-            l10n.perMonth(
-              formatMoney(
-                t.prices[server.location]!,
-                currency,
-                l10n.localeName,
+            if (t.name == server.type) l10n.typeCurrent,
+            switch (t.prices[server.location]) {
+              final price? => l10n.perMonth(
+                formatMoney(price, currency, l10n.localeName),
               ),
-            ),
+              null => l10n.priceUnavailable,
+            },
           ].join(' · '),
       },
       selected: server.type,
@@ -393,8 +402,16 @@ class ServerOps {
       }
       return;
     }
-    final groups = await ref.read(placementGroupsProvider(scope).future);
-    if (!context.mounted) return;
+    // The API adds only a server that is off.
+    if (server.status != ResourceStatus.off) {
+      FalcoScaffold.showSnack(context, l10n.placementGroupNeedsOff);
+      return;
+    }
+    final groups = await loadForPicker(
+      context,
+      () => ref.read(placementGroupsProvider(scope).future),
+    );
+    if (groups == null || !context.mounted) return;
     if (groups.isEmpty) {
       FalcoScaffold.showSnack(context, l10n.placementGroupNone);
       return;
@@ -462,11 +479,15 @@ class ServerOps {
   /// Attaches the server to a network of its project, with an optional
   /// IP; a hint when there is none to pick (CMP-040).
   Future<void> attachNetwork() async {
+    final all = await loadForPicker(
+      context,
+      () => ref.read(networksProvider(scope).future),
+    );
+    if (all == null || !context.mounted) return;
     final networks = [
-      for (final n in await ref.read(networksProvider(scope).future))
+      for (final n in all)
         if (!server.networks.any((m) => m.id == n.id)) n,
     ];
-    if (!context.mounted) return;
     if (networks.isEmpty) {
       FalcoScaffold.showSnack(context, l10n.serverNoNetworks);
       return;

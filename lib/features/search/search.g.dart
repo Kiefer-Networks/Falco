@@ -63,7 +63,7 @@ final class SearchIndexProvider
   }
 }
 
-String _$searchIndexHash() => r'5c4f345a5f4ce477fc612152dcfcd43d6e54c103';
+String _$searchIndexHash() => r'aaefcc31551e33406d4eea97c0e9bf9e5d78110e';
 
 /// The last searches, newest first, kept on the device.
 

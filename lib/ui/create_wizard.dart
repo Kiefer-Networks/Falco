@@ -82,7 +82,11 @@ class CreateWizard extends StatefulWidget {
 class _CreateWizardState extends State<CreateWizard> {
   late int _index = widget.initialStep;
 
-  void _go(int step) => setState(() => _index = step);
+  /// Steps stay put while a create runs: the summary shows what it
+  /// sends.
+  void _go(int step) {
+    if (!widget.creating) setState(() => _index = step);
+  }
 
   void _close() {
     final navigator = Navigator.of(context);
@@ -157,7 +161,7 @@ class _CreateWizardState extends State<CreateWizard> {
                 if (index > 0)
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => setState(() => _index = index - 1),
+                      onPressed: widget.creating ? null : () => _go(index - 1),
                       child: Text(l10n.commonBack),
                     ),
                   ),
@@ -168,7 +172,7 @@ class _CreateWizardState extends State<CreateWizard> {
                         ? null
                         : last
                         ? widget.onCreate
-                        : () => setState(() => _index = index + 1),
+                        : () => _go(index + 1),
                     child: widget.creating
                         ? const SizedBox.square(
                             dimension: 20,

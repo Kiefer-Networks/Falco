@@ -105,12 +105,14 @@ List<SearchHit> searchHits(List<SearchHit> index, String query) =>
     });
 
 /// The search index: every hit loaded so far, whether sources are still
-/// loading, and the sources that failed with the first error.
+/// loading, the sources that failed with the first error, and the
+/// projects missing from "All projects" lists.
 typedef SearchIndexState = ({
   List<SearchHit> hits,
   bool loading,
   int failed,
   Object? error,
+  List<Project> failedProjects,
 });
 
 /// Every resource of every account (SUC-002), from the providers the
@@ -130,6 +132,7 @@ SearchIndexState searchIndex(Ref ref) {
     loading: index.loading,
     failed: index.failed,
     error: index.error,
+    failedProjects: [...index.failedProjects.values],
   );
 }
 
@@ -141,14 +144,21 @@ class _Index {
   bool loading = false;
   int failed = 0;
   Object? error;
+  final failedProjects = <String, Project>{};
 
-  /// Adds the hits of one source; a failed refresh keeps its last data.
+  /// Adds the hits of one source; a failed refresh keeps its last data,
+  /// a project that failed in "All projects" is named.
   void add<T>(AsyncValue<List<T>?> source, SearchHit? Function(T item) hit) {
     if (source.hasError) {
       failed++;
       error ??= source.error;
     } else if (source.isLoading) {
       loading = true;
+    }
+    if (source.value case PartialList<T>(failed: final projects)) {
+      for (final p in projects) {
+        failedProjects[p.id] = p;
+      }
     }
     hits.addAll((source.value ?? const []).map(hit).nonNulls);
   }

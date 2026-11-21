@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/api/cloud/cloud.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/search/search.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../fake_cloud.dart';
+import '../fake_http.dart';
 import '../helpers.dart' hide setSurface;
 import '../search_steps.dart';
 import '../steps.dart';
@@ -165,6 +167,29 @@ void main() {
       expect(searchHits(stale.hits, 'web-1'), isNotEmpty);
     });
 
+    test('a project missing from "All projects" is named', () async {
+      const two = Account(
+        id: 'a1',
+        name: 'Acme',
+        projects: [
+          Project(id: 'p1', name: 'prod'),
+          Project(id: 'p2', name: 'staging'),
+        ],
+      );
+      final failing = FakeCloud()..failWith = (500, null);
+      final c = await fakeContainer(
+        searchCloud(),
+        accounts: const [two],
+        overrides: [
+          cloudApiProvider('p2')
+              .overrideWithValue(cloudServer(fakeDio(failing.adapter))),
+        ],
+      );
+      final index = await settled(c);
+      expect(searchHits(index.hits, 'web-1'), isNotEmpty);
+      expect([for (final p in index.failedProjects) p.name], ['staging']);
+    });
+
     test('nothing loaded and every source failing is an error', () async {
       final cloud = searchCloud()..failWith = (500, errorJson('server_error'));
       final c = await fakeContainer(
@@ -257,6 +282,7 @@ void main() {
               loading: true,
               failed: 0,
               error: null,
+              failedProjects: const [],
             )),
           ],
           child: testApp(const SearchPage()),
