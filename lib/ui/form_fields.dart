@@ -230,13 +230,16 @@ class _FormSheetState extends State<FormSheet> {
   );
 }
 
-/// A single choice as a list: label per value, a check at the selected one.
-class ChoiceList extends StatelessWidget {
+/// A single choice as a list: label per value, an optional detail line, a
+/// check at the selected one, and a search field for long lists.
+class ChoiceList extends StatefulWidget {
   /// Creates the list.
   const new({
     required this.options,
     required this.selected,
     required this.onSelected,
+    this.details = const {},
+    this.searchable = false,
     super.key,
   });
 
@@ -246,6 +249,8 @@ class ChoiceList extends StatelessWidget {
     required String title,
     required Map<String, String> options,
     required String selected,
+    Map<String, String> details = const {},
+    bool searchable = false,
   }) => showFalcoSheet<String>(
     context,
     Builder(
@@ -255,6 +260,8 @@ class ChoiceList extends StatelessWidget {
           ChoiceList(
             options: options,
             selected: selected,
+            details: details,
+            searchable: searchable,
             onSelected: (v) => Navigator.pop(context, v),
           ),
         ],
@@ -268,27 +275,101 @@ class ChoiceList extends StatelessWidget {
   /// Selected value.
   final String selected;
 
+  /// Value to a second line (size, price, "deprecated").
+  final Map<String, String> details;
+
+  /// Shows a search field over labels and details.
+  final bool searchable;
+
   /// Called with the tapped value.
   final ValueChanged<String> onSelected;
 
   @override
+  State<ChoiceList> createState() => _ChoiceListState();
+}
+
+class _ChoiceListState extends State<ChoiceList> {
+  String _query = '';
+
+  @override
   Widget build(BuildContext context) {
     final c = FalcoColors.of(context);
+    final q = _query.trim().toLowerCase();
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final MapEntry(key: value, value: label) in options.entries)
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-            selected: value == selected,
-            selectedColor: c.accent,
-            title: Text(label),
-            trailing: value == selected
-                ? Icon(Icons.check, color: c.accent)
-                : null,
-            onTap: () => onSelected(value),
+        if (widget.searchable)
+          TextField(
+            onChanged: (v) => setState(() => _query = v),
+            decoration: InputDecoration(
+              hintText: AppLocalizations.of(context).commonSearch,
+              prefixIcon: const Icon(Icons.search, size: 20),
+            ),
           ),
+        for (final MapEntry(key: value, value: label) in widget.options.entries)
+          if (q.isEmpty ||
+              '$label ${widget.details[value] ?? ''}'.toLowerCase().contains(q))
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+              selected: value == widget.selected,
+              selectedColor: c.accent,
+              title: Text(label),
+              subtitle: switch (widget.details[value]) {
+                final d? => Text(d),
+                null => null,
+              },
+              trailing: value == widget.selected
+                  ? Icon(Icons.check, color: c.accent)
+                  : null,
+              onTap: () => widget.onSelected(value),
+            ),
       ],
     );
   }
+}
+
+/// A multiple choice as check boxes with optional detail lines.
+class MultiChoiceList extends StatelessWidget {
+  /// Creates the list.
+  const new({
+    required this.options,
+    required this.selected,
+    required this.onChanged,
+    this.details = const {},
+    super.key,
+  });
+
+  /// Value to label.
+  final Map<String, String> options;
+
+  /// Checked values.
+  final Set<String> selected;
+
+  /// Value to a second line.
+  final Map<String, String> details;
+
+  /// Called with the new set.
+  final ValueChanged<Set<String>> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      for (final MapEntry(key: value, value: label) in options.entries)
+        CheckboxListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+          value: selected.contains(value),
+          title: Text(label),
+          subtitle: switch (details[value]) {
+            final d? => Text(d),
+            null => null,
+          },
+          onChanged: (on) => onChanged(
+            on ?? false
+                ? {...selected, value}
+                : {...selected.where((v) => v != value)},
+          ),
+        ),
+    ],
+  );
 }

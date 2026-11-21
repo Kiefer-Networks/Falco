@@ -4,12 +4,12 @@ import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/format/format.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/accounts/accounts.dart';
+import 'package:falco/features/compute/compute_ui.dart';
 import 'package:falco/features/servers/servers.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/error_text.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Servers of a scope; with "All projects" each row names its project.
@@ -34,7 +34,12 @@ class ServerList extends ConsumerWidget {
           ? errorText(toFalcoError(async.error!), l10n)
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
-      empty: EmptyHint(message: l10n.emptyServers),
+      empty: EmptyHint(
+        message: l10n.emptyServers,
+        actionLabel: l10n.actionCreateServer,
+        onAction: () =>
+            CreateRoute.of(scope, CreateKind.server).push<void>(context),
+      ),
       searchText: (s) => '${s.name} ${s.address ?? ''}',
       filters: [
         ResourceFilter(l10n.filterAll, (_) => true),
@@ -71,19 +76,5 @@ class ServerList extends ConsumerWidget {
         ).push<void>(context),
       ),
     );
-  }
-}
-
-/// Reloads [future]'s provider for pull to refresh; a failure shows up in
-/// the provider state, not as an exception of the gesture.
-Future<void> refreshQuietly(
-  WidgetRef ref,
-  Refreshable<Future<Object?>> future,
-) async {
-  try {
-    final reload = ref.refresh(future);
-    await reload;
-  } on Object {
-    // Shown by the watching widget.
   }
 }

@@ -13,17 +13,18 @@ const _serverError = 'The server reported an error. Try again later.';
 
 void main() {
   group('server list', () {
-    testWidgets('shows servers of the project with status and mono line', (
-      tester,
-    ) async {
-      final cloud = FakeCloud();
-      await pumpFalco(tester, cloud);
-      expect(find.text('prod'), findsOneWidget);
-      expect(find.text('web-1'), findsOneWidget);
-      expect(find.text('db-1'), findsOneWidget);
-      expect(find.text('203.0.113.1 · CX22 · fsn1'), findsOneWidget);
-      expect(cloud.calls, contains('GET /servers'));
-    });
+    testWidgets(
+      'CMP-002 CMP-003 shows servers of the project with status and mono line',
+      (tester) async {
+        final cloud = FakeCloud();
+        await pumpFalco(tester, cloud);
+        expect(find.text('prod'), findsOneWidget);
+        expect(find.text('web-1'), findsOneWidget);
+        expect(find.text('db-1'), findsOneWidget);
+        expect(find.text('203.0.113.1 · CX22 · fsn1'), findsOneWidget);
+        expect(cloud.calls, contains('GET /servers'));
+      },
+    );
 
     testWidgets('filters by status', (tester) async {
       await pumpFalco(tester, FakeCloud());
@@ -33,7 +34,7 @@ void main() {
       expect(find.text('web-1'), findsNothing);
     });
 
-    testWidgets('empty project shows the empty hint', (tester) async {
+    testWidgets('CMP-004 empty project shows the empty hint', (tester) async {
       await pumpFalco(tester, FakeCloud(servers: []));
       expect(find.text('No servers in this project yet.'), findsOneWidget);
     });
@@ -91,15 +92,18 @@ void main() {
       return cloud;
     }
 
-    testWidgets('shows header, overview and metrics', (tester) async {
-      final cloud = await openDetail(tester);
-      expect(find.text('web-1'), findsOneWidget);
-      expect(find.textContaining('203.0.113.1'), findsOneWidget);
-      expect(find.text('CX22'), findsOneWidget);
-      expect(find.text('4 GiB'), findsOneWidget);
-      expect(cloud.calls, contains('GET /servers/1'));
-      expect(cloud.calls, contains('GET /servers/1/metrics'));
-    });
+    testWidgets(
+      'CMP-015 CMP-016 CMP-017 CMP-018 shows header, overview and metrics',
+      (tester) async {
+        final cloud = await openDetail(tester);
+        expect(find.text('web-1'), findsOneWidget);
+        expect(find.textContaining('203.0.113.1'), findsWidgets);
+        expect(find.text('CX22'), findsOneWidget);
+        expect(find.text('4 GiB'), findsOneWidget);
+        expect(cloud.calls, contains('GET /servers/1'));
+        expect(cloud.calls, contains('GET /servers/1/metrics'));
+      },
+    );
 
     testWidgets('a missing server shows the error card', (tester) async {
       final cloud = FakeCloud();
@@ -156,7 +160,7 @@ void main() {
       expect(find.textContaining('rebooting'), findsNothing);
     });
 
-    testWidgets('cancel sends nothing', (tester) async {
+    testWidgets('CMP-021 shutdown asks; cancel sends nothing', (tester) async {
       final cloud = await openDetail(tester);
       await tester.tap(find.text('Shutdown'));
       await tester.pumpAndSettle();
@@ -180,7 +184,9 @@ void main() {
       expect(find.text('running'), findsOneWidget);
     });
 
-    testWidgets('power off asks, reset sits in the more menu', (tester) async {
+    testWidgets('CMP-023 CMP-024 power off asks, reset sits in the more menu', (
+      tester,
+    ) async {
       final cloud = await openDetail(tester);
       await tester.tap(find.byTooltip('More actions'));
       await tester.pumpAndSettle();

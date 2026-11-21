@@ -323,7 +323,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deleteConsequence =>
-      'Der Server und seine Festplatte werden gelöscht. Das lässt sich nicht rückgängig machen.';
+      'Der Server und seine Festplatte werden gelöscht. Angehängte Volumes bleiben erhalten. Das lässt sich nicht rückgängig machen.';
 
   @override
   String get scopeEmpty => 'In diesem Bereich gibt es noch nichts anzuzeigen.';
@@ -926,4 +926,526 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get welcomeStartText =>
       'Füge einen Account mit Cloud API Token, Robot Zugang oder beidem hinzu. Jeder Zugang wird vor dem Speichern geprüft.';
+
+  @override
+  String backupWindow(String window) {
+    return 'An, Zeitfenster $window UTC';
+  }
+
+  @override
+  String get backupsOn => 'Backups aktivieren';
+
+  @override
+  String get backupsOff => 'Backups deaktivieren';
+
+  @override
+  String backupsOnTitle(String name) {
+    return 'Backups für $name aktivieren?';
+  }
+
+  @override
+  String backupsOffTitle(String name) {
+    return 'Backups für $name deaktivieren?';
+  }
+
+  @override
+  String get backupsOnConsequence =>
+      'Hetzner hält sieben tägliche Backups vor. Backups kosten 20 % des Serverpreises.';
+
+  @override
+  String get backupsOffConsequence =>
+      'Alle vorhandenen Backups dieses Servers werden gelöscht.';
+
+  @override
+  String get changeType => 'Typ ändern';
+
+  @override
+  String get changeTypeNeedsOff =>
+      'Schalte den Server aus, bevor du den Typ änderst.';
+
+  @override
+  String changeTypeTo(String type) {
+    return 'Wechsel auf $type';
+  }
+
+  @override
+  String get upgradeDisk => 'Disk vergrößern (endgültig)';
+
+  @override
+  String get upgradeDiskHint =>
+      'Mit größerer Disk kann der Server nie wieder auf einen kleineren Typ wechseln.';
+
+  @override
+  String get commonYes => 'Ja';
+
+  @override
+  String get commonNo => 'Nein';
+
+  @override
+  String get commonNone => 'Keine';
+
+  @override
+  String get commonOff => 'Aus';
+
+  @override
+  String consoleTitle(String name) {
+    return 'Konsole von $name';
+  }
+
+  @override
+  String get consoleNote =>
+      'Verbinde einen VNC Client innerhalb etwa einer Minute mit dieser Websocket URL.';
+
+  @override
+  String get consoleUrl => 'Websocket URL';
+
+  @override
+  String get consolePassword => 'VNC Passwort';
+
+  @override
+  String createdMessage(String name) {
+    return '$name erstellt';
+  }
+
+  @override
+  String deletedMessage(String name) {
+    return '$name gelöscht';
+  }
+
+  @override
+  String get deprecated => 'veraltet';
+
+  @override
+  String get emptyImages =>
+      'Noch keine Snapshots oder Backups. Erstelle einen Snapshot von einem Server.';
+
+  @override
+  String get emptyPlacementGroups =>
+      'Noch keine Placement Groups in diesem Projekt.';
+
+  @override
+  String get emptySshKeys => 'Noch keine SSH Keys in diesem Projekt.';
+
+  @override
+  String get emptyVolumes => 'Noch keine Volumes in diesem Projekt.';
+
+  @override
+  String get fieldArchitecture => 'Architektur';
+
+  @override
+  String get fieldBackups => 'Backups';
+
+  @override
+  String get fieldCreated => 'Erstellt';
+
+  @override
+  String get fieldDeleteProtection => 'Löschschutz';
+
+  @override
+  String get fieldRebuildProtection => 'Neuaufsetzschutz';
+
+  @override
+  String get fieldDevice => 'Gerät';
+
+  @override
+  String get fieldFingerprint => 'Fingerprint';
+
+  @override
+  String get fieldFormat => 'Dateisystem';
+
+  @override
+  String get fieldImageDescription => 'Beschreibung';
+
+  @override
+  String get fieldIso => 'ISO';
+
+  @override
+  String get fieldLabels => 'Labels';
+
+  @override
+  String get fieldPrice => 'Preis';
+
+  @override
+  String get fieldProtection => 'Schutz';
+
+  @override
+  String get fieldPublicKey => 'Öffentlicher Schlüssel';
+
+  @override
+  String get fieldSize => 'Größe';
+
+  @override
+  String get fieldSizeGb => 'Größe in GB';
+
+  @override
+  String get fieldSource => 'Quelle';
+
+  @override
+  String get fieldUserData => 'Cloud init User Data';
+
+  @override
+  String get filterAttached => 'Angehängt';
+
+  @override
+  String get filterDetached => 'Nicht angehängt';
+
+  @override
+  String get imageApp => 'App';
+
+  @override
+  String get imageBackup => 'Backup';
+
+  @override
+  String get imageSnapshot => 'Snapshot';
+
+  @override
+  String get imageSystem => 'System';
+
+  @override
+  String get imageConvert => 'Zu Snapshot';
+
+  @override
+  String imageConvertTitle(String name) {
+    return '$name in einen Snapshot umwandeln?';
+  }
+
+  @override
+  String get imageConvertConsequence =>
+      'Das Backup wird zum Snapshot. Er bleibt beim Löschen des Servers erhalten und wird als Snapshot berechnet.';
+
+  @override
+  String get imageDeleteConsequence =>
+      'Das Image wird gelöscht. Server daraus laufen weiter. Das lässt sich nicht rückgängig machen.';
+
+  @override
+  String get isoAttach => 'ISO einlegen';
+
+  @override
+  String get isoDetach => 'ISO auswerfen';
+
+  @override
+  String isoDetachTitle(String name) {
+    return '$name auswerfen?';
+  }
+
+  @override
+  String get isoDetachConsequence =>
+      'Der Server startet nach dem nächsten Neustart wieder von seiner Disk.';
+
+  @override
+  String get labelsHint => 'Optional. key=value, durch Kommas getrennt.';
+
+  @override
+  String metricStats(String series, String min, String max, String avg) {
+    return '$series: min $min · max $max · Ø $avg';
+  }
+
+  @override
+  String perMonth(String price) {
+    return '$price/Monat';
+  }
+
+  @override
+  String priceMonthly(String gross, String net, String perGb) {
+    return '$gross/Monat brutto, $net netto, $perGb pro GB';
+  }
+
+  @override
+  String get placementGroupAdd => 'Zu Placement Group hinzufügen';
+
+  @override
+  String get placementGroupCreate => 'Placement Group erstellen';
+
+  @override
+  String get placementGroupDeleteConsequence =>
+      'Die Gruppe wird gelöscht. Ihre Server laufen weiter.';
+
+  @override
+  String get placementGroupEmpty => 'Keine Server in dieser Gruppe.';
+
+  @override
+  String get placementGroupNone =>
+      'Keine Placement Groups in diesem Projekt. Lege zuerst eine unter Compute an.';
+
+  @override
+  String get placementGroupRemove => 'Aus Placement Group entfernen';
+
+  @override
+  String placementGroupRemoveTitle(String name, String group) {
+    return '$name aus $group entfernen?';
+  }
+
+  @override
+  String get placementGroupRemoveConsequence =>
+      'Der Server kann danach Hardware mit anderen Servern der Gruppe teilen.';
+
+  @override
+  String get placementGroupTypeHint =>
+      'Spread verteilt jeden Server auf einen anderen Host.';
+
+  @override
+  String get protectOn => 'Schützen';
+
+  @override
+  String get protectOff => 'Schutz aufheben';
+
+  @override
+  String protectOnTitle(String name) {
+    return '$name schützen?';
+  }
+
+  @override
+  String protectOffTitle(String name) {
+    return 'Schutz von $name aufheben?';
+  }
+
+  @override
+  String get protectOnConsequence =>
+      'Es lässt sich erst nach Aufheben des Schutzes löschen.';
+
+  @override
+  String get protectOffConsequence => 'Es lässt sich wieder löschen.';
+
+  @override
+  String get protected => 'geschützt';
+
+  @override
+  String get publicIpv4 => 'Öffentliche IPv4';
+
+  @override
+  String get publicIpv6 => 'Öffentliche IPv6';
+
+  @override
+  String get rebuildPick => 'Neu aufsetzen mit Image';
+
+  @override
+  String rebuildTitle(String name) {
+    return '$name neu aufsetzen?';
+  }
+
+  @override
+  String rebuildConsequence(String image) {
+    return 'Alle Daten auf der Disk gehen verloren. Der Server startet neu mit $image.';
+  }
+
+  @override
+  String get rescueActive => 'Rescue';
+
+  @override
+  String get rescueOn => 'Rescue aktivieren';
+
+  @override
+  String get rescueOff => 'Rescue deaktivieren';
+
+  @override
+  String rescueOnTitle(String name) {
+    return 'Rescue für $name aktivieren?';
+  }
+
+  @override
+  String rescueOffTitle(String name) {
+    return 'Rescue für $name deaktivieren?';
+  }
+
+  @override
+  String get rescueOnConsequence =>
+      'Der nächste Neustart lädt das Rescue System. Sein Root Passwort wird einmal angezeigt.';
+
+  @override
+  String get rescueOffConsequence =>
+      'Der nächste Neustart lädt wieder von der Disk.';
+
+  @override
+  String get resetPassword => 'Root Passwort zurücksetzen';
+
+  @override
+  String resetPasswordTitle(String name) {
+    return 'Root Passwort von $name zurücksetzen?';
+  }
+
+  @override
+  String get resetPasswordConsequence =>
+      'Der Server braucht den qemu guest agent. Das neue Passwort wird einmal angezeigt.';
+
+  @override
+  String get resourceFirewalls => 'Firewalls';
+
+  @override
+  String get resourceImage => 'Image';
+
+  @override
+  String get resourceImages => 'Images';
+
+  @override
+  String get resourceLoadBalancer => 'Load Balancer';
+
+  @override
+  String get resourceNetworks => 'Netzwerke';
+
+  @override
+  String get resourcePlacementGroup => 'Placement Group';
+
+  @override
+  String get resourcePlacementGroups => 'Placement Groups';
+
+  @override
+  String get resourceSshKey => 'SSH Key';
+
+  @override
+  String get resourceSshKeys => 'SSH Keys';
+
+  @override
+  String get resourceVolume => 'Volume';
+
+  @override
+  String get resourceVolumes => 'Volumes';
+
+  @override
+  String get reverseDns => 'Reverse DNS';
+
+  @override
+  String get reverseDnsHint =>
+      'Leer lassen setzt auf den Hetzner Standard zurück.';
+
+  @override
+  String reverseDnsValue(String ptr) {
+    return 'Reverse DNS: $ptr';
+  }
+
+  @override
+  String get rootPasswordAfter => 'wird nach dem Erstellen einmal angezeigt';
+
+  @override
+  String get rootPasswordNote =>
+      'Kopiere es jetzt. Falco speichert es nicht und kann es nicht erneut zeigen.';
+
+  @override
+  String get rootPasswordTitle => 'Root Passwort';
+
+  @override
+  String get sectionAttached => 'Zugeordnet';
+
+  @override
+  String get sectionAttachment => 'Zuordnung';
+
+  @override
+  String get sectionNetwork => 'Netzwerk';
+
+  @override
+  String serverCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Server',
+      one: '1 Server',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get serverNoSshKeys =>
+      'Keine SSH Keys in diesem Projekt. Du kannst den Schritt überspringen; das Root Passwort wird nach dem Erstellen einmal angezeigt.';
+
+  @override
+  String serverNoVolumes(String location) {
+    return 'Keine freien Volumes in $location.';
+  }
+
+  @override
+  String get sortSize => 'Größe';
+
+  @override
+  String get sshKeyAdd => 'SSH Key hinzufügen';
+
+  @override
+  String get sshKeyDeleteConsequence =>
+      'Der Key wird aus dem Projekt entfernt. Server, die ihn nutzen, behalten ihn.';
+
+  @override
+  String get sshKeyHint =>
+      'Füge den öffentlichen Schlüssel ein, z. B. den Inhalt von id_ed25519.pub.';
+
+  @override
+  String get sshKeyPrivate =>
+      'Das ist ein privater Schlüssel. Gib ihn nie weiter; füge stattdessen den öffentlichen Schlüssel (.pub) ein.';
+
+  @override
+  String get sshKeyUnknown =>
+      'Unbekannter Schlüsseltyp. Nutze ssh-ed25519, ssh-rsa, ecdsa oder einen Security Key.';
+
+  @override
+  String get startAfterCreate => 'Nach dem Erstellen starten';
+
+  @override
+  String get statusAvailable => 'verfügbar';
+
+  @override
+  String get statusUnavailable => 'nicht verfügbar';
+
+  @override
+  String get userDataHint =>
+      'Optional. Läuft beim ersten Start, z. B. #cloud-config.';
+
+  @override
+  String vcpuCount(int count) {
+    return '$count vCPU';
+  }
+
+  @override
+  String get volumeAttach => 'Anhängen';
+
+  @override
+  String get volumeAutomount => 'Automatisch einhängen';
+
+  @override
+  String get volumeCreate => 'Volume erstellen';
+
+  @override
+  String get volumeDeleteConsequence =>
+      'Das Volume und alle Daten darauf werden gelöscht. Das lässt sich nicht rückgängig machen.';
+
+  @override
+  String get volumeDetach => 'Abhängen';
+
+  @override
+  String volumeDetachTitle(String name) {
+    return '$name abhängen?';
+  }
+
+  @override
+  String get volumeDetachConsequence =>
+      'Hänge es vorher auf dem Server aus, sonst können laufende Schreibvorgänge verloren gehen.';
+
+  @override
+  String volumeNextTo(String server, String location) {
+    return 'Bei $server ($location)';
+  }
+
+  @override
+  String volumeNoServers(String location) {
+    return 'Keine Server in $location zum Anhängen.';
+  }
+
+  @override
+  String get volumeNotAttached => 'An keinen Server angehängt';
+
+  @override
+  String get volumeResize => 'Vergrößern';
+
+  @override
+  String volumeResizeHint(int current, int max) {
+    return 'Größer als $current GB, höchstens $max GB. Volumes können nicht schrumpfen.';
+  }
+
+  @override
+  String get volumeTarget => 'Standort oder Server';
+
+  @override
+  String get wizardDetails => 'Details';
+
+  @override
+  String get wizardExtras => 'Volumes und Placement';
+
+  @override
+  String get wizardNetworking => 'Netzwerk';
 }

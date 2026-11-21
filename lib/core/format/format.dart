@@ -42,6 +42,37 @@ String formatDateTime(DateTime time, String locale) =>
 String formatMoney(num amount, String currency, String locale) =>
     NumberFormat.simpleCurrency(locale: locale, name: currency).format(amount);
 
+/// Formats Hetzner labels as `key=value, key2=value2` (sorted by key).
+String formatLabels(Map<String, String> labels) => [
+  for (final key in labels.keys.toList()..sort())
+    if (labels[key]!.isEmpty) key else '$key=${labels[key]}',
+].join(', ');
+
+// Optional DNS prefix with `/`, then a name; values the same without
+// prefix and possibly empty (Hetzner label rules).
+final _labelKey = RegExp(
+  '^([a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?/)?'
+  r'[a-zA-Z0-9]([a-zA-Z0-9._-]{0,61}[a-zA-Z0-9])?$',
+);
+final _labelValue = RegExp(
+  r'^([a-zA-Z0-9]([a-zA-Z0-9._-]{0,61}[a-zA-Z0-9])?)?$',
+);
+
+/// Parses [formatLabels] text; null when a key or value breaks the
+/// Hetzner label rules.
+Map<String, String>? parseLabels(String text) {
+  final labels = <String, String>{};
+  for (final part in text.split(',')) {
+    if (part.trim().isEmpty) continue;
+    final eq = part.indexOf('=');
+    final key = (eq < 0 ? part : part.substring(0, eq)).trim();
+    final value = eq < 0 ? '' : part.substring(eq + 1).trim();
+    if (!_labelKey.hasMatch(key) || !_labelValue.hasMatch(value)) return null;
+    labels[key] = value;
+  }
+  return labels;
+}
+
 /// Normalizes an IPv4 or IPv6 address, optionally with `/prefix`, to its
 /// canonical text form (RFC 5952: IPv6 lower case, no leading zeros,
 /// longest zero run compressed). Unparsable input is returned trimmed.

@@ -118,9 +118,13 @@ class MoreMenu extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                 ],
-                Text(
-                  item.label,
-                  style: TextStyle(color: item.destructive ? c.error : c.text),
+                Flexible(
+                  child: Text(
+                    item.label,
+                    style: TextStyle(
+                      color: item.destructive ? c.error : c.text,
+                    ),
+                  ),
                 ),
               ],
             ),

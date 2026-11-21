@@ -6,6 +6,8 @@ import 'package:dio/dio.dart';
 import 'package:falco/core/actions/action_tracker.dart';
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/http/http.dart';
+import 'package:falco/core/scope/scope.dart';
+import 'package:falco/core/scope/scope_repository.dart';
 import 'package:falco/core/secure/secret_store.dart';
 import 'package:hetzner_cloud_api/hetzner_cloud_api.dart' as cloud;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -76,3 +78,25 @@ Future<ActionProgress> Function(int id) cloudActionFetcher(
     started: a.started,
   );
 };
+
+/// Runs a mutating [call] and returns the id of the action it started.
+/// The generated responses share no type, so [id] picks the action from
+/// the one success case.
+Future<int> actionOf<R>(
+  Future<TonikResult<R, Response<Object?>>> call,
+  int? Function(R response) id,
+) async => id(await unwrap(call)) ?? (throw const Server());
+
+/// Loads [load] for every project of [scope] and joins the lists, so a
+/// list of "All projects" is the lists of its projects.
+Future<List<T>> perProject<T>(
+  Ref ref,
+  Scope scope,
+  Future<List<T>> Function(cloud.Server api, String projectId) load,
+) async {
+  final projects = await ref.watch(scopeRepositoryProvider).projectsOf(scope);
+  final lists = await Future.wait([
+    for (final p in projects) load(ref.watch(cloudApiProvider(p.id)), p.id),
+  ]);
+  return [for (final l in lists) ...l];
+}

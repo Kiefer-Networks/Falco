@@ -641,7 +641,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteConsequence.
   ///
   /// In en, this message translates to:
-  /// **'The server and its disk are deleted. This cannot be undone.'**
+  /// **'The server and its disk are deleted. Attached volumes are kept. This cannot be undone.'**
   String get deleteConsequence;
 
   /// No description provided for @scopeEmpty.
@@ -1603,6 +1603,870 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add an account with a Cloud API token, Robot access, or both. Every access is checked before it is stored.'**
   String get welcomeStartText;
+
+  /// No description provided for @backupWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'On, window {window} UTC'**
+  String backupWindow(String window);
+
+  /// No description provided for @backupsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable backups'**
+  String get backupsOn;
+
+  /// No description provided for @backupsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable backups'**
+  String get backupsOff;
+
+  /// No description provided for @backupsOnTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable backups for {name}?'**
+  String backupsOnTitle(String name);
+
+  /// No description provided for @backupsOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable backups for {name}?'**
+  String backupsOffTitle(String name);
+
+  /// No description provided for @backupsOnConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Hetzner keeps seven daily backups. Backups cost 20 % of the server price.'**
+  String get backupsOnConsequence;
+
+  /// No description provided for @backupsOffConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'All existing backups of this server are deleted.'**
+  String get backupsOffConsequence;
+
+  /// No description provided for @changeType.
+  ///
+  /// In en, this message translates to:
+  /// **'Change type'**
+  String get changeType;
+
+  /// No description provided for @changeTypeNeedsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Power off the server before changing its type.'**
+  String get changeTypeNeedsOff;
+
+  /// No description provided for @changeTypeTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Change to {type}'**
+  String changeTypeTo(String type);
+
+  /// No description provided for @upgradeDisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade disk (irreversible)'**
+  String get upgradeDisk;
+
+  /// No description provided for @upgradeDiskHint.
+  ///
+  /// In en, this message translates to:
+  /// **'With a larger disk the server can never move back to a smaller type.'**
+  String get upgradeDiskHint;
+
+  /// No description provided for @commonYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get commonYes;
+
+  /// No description provided for @commonNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get commonNo;
+
+  /// No description provided for @commonNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get commonNone;
+
+  /// No description provided for @commonOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get commonOff;
+
+  /// No description provided for @consoleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Console of {name}'**
+  String consoleTitle(String name);
+
+  /// No description provided for @consoleNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a VNC client to this websocket URL within about a minute.'**
+  String get consoleNote;
+
+  /// No description provided for @consoleUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Websocket URL'**
+  String get consoleUrl;
+
+  /// No description provided for @consolePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'VNC password'**
+  String get consolePassword;
+
+  /// No description provided for @createdMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} created'**
+  String createdMessage(String name);
+
+  /// No description provided for @deletedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} deleted'**
+  String deletedMessage(String name);
+
+  /// No description provided for @deprecated.
+  ///
+  /// In en, this message translates to:
+  /// **'deprecated'**
+  String get deprecated;
+
+  /// No description provided for @emptyImages.
+  ///
+  /// In en, this message translates to:
+  /// **'No snapshots or backups yet. Create a snapshot from a server.'**
+  String get emptyImages;
+
+  /// No description provided for @emptyPlacementGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'No placement groups in this project yet.'**
+  String get emptyPlacementGroups;
+
+  /// No description provided for @emptySshKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'No SSH keys in this project yet.'**
+  String get emptySshKeys;
+
+  /// No description provided for @emptyVolumes.
+  ///
+  /// In en, this message translates to:
+  /// **'No volumes in this project yet.'**
+  String get emptyVolumes;
+
+  /// No description provided for @fieldArchitecture.
+  ///
+  /// In en, this message translates to:
+  /// **'Architecture'**
+  String get fieldArchitecture;
+
+  /// No description provided for @fieldBackups.
+  ///
+  /// In en, this message translates to:
+  /// **'Backups'**
+  String get fieldBackups;
+
+  /// No description provided for @fieldCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get fieldCreated;
+
+  /// No description provided for @fieldDeleteProtection.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete protection'**
+  String get fieldDeleteProtection;
+
+  /// No description provided for @fieldRebuildProtection.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebuild protection'**
+  String get fieldRebuildProtection;
+
+  /// No description provided for @fieldDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get fieldDevice;
+
+  /// No description provided for @fieldFingerprint.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingerprint'**
+  String get fieldFingerprint;
+
+  /// No description provided for @fieldFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'File system'**
+  String get fieldFormat;
+
+  /// No description provided for @fieldImageDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get fieldImageDescription;
+
+  /// No description provided for @fieldIso.
+  ///
+  /// In en, this message translates to:
+  /// **'ISO'**
+  String get fieldIso;
+
+  /// No description provided for @fieldLabels.
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get fieldLabels;
+
+  /// No description provided for @fieldPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get fieldPrice;
+
+  /// No description provided for @fieldProtection.
+  ///
+  /// In en, this message translates to:
+  /// **'Protection'**
+  String get fieldProtection;
+
+  /// No description provided for @fieldPublicKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Public key'**
+  String get fieldPublicKey;
+
+  /// No description provided for @fieldSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get fieldSize;
+
+  /// No description provided for @fieldSizeGb.
+  ///
+  /// In en, this message translates to:
+  /// **'Size in GB'**
+  String get fieldSizeGb;
+
+  /// No description provided for @fieldSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get fieldSource;
+
+  /// No description provided for @fieldUserData.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud init user data'**
+  String get fieldUserData;
+
+  /// No description provided for @filterAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached'**
+  String get filterAttached;
+
+  /// No description provided for @filterDetached.
+  ///
+  /// In en, this message translates to:
+  /// **'Not attached'**
+  String get filterDetached;
+
+  /// No description provided for @imageApp.
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get imageApp;
+
+  /// No description provided for @imageBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get imageBackup;
+
+  /// No description provided for @imageSnapshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Snapshot'**
+  String get imageSnapshot;
+
+  /// No description provided for @imageSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get imageSystem;
+
+  /// No description provided for @imageConvert.
+  ///
+  /// In en, this message translates to:
+  /// **'To snapshot'**
+  String get imageConvert;
+
+  /// No description provided for @imageConvertTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert {name} to a snapshot?'**
+  String imageConvertTitle(String name);
+
+  /// No description provided for @imageConvertConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The backup becomes a snapshot. It is kept when the server is deleted and billed as a snapshot.'**
+  String get imageConvertConsequence;
+
+  /// No description provided for @imageDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The image is deleted. Servers built from it keep running. This cannot be undone.'**
+  String get imageDeleteConsequence;
+
+  /// No description provided for @isoAttach.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert ISO'**
+  String get isoAttach;
+
+  /// No description provided for @isoDetach.
+  ///
+  /// In en, this message translates to:
+  /// **'Eject ISO'**
+  String get isoDetach;
+
+  /// No description provided for @isoDetachTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Eject {name}?'**
+  String isoDetachTitle(String name);
+
+  /// No description provided for @isoDetachConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The server boots from its disk again after the next restart.'**
+  String get isoDetachConsequence;
+
+  /// No description provided for @labelsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. key=value, separated by commas.'**
+  String get labelsHint;
+
+  /// No description provided for @metricStats.
+  ///
+  /// In en, this message translates to:
+  /// **'{series}: min {min} · max {max} · avg {avg}'**
+  String metricStats(String series, String min, String max, String avg);
+
+  /// No description provided for @perMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{price}/month'**
+  String perMonth(String price);
+
+  /// No description provided for @priceMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'{gross}/month gross, {net} net, {perGb} per GB'**
+  String priceMonthly(String gross, String net, String perGb);
+
+  /// No description provided for @placementGroupAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to placement group'**
+  String get placementGroupAdd;
+
+  /// No description provided for @placementGroupCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create placement group'**
+  String get placementGroupCreate;
+
+  /// No description provided for @placementGroupDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The group is deleted. Its servers keep running.'**
+  String get placementGroupDeleteConsequence;
+
+  /// No description provided for @placementGroupEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No servers in this group.'**
+  String get placementGroupEmpty;
+
+  /// No description provided for @placementGroupNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No placement groups in this project. Create one under Compute first.'**
+  String get placementGroupNone;
+
+  /// No description provided for @placementGroupRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from placement group'**
+  String get placementGroupRemove;
+
+  /// No description provided for @placementGroupRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name} from {group}?'**
+  String placementGroupRemoveTitle(String name, String group);
+
+  /// No description provided for @placementGroupRemoveConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The server may then share hardware with other servers of the group.'**
+  String get placementGroupRemoveConsequence;
+
+  /// No description provided for @placementGroupTypeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Spread places every server on a different host.'**
+  String get placementGroupTypeHint;
+
+  /// No description provided for @protectOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Protect'**
+  String get protectOn;
+
+  /// No description provided for @protectOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove protection'**
+  String get protectOff;
+
+  /// No description provided for @protectOnTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Protect {name}?'**
+  String protectOnTitle(String name);
+
+  /// No description provided for @protectOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove protection of {name}?'**
+  String protectOffTitle(String name);
+
+  /// No description provided for @protectOnConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'It cannot be deleted until the protection is removed.'**
+  String get protectOnConsequence;
+
+  /// No description provided for @protectOffConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'It can be deleted again.'**
+  String get protectOffConsequence;
+
+  /// No description provided for @protected.
+  ///
+  /// In en, this message translates to:
+  /// **'protected'**
+  String get protected;
+
+  /// No description provided for @publicIpv4.
+  ///
+  /// In en, this message translates to:
+  /// **'Public IPv4'**
+  String get publicIpv4;
+
+  /// No description provided for @publicIpv6.
+  ///
+  /// In en, this message translates to:
+  /// **'Public IPv6'**
+  String get publicIpv6;
+
+  /// No description provided for @rebuildPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebuild from image'**
+  String get rebuildPick;
+
+  /// No description provided for @rebuildTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebuild {name}?'**
+  String rebuildTitle(String name);
+
+  /// No description provided for @rebuildConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'All data on the disk is lost. The server starts fresh from {image}.'**
+  String rebuildConsequence(String image);
+
+  /// No description provided for @rescueActive.
+  ///
+  /// In en, this message translates to:
+  /// **'rescue'**
+  String get rescueActive;
+
+  /// No description provided for @rescueOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable rescue'**
+  String get rescueOn;
+
+  /// No description provided for @rescueOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable rescue'**
+  String get rescueOff;
+
+  /// No description provided for @rescueOnTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable rescue for {name}?'**
+  String rescueOnTitle(String name);
+
+  /// No description provided for @rescueOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable rescue for {name}?'**
+  String rescueOffTitle(String name);
+
+  /// No description provided for @rescueOnConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The next restart boots the rescue system. Its root password is shown once.'**
+  String get rescueOnConsequence;
+
+  /// No description provided for @rescueOffConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The next restart boots from the disk again.'**
+  String get rescueOffConsequence;
+
+  /// No description provided for @resetPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset root password'**
+  String get resetPassword;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset the root password of {name}?'**
+  String resetPasswordTitle(String name);
+
+  /// No description provided for @resetPasswordConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The server needs the qemu guest agent. The new password is shown once.'**
+  String get resetPasswordConsequence;
+
+  /// No description provided for @resourceFirewalls.
+  ///
+  /// In en, this message translates to:
+  /// **'Firewalls'**
+  String get resourceFirewalls;
+
+  /// No description provided for @resourceImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get resourceImage;
+
+  /// No description provided for @resourceImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Images'**
+  String get resourceImages;
+
+  /// No description provided for @resourceLoadBalancer.
+  ///
+  /// In en, this message translates to:
+  /// **'Load balancer'**
+  String get resourceLoadBalancer;
+
+  /// No description provided for @resourceNetworks.
+  ///
+  /// In en, this message translates to:
+  /// **'Networks'**
+  String get resourceNetworks;
+
+  /// No description provided for @resourcePlacementGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Placement group'**
+  String get resourcePlacementGroup;
+
+  /// No description provided for @resourcePlacementGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Placement groups'**
+  String get resourcePlacementGroups;
+
+  /// No description provided for @resourceSshKey.
+  ///
+  /// In en, this message translates to:
+  /// **'SSH key'**
+  String get resourceSshKey;
+
+  /// No description provided for @resourceSshKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'SSH keys'**
+  String get resourceSshKeys;
+
+  /// No description provided for @resourceVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get resourceVolume;
+
+  /// No description provided for @resourceVolumes.
+  ///
+  /// In en, this message translates to:
+  /// **'Volumes'**
+  String get resourceVolumes;
+
+  /// No description provided for @reverseDns.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse DNS'**
+  String get reverseDns;
+
+  /// No description provided for @reverseDnsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to reset to the Hetzner default.'**
+  String get reverseDnsHint;
+
+  /// No description provided for @reverseDnsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse DNS: {ptr}'**
+  String reverseDnsValue(String ptr);
+
+  /// No description provided for @rootPasswordAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'shown once after creating'**
+  String get rootPasswordAfter;
+
+  /// No description provided for @rootPasswordNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy it now. Falco does not store it and cannot show it again.'**
+  String get rootPasswordNote;
+
+  /// No description provided for @rootPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Root password'**
+  String get rootPasswordTitle;
+
+  /// No description provided for @sectionAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached'**
+  String get sectionAttached;
+
+  /// No description provided for @sectionAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment'**
+  String get sectionAttachment;
+
+  /// No description provided for @sectionNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get sectionNetwork;
+
+  /// No description provided for @serverCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 server} other{{count} servers}}'**
+  String serverCount(int count);
+
+  /// No description provided for @serverNoSshKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'No SSH keys in this project. You can skip this step; the root password is shown once after creating.'**
+  String get serverNoSshKeys;
+
+  /// No description provided for @serverNoVolumes.
+  ///
+  /// In en, this message translates to:
+  /// **'No free volumes in {location}.'**
+  String serverNoVolumes(String location);
+
+  /// No description provided for @sortSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get sortSize;
+
+  /// No description provided for @sshKeyAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add SSH key'**
+  String get sshKeyAdd;
+
+  /// No description provided for @sshKeyDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The key is removed from the project. Servers that use it keep it.'**
+  String get sshKeyDeleteConsequence;
+
+  /// No description provided for @sshKeyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the public key, e.g. the content of id_ed25519.pub.'**
+  String get sshKeyHint;
+
+  /// No description provided for @sshKeyPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a private key. Never share it; paste the public key (.pub) instead.'**
+  String get sshKeyPrivate;
+
+  /// No description provided for @sshKeyUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown key type. Use ssh-ed25519, ssh-rsa, ecdsa or a security key.'**
+  String get sshKeyUnknown;
+
+  /// No description provided for @startAfterCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Start after create'**
+  String get startAfterCreate;
+
+  /// No description provided for @statusAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'available'**
+  String get statusAvailable;
+
+  /// No description provided for @statusUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'unavailable'**
+  String get statusUnavailable;
+
+  /// No description provided for @userDataHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Runs on the first boot, e.g. #cloud-config.'**
+  String get userDataHint;
+
+  /// No description provided for @vcpuCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} vCPU'**
+  String vcpuCount(int count);
+
+  /// No description provided for @volumeAttach.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach'**
+  String get volumeAttach;
+
+  /// No description provided for @volumeAutomount.
+  ///
+  /// In en, this message translates to:
+  /// **'Mount automatically'**
+  String get volumeAutomount;
+
+  /// No description provided for @volumeCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create volume'**
+  String get volumeCreate;
+
+  /// No description provided for @volumeDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The volume and all its data are deleted. This cannot be undone.'**
+  String get volumeDeleteConsequence;
+
+  /// No description provided for @volumeDetach.
+  ///
+  /// In en, this message translates to:
+  /// **'Detach'**
+  String get volumeDetach;
+
+  /// No description provided for @volumeDetachTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Detach {name}?'**
+  String volumeDetachTitle(String name);
+
+  /// No description provided for @volumeDetachConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmount it on the server first, or running writes may be lost.'**
+  String get volumeDetachConsequence;
+
+  /// No description provided for @volumeNextTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Next to {server} ({location})'**
+  String volumeNextTo(String server, String location);
+
+  /// No description provided for @volumeNoServers.
+  ///
+  /// In en, this message translates to:
+  /// **'No servers in {location} to attach to.'**
+  String volumeNoServers(String location);
+
+  /// No description provided for @volumeNotAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Not attached to any server'**
+  String get volumeNotAttached;
+
+  /// No description provided for @volumeResize.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize'**
+  String get volumeResize;
+
+  /// No description provided for @volumeResizeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Larger than {current} GB, at most {max} GB. Volumes cannot shrink.'**
+  String volumeResizeHint(int current, int max);
+
+  /// No description provided for @volumeTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Location or server'**
+  String get volumeTarget;
+
+  /// No description provided for @wizardDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get wizardDetails;
+
+  /// No description provided for @wizardExtras.
+  ///
+  /// In en, this message translates to:
+  /// **'Volumes and placement'**
+  String get wizardExtras;
+
+  /// No description provided for @wizardNetworking.
+  ///
+  /// In en, this message translates to:
+  /// **'Networking'**
+  String get wizardNetworking;
 }
 
 class _AppLocalizationsDelegate

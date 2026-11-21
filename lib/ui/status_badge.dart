@@ -50,6 +50,12 @@ enum ResourceStatus {
   /// Error.
   error(StatusTone.error),
 
+  /// Ready to use (volumes, images).
+  available(StatusTone.running),
+
+  /// Not usable (images).
+  unavailable(StatusTone.off),
+
   /// Unknown status from the API.
   unknown(StatusTone.off),
 
@@ -79,6 +85,8 @@ enum ResourceStatus {
     migrating => l10n.statusMigrating,
     deleting => l10n.statusDeleting,
     error => l10n.statusError,
+    available => l10n.statusAvailable,
+    unavailable => l10n.statusUnavailable,
     unknown => l10n.statusUnknown,
     inProgress => l10n.statusInProgress,
     done => l10n.statusDone,

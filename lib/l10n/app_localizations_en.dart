@@ -321,7 +321,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteConsequence =>
-      'The server and its disk are deleted. This cannot be undone.';
+      'The server and its disk are deleted. Attached volumes are kept. This cannot be undone.';
 
   @override
   String get scopeEmpty => 'Nothing to show in this scope yet.';
@@ -923,4 +923,524 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get welcomeStartText =>
       'Add an account with a Cloud API token, Robot access, or both. Every access is checked before it is stored.';
+
+  @override
+  String backupWindow(String window) {
+    return 'On, window $window UTC';
+  }
+
+  @override
+  String get backupsOn => 'Enable backups';
+
+  @override
+  String get backupsOff => 'Disable backups';
+
+  @override
+  String backupsOnTitle(String name) {
+    return 'Enable backups for $name?';
+  }
+
+  @override
+  String backupsOffTitle(String name) {
+    return 'Disable backups for $name?';
+  }
+
+  @override
+  String get backupsOnConsequence =>
+      'Hetzner keeps seven daily backups. Backups cost 20 % of the server price.';
+
+  @override
+  String get backupsOffConsequence =>
+      'All existing backups of this server are deleted.';
+
+  @override
+  String get changeType => 'Change type';
+
+  @override
+  String get changeTypeNeedsOff =>
+      'Power off the server before changing its type.';
+
+  @override
+  String changeTypeTo(String type) {
+    return 'Change to $type';
+  }
+
+  @override
+  String get upgradeDisk => 'Upgrade disk (irreversible)';
+
+  @override
+  String get upgradeDiskHint =>
+      'With a larger disk the server can never move back to a smaller type.';
+
+  @override
+  String get commonYes => 'Yes';
+
+  @override
+  String get commonNo => 'No';
+
+  @override
+  String get commonNone => 'None';
+
+  @override
+  String get commonOff => 'Off';
+
+  @override
+  String consoleTitle(String name) {
+    return 'Console of $name';
+  }
+
+  @override
+  String get consoleNote =>
+      'Connect a VNC client to this websocket URL within about a minute.';
+
+  @override
+  String get consoleUrl => 'Websocket URL';
+
+  @override
+  String get consolePassword => 'VNC password';
+
+  @override
+  String createdMessage(String name) {
+    return '$name created';
+  }
+
+  @override
+  String deletedMessage(String name) {
+    return '$name deleted';
+  }
+
+  @override
+  String get deprecated => 'deprecated';
+
+  @override
+  String get emptyImages =>
+      'No snapshots or backups yet. Create a snapshot from a server.';
+
+  @override
+  String get emptyPlacementGroups => 'No placement groups in this project yet.';
+
+  @override
+  String get emptySshKeys => 'No SSH keys in this project yet.';
+
+  @override
+  String get emptyVolumes => 'No volumes in this project yet.';
+
+  @override
+  String get fieldArchitecture => 'Architecture';
+
+  @override
+  String get fieldBackups => 'Backups';
+
+  @override
+  String get fieldCreated => 'Created';
+
+  @override
+  String get fieldDeleteProtection => 'Delete protection';
+
+  @override
+  String get fieldRebuildProtection => 'Rebuild protection';
+
+  @override
+  String get fieldDevice => 'Device';
+
+  @override
+  String get fieldFingerprint => 'Fingerprint';
+
+  @override
+  String get fieldFormat => 'File system';
+
+  @override
+  String get fieldImageDescription => 'Description';
+
+  @override
+  String get fieldIso => 'ISO';
+
+  @override
+  String get fieldLabels => 'Labels';
+
+  @override
+  String get fieldPrice => 'Price';
+
+  @override
+  String get fieldProtection => 'Protection';
+
+  @override
+  String get fieldPublicKey => 'Public key';
+
+  @override
+  String get fieldSize => 'Size';
+
+  @override
+  String get fieldSizeGb => 'Size in GB';
+
+  @override
+  String get fieldSource => 'Source';
+
+  @override
+  String get fieldUserData => 'Cloud init user data';
+
+  @override
+  String get filterAttached => 'Attached';
+
+  @override
+  String get filterDetached => 'Not attached';
+
+  @override
+  String get imageApp => 'App';
+
+  @override
+  String get imageBackup => 'Backup';
+
+  @override
+  String get imageSnapshot => 'Snapshot';
+
+  @override
+  String get imageSystem => 'System';
+
+  @override
+  String get imageConvert => 'To snapshot';
+
+  @override
+  String imageConvertTitle(String name) {
+    return 'Convert $name to a snapshot?';
+  }
+
+  @override
+  String get imageConvertConsequence =>
+      'The backup becomes a snapshot. It is kept when the server is deleted and billed as a snapshot.';
+
+  @override
+  String get imageDeleteConsequence =>
+      'The image is deleted. Servers built from it keep running. This cannot be undone.';
+
+  @override
+  String get isoAttach => 'Insert ISO';
+
+  @override
+  String get isoDetach => 'Eject ISO';
+
+  @override
+  String isoDetachTitle(String name) {
+    return 'Eject $name?';
+  }
+
+  @override
+  String get isoDetachConsequence =>
+      'The server boots from its disk again after the next restart.';
+
+  @override
+  String get labelsHint => 'Optional. key=value, separated by commas.';
+
+  @override
+  String metricStats(String series, String min, String max, String avg) {
+    return '$series: min $min · max $max · avg $avg';
+  }
+
+  @override
+  String perMonth(String price) {
+    return '$price/month';
+  }
+
+  @override
+  String priceMonthly(String gross, String net, String perGb) {
+    return '$gross/month gross, $net net, $perGb per GB';
+  }
+
+  @override
+  String get placementGroupAdd => 'Add to placement group';
+
+  @override
+  String get placementGroupCreate => 'Create placement group';
+
+  @override
+  String get placementGroupDeleteConsequence =>
+      'The group is deleted. Its servers keep running.';
+
+  @override
+  String get placementGroupEmpty => 'No servers in this group.';
+
+  @override
+  String get placementGroupNone =>
+      'No placement groups in this project. Create one under Compute first.';
+
+  @override
+  String get placementGroupRemove => 'Remove from placement group';
+
+  @override
+  String placementGroupRemoveTitle(String name, String group) {
+    return 'Remove $name from $group?';
+  }
+
+  @override
+  String get placementGroupRemoveConsequence =>
+      'The server may then share hardware with other servers of the group.';
+
+  @override
+  String get placementGroupTypeHint =>
+      'Spread places every server on a different host.';
+
+  @override
+  String get protectOn => 'Protect';
+
+  @override
+  String get protectOff => 'Remove protection';
+
+  @override
+  String protectOnTitle(String name) {
+    return 'Protect $name?';
+  }
+
+  @override
+  String protectOffTitle(String name) {
+    return 'Remove protection of $name?';
+  }
+
+  @override
+  String get protectOnConsequence =>
+      'It cannot be deleted until the protection is removed.';
+
+  @override
+  String get protectOffConsequence => 'It can be deleted again.';
+
+  @override
+  String get protected => 'protected';
+
+  @override
+  String get publicIpv4 => 'Public IPv4';
+
+  @override
+  String get publicIpv6 => 'Public IPv6';
+
+  @override
+  String get rebuildPick => 'Rebuild from image';
+
+  @override
+  String rebuildTitle(String name) {
+    return 'Rebuild $name?';
+  }
+
+  @override
+  String rebuildConsequence(String image) {
+    return 'All data on the disk is lost. The server starts fresh from $image.';
+  }
+
+  @override
+  String get rescueActive => 'rescue';
+
+  @override
+  String get rescueOn => 'Enable rescue';
+
+  @override
+  String get rescueOff => 'Disable rescue';
+
+  @override
+  String rescueOnTitle(String name) {
+    return 'Enable rescue for $name?';
+  }
+
+  @override
+  String rescueOffTitle(String name) {
+    return 'Disable rescue for $name?';
+  }
+
+  @override
+  String get rescueOnConsequence =>
+      'The next restart boots the rescue system. Its root password is shown once.';
+
+  @override
+  String get rescueOffConsequence =>
+      'The next restart boots from the disk again.';
+
+  @override
+  String get resetPassword => 'Reset root password';
+
+  @override
+  String resetPasswordTitle(String name) {
+    return 'Reset the root password of $name?';
+  }
+
+  @override
+  String get resetPasswordConsequence =>
+      'The server needs the qemu guest agent. The new password is shown once.';
+
+  @override
+  String get resourceFirewalls => 'Firewalls';
+
+  @override
+  String get resourceImage => 'Image';
+
+  @override
+  String get resourceImages => 'Images';
+
+  @override
+  String get resourceLoadBalancer => 'Load balancer';
+
+  @override
+  String get resourceNetworks => 'Networks';
+
+  @override
+  String get resourcePlacementGroup => 'Placement group';
+
+  @override
+  String get resourcePlacementGroups => 'Placement groups';
+
+  @override
+  String get resourceSshKey => 'SSH key';
+
+  @override
+  String get resourceSshKeys => 'SSH keys';
+
+  @override
+  String get resourceVolume => 'Volume';
+
+  @override
+  String get resourceVolumes => 'Volumes';
+
+  @override
+  String get reverseDns => 'Reverse DNS';
+
+  @override
+  String get reverseDnsHint => 'Leave empty to reset to the Hetzner default.';
+
+  @override
+  String reverseDnsValue(String ptr) {
+    return 'Reverse DNS: $ptr';
+  }
+
+  @override
+  String get rootPasswordAfter => 'shown once after creating';
+
+  @override
+  String get rootPasswordNote =>
+      'Copy it now. Falco does not store it and cannot show it again.';
+
+  @override
+  String get rootPasswordTitle => 'Root password';
+
+  @override
+  String get sectionAttached => 'Attached';
+
+  @override
+  String get sectionAttachment => 'Attachment';
+
+  @override
+  String get sectionNetwork => 'Network';
+
+  @override
+  String serverCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count servers',
+      one: '1 server',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get serverNoSshKeys =>
+      'No SSH keys in this project. You can skip this step; the root password is shown once after creating.';
+
+  @override
+  String serverNoVolumes(String location) {
+    return 'No free volumes in $location.';
+  }
+
+  @override
+  String get sortSize => 'Size';
+
+  @override
+  String get sshKeyAdd => 'Add SSH key';
+
+  @override
+  String get sshKeyDeleteConsequence =>
+      'The key is removed from the project. Servers that use it keep it.';
+
+  @override
+  String get sshKeyHint =>
+      'Paste the public key, e.g. the content of id_ed25519.pub.';
+
+  @override
+  String get sshKeyPrivate =>
+      'This is a private key. Never share it; paste the public key (.pub) instead.';
+
+  @override
+  String get sshKeyUnknown =>
+      'Unknown key type. Use ssh-ed25519, ssh-rsa, ecdsa or a security key.';
+
+  @override
+  String get startAfterCreate => 'Start after create';
+
+  @override
+  String get statusAvailable => 'available';
+
+  @override
+  String get statusUnavailable => 'unavailable';
+
+  @override
+  String get userDataHint =>
+      'Optional. Runs on the first boot, e.g. #cloud-config.';
+
+  @override
+  String vcpuCount(int count) {
+    return '$count vCPU';
+  }
+
+  @override
+  String get volumeAttach => 'Attach';
+
+  @override
+  String get volumeAutomount => 'Mount automatically';
+
+  @override
+  String get volumeCreate => 'Create volume';
+
+  @override
+  String get volumeDeleteConsequence =>
+      'The volume and all its data are deleted. This cannot be undone.';
+
+  @override
+  String get volumeDetach => 'Detach';
+
+  @override
+  String volumeDetachTitle(String name) {
+    return 'Detach $name?';
+  }
+
+  @override
+  String get volumeDetachConsequence =>
+      'Unmount it on the server first, or running writes may be lost.';
+
+  @override
+  String volumeNextTo(String server, String location) {
+    return 'Next to $server ($location)';
+  }
+
+  @override
+  String volumeNoServers(String location) {
+    return 'No servers in $location to attach to.';
+  }
+
+  @override
+  String get volumeNotAttached => 'Not attached to any server';
+
+  @override
+  String get volumeResize => 'Resize';
+
+  @override
+  String volumeResizeHint(int current, int max) {
+    return 'Larger than $current GB, at most $max GB. Volumes cannot shrink.';
+  }
+
+  @override
+  String get volumeTarget => 'Location or server';
+
+  @override
+  String get wizardDetails => 'Details';
+
+  @override
+  String get wizardExtras => 'Volumes and placement';
+
+  @override
+  String get wizardNetworking => 'Networking';
 }
