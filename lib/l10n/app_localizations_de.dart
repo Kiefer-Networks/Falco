@@ -1992,7 +1992,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String primaryIpNoServers(String location) {
-    return 'Keine ausgeschalteten Server in $location. Eine Primary IP wechselt nur zu einem ausgeschalteten Server.';
+    return 'Keine Server in $location, die ausgeschaltet sind und keine Primary IP dieses Typs haben. Eine Primary IP wechselt nur zu so einem Server.';
   }
 
   @override

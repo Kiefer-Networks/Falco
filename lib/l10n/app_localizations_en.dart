@@ -1983,7 +1983,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String primaryIpNoServers(String location) {
-    return 'No servers that are off in $location. A Primary IP moves only to a server that is off.';
+    return 'No servers in $location that are off and have no Primary IP of this type. A Primary IP moves only to such a server.';
   }
 
   @override

@@ -533,7 +533,22 @@ void main() {
   });
 
   group('Floating and Primary IPs', () {
+    /// Servers that are off: db-1 without, app-1 with a Primary IPv4.
+    List<Map<String, Object?>> offServers() {
+      final db = serverJson(id: 2, name: 'db-1', status: 'off');
+      db['public_net'] = <Object?, Object?>{
+        ...db['public_net']! as Map,
+        'ipv4': null,
+      };
+      return [
+        serverJson(id: 1, name: 'web-1'),
+        db,
+        serverJson(id: 3, name: 'app-1', status: 'off'),
+      ];
+    }
+
     FakeCloud withIps() => FakeCloud(
+      servers: offServers(),
       floatingIps: [
         floatingIpJson(id: 61, name: 'vip', server: 1),
         floatingIpJson(id: 62, name: 'spare-ip', ip: '198.51.100.11'),
@@ -648,11 +663,17 @@ void main() {
     testWidgets('NET-032 NET-033 Primary IP needs a name, goes to a location', (
       tester,
     ) async {
-      final cloud = await openNetwork(tester, 'Primary IPs');
+      final cloud = await openNetwork(
+        tester,
+        'Primary IPs',
+        cloud: FakeCloud(servers: offServers()),
+      );
       await tap(tester, 'Create Primary IP');
       await tap(tester, 'Next');
-      // Only servers that are off can take a Primary IP.
+      // Only servers that are off and have no Primary IP of the type can
+      // take one.
       expect(find.text('Assign to web-1 (fsn1)'), findsNothing);
+      expect(find.text('Assign to app-1 (fsn1)'), findsNothing);
       expect(find.text('Assign to db-1 (fsn1)'), findsOneWidget);
       await tap(tester, 'fsn1 · Falkenstein DC Park 1');
       await tap(tester, 'Next');
@@ -683,6 +704,7 @@ void main() {
       expect(find.text('Not assigned'), findsWidgets);
       await tap(tester, 'Assign');
       expect(find.text('web-1'), findsNothing, reason: 'running');
+      expect(find.text('app-1'), findsNothing, reason: 'has a Primary IPv4');
       await tap(tester, 'db-1');
       expect(cloud.body('POST /primary_ips/72/actions/assign'), {
         'assignee_type': 'server',

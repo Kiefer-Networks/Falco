@@ -550,7 +550,7 @@
   "tsigNone": "Keiner",
   "primaryIpCreate": "Primary IP erstellen",
   "primaryIpNew": "Neue Primary IP",
-  "primaryIpNoServers": "Keine ausgeschalteten Server in {location}. Eine Primary IP wechselt nur zu einem ausgeschalteten Server.",
+  "primaryIpNoServers": "Keine Server in {location}, die ausgeschaltet sind und keine Primary IP dieses Typs haben. Eine Primary IP wechselt nur zu so einem Server.",
   "primaryIpUnassignConsequence": "Der Server verliert diese öffentliche Adresse. Er muss ausgeschaltet sein.",
   "primaryRemoveConsequence": "Die Zone wird nicht mehr von diesem Nameserver übertragen.",
   "primaryRemoveTitle": "{address} entfernen?",

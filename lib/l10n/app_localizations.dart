@@ -3395,7 +3395,7 @@ abstract class AppLocalizations {
   /// No description provided for @primaryIpNoServers.
   ///
   /// In en, this message translates to:
-  /// **'No servers that are off in {location}. A Primary IP moves only to a server that is off.'**
+  /// **'No servers in {location} that are off and have no Primary IP of this type. A Primary IP moves only to such a server.'**
   String primaryIpNoServers(String location);
 
   /// No description provided for @primaryIpUnassignConsequence.

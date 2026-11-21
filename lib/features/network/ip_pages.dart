@@ -132,11 +132,13 @@ class IpDetailPage extends ConsumerWidget {
 
     Future<void> assign() async {
       // A Primary IP moves only to a server that is off, in its location
-      // (NET-035).
+      // and without a Primary IP of its type (NET-035).
       final candidates = [
         for (final s in servers)
           if (floating ||
-              (s.status == ResourceStatus.off && s.location == ip.location))
+              (s.status == ResourceStatus.off &&
+                  s.location == ip.location &&
+                  (ip.ipv6 ? s.ipv6 : s.ipv4) == null))
             s,
       ];
       if (candidates.isEmpty) {
@@ -450,8 +452,12 @@ class _CreateIpPageState extends ConsumerState<CreateIpPage> {
               ? const <CloudServer>[]
               : ref.watch(serversProvider(scope)).value ??
                     const <CloudServer>[])
-        // A new Primary IP goes to a server that is off (NET-035).
-        if (_floating || s.status == ResourceStatus.off) s,
+        // A new Primary IP goes to a server that is off and has none of
+        // its type (NET-035).
+        if (_floating ||
+            (s.status == ResourceStatus.off &&
+                (_ipv6 ? s.ipv6 : s.ipv4) == null))
+          s,
     ];
     final targets = {
       for (final l in locations)

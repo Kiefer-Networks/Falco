@@ -618,7 +618,7 @@
   "tsigNone": "None",
   "primaryIpCreate": "Create Primary IP",
   "primaryIpNew": "New Primary IP",
-  "primaryIpNoServers": "No servers that are off in {location}. A Primary IP moves only to a server that is off.",
+  "primaryIpNoServers": "No servers in {location} that are off and have no Primary IP of this type. A Primary IP moves only to such a server.",
   "@primaryIpNoServers": {"placeholders": {"location": {"type": "String"}}},
   "primaryIpUnassignConsequence": "The server loses this public address. It must be off.",
   "primaryRemoveConsequence": "The zone is no longer transferred from this nameserver.",
