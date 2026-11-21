@@ -8,14 +8,14 @@ part of 'cloud.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Creates the pinned Cloud API dio with [auth]. Tests override this with
-/// a fake transport.
+/// Creates the pinned Cloud API dio with an auth interceptor. Tests
+/// override this with a fake transport.
 
 @ProviderFor(cloudDio)
 final cloudDioProvider = CloudDioProvider._();
 
-/// Creates the pinned Cloud API dio with [auth]. Tests override this with
-/// a fake transport.
+/// Creates the pinned Cloud API dio with an auth interceptor. Tests
+/// override this with a fake transport.
 
 final class CloudDioProvider
     extends
@@ -25,8 +25,8 @@ final class CloudDioProvider
           Dio Function(Interceptor auth)
         >
     with $Provider<Dio Function(Interceptor auth)> {
-  /// Creates the pinned Cloud API dio with [auth]. Tests override this with
-  /// a fake transport.
+  /// Creates the pinned Cloud API dio with an auth interceptor. Tests
+  /// override this with a fake transport.
   CloudDioProvider._()
     : super(
         from: null,
