@@ -25,6 +25,7 @@ class ActionProgress {
     required this.progress,
     this.resources = const [],
     this.errorCode,
+    this.started,
   });
 
   /// Action id.
@@ -44,6 +45,9 @@ class ActionProgress {
 
   /// Error code of a failed action, or of the polling itself.
   final String? errorCode;
+
+  /// Start time, when the API reported it (activity view).
+  final DateTime? started;
 
   /// True once the action ended.
   bool get done => status != ActionStatus.running;

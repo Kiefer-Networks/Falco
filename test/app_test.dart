@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:falco/app/router.dart';
+import 'package:falco/core/http/http.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/main.dart';
@@ -10,6 +11,8 @@ import 'package:falco/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+
+import 'fake_cloud.dart';
 
 Widget app(List<bool> answers) => ProviderScope(
   overrides: [
@@ -19,11 +22,16 @@ Widget app(List<bool> answers) => ProviderScope(
 );
 
 void main() {
-  testWidgets('app unlocks and starts dark on the showcase', (tester) async {
+  setUp(() => seedSecrets(const []));
+
+  testWidgets('without account the app starts dark in the setup (ONB-006)', (
+    tester,
+  ) async {
     await tester.pumpWidget(app([true]));
     await tester.pumpAndSettle();
-    expect(find.text('Design system'), findsOneWidget);
-    final context = tester.element(find.text('Design system'));
+    expect(find.text('Add account'), findsOneWidget);
+    expect(find.text('Design system'), findsNothing);
+    final context = tester.element(find.text('Add account'));
     expect(Theme.of(context).brightness, Brightness.dark);
     expect(FalcoColors.of(context).accent, AccentPreset.amber.dark);
   });
@@ -32,10 +40,10 @@ void main() {
     await tester.pumpWidget(app([false, true]));
     await tester.pumpAndSettle();
     expect(find.text('Falco is locked.'), findsOneWidget);
-    expect(find.text('Design system'), findsNothing);
+    expect(find.text('Add account'), findsNothing);
     await tester.tap(find.text('Unlock'));
     await tester.pumpAndSettle();
-    expect(find.text('Design system'), findsOneWidget);
+    expect(find.text('Add account'), findsOneWidget);
   });
 
   testWidgets('scope routes carry the scope in the path (QRS-003)', (
@@ -47,10 +55,24 @@ void main() {
 
     await tester.pumpWidget(app([true]));
     await tester.pumpAndSettle();
-    scopeRoute(const ProjectScope('a1', 'p1'))
-        .go(tester.element(find.text('Design system')));
+    scopeRoute(const RobotScope('a1'))
+        .go(tester.element(find.text('Add account')));
     await tester.pumpAndSettle();
     expect(find.text('Nothing to show in this scope yet.'), findsOneWidget);
+  });
+
+  testWidgets('showcase stays reachable in debug builds', (tester) async {
+    await tester.pumpWidget(app([true]));
+    await tester.pumpAndSettle();
+    const ShowcaseRoute().go(tester.element(find.text('Add account')));
+    await tester.pumpAndSettle();
+    expect(find.text('Design system'), findsOneWidget);
+  });
+
+  test('User-Agent version matches the pubspec (BUG-009)', () {
+    final pubspec = File('pubspec.yaml').readAsStringSync();
+    expect(pubspec, contains('version: $appVersion+'));
+    expect(falcoUserAgent, startsWith('Falco/$appVersion ('));
   });
 
   test('English and German ARB files have the same keys', () {

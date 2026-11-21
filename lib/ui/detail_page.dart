@@ -2,6 +2,7 @@
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/action_tile.dart';
 import 'package:falco/ui/mono.dart';
+import 'package:falco/ui/sheets.dart';
 import 'package:falco/ui/status_badge.dart';
 import 'package:falco/ui/theme/falco_colors.dart';
 import 'package:falco/ui/theme/falco_text.dart';
@@ -155,5 +156,47 @@ class DetailPage extends StatelessWidget {
     return refresh == null
         ? list
         : RefreshIndicator(onRefresh: refresh, child: list);
+  }
+}
+
+/// Label and value rows, e.g. the overview section of a detail page or a
+/// wizard summary.
+class FactRows extends StatelessWidget {
+  /// Creates the rows.
+  const new(this.facts, {super.key});
+
+  /// Rows in display order.
+  final List<ConfirmFact> facts;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FalcoColors.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: FalcoSpacing.s,
+      children: [
+        for (final f in facts)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 120,
+                child: Text(
+                  f.label,
+                  style: TextStyle(fontSize: 14, color: c.textSecondary),
+                ),
+              ),
+              Expanded(
+                child: f.mono
+                    ? Mono(f.value, maxLines: 2)
+                    : Text(
+                        f.value,
+                        style: TextStyle(fontSize: 14, color: c.text),
+                      ),
+              ),
+            ],
+          ),
+      ],
+    );
   }
 }

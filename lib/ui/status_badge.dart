@@ -51,7 +51,16 @@ enum ResourceStatus {
   error(StatusTone.error),
 
   /// Unknown status from the API.
-  unknown(StatusTone.off);
+  unknown(StatusTone.off),
+
+  /// A Hetzner action in progress.
+  inProgress(StatusTone.progress),
+
+  /// A Hetzner action that succeeded.
+  done(StatusTone.running),
+
+  /// A Hetzner action that failed.
+  failed(StatusTone.error);
 
   new(this.tone);
 
@@ -71,6 +80,9 @@ enum ResourceStatus {
     deleting => l10n.statusDeleting,
     error => l10n.statusError,
     unknown => l10n.statusUnknown,
+    inProgress => l10n.statusInProgress,
+    done => l10n.statusDone,
+    failed => l10n.statusFailed,
   };
 
   /// Token color for this status.
