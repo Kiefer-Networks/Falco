@@ -52,7 +52,12 @@ jobs:
           BASE: next
         run: |
           set -euo pipefail
-          if git diff --quiet -- tool/pins.json lib/core/pins/pins.g.dart; then
+          # Dart pins plus the native ones of Object Storage (background
+          # transfers run in the platform HTTP stacks).
+          files=(tool/pins.json lib/core/pins/pins.g.dart
+            android/app/src/main/res/xml/network_security_config.xml
+            ios/Runner/Info.plist)
+          if git diff --quiet -- "${files[@]}"; then
             echo "Pins unchanged"
             exit 0
           fi
@@ -78,7 +83,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$branch"
-          git commit -m "chore: Update certificate pins" -- tool/pins.json lib/core/pins/pins.g.dart
+          git commit -m "chore: Update certificate pins" -- "${files[@]}"
           git push origin "$branch"
           gh pr create --base "$BASE" --head "$branch" \
             --title "chore: Update certificate pins" \
