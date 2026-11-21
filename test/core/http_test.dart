@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:falco/api/cloud/cloud.dart';
 import 'package:falco/core/errors/falco_error.dart';
@@ -65,10 +66,15 @@ void main() {
   });
 
   group('pins', () {
-    test('every pinned host has a valid root context (QRS-017)', () {
+    test('every pinned host has a valid root context with TLS 1.2 or '
+        'newer (QRS-017, QRS-018)', () {
       for (final host in pinnedRoots.keys) {
         expect(pinnedRoots[host], isNotEmpty, reason: host);
-        expect(() => pinnedContext(host), returnsNormally, reason: host);
+        expect(
+          pinnedContext(host).minimumTlsProtocolVersion,
+          TlsProtocolVersion.tls1_2,
+          reason: host,
+        );
       }
     });
 

@@ -260,6 +260,30 @@ Map<String, Object?> _meta(int total) => {
   },
 };
 
+/// One page of [items] as [key], by the `page` and `per_page` query.
+(int, Object?) _paged(RequestOptions o, String key, List<Object?> items) {
+  final q = o.uri.queryParameters;
+  final per = int.tryParse(q['per_page'] ?? '') ?? 50;
+  final page = int.tryParse(q['page'] ?? '') ?? 1;
+  final last = items.isEmpty ? 1 : (items.length + per - 1) ~/ per;
+  return (
+    200,
+    {
+      key: items.skip((page - 1) * per).take(per).toList(),
+      'meta': {
+        'pagination': {
+          'page': page,
+          'per_page': per,
+          'previous_page': page > 1 ? page - 1 : null,
+          'next_page': page < last ? page + 1 : null,
+          'last_page': last,
+          'total_entries': items.length,
+        },
+      },
+    },
+  );
+}
+
 /// A Cloud API error body.
 Map<String, Object?> errorJson(String code) => {
   'error': {'code': code, 'message': code, 'details': null},
@@ -498,8 +522,7 @@ class FakeCloud {
       case ('GET', ['pricing']):
         return (200, {'pricing': pricingJson});
       case ('GET', [final coll, 'actions']) when _singular.containsKey(coll):
-        final mine = actionsOf(_singular[coll]!);
-        return (200, {'actions': mine, 'meta': _meta(mine.length)});
+        return _paged(o, 'actions', actionsOf(_singular[coll]!));
       case ('GET', [final coll]) when collections.containsKey(coll):
         final all = collections[coll]!;
         return (200, {coll: all, 'meta': _meta(all.length)});
@@ -526,8 +549,7 @@ class FakeCloud {
           },
         );
       case ('GET', [final coll, final id, 'actions']):
-        final mine = actionsOf(_singular[coll] ?? coll, id);
-        return (200, {'actions': mine, 'meta': _meta(mine.length)});
+        return _paged(o, 'actions', actionsOf(_singular[coll] ?? coll, id));
       case ('GET', [final coll, final id]) when collections.containsKey(coll):
         final s = find(coll, id);
         return s == null

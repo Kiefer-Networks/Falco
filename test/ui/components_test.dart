@@ -222,16 +222,84 @@ void main() {
     });
   });
 
-  testWidgets('icon buttons carry semantics labels', (tester) async {
+  testWidgets('SET-021 QRS-026 the reveal hides the secret until shown, its '
+      'icon buttons carry semantics labels', (tester) async {
     await tester.pumpWidget(
       testApp(const SecretReveal(label: 'Root password', secret: 's3cret')),
     );
     expect(find.byTooltip('Show'), findsOneWidget);
     expect(find.byTooltip('Copy'), findsOneWidget);
     expect(find.text('s3cret'), findsNothing);
+    expect(find.bySemanticsLabel('Hidden secret'), findsOneWidget);
     await tester.tap(find.byTooltip('Show'));
     await tester.pump();
     expect(find.text('s3cret'), findsOneWidget);
     expect(find.byTooltip('Hide'), findsOneWidget);
+  });
+
+  group('SensitiveClipboard', () {
+    final calls = <MethodCall>[];
+    String? clip;
+
+    void mock(WidgetTester tester, {required bool native}) {
+      final messenger = tester.binding.defaultBinaryMessenger
+        ..setMockMethodCallHandler(const MethodChannel('falco/clipboard'), (
+          call,
+        ) async {
+          calls.add(call);
+          // A platform without the channel answers nothing.
+          if (!native) throw MissingPluginException();
+          return null;
+        })
+        ..setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            clip = (call.arguments as Map<Object?, Object?>)['text'] as String?;
+          }
+          return null;
+        });
+      calls.clear();
+      clip = null;
+      addTearDown(() {
+        messenger
+          ..setMockMethodCallHandler(
+            const MethodChannel('falco/clipboard'),
+            null,
+          )
+          ..setMockMethodCallHandler(SystemChannels.platform, null);
+      });
+    }
+
+    testWidgets('SET-019 SET-020 the platform marks the copy sensitive and '
+        'clears it after 60 s', (tester) async {
+      mock(tester, native: true);
+      await tester.pumpWidget(
+        testApp(const SecretReveal(label: 'Root password', secret: 's3cret')),
+      );
+      await tester.tap(find.byTooltip('Copy'));
+      await tester.pump();
+      expect(calls.single.method, 'setSensitive');
+      expect(calls.single.arguments, {'text': 's3cret', 'expirySeconds': 60});
+      expect(clip, isNull);
+      expect(
+        find.text('Copied. The clipboard clears in 60 s.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('SET-019 SET-020 without the platform a plain copy is '
+        'cleared after 60 s and the user is told', (tester) async {
+      mock(tester, native: false);
+      await tester.pumpWidget(
+        testApp(const SecretReveal(label: 'Root password', secret: 's3cret')),
+      );
+      await tester.tap(find.byTooltip('Copy'));
+      await tester.pump();
+      expect(clip, 's3cret');
+      expect(find.textContaining('cannot hide it'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 59));
+      expect(clip, 's3cret');
+      await tester.pump(const Duration(seconds: 1));
+      expect(clip, '');
+    });
   });
 }

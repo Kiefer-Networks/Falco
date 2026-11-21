@@ -25,7 +25,7 @@ class SshKeyList extends ConsumerWidget {
     final provider = sshKeysProvider(scope);
     final async = ref.watch(provider);
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     return ResourceList<SshKey>(
       title: l10n.resourceSshKeys,
@@ -50,11 +50,14 @@ class SshKeyList extends ConsumerWidget {
           k.fingerprint,
           if (accounts != null) projectName(accounts, k.projectId),
         ].join(' · '),
-        onTap: () => SshKeyRoute(
-          accountId: scope.accountId,
-          projectId: k.projectId,
-          keyId: k.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          SshKeyRoute(
+            accountId: scope.accountId,
+            projectId: k.projectId,
+            keyId: k.id,
+          ),
+        ),
       ),
     );
   }

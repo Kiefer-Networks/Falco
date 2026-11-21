@@ -52,7 +52,11 @@ jobs:
           git diff --exit-code -- lib
 
       - name: Format
-        run: dart format --output=none --set-exit-if-changed lib test
+        run: dart format --output=none --set-exit-if-changed lib test integration_test tool
+
+      # Every PARITY row is named by a test or deferred with a reason.
+      - name: Parity check
+        run: dart run tool/parity_check.dart
 
       - name: Analyze
         run: flutter analyze --fatal-infos

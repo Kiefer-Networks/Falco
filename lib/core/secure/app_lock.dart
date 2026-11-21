@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
@@ -9,13 +10,16 @@ part 'app_lock.g.dart';
 /// Asks the platform for Face ID, Touch ID, fingerprint or the device PIN
 /// (local_auth falls back to the PIN, SET-013, BUG-023). Returns false if
 /// the user cancelled and null when the device has no screen lock at all.
-/// Overridden in tests.
+/// With a hardware bound vault, opening it is the check, so the user sees
+/// one prompt (SET-015). Overridden in tests.
 @Riverpod(keepAlive: true)
 Future<bool?> Function(String reason) authenticator(Ref ref) {
   final auth = LocalAuthentication();
+  final secrets = ref.watch(secretStoreProvider);
   return (reason) async {
     if (!await auth.isDeviceSupported()) return null;
     try {
+      if (await secrets.bound) return await secrets.open();
       return await auth.authenticate(
         localizedReason: reason,
         persistAcrossBackgrounding: true,
@@ -92,6 +96,8 @@ class AppLock extends _$AppLock {
     if (!settings.lock || pausedAt == null) return;
     if (now().difference(pausedAt).inSeconds >= settings.lockTimeout) {
       state = AppLockState.locked;
+      // Secrets need the next unlock again (SET-015).
+      ref.read(secretStoreProvider).close();
     }
   }
 }

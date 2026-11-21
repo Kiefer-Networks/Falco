@@ -71,7 +71,7 @@ class ZoneList extends ConsumerWidget {
     final provider = zonesProvider(scope);
     final async = ref.watch(provider);
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     return ResourceList<Zone>(
       title: l10n.resourceZones,
@@ -98,11 +98,14 @@ class ZoneList extends ConsumerWidget {
           if (z.secondary) l10n.zoneSecondary,
           if (accounts != null) projectName(accounts, z.projectId),
         ].join(' · '),
-        onTap: () => ZoneRoute(
-          accountId: scope.accountId,
-          projectId: z.projectId,
-          zoneId: z.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          ZoneRoute(
+            accountId: scope.accountId,
+            projectId: z.projectId,
+            zoneId: z.id,
+          ),
+        ),
       ),
     );
   }

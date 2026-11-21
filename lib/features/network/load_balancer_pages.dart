@@ -35,7 +35,7 @@ class LoadBalancerList extends ConsumerWidget {
     final provider = loadBalancersProvider(scope);
     final async = ref.watch(provider);
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     return ResourceList<LoadBalancer>(
       title: l10n.resourceLoadBalancers,
@@ -64,11 +64,14 @@ class LoadBalancerList extends ConsumerWidget {
           l10n.targetCount(lb.targets.length),
           if (accounts != null) projectName(accounts, lb.projectId),
         ].join(' · '),
-        onTap: () => LoadBalancerRoute(
-          accountId: scope.accountId,
-          projectId: lb.projectId,
-          lbId: lb.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          LoadBalancerRoute(
+            accountId: scope.accountId,
+            projectId: lb.projectId,
+            lbId: lb.id,
+          ),
+        ),
       ),
     );
   }

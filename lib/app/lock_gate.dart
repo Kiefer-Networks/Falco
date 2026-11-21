@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/core/secure/app_lock.dart';
+import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/ui.dart';
@@ -55,6 +56,7 @@ class _LockGateState extends ConsumerState<LockGate>
   void _unlock() {
     if (!mounted) return;
     final reason = AppLocalizations.of(context).lockReason;
+    ref.read(secretStoreProvider).prompt = reason;
     ref.read(appLockProvider.notifier).unlock(reason).ignore();
   }
 

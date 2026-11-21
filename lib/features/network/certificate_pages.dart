@@ -35,7 +35,7 @@ class CertificateList extends ConsumerWidget {
     final provider = certificatesProvider(scope);
     final async = ref.watch(provider);
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     final now = DateTime.now();
     return ResourceList<Certificate>(
@@ -71,11 +71,14 @@ class CertificateList extends ConsumerWidget {
           _expiry(c, l10n),
           if (accounts != null) projectName(accounts, c.projectId),
         ].where((s) => s.isNotEmpty).join(' · '),
-        onTap: () => CertificateRoute(
-          accountId: scope.accountId,
-          projectId: c.projectId,
-          certificateId: c.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          CertificateRoute(
+            accountId: scope.accountId,
+            projectId: c.projectId,
+            certificateId: c.id,
+          ),
+        ),
       ),
     );
   }

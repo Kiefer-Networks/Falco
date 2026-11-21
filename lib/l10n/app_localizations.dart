@@ -206,6 +206,12 @@ abstract class AppLocalizations {
   /// **'No connection to the server. Check your network.'**
   String get errorNetwork;
 
+  /// No description provided for @detailPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick an entry to see its details.'**
+  String get detailPick;
+
   /// No description provided for @copied.
   ///
   /// In en, this message translates to:
@@ -217,6 +223,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copied. The clipboard clears in {seconds} s.'**
   String copiedSensitive(int seconds);
+
+  /// No description provided for @copiedPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied. This system cannot hide it from other apps; the clipboard clears in {seconds} s.'**
+  String copiedPlain(int seconds);
 
   /// No description provided for @copyValue.
   ///

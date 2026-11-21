@@ -10,6 +10,7 @@ export 'falco_scaffold.dart';
 export 'feedback.dart';
 export 'form_fields.dart';
 export 'link_button.dart';
+export 'list_detail.dart';
 export 'metric_chart.dart';
 export 'mono.dart';
 export 'resource_list.dart';

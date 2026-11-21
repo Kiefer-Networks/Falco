@@ -24,7 +24,7 @@ class ServerList extends ConsumerWidget {
     final provider = serversProvider(scope);
     final async = ref.watch(provider);
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     return ResourceList<CloudServer>(
       title: l10n.resourceServers,
@@ -69,11 +69,14 @@ class ServerList extends ConsumerWidget {
           s.location,
           if (accounts != null) projectName(accounts, s.projectId),
         ].join(' · '),
-        onTap: () => ServerRoute(
-          accountId: scope.accountId,
-          projectId: s.projectId,
-          serverId: s.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          ServerRoute(
+            accountId: scope.accountId,
+            projectId: s.projectId,
+            serverId: s.id,
+          ),
+        ),
       ),
     );
   }

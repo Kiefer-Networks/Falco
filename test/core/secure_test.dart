@@ -5,6 +5,7 @@ import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/ui/ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -123,10 +124,83 @@ void main() {
       expect(await secrets.cloudToken('p1'), 't');
     });
 
+    test('BUG-010 old formats (a single CLOUD_TOKEN) are not read', () async {
+      FlutterSecureStorage.setMockInitialValues({'CLOUD_TOKEN': 'old'});
+      expect(await repo.accounts(), isEmpty);
+      expect(await secrets.cloudToken('CLOUD_TOKEN'), isNull);
+    });
+
     test('ids are random and 32 hex characters', () {
       final a = newId();
       expect(a, matches(RegExp(r'^[0-9a-f]{32}$')));
       expect(newId(), isNot(a));
+    });
+  });
+
+  group('SET-015 hardware bound secrets', () {
+    late _Bound bound;
+    late SecretStore secrets;
+
+    setUp(() {
+      FlutterSecureStorage.setMockInitialValues({});
+      bound = _Bound();
+      secrets = SecretStore(null, bound);
+    });
+
+    test('one system check per unlock, again after close', () async {
+      await secrets.setCloudToken('p1', 't1');
+      await secrets.setCloudToken('p2', 't2');
+      expect(await secrets.bound, isTrue);
+      secrets.close();
+      bound.reads = 0;
+      expect(await secrets.cloudToken('p1'), 't1');
+      expect(await secrets.cloudToken('p2'), 't2');
+      expect(bound.reads, 1);
+      secrets.close();
+      expect(await secrets.cloudToken('p1'), 't1');
+      expect(bound.reads, 2);
+      // Nothing secret outside the vault.
+      expect(await const FlutterSecureStorage().readAll(), isEmpty);
+    });
+
+    test('a device without screen lock keeps a working vault', () async {
+      bound.fail = true;
+      await secrets.setCloudToken('p1', 't1');
+      expect(await secrets.bound, isFalse);
+      secrets.close();
+      expect(await secrets.cloudToken('p1'), 't1');
+      bound.fail = false;
+      await secrets.setCloudToken('p2', 't2');
+      expect(await secrets.bound, isTrue);
+    });
+
+    test('secrets stored one by one move into the vault', () async {
+      FlutterSecureStorage.setMockInitialValues({'cloud.p1': 't1'});
+      expect(await secrets.cloudToken('p1'), 't1');
+      expect(bound.data.keys, ['vault']);
+      expect(await const FlutterSecureStorage().readAll(), isEmpty);
+    });
+
+    test('the lock forgets the open vault', () async {
+      final c = ProviderContainer(
+        overrides: [
+          preferencesProvider.overrideWithValue(await testPrefs()),
+          secretStoreProvider.overrideWithValue(secrets),
+          authenticatorProvider.overrideWithValue((_) async => true),
+        ],
+      );
+      addTearDown(c.dispose);
+      await secrets.setCloudToken('p1', 't1');
+      final lock = c.read(appLockProvider.notifier);
+      var now = DateTime(2026);
+      lock.now = () => now;
+      await lock.unlock('why');
+      lock.paused();
+      now = now.add(const Duration(minutes: 5));
+      lock.resumed();
+      final before = bound.reads;
+      await secrets.cloudToken('p1');
+      expect(bound.reads, before + 1);
     });
   });
 
@@ -165,7 +239,7 @@ void main() {
     });
 
     test('a device without screen lock gets its own state and may turn '
-        'the lock off (SET-012, SET-013)', () async {
+        'the lock off (SET-012, SET-013, BUG-023)', () async {
       final c = await container([null]);
       await c.read(appLockProvider.notifier).unlock('why');
       expect(c.read(appLockProvider), AppLockState.unavailable);
@@ -236,4 +310,52 @@ void main() {
       expect(prefs.getBool('secureScreen'), isFalse);
     });
   });
+}
+
+/// The bound store of a device: counts reads, [fail]s writes like a
+/// device without screen lock.
+class _Bound extends FlutterSecureStorage {
+  final data = <String, String>{};
+  int reads = 0;
+  bool fail = false;
+
+  @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    reads++;
+    return data[key];
+  }
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (fail) throw PlatformException(code: 'no_passcode');
+    data[key] = value!;
+  }
+
+  @override
+  Future<bool> containsKey({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async => data.containsKey(key);
 }

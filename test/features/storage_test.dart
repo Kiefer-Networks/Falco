@@ -318,7 +318,7 @@ void main() {
       });
     });
 
-    testWidgets('STB-016 rollback is level 2', (tester) async {
+    testWidgets('STB-016 BUG-002 rollback is level 2', (tester) async {
       final cloud = await openBox(tester);
       await tap(tester, 'before upgrade');
       await tap(tester, 'Roll back');

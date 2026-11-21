@@ -59,6 +59,23 @@ void main() {
       expect(cloud.calls, contains('GET /storage_boxes/actions'));
     });
 
+    test('BUG-022 activity reads every page, not the first 30', () async {
+      final cloud = searchCloud(
+        actions: [
+          for (var i = 0; i < 120; i++)
+            FakeCloud.action(1000 + i, 'reboot_server', 1),
+        ],
+      );
+      final c = await fakeContainer(cloud);
+      final all = await c.read(
+        activityProvider(_scope, type: CloudType.server, id: 1).future,
+      );
+      expect(all, hasLength(120));
+      expect(cloud.calls.where((c) => c == 'GET /servers/1/actions'), [
+        for (var i = 0; i < 3; i++) 'GET /servers/1/actions',
+      ]);
+    });
+
     test('CMP-045 SUC-011 SUC-015 SUC-018 SUC-021 SUC-024 SUC-027 SUC-030 '
         'SUC-033 SUC-039 actions of one resource of every type', () async {
       final cloud = searchCloud(actions: _perType());
