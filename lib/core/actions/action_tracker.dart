@@ -73,6 +73,7 @@ class ActionTracker {
     this.onDone,
     this.interval = const Duration(seconds: 1),
     this.maxInterval = const Duration(seconds: 5),
+    this.maxFailures = 5,
   });
 
   final Future<ActionProgress> Function(int id) _fetch;
@@ -85,6 +86,10 @@ class ActionTracker {
 
   /// Upper bound of the poll delay.
   final Duration maxInterval;
+
+  /// Consecutive transient poll failures (network, rate limit, 5xx) after
+  /// which tracking ends with an error.
+  final int maxFailures;
 
   final _streams = <int, Stream<ActionProgress>>{};
   final _latest = <int, ActionProgress>{};
@@ -112,9 +117,11 @@ class ActionTracker {
           action = await _fetch(id);
           failures = 0;
         } on FalcoError catch (e) {
-          // A short network hiccup must not end the tracking; anything
-          // else (gone, forbidden) does.
-          if (e is! Network || ++failures >= 3) {
+          // Hiccups (network, rate limit, 5xx) must not end the tracking
+          // while the action still runs; gone, forbidden or unauthorized do,
+          // and so does a hiccup that keeps coming.
+          final transient = e is Network || e is RateLimited || e is Server;
+          if (!transient || ++failures >= maxFailures) {
             action = ActionProgress(
               id: id,
               command: _latest[id]?.command ?? '',
@@ -124,7 +131,8 @@ class ActionTracker {
               errorCode: e.code ?? '$e',
             );
           } else {
-            await Future<void>.delayed(delay);
+            final wait = e is RateLimited ? e.retryAfter : null;
+            await Future<void>.delayed(wait ?? delay * failures);
             continue;
           }
         }
