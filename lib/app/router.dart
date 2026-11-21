@@ -78,7 +78,8 @@ void openDetail(BuildContext context, GoRouteData route) {
 }
 
 /// Start: the first scope of the default account (ONB-027), else of the
-/// first account, or the welcome pages when there is none (ONB-006).
+/// first account with one; adding a project when no account has a scope,
+/// or the welcome pages when there is no account (ONB-006).
 @TypedGoRoute<HomeRoute>(path: '/')
 class HomeRoute extends GoRouteData with $HomeRoute {
   const new();
@@ -88,12 +89,17 @@ class HomeRoute extends GoRouteData with $HomeRoute {
     final container = ProviderScope.containerOf(context, listen: false);
     final accounts = await container.read(accountsProvider.future);
     final preferred = container.read(appSettingsProvider).defaultAccount;
-    final a =
-        accounts.where((a) => a.id == preferred).firstOrNull ??
-        accounts.firstOrNull;
-    if (a == null) return const WelcomeRoute().location;
-    if (firstScope(a) case final scope?) return scopeRoute(scope).location;
-    return AddProjectRoute(accountId: a.id).location;
+    Account? pick(Iterable<Account> from) =>
+        from.where((a) => a.id == preferred).firstOrNull ?? from.firstOrNull;
+    // An account without scope only when no other has one: else leaving
+    // its "Add project" would lead back to it.
+    if (pick(accounts.where((a) => firstScope(a) != null)) case final a?) {
+      return scopeRoute(firstScope(a)!).location;
+    }
+    if (pick(accounts) case final a?) {
+      return AddProjectRoute(accountId: a.id).location;
+    }
+    return const WelcomeRoute().location;
   }
 
   @override

@@ -47,7 +47,16 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Areas of the bottom navigation, in order.
-enum Area { compute, network, storage, robot }
+enum Area {
+  compute,
+  network,
+  storage,
+  robot;
+
+  /// Whether the overview shows rows (servers, dedicated servers) that
+  /// open details.
+  bool get hasPreview => ResourceKind.of(this).any(ResourceKind._previews);
+}
 
 /// Rows a tile with a preview shows (servers, dedicated servers).
 const _previewRows = 5;
@@ -83,6 +92,10 @@ enum ResourceKind {
 
   /// Area the type belongs to.
   final Area area;
+
+  /// Whether [kind]'s tile shows its first rows.
+  static bool _previews(ResourceKind kind) =>
+      kind == servers || kind == robotServers;
 
   /// Types of [area] in display order.
   static List<ResourceKind> of(Area area) => [
@@ -340,6 +353,13 @@ class AreaOverviewPage extends ConsumerWidget {
       for (final s in sources)
         if (s.async.hasError && !s.async.hasValue) s.async.error!,
     ];
+    // Some loaded: projects missing from "All projects" or a failed
+    // refresh over old data as a banner, as a list shows them.
+    final projects = {
+      for (final s in sources)
+        if (s.async.value case PartialList<Object>(:final failed))
+          for (final p in failed) p.id: p.name,
+    };
     return AreaOverview(
       onRefresh: () => Future.wait([
         for (final k in kinds) refreshQuietly(ref, k._source(scope).future),
@@ -349,6 +369,11 @@ class AreaOverviewPage extends ConsumerWidget {
               final e when area == Area.robot => robotErrorText(e, l10n),
               final e => errorText(e, l10n),
             }
+          : null,
+      banner: projects.isNotEmpty
+          ? l10n.listProjectsFailed(projects.values.join(', '))
+          : sources.any((s) => s.async.hasError && s.async.hasValue)
+          ? l10n.listStaleBanner
           : null,
       tiles: [
         for (final s in sources)
@@ -365,7 +390,15 @@ class AreaOverviewPage extends ConsumerWidget {
     AsyncValue<List<Object>?> async,
     List<Account>? accounts,
   ) {
-    final items = async.value;
+    // System and app images are in every project: the tile counts own
+    // snapshots and backups, as the list shows them.
+    final items = switch (async.value) {
+      final all? when kind == ResourceKind.images => [
+        for (final i in all)
+          if (i is CloudImage && i.own) i,
+      ],
+      final all => all,
+    };
     final statuses = [...?items?.map(_statusOf).nonNulls];
     final preview = items == null
         ? const <Widget>[]
@@ -409,23 +442,26 @@ class ResourceListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final create = kind.create(l10n, scope);
+    final fab = switch (kind.create(l10n, scope)) {
+      (final label, final route) => FloatingActionButton.extended(
+        heroTag: kind,
+        onPressed: () => route.push<void>(context),
+        icon: const Icon(Icons.add),
+        label: Text(label),
+      ),
+      null => null,
+    };
+    // With two panes the create button belongs to the list pane, off the
+    // action bar of the detail beside it. With one it sits on the outer
+    // scaffold, whose snackbars move it up instead of covering it.
+    final twoPane = MediaQuery.sizeOf(context).width >= FalcoBreakpoint.twoPane;
     return FalcoScaffold(
       title: kind.label(l10n),
-      // The create button belongs to the list pane: on tablets it must not
-      // cover the action bar of the detail beside it.
+      floatingActionButton: twoPane ? null : fab,
       body: ListDetail(
         list: Scaffold(
           backgroundColor: Colors.transparent,
-          floatingActionButton: switch (create) {
-            (final label, final route) => FloatingActionButton.extended(
-              heroTag: kind,
-              onPressed: () => route.push<void>(context),
-              icon: const Icon(Icons.add),
-              label: Text(label),
-            ),
-            null => null,
-          },
+          floatingActionButton: twoPane ? fab : null,
           body: kind.list(scope),
         ),
       ),

@@ -541,8 +541,11 @@ class StorageBoxDetailPage extends ConsumerWidget {
     StorageBox b,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final types = await ref.read(boxTypesProvider(scope).future);
-    if (!context.mounted) return;
+    final types = await loadForPicker(
+      context,
+      () => ref.read(boxTypesProvider(scope).future),
+    );
+    if (types == null || !context.mounted) return;
     await FormSheet.show(
       context,
       title: l10n.boxChangeType,

@@ -1204,6 +1204,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String priceServerOnly(String price) {
+    return '$price (server only)';
+  }
+
+  @override
+  String get priceUnavailable => 'price not available';
+
+  @override
+  String get typeCurrent => 'current';
+
+  @override
   String priceMonthly(String gross, String net, String perGb) {
     return '$gross/month gross, $net net, $perGb per GB';
   }
@@ -1224,6 +1235,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get placementGroupNone =>
       'No placement groups in this project. Create one under Compute first.';
+
+  @override
+  String get placementGroupNeedsOff =>
+      'Power off the server before adding it to a placement group.';
 
   @override
   String get placementGroupRemove => 'Remove from placement group';

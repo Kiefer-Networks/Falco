@@ -84,6 +84,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       error: index.error == null
                           ? null
                           : errorText(toFalcoError(index.error!), l10n),
+                      failedProjects: index.failedProjects,
                       onRefresh: () async => refreshSearch(ref),
                       empty: EmptyHint(message: l10n.searchNoMatches),
                       groupOf: (h) => searchGroupText(h.group, l10n),

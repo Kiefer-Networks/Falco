@@ -190,7 +190,8 @@ bool validLabels(Map<String, String> values) =>
 
 /// The edit sheet for name and labels (rename and labels of every
 /// Compute resource). [save] gets the trimmed name and parsed labels;
-/// [nameLabel] renames the name field (an image's description).
+/// [nameLabel] renames the name field (an image's description);
+/// [maxLength] is the API's limit of the name, null for none.
 Future<void> editNameAndLabels(
   BuildContext context,
   WidgetRef ref,
@@ -199,6 +200,7 @@ Future<void> editNameAndLabels(
   Future<void> Function(cloud.Server api, String name, Map<String, String> l)
   save, {
   String? nameLabel,
+  int? maxLength = 63,
 }) {
   final l10n = AppLocalizations.of(context);
   // Read before the sheet opens: the page may be gone when it saves.
@@ -212,7 +214,7 @@ Future<void> editNameAndLabels(
         'name',
         nameLabel ?? l10n.fieldName,
         initial: t.name,
-        maxLength: 63,
+        maxLength: maxLength,
       ),
       labelsField(l10n, labels),
     ],

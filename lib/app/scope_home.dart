@@ -133,20 +133,23 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
       (Icons.inventory_2_outlined, l10n.navStorage),
       (Icons.storage_outlined, l10n.navRobot),
     ];
-    final body = ListDetail(
-      key: ValueKey(_area),
-      list: switch (_area) {
-        3 when scope is! RobotScope => ActionHint(
-          icon: Icons.storage_outlined,
-          message: l10n.robotNoAccess,
-          actionLabel: l10n.robotAdd,
-          onAction: () =>
-              AccountRoute(accountId: scope.accountId).push<void>(context),
-        ),
-        < 3 when scope is RobotScope => EmptyHint(message: l10n.scopeEmpty),
-        _ => AreaOverviewPage(scope: scope, area: Area.values[_area]),
-      },
-    );
+    final area = Area.values[_area];
+    final content = switch (_area) {
+      3 when scope is! RobotScope => ActionHint(
+        icon: Icons.storage_outlined,
+        message: l10n.robotNoAccess,
+        actionLabel: l10n.robotAdd,
+        onAction: () =>
+            AccountRoute(accountId: scope.accountId).push<void>(context),
+      ),
+      < 3 when scope is RobotScope => EmptyHint(message: l10n.scopeEmpty),
+      _ => AreaOverviewPage(scope: scope, area: area),
+    };
+    // Only an overview with rows opens details beside it; the others
+    // use the full width.
+    final body = content is AreaOverviewPage && area.hasPreview
+        ? ListDetail(key: ValueKey(_area), list: content)
+        : KeyedSubtree(key: ValueKey(_area), child: content);
     return FalcoScaffold(
       scopeSwitcher: ScopeSwitcherButton(
         caption: account?.name,

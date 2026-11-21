@@ -55,6 +55,7 @@ class AreaOverview extends StatelessWidget {
     required this.tiles,
     required this.onRefresh,
     this.error,
+    this.banner,
     super.key,
   });
 
@@ -64,6 +65,11 @@ class AreaOverview extends StatelessWidget {
   /// Localized cause when no type could load; shown above the tiles with
   /// "Try again".
   final String? error;
+
+  /// Localized note when some types or projects could not load and the
+  /// tiles show what did (or the last data); shown as a banner with
+  /// "Try again".
+  final String? banner;
 
   /// Pull to refresh.
   final Future<void> Function() onRefresh;
@@ -94,6 +100,9 @@ class AreaOverview extends StatelessWidget {
             children: [
               if (error case final error?) ...[
                 ErrorCard(message: error, onRetry: onRefresh),
+                const SizedBox(height: FalcoSpacing.m),
+              ] else if (banner case final banner?) ...[
+                ErrorBanner(message: banner, onRetry: onRefresh),
                 const SizedBox(height: FalcoSpacing.m),
               ],
               for (final t in wide) ...[

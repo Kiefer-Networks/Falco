@@ -62,12 +62,14 @@ class ServerType {
   final bool deprecated;
 }
 
-/// Currency and the volume price per GB and month (CMP-055).
+/// Currency, the volume price per GB and month (CMP-055) and the
+/// monthly gross price of a Primary IPv4 per location.
 typedef Pricing = ({
   String currency,
   num volumeGross,
   num volumeNet,
   num vatRate,
+  Map<String, num> ipv4Gross,
 });
 
 num _num(Object decimal) => num.parse('$decimal');
@@ -171,5 +173,10 @@ Future<Pricing> pricing(Ref ref, ProjectScope scope) async {
     volumeGross: _num(p.volume.pricePerGbMonth.gross),
     volumeNet: _num(p.volume.pricePerGbMonth.net),
     vatRate: _num(p.vatRate),
+    ipv4Gross: {
+      for (final ip in p.primaryIps)
+        if (ip.$type.name == 'ipv4')
+          for (final l in ip.prices) l.location: _num(l.priceMonthly.gross),
+    },
   );
 }

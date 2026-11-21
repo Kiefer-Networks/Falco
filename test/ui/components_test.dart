@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:async';
+
+import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/services.dart';
@@ -132,33 +135,42 @@ void main() {
   });
 
   group('CreateWizard', () {
-    Widget wizard({bool creating = false, VoidCallback? onLeave}) =>
-        CreateWizard(
-          title: 'Create',
-          creating: creating,
-          onLeave: onLeave,
-          onCreate: () {},
-          summary: const Text('summary'),
-          steps: [
-            WizardStep(
-              title: 'Image',
-              child: ChoiceList(
-                options: const {'a': 'alpha', 'b': 'beta'},
-                selected: '',
-                searchable: true,
-                onSelected: (_) {},
-              ),
-            ),
-            WizardStep(
-              title: 'Type',
-              child: ChoiceList(
-                options: const {'x': 'xray', 'y': 'yankee'},
-                selected: '',
-                onSelected: (_) {},
-              ),
-            ),
-          ],
-        );
+    Widget wizard({
+      bool creating = false,
+      VoidCallback? onLeave,
+      int initialStep = 0,
+    }) => CreateWizard(
+      title: 'Create',
+      creating: creating,
+      onLeave: onLeave,
+      initialStep: initialStep,
+      onCreate: () {},
+      summary: Builder(
+        builder: (context) => TextButton(
+          onPressed: () => CreateWizard.goTo(context, 0),
+          child: const Text('summary'),
+        ),
+      ),
+      steps: [
+        WizardStep(
+          title: 'Image',
+          child: ChoiceList(
+            options: const {'a': 'alpha', 'b': 'beta'},
+            selected: '',
+            searchable: true,
+            onSelected: (_) {},
+          ),
+        ),
+        WizardStep(
+          title: 'Type',
+          child: ChoiceList(
+            options: const {'x': 'xray', 'y': 'yankee'},
+            selected: '',
+            onSelected: (_) {},
+          ),
+        ),
+      ],
+    );
 
     testWidgets('CMP-013 steps do not share a search query', (tester) async {
       await tester.pumpWidget(testApp(wizard()));
@@ -193,6 +205,62 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('CMP-013 back and jumps wait while creating', (tester) async {
+      await tester.pumpWidget(testApp(wizard(creating: true, initialStep: 2)));
+      expect(
+        tester
+            .widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Back'))
+            .onPressed,
+        isNull,
+      );
+      // The create button spins: pump, not settle.
+      await tester.tap(find.text('summary'));
+      await tester.pump();
+      expect(find.text('STEP 3 OF 3'), findsOneWidget);
+    });
+  });
+
+  group('loadForPicker', () {
+    testWidgets('a failure is a snackbar, a second tap waits for the first', (
+      tester,
+    ) async {
+      await tester.pumpWidget(testApp(const SizedBox()));
+      final context = tester.element(find.byType(SizedBox));
+      final first = Completer<int>();
+      final loading = loadForPicker(context, () => first.future);
+      expect(await loadForPicker(context, () async => 2), isNull);
+      first.complete(1);
+      expect(await loading, 1);
+      expect(
+        await loadForPicker<int>(context, () async => throw const Network()),
+        isNull,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(await loadForPicker(context, () async => 3), 3);
+    });
+  });
+
+  testWidgets('AreaOverview shows the banner over loaded tiles', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      testApp(
+        AreaOverview(
+          banner: 'Could not load: staging.',
+          onRefresh: () async {},
+          tiles: [
+            OverviewTile(icon: Icons.dns, label: 'Servers', onTap: () {}),
+          ],
+        ),
+      ),
+    );
+    expect(
+      find.widgetWithText(ErrorBanner, 'Could not load: staging.'),
+      findsOne,
+    );
+    expect(find.text('Servers'), findsOneWidget);
   });
 
   testWidgets('QRS-026 rows and action bar buttons take a screen reader tap', (
