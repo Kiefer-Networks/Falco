@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+/// Opening and saving text files through the system file dialogs (zone
+/// files, DNS-015 and DNS-016). Tests override [textFilesProvider].
+library;
+
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'text_files.g.dart';
+
+/// A picked text file: its content, or `tooLarge` when it exceeds the
+/// limit (then `text` is null).
+typedef PickedText = ({String? text, bool tooLarge});
+
+/// The system file dialogs for text.
+class TextFiles {
+  const new();
+
+  /// Lets the user pick a file of at most [maxBytes]; null when cancelled.
+  Future<PickedText?> pick({required int maxBytes}) async {
+    final file = (await FilePicker.pickFiles()).firstOrNull;
+    if (file == null) return null;
+    if ((await file.length() ?? 0) > maxBytes) {
+      return (text: null, tooLarge: true);
+    }
+    return (text: await file.xFile.readAsString(), tooLarge: false);
+  }
+
+  /// Lets the user save [text] as [name]; false when cancelled.
+  Future<bool> save(String name, String text) async =>
+      await FilePicker.saveFile(
+        fileName: name,
+        bytes: utf8.encode(text),
+        mimeType: 'text/plain',
+      ) !=
+      null;
+}
+
+@Riverpod(keepAlive: true)
+TextFiles textFiles(Ref ref) => const TextFiles();

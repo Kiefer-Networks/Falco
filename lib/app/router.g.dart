@@ -26,6 +26,13 @@ List<RouteBase> get $appRoutes => [
   $imageRoute,
   $placementGroupRoute,
   $sshKeyRoute,
+  $networkRoute,
+  $firewallRoute,
+  $loadBalancerRoute,
+  $certificateRoute,
+  $zoneRoute,
+  $ipRoute,
+  $rRSetRoute,
 ];
 
 RouteBase get $homeRoute => GoRouteData.$route(
@@ -501,6 +508,13 @@ const _$CreateKindEnumMap = {
   CreateKind.volume: 'volume',
   CreateKind.placementGroup: 'placement-group',
   CreateKind.sshKey: 'ssh-key',
+  CreateKind.network: 'network',
+  CreateKind.firewall: 'firewall',
+  CreateKind.floatingIp: 'floating-ip',
+  CreateKind.primaryIp: 'primary-ip',
+  CreateKind.loadBalancer: 'load-balancer',
+  CreateKind.certificate: 'certificate',
+  CreateKind.zone: 'zone',
 };
 
 extension<T extends Enum> on Map<T, String> {
@@ -629,6 +643,252 @@ mixin $SshKeyRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
     '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/ssh-keys/${Uri.encodeComponent(_self.keyId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $networkRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/networks/:networkId',
+  hasOverriddenOnExit: false,
+  factory: $NetworkRoute._fromState,
+);
+
+mixin $NetworkRoute on GoRouteData {
+  static NetworkRoute _fromState(GoRouterState state) => NetworkRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    networkId: int.parse(state.pathParameters['networkId']!),
+  );
+
+  NetworkRoute get _self => this as NetworkRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/networks/${Uri.encodeComponent(_self.networkId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $firewallRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/firewalls/:firewallId',
+  hasOverriddenOnExit: false,
+  factory: $FirewallRoute._fromState,
+);
+
+mixin $FirewallRoute on GoRouteData {
+  static FirewallRoute _fromState(GoRouterState state) => FirewallRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    firewallId: int.parse(state.pathParameters['firewallId']!),
+  );
+
+  FirewallRoute get _self => this as FirewallRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/firewalls/${Uri.encodeComponent(_self.firewallId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $loadBalancerRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/load-balancers/:lbId',
+  hasOverriddenOnExit: false,
+  factory: $LoadBalancerRoute._fromState,
+);
+
+mixin $LoadBalancerRoute on GoRouteData {
+  static LoadBalancerRoute _fromState(GoRouterState state) => LoadBalancerRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    lbId: int.parse(state.pathParameters['lbId']!),
+  );
+
+  LoadBalancerRoute get _self => this as LoadBalancerRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/load-balancers/${Uri.encodeComponent(_self.lbId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $certificateRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/certificates/:certificateId',
+  hasOverriddenOnExit: false,
+  factory: $CertificateRoute._fromState,
+);
+
+mixin $CertificateRoute on GoRouteData {
+  static CertificateRoute _fromState(GoRouterState state) => CertificateRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    certificateId: int.parse(state.pathParameters['certificateId']!),
+  );
+
+  CertificateRoute get _self => this as CertificateRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/certificates/${Uri.encodeComponent(_self.certificateId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $zoneRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/zones/:zoneId',
+  hasOverriddenOnExit: false,
+  factory: $ZoneRoute._fromState,
+);
+
+mixin $ZoneRoute on GoRouteData {
+  static ZoneRoute _fromState(GoRouterState state) => ZoneRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    zoneId: int.parse(state.pathParameters['zoneId']!),
+  );
+
+  ZoneRoute get _self => this as ZoneRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/zones/${Uri.encodeComponent(_self.zoneId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $ipRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/ips/:kind/:ipId',
+  hasOverriddenOnExit: false,
+  factory: $IpRoute._fromState,
+);
+
+mixin $IpRoute on GoRouteData {
+  static IpRoute _fromState(GoRouterState state) => IpRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    kind: _$IpKindEnumMap._$fromName(state.pathParameters['kind']!)!,
+    ipId: int.parse(state.pathParameters['ipId']!),
+  );
+
+  IpRoute get _self => this as IpRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/ips/${Uri.encodeComponent(_$IpKindEnumMap[_self.kind]!)}/${Uri.encodeComponent(_self.ipId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+const _$IpKindEnumMap = {
+  IpKind.floating: 'floating',
+  IpKind.primary: 'primary',
+};
+
+RouteBase get $rRSetRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/zones/:zoneId/rrsets/:name/:type',
+  hasOverriddenOnExit: false,
+  factory: $RRSetRoute._fromState,
+);
+
+mixin $RRSetRoute on GoRouteData {
+  static RRSetRoute _fromState(GoRouterState state) => RRSetRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    zoneId: int.parse(state.pathParameters['zoneId']!),
+    name: state.pathParameters['name']!,
+    type: state.pathParameters['type']!,
+  );
+
+  RRSetRoute get _self => this as RRSetRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/zones/${Uri.encodeComponent(_self.zoneId.toString())}/rrsets/${Uri.encodeComponent(_self.name)}/${Uri.encodeComponent(_self.type)}',
   );
 
   @override

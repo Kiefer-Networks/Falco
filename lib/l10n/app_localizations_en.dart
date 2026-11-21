@@ -1443,4 +1443,877 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wizardNetworking => 'Networking';
+
+  @override
+  String get actionRemove => 'Remove';
+
+  @override
+  String get aliasIpsHint =>
+      'Optional. Further private IPs, separated by commas.';
+
+  @override
+  String get autoDeleteHint =>
+      'Deleted together with the server it is assigned to.';
+
+  @override
+  String get certificateCreate => 'Add certificate';
+
+  @override
+  String get certificateDeleteConsequence =>
+      'The certificate is deleted. Load balancers using it lose it from their HTTPS services.';
+
+  @override
+  String get certificateManaged => 'Managed (Let\'s Encrypt)';
+
+  @override
+  String get certificateManagedHint =>
+      'Hetzner issues and renews it for your domains.';
+
+  @override
+  String get certificatePemHint =>
+      'PEM, starting with -----BEGIN CERTIFICATE-----, chain included.';
+
+  @override
+  String get certificatePending => 'Pending';
+
+  @override
+  String get certificateRetry => 'Retry';
+
+  @override
+  String get certificateUnused => 'Not used by any load balancer.';
+
+  @override
+  String get certificateUploaded => 'Uploaded';
+
+  @override
+  String get certificateUploadedHint => 'Your own certificate and private key.';
+
+  @override
+  String certificateValidUntil(String date) {
+    return 'Valid until $date';
+  }
+
+  @override
+  String get domainsHint =>
+      'One or more domains, separated by commas, e.g. example.com, *.example.com.';
+
+  @override
+  String get emptyCertificates => 'No certificates in this project yet.';
+
+  @override
+  String get emptyFirewalls => 'No firewalls in this project yet.';
+
+  @override
+  String get emptyFloatingIps => 'No Floating IPs in this project yet.';
+
+  @override
+  String get emptyLoadBalancers => 'No load balancers in this project yet.';
+
+  @override
+  String get emptyNetworks => 'No networks in this project yet.';
+
+  @override
+  String get emptyPrimaryIps => 'No Primary IPs in this project yet.';
+
+  @override
+  String get emptyZones => 'No DNS zones in this project yet.';
+
+  @override
+  String get fieldAliasIps => 'Alias IPs';
+
+  @override
+  String get fieldAutoDelete => 'Delete with server';
+
+  @override
+  String get fieldCertificatePem => 'Certificate';
+
+  @override
+  String get fieldChangeProtection => 'Change protection';
+
+  @override
+  String get fieldComment => 'Comment';
+
+  @override
+  String get fieldCookieLifetime => 'Cookie lifetime (s)';
+
+  @override
+  String get fieldCookieName => 'Cookie name';
+
+  @override
+  String get fieldDefaultTtl => 'Default TTL';
+
+  @override
+  String get fieldDestIps => 'Destination IPs';
+
+  @override
+  String get fieldDestination => 'Destination';
+
+  @override
+  String get fieldDestinationPort => 'Destination port';
+
+  @override
+  String get fieldDirection => 'Direction';
+
+  @override
+  String get fieldDomains => 'Domains';
+
+  @override
+  String get fieldGateway => 'Gateway';
+
+  @override
+  String get fieldHealthCheck => 'Health check';
+
+  @override
+  String get fieldHealthDomain => 'Health check domain';
+
+  @override
+  String get fieldHealthPath => 'Health check path';
+
+  @override
+  String get fieldHealthPort => 'Health check port';
+
+  @override
+  String get fieldHealthTls => 'Health check over TLS';
+
+  @override
+  String get fieldInterval => 'Interval (s)';
+
+  @override
+  String get fieldIpRange => 'IP range';
+
+  @override
+  String get fieldIps => 'IPs';
+
+  @override
+  String get fieldIssuance => 'Issuance';
+
+  @override
+  String get fieldListenPort => 'Listen port';
+
+  @override
+  String get fieldMode => 'Mode';
+
+  @override
+  String get fieldNameOptional => 'Name (optional)';
+
+  @override
+  String get fieldNameservers => 'Nameservers';
+
+  @override
+  String get fieldNetworkZone => 'Network zone';
+
+  @override
+  String get fieldNewValue => 'New value';
+
+  @override
+  String get fieldPort => 'Port';
+
+  @override
+  String get fieldPrivateIp => 'Private IP';
+
+  @override
+  String get fieldPrivateKeyPem => 'Private key';
+
+  @override
+  String get fieldProtocol => 'Protocol';
+
+  @override
+  String get fieldProxyProtocol => 'PROXY protocol';
+
+  @override
+  String get fieldRecordName => 'Name';
+
+  @override
+  String get fieldRedirectHttp => 'Redirect HTTP to HTTPS';
+
+  @override
+  String get fieldRenewal => 'Renewal';
+
+  @override
+  String get fieldRetries => 'Retries';
+
+  @override
+  String get fieldSourceIps => 'Source IPs';
+
+  @override
+  String get fieldStatus => 'Status';
+
+  @override
+  String get fieldStatusCodes => 'Status codes';
+
+  @override
+  String get fieldStickySessions => 'Sticky sessions';
+
+  @override
+  String get fieldTimeout => 'Timeout (s)';
+
+  @override
+  String get fieldTtl => 'TTL';
+
+  @override
+  String get fieldUsePrivateIp => 'Route via private network';
+
+  @override
+  String get fieldValidFrom => 'Valid from';
+
+  @override
+  String get fieldValidUntil => 'Valid until';
+
+  @override
+  String get fieldValue => 'Value';
+
+  @override
+  String get fieldValues => 'Values';
+
+  @override
+  String get fieldVswitch => 'vSwitch';
+
+  @override
+  String get fieldVswitchId => 'vSwitch ID';
+
+  @override
+  String get fieldZoneName => 'Domain';
+
+  @override
+  String get filterAssigned => 'Assigned';
+
+  @override
+  String get filterUnassigned => 'Not assigned';
+
+  @override
+  String get firewallActive => 'Active';
+
+  @override
+  String get firewallApply => 'Apply';
+
+  @override
+  String get firewallCreate => 'Create firewall';
+
+  @override
+  String get firewallDeleteConsequence =>
+      'The firewall is deleted; servers it protects are open to its traffic again.';
+
+  @override
+  String get firewallNotApplied => 'Not applied';
+
+  @override
+  String get firewallNotAppliedHint =>
+      'Not applied to any server or label selector.';
+
+  @override
+  String get firewallRemoveConsequence =>
+      'Its rules no longer protect this target.';
+
+  @override
+  String firewallRemoveTitle(String firewall, String target) {
+    return 'Remove $firewall from $target?';
+  }
+
+  @override
+  String get floatingIpCreate => 'Create Floating IP';
+
+  @override
+  String get floatingIpUnassignConsequence =>
+      'Traffic to this IP no longer reaches the server.';
+
+  @override
+  String gatewayHint(String range) {
+    return 'An IP inside $range.';
+  }
+
+  @override
+  String gatewayValue(String gateway) {
+    return 'via $gateway';
+  }
+
+  @override
+  String healthCheckValue(String protocol, String port, String interval) {
+    return '$protocol check on $port every $interval s';
+  }
+
+  @override
+  String get healthPortHint => 'Empty uses the destination port.';
+
+  @override
+  String get ipAssign => 'Assign';
+
+  @override
+  String get ipAssigned => 'Assigned';
+
+  @override
+  String ipAssignedTo(String server) {
+    return 'assigned to $server';
+  }
+
+  @override
+  String get ipBlocked => 'Blocked';
+
+  @override
+  String ipDeleteConsequence(String ip) {
+    return 'The address $ip is released and may go to someone else. This cannot be undone.';
+  }
+
+  @override
+  String get ipNoServers => 'No servers in this project to assign to.';
+
+  @override
+  String get ipNotAssigned => 'Not assigned';
+
+  @override
+  String ipOnServer(String server, String location) {
+    return 'Assign to $server ($location)';
+  }
+
+  @override
+  String get ipTarget => 'Location or server';
+
+  @override
+  String get ipUnassign => 'Unassign';
+
+  @override
+  String ipUnassignTitle(String ip, String server) {
+    return 'Unassign $ip from $server?';
+  }
+
+  @override
+  String get ipsAny => 'Any IPv4 and IPv6';
+
+  @override
+  String get ipsAnyV4 => 'Any IPv4';
+
+  @override
+  String get ipsAnyV6 => 'Any IPv6';
+
+  @override
+  String get ipsCustom => 'Custom';
+
+  @override
+  String get ipsHint =>
+      'CIDR blocks, one per line or separated by commas, e.g. 203.0.113.0/24.';
+
+  @override
+  String get keepIfEmpty => 'Empty keeps the current one.';
+
+  @override
+  String get labelSelector => 'Label selector';
+
+  @override
+  String get lbAlgorithm => 'Algorithm';
+
+  @override
+  String get lbChangeType => 'Change type';
+
+  @override
+  String get lbDeleteConsequence =>
+      'The load balancer and its public IPs are deleted. Targets are kept. This cannot be undone.';
+
+  @override
+  String get lbLeastConnections => 'Least connections';
+
+  @override
+  String lbLimits(int connections, int services, int targets) {
+    return '$connections connections, $services services, $targets targets';
+  }
+
+  @override
+  String get lbNoCertificates =>
+      'No certificates yet. Add one in Certificates.';
+
+  @override
+  String get lbPublicDisabled => 'Public interface disabled';
+
+  @override
+  String get lbPublicOff => 'Disable public interface';
+
+  @override
+  String get lbPublicOffConsequence =>
+      'The load balancer is then reachable from private networks only.';
+
+  @override
+  String get lbPublicOn => 'Enable public interface';
+
+  @override
+  String get lbRoundRobin => 'Round robin';
+
+  @override
+  String get loadBalancerCreate => 'Create load balancer';
+
+  @override
+  String get membersEmpty => 'No servers or load balancers in this network.';
+
+  @override
+  String get metricConnectionsPerSecond => 'Connections per second';
+
+  @override
+  String get metricOpenConnections => 'Open connections';
+
+  @override
+  String get metricRequestsPerSecond => 'Requests per second';
+
+  @override
+  String get networkAttach => 'Attach to network';
+
+  @override
+  String get networkChangeRange => 'Change IP range';
+
+  @override
+  String get networkCreate => 'Create network';
+
+  @override
+  String get networkDeleteConsequence =>
+      'The network and all its subnets and routes are deleted. This cannot be undone.';
+
+  @override
+  String get networkDetachConsequence =>
+      'Its private IP in this network is released.';
+
+  @override
+  String networkDetachTitle(String name, String network) {
+    return 'Remove $name from $network?';
+  }
+
+  @override
+  String get networkExpose => 'Routes to vSwitch';
+
+  @override
+  String get networkExposeConsequence =>
+      'Decides whether the routes of this network are announced to the coupled vSwitch.';
+
+  @override
+  String get networkExposeOff => 'Stop exposing routes to vSwitch';
+
+  @override
+  String get networkExposeOn => 'Expose routes to vSwitch';
+
+  @override
+  String get networkRangeCreateHint => 'A private range, e.g. 10.0.0.0/16.';
+
+  @override
+  String get networkRangeHint =>
+      'Only larger, containing the current range. This cannot be undone.';
+
+  @override
+  String get portHint => 'One port or a range, e.g. 22 or 8000-9000.';
+
+  @override
+  String get primariesEmpty => 'No primary nameservers yet.';
+
+  @override
+  String get primariesHint =>
+      'One per line: address or address:port, port 53 by default.';
+
+  @override
+  String get primaryAdd => 'Add primary nameserver';
+
+  @override
+  String get primaryEdit => 'Edit primary nameserver';
+
+  @override
+  String get primaryIpCreate => 'Create Primary IP';
+
+  @override
+  String get primaryIpNew => 'New Primary IP';
+
+  @override
+  String primaryIpNoServers(String location) {
+    return 'No servers that are off in $location. A Primary IP moves only to a server that is off.';
+  }
+
+  @override
+  String get primaryIpUnassignConsequence =>
+      'The server loses this public address. It must be off.';
+
+  @override
+  String get primaryRemoveConsequence =>
+      'The zone is no longer transferred from this nameserver.';
+
+  @override
+  String primaryRemoveTitle(String address) {
+    return 'Remove $address?';
+  }
+
+  @override
+  String get privateIpHint => 'Optional. Empty picks the next free one.';
+
+  @override
+  String get privateKeyPemHint =>
+      'PEM, starting with -----BEGIN PRIVATE KEY-----. Sent once to Hetzner, never stored in Falco.';
+
+  @override
+  String get recordAdd => 'Add record';
+
+  @override
+  String recordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count records',
+      one: '1 record',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recordEdit => 'Edit value';
+
+  @override
+  String get recordNameHint => '@ for the zone itself, e.g. www or mail.';
+
+  @override
+  String recordsBulkEdit(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count record sets',
+      one: '1 record set',
+    );
+    return 'Edit $_temp0';
+  }
+
+  @override
+  String get recordsEditSelected => 'Edit selected';
+
+  @override
+  String get recordsEmpty => 'No records yet.';
+
+  @override
+  String recordsFailed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count record sets failed',
+      one: '1 record set failed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recordsSelect => 'Select records';
+
+  @override
+  String get recordsUpdated => 'Records updated';
+
+  @override
+  String get resourceCertificate => 'Certificate';
+
+  @override
+  String get resourceCertificates => 'Certificates';
+
+  @override
+  String get resourceFirewall => 'Firewall';
+
+  @override
+  String get resourceFloatingIp => 'Floating IP';
+
+  @override
+  String get resourceFloatingIps => 'Floating IPs';
+
+  @override
+  String get resourceLoadBalancers => 'Load balancers';
+
+  @override
+  String get resourceNetwork => 'Network';
+
+  @override
+  String get resourcePrimaryIp => 'Primary IP';
+
+  @override
+  String get resourcePrimaryIps => 'Primary IPs';
+
+  @override
+  String get resourceRecord => 'Record set';
+
+  @override
+  String get resourceZone => 'DNS zone';
+
+  @override
+  String get resourceZones => 'DNS';
+
+  @override
+  String get routeAdd => 'Add route';
+
+  @override
+  String routeDeleteConsequence(String gateway) {
+    return 'Traffic via $gateway for this destination stops.';
+  }
+
+  @override
+  String routeDeleteTitle(String destination) {
+    return 'Delete route to $destination?';
+  }
+
+  @override
+  String get routesEmpty => 'No routes.';
+
+  @override
+  String get rrsetDeleteConsequence =>
+      'All values of this record set are deleted.';
+
+  @override
+  String get rrsetProtectOffConsequence =>
+      'Its values can be changed and deleted again.';
+
+  @override
+  String get rrsetProtectOnConsequence =>
+      'Its values cannot be changed or deleted until the protection is removed.';
+
+  @override
+  String get ruleAdd => 'Add rule';
+
+  @override
+  String ruleCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rules',
+      one: '1 rule',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ruleDeleteConsequence =>
+      'Traffic this rule allowed is blocked on every server of the firewall.';
+
+  @override
+  String ruleDeleteTitle(String rule) {
+    return 'Delete rule $rule?';
+  }
+
+  @override
+  String get ruleEdit => 'Edit rule';
+
+  @override
+  String get ruleInbound => 'Inbound';
+
+  @override
+  String get ruleOutbound => 'Outbound';
+
+  @override
+  String get rulesEmpty => 'No rules.';
+
+  @override
+  String secondsHint(int min, int max) {
+    return '$min to $max seconds';
+  }
+
+  @override
+  String get sectionAppliedTo => 'Applied to';
+
+  @override
+  String get sectionMembers => 'Members';
+
+  @override
+  String get sectionPrimaries => 'Primary nameservers';
+
+  @override
+  String get sectionRecords => 'Records';
+
+  @override
+  String get sectionRoutes => 'Routes';
+
+  @override
+  String get sectionRules => 'Rules';
+
+  @override
+  String get sectionServices => 'Services';
+
+  @override
+  String get sectionSubnets => 'Subnets';
+
+  @override
+  String get sectionTargets => 'Targets';
+
+  @override
+  String get sectionUsedBy => 'Used by';
+
+  @override
+  String get selectAll => 'Select all';
+
+  @override
+  String get selectClear => 'Clear';
+
+  @override
+  String selectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get selectorHint => 'e.g. role=web,env=prod';
+
+  @override
+  String get serverNoNetworks =>
+      'No networks left to attach to. Create one under Network.';
+
+  @override
+  String get serviceAdd => 'Add service';
+
+  @override
+  String serviceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count services',
+      one: '1 service',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get serviceDeleteConsequence =>
+      'The load balancer stops listening on this port.';
+
+  @override
+  String serviceDeleteTitle(String service) {
+    return 'Delete service $service?';
+  }
+
+  @override
+  String get serviceEdit => 'Edit service';
+
+  @override
+  String get servicesEmpty => 'No services.';
+
+  @override
+  String get sortExpiry => 'Expiry';
+
+  @override
+  String get subnetAdd => 'Add subnet';
+
+  @override
+  String subnetCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count subnets',
+      one: '1 subnet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get subnetDeleteConsequence =>
+      'Servers in this subnet lose their private IPs in it.';
+
+  @override
+  String subnetDeleteTitle(String range) {
+    return 'Delete subnet $range?';
+  }
+
+  @override
+  String subnetRangeHint(String range) {
+    return 'Optional, inside $range. Empty picks the next free range.';
+  }
+
+  @override
+  String get subnetsEmpty => 'No subnets.';
+
+  @override
+  String get targetAdd => 'Add target';
+
+  @override
+  String targetCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count targets',
+      one: '1 target',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get targetIpHint =>
+      'A public IP of a dedicated server, e.g. 203.0.113.7.';
+
+  @override
+  String get targetRemoveConsequence =>
+      'The load balancer no longer sends traffic to it.';
+
+  @override
+  String targetRemoveTitle(String target) {
+    return 'Remove target $target?';
+  }
+
+  @override
+  String get targetsEmpty => 'No targets.';
+
+  @override
+  String get ttlCreateHint => 'Optional, 60 seconds or more. Empty uses 3600.';
+
+  @override
+  String ttlDefault(int ttl) {
+    return 'Zone default ($ttl s)';
+  }
+
+  @override
+  String ttlHint(int ttl) {
+    return 'Optional, 60 seconds or more. Empty uses the zone default of $ttl s.';
+  }
+
+  @override
+  String get ttlLimits => '60 seconds or more.';
+
+  @override
+  String ttlValue(int ttl) {
+    return 'TTL $ttl s';
+  }
+
+  @override
+  String get valueAdd => 'Add value';
+
+  @override
+  String get valueRemoveConsequence =>
+      'This value is removed from the record set.';
+
+  @override
+  String valueRemoveTitle(String value) {
+    return 'Remove $value?';
+  }
+
+  @override
+  String get valuesHint =>
+      'One value per line. TXT gets quotes, host names a trailing dot.';
+
+  @override
+  String get zoneCreate => 'Create zone';
+
+  @override
+  String get zoneDeleteConsequence =>
+      'The zone and all its records are deleted. This cannot be undone.';
+
+  @override
+  String get zoneExport => 'Export';
+
+  @override
+  String get zoneExported => 'Zone file saved';
+
+  @override
+  String get zoneImport => 'Import zone file';
+
+  @override
+  String get zoneImportConsequence =>
+      'Every record of the zone is replaced by those of the file.';
+
+  @override
+  String zoneImportTitle(String name) {
+    return 'Replace all records of $name?';
+  }
+
+  @override
+  String get zonePrimary => 'Primary';
+
+  @override
+  String get zonePrimaryHint =>
+      'Hetzner holds the records; you edit them here.';
+
+  @override
+  String get zoneSecondary => 'Secondary';
+
+  @override
+  String get zoneSecondaryHint =>
+      'Hetzner copies the zone from your primary nameservers.';
+
+  @override
+  String get zonefileTooLarge => 'The file is larger than 1 MiB.';
 }

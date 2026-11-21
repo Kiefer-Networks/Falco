@@ -2,10 +2,13 @@
 /// Entry points into the generated Cloud and Storage Box clients.
 library;
 
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:falco/core/actions/action_tracker.dart';
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/http/http.dart';
+import 'package:falco/core/http/pagination.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/scope/scope_repository.dart';
 import 'package:falco/core/secure/secret_store.dart';
@@ -86,6 +89,55 @@ Future<int> actionOf<R>(
   Future<TonikResult<R, Response<Object?>>> call,
   int? Function(R response) id,
 ) async => id(await unwrap(call)) ?? (throw const Server());
+
+/// A JSON object as the Cloud API sends it.
+typedef Json = Map<String, Object?>;
+
+/// [value] as a JSON object; empty when it is none.
+Json json(Object? value) =>
+    value is Map ? value.cast<String, Object?>() : const {};
+
+/// [value] as a list of JSON objects; empty when it is none.
+List<Json> jsonList(Object? value) => [
+  if (value is List)
+    for (final e in value) json(e),
+];
+
+/// The body of a generated call's success as JSON, as the API sent it.
+/// The generated decoding has checked it against the spec (a body that
+/// does not match fails as an error). The raw body is read instead of
+/// re-encoding the model, which cannot encode enum values unknown to the
+/// spec (a new Hetzner value, a `oneOf` decoded by its first variant).
+Future<Json> cloudJson(
+  Future<TonikResult<Object?, Response<Object?>>> call,
+) async => switch (await call) {
+  TonikSuccess(:final response) => json(switch (response.data) {
+    final List<int> bytes => decodeResponseJson<Object?>(bytes),
+    final String text => jsonDecode(text),
+    final data => data,
+  }),
+  TonikError(:final error) => throw toFalcoError(error),
+};
+
+/// Runs a mutating [call] and returns the id of the action it started.
+Future<int> cloudAction(
+  Future<TonikResult<Object?, Response<Object?>>> call,
+) async =>
+    json((await cloudJson(call))['action'])['id'] as int? ??
+    (throw const Server());
+
+/// Every page of a list [call], mapping the objects under [key] (QRS-016).
+Future<List<T>> fetchAllJson<T>(
+  Future<TonikResult<Object?, Response<Object?>>> Function(int page) call,
+  String key,
+  T Function(Json json) map,
+) => fetchAll((page) async {
+  final body = await cloudJson(call(page));
+  return (
+    items: [for (final j in jsonList(body[key])) map(j)],
+    nextPage: json(json(body['meta'])['pagination'])['next_page'] as int?,
+  );
+});
 
 /// Loads [load] for every project of [scope] and joins the lists, so a
 /// list of "All projects" is the lists of its projects.

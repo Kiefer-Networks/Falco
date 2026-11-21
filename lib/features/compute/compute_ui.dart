@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-/// The flows every Compute resource shares, so each runs one way: start
+/// The flows every Cloud resource shares, so each runs one way: start
 /// and track an action, save an edit, rename and relabel, protect,
-/// delete, and the project step of a create wizard.
+/// delete, metrics, and the project step of a create wizard.
 library;
 
 import 'package:falco/api/cloud/cloud.dart';
@@ -41,6 +41,80 @@ Future<bool> runAction(
   }
 }
 
+/// Starts the action of [start] from a sheet's save and tracks it; a
+/// failure throws, so the sheet shows it and stays open.
+Future<void> startTracked(
+  WidgetRef ref,
+  ProjectScope scope,
+  Future<int> Function(cloud.Server api) start,
+) async {
+  final id = await start(ref.read(cloudApiProvider(scope.projectId)));
+  ref.read(actionTrackerProvider(scope)).track(id);
+}
+
+/// Level 1 confirmation, then [start] as a tracked action (remove,
+/// detach, unassign, disable).
+Future<void> confirmAction(
+  BuildContext context,
+  WidgetRef ref,
+  ProjectScope scope, {
+  required String title,
+  required String consequence,
+  required String label,
+  required String name,
+  required Future<int> Function(cloud.Server api) start,
+  List<ConfirmFact> facts = const [],
+  bool destructive = false,
+}) async {
+  final ok = await ConfirmSheet.show(
+    context,
+    title: title,
+    consequence: consequence,
+    confirmLabel: label,
+    resourceName: name,
+    facts: facts,
+    destructive: destructive,
+  );
+  if (ok && context.mounted) await runAction(context, ref, scope, start);
+}
+
+/// Turns delete protection of [t] on or off after a level 1
+/// confirmation.
+Future<void> toggleProtection(
+  BuildContext context,
+  WidgetRef ref,
+  Target t, {
+  required bool protected,
+  required Future<int> Function(cloud.Server api, bool protect) start,
+}) async {
+  if (await confirmProtection(context, t, protect: !protected) &&
+      context.mounted) {
+    await runAction(context, ref, t.scope, (api) => start(api, !protected));
+  }
+}
+
+/// Deletes [t] after the level 2 confirmation and closes its page.
+Future<void> deleteResource(
+  BuildContext context,
+  WidgetRef ref,
+  Target t,
+  String consequence,
+  Future<void> Function(cloud.Server api) delete,
+) async {
+  final l10n = AppLocalizations.of(context);
+  if (!await confirmDelete(context, t, consequence) || !context.mounted) {
+    return;
+  }
+  final deleted = await runChange(
+    context,
+    ref,
+    t,
+    delete,
+    done: l10n.deletedMessage(t.name),
+  );
+  if (deleted && context.mounted) Navigator.pop(context);
+}
+
 /// Runs a change without a Hetzner action (rename, labels, delete),
 /// refreshes [t] and confirms with [done] or shows the failure.
 Future<bool> runChange(
@@ -72,6 +146,26 @@ FieldSpec labelsField(AppLocalizations l10n, [Map<String, String>? labels]) =>
       initial: formatLabels(labels ?? const {}),
       helper: l10n.labelsHint,
     );
+
+/// [fields] with their initial values taken from [values] where set, for
+/// an edit sheet filled with what exists.
+List<FieldSpec> prefill(List<FieldSpec> fields, Map<String, String>? values) =>
+    values == null
+    ? fields
+    : [
+        for (final f in fields)
+          FieldSpec(
+            f.key,
+            f.label,
+            initial: values[f.key] ?? f.initial,
+            secret: f.secret,
+            maxLength: f.maxLength,
+            helper: f.helper,
+            options: f.options,
+            multiple: f.multiple,
+            multiline: f.multiline,
+          ),
+      ];
 
 /// Whether the labels text of [values] is valid.
 bool validLabels(Map<String, String> values) =>
@@ -206,6 +300,161 @@ Future<void> refreshQuietly(
   } on Object {
     // Shown by the watching widget.
   }
+}
+
+/// One entry of a detail section (a subnet, a rule, a target): title, a
+/// mono line, opens on tap, and an optional remove button.
+class EntryRow extends StatelessWidget {
+  const new({
+    required this.title,
+    this.subtitle,
+    this.onTap,
+    this.onRemove,
+    this.removeLabel,
+    this.leading,
+    super.key,
+  });
+
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onTap;
+  final VoidCallback? onRemove;
+
+  /// Tooltip of the remove button; defaults to "Delete".
+  final String? removeLabel;
+  final Widget? leading;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    leading: leading,
+    title: Text(title),
+    subtitle: switch (subtitle) {
+      final s? when s.isNotEmpty => Mono(s, maxLines: 3),
+      _ => null,
+    },
+    onTap: onTap,
+    trailing: onRemove == null
+        ? (onTap == null ? null : const Icon(Icons.chevron_right))
+        : IconButton(
+            tooltip: removeLabel ?? AppLocalizations.of(context).actionDelete,
+            icon: const Icon(Icons.remove_circle_outline),
+            onPressed: onRemove,
+          ),
+  );
+}
+
+/// Entries of a section, or [empty] when there are none.
+Widget entries(List<Widget> rows, String empty) => Column(
+  crossAxisAlignment: CrossAxisAlignment.stretch,
+  children: rows.isEmpty ? [Text(empty)] : rows,
+);
+
+/// One metric chart with its own period and the min, max and average of
+/// each series (CMP-027 to CMP-029, NET-078). [data] gives the samples of
+/// a period, one list per entry of [labels]. Byte rates ([rate]) scale to
+/// a readable unit; other values show with [unit].
+class MetricPanel extends ConsumerStatefulWidget {
+  const new({
+    required this.title,
+    required this.labels,
+    required this.data,
+    this.unit = '',
+    this.rate = false,
+    super.key,
+  });
+
+  final String title;
+  final List<String> labels;
+  final ProviderListenable<AsyncValue<List<List<(DateTime, double)>>>> Function(
+    MetricPeriod period,
+  )
+  data;
+  final String unit;
+  final bool rate;
+
+  @override
+  ConsumerState<MetricPanel> createState() => _MetricPanelState();
+}
+
+class _MetricPanelState extends ConsumerState<MetricPanel> {
+  MetricPeriod _period = MetricPeriod.day;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final data = ref.watch(widget.data(_period)).value ?? const [];
+    final max = data
+        .expand((s) => s)
+        .fold<double>(0, (m, p) => p.$2 > m ? p.$2 : m);
+    final (unit, factor) = widget.rate ? byteRate(max) : (widget.unit, 1.0);
+    String value(double v) =>
+        '${(v / factor).toStringAsFixed(v / factor < 10 ? 1 : 0)} $unit'.trim();
+    final labels = widget.labels;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        MetricChart(
+          title: widget.title,
+          unit: unit,
+          period: _period,
+          onPeriodChanged: (p) => setState(() => _period = p),
+          series: [
+            for (final (i, points) in data.indexed)
+              if (i < labels.length)
+                MetricSeries(
+                  label: labels[i],
+                  points: [for (final (t, v) in points) (t, v / factor)],
+                ),
+          ],
+        ),
+        for (final (i, points) in data.indexed)
+          if (i < labels.length)
+            if (seriesStats(points) case final st?)
+              Padding(
+                padding: const EdgeInsets.only(top: FalcoSpacing.xs),
+                child: Text(
+                  l10n.metricStats(
+                    labels[i],
+                    value(st.min),
+                    value(st.max),
+                    value(st.avg),
+                  ),
+                  style: FalcoText.of(context).monoSmall,
+                ),
+              ),
+      ],
+    );
+  }
+}
+
+/// Unit and divisor for a byte rate whose largest sample is [max]
+/// (CMP-029).
+(String, double) byteRate(double max) {
+  const units = ['B/s', 'KiB/s', 'MiB/s', 'GiB/s'];
+  var factor = 1.0;
+  var i = 0;
+  while (max / factor >= 1024 && i < units.length - 1) {
+    factor *= 1024;
+    i++;
+  }
+  return (units[i], factor);
+}
+
+/// Min, max and average of [points] (CMP-029); null without samples.
+({double min, double max, double avg})? seriesStats(
+  List<(DateTime, double)> points,
+) {
+  if (points.isEmpty) return null;
+  var min = points.first.$2;
+  var max = min;
+  var sum = 0.0;
+  for (final (_, v) in points) {
+    if (v < min) min = v;
+    if (v > max) max = v;
+    sum += v;
+  }
+  return (min: min, max: max, avg: sum / points.length);
 }
 
 /// A detail page before its resource loaded: a spinner, or the error card

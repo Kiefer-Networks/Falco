@@ -58,7 +58,60 @@ Dio createDio({
         ..connectionTimeout = connectTimeout
         ..userAgent = userAgent,
     )
-    ..interceptors.addAll([?auth, const ErrorInterceptor()]);
+    ..interceptors.addAll([
+      ?auth,
+      const NullFieldsInterceptor(),
+      const ErrorInterceptor(),
+    ]);
+}
+
+/// Keys whose `null` means something to the Cloud API, with the path
+/// ending where it does ('' for every path): reset reverse DNS, use the
+/// zone's default TTL, no Host header for a health check, clear a
+/// description. Every required nullable field of the spec is here
+/// (checked by a contract test). An optional `ttl` stays omitted, so
+/// adding records never resets a TTL.
+const meaningfulNulls = {
+  'dns_ptr': '',
+  'domain': '',
+  'description': '',
+  'ttl': '/actions/change_ttl',
+  'server': '/actions/assign',
+};
+
+/// Drops `null` fields from JSON request bodies, except [meaningfulNulls].
+///
+/// The generated clients send every nullable field, unset ones as `null`.
+/// The spec allows that, but whether Hetzner treats `null` exactly like an
+/// omitted field (e.g. `public_net.ipv4` when creating a server) is not
+/// documented; omitting is what the spec describes, so Falco omits.
+class NullFieldsInterceptor extends Interceptor {
+  /// Creates the interceptor.
+  const new();
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    if (options.data case final String data when data.startsWith('{')) {
+      options.data = jsonEncode(withoutNulls(jsonDecode(data), options.path));
+    }
+    handler.next(options);
+  }
+
+  /// [value] of a request to [path] without `null` map entries, keeping
+  /// [meaningfulNulls].
+  static Object? withoutNulls(Object? value, String path) => switch (value) {
+    Map() => {
+      for (final MapEntry(:key, value: v) in value.entries)
+        if (v != null || _keepsNull(key, path)) key: withoutNulls(v, path),
+    },
+    List() => [for (final v in value) withoutNulls(v, path)],
+    _ => value,
+  };
+
+  static bool _keepsNull(Object? key, String path) {
+    final end = meaningfulNulls[key];
+    return end != null && path.endsWith(end);
+  }
 }
 
 /// A TLS context that trusts only the pinned roots of [host] (TLS 1.2+,
