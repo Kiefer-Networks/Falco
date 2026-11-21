@@ -12,7 +12,8 @@ part of 'app_lock.dart';
 /// (local_auth falls back to the PIN, SET-013, BUG-023). Returns false if
 /// the user cancelled and null when the device has no screen lock at all.
 /// With a hardware bound vault, opening it is the check, so the user sees
-/// one prompt (SET-015). Overridden in tests.
+/// one prompt (SET-015); it is read again, so an open vault never answers
+/// for the user. Overridden in tests.
 
 @ProviderFor(authenticator)
 final authenticatorProvider = AuthenticatorProvider._();
@@ -21,7 +22,8 @@ final authenticatorProvider = AuthenticatorProvider._();
 /// (local_auth falls back to the PIN, SET-013, BUG-023). Returns false if
 /// the user cancelled and null when the device has no screen lock at all.
 /// With a hardware bound vault, opening it is the check, so the user sees
-/// one prompt (SET-015). Overridden in tests.
+/// one prompt (SET-015); it is read again, so an open vault never answers
+/// for the user. Overridden in tests.
 
 final class AuthenticatorProvider
     extends
@@ -35,7 +37,8 @@ final class AuthenticatorProvider
   /// (local_auth falls back to the PIN, SET-013, BUG-023). Returns false if
   /// the user cancelled and null when the device has no screen lock at all.
   /// With a hardware bound vault, opening it is the check, so the user sees
-  /// one prompt (SET-015). Overridden in tests.
+  /// one prompt (SET-015); it is read again, so an open vault never answers
+  /// for the user. Overridden in tests.
   AuthenticatorProvider._()
     : super(
         from: null,
@@ -71,7 +74,7 @@ final class AuthenticatorProvider
   }
 }
 
-String _$authenticatorHash() => r'dabdb5356210605ca20e0681f418819743f9afef';
+String _$authenticatorHash() => r'eb1c4e0588070d0f940d45c9760886ccabd48a70';
 
 /// App lock: locked at start and after the auto lock time in background,
 /// both only while the lock is on in the settings (SET-007, SET-010).
@@ -120,7 +123,7 @@ final class AppLockProvider extends $NotifierProvider<AppLock, AppLockState> {
   }
 }
 
-String _$appLockHash() => r'a6463e627fc62a2c65c6d36b20bc0f42a0bd5c30';
+String _$appLockHash() => r'e0cc7fff9713667de17a6ea6cc3b4b0b6342599d';
 
 /// App lock: locked at start and after the auto lock time in background,
 /// both only while the lock is on in the settings (SET-007, SET-010).
