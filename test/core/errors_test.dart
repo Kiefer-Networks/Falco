@@ -30,6 +30,41 @@ void main() {
     }
   });
 
+  test('QRS-020 retryDelay sees the error a DioException carries (R3), a '
+      'locked vault is never retried (K3)', () {
+    final options = RequestOptions();
+    expect(
+      retryDelay(
+        0,
+        DioException(requestOptions: options, error: const Network()),
+      ),
+      isNotNull,
+    );
+    expect(
+      retryDelay(
+        0,
+        DioException(requestOptions: options, error: const Locked()),
+      ),
+      isNull,
+    );
+    expect(retryDelay(0, const Locked()), isNull);
+  });
+
+  test('QRS-018 only a rejected certificate is a pinning failure (K6)', () {
+    expect(
+      toFalcoError(const HandshakeException('CERTIFICATE_VERIFY_FAILED')),
+      isA<PinningFailed>(),
+    );
+    expect(
+      toFalcoError(const HandshakeException('Connection terminated')),
+      isA<Network>(),
+    );
+    expect(
+      toFalcoError(const TlsException('WRONG_VERSION_NUMBER')),
+      isA<Network>(),
+    );
+  });
+
   group('fromResponse', () {
     test('maps Cloud error codes before status codes', () {
       expect(

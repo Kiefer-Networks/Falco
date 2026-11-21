@@ -13,4 +13,5 @@ String errorText(FalcoError error, AppLocalizations l10n) => switch (error) {
   Network() => l10n.errorNetwork,
   PinningFailed() => l10n.errorPinning,
   Server() => l10n.errorServer,
+  Locked() => l10n.errorLocked,
 };

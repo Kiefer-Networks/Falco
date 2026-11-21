@@ -18,16 +18,17 @@ abstract final class SensitiveClipboard {
   static Timer? _fallbackTimer;
 
   /// Copies [text] as sensitive data. Returns false when the system
-  /// cannot mark it sensitive (a plain copy, still cleared after
-  /// [expiry]), so the caller can say so (SET-020).
+  /// cannot mark it sensitive (Android before 13, or a plain copy, still
+  /// cleared after [expiry]), so the caller can say so (SET-020).
   static Future<bool> copy(String text) async {
     _fallbackTimer?.cancel();
     try {
-      await _channel.invokeMethod<void>('setSensitive', {
-        'text': text,
-        'expirySeconds': expiry.inSeconds,
-      });
-      return true;
+      // Android answers whether the flag works; iOS always protects.
+      return await _channel.invokeMethod<bool>('setSensitive', {
+            'text': text,
+            'expirySeconds': expiry.inSeconds,
+          }) ??
+          true;
     } on MissingPluginException {
       await Clipboard.setData(ClipboardData(text: text));
       _fallbackTimer = Timer(expiry, () {

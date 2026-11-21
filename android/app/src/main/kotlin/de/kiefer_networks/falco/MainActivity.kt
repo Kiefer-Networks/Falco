@@ -15,6 +15,9 @@ import android.view.WindowManager
 class MainActivity : FlutterFragmentActivity() {
     private val handler = Handler(Looper.getMainLooper())
 
+    // The expiry passed; the clip is cleared once it is readable.
+    private var clearPending = false
+
     // Screenshots and the recents preview are blocked from the first frame
     // (SET-014); Dart turns it off when the user disables the setting.
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +37,8 @@ class MainActivity : FlutterFragmentActivity() {
                     call.argument<String>("text").orEmpty(),
                     call.argument<Int>("expirySeconds") ?: 60,
                 )
-                result.success(null)
+                // Only Android 13+ honours the sensitive flag (SET-020).
+                result.success(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
             }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "falco/screen")
             .setMethodCallHandler { call, result ->
@@ -62,19 +66,34 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
         clipboard.setPrimaryClip(clip)
+        clearPending = false
         handler.removeCallbacksAndMessages(null)
         handler.postDelayed({
-            // A background app cannot read the clip on Android 10+ and gets
-            // null: clear then too, skip only a readable foreign clip.
-            val description = clipboard.primaryClipDescription
-            if (description == null || description.label == LABEL) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    clipboard.clearPrimaryClip()
-                } else {
-                    clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
-                }
-            }
+            clearPending = true
+            clearIfOurs()
         }, expirySeconds * 1000L)
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) clearIfOurs()
+    }
+
+    // Without focus Android 10+ hides the clip (null): that says nothing
+    // about whose it is, so the check waits for Falco's next focus and
+    // never wipes a foreign clip.
+    private fun clearIfOurs() {
+        if (!clearPending) return
+        val clipboard = getSystemService(ClipboardManager::class.java)
+        val description = clipboard.primaryClipDescription
+        if (description == null && !hasWindowFocus()) return
+        clearPending = false
+        if (description?.label != LABEL) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            clipboard.clearPrimaryClip()
+        } else {
+            clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
+        }
     }
 
     private companion object {

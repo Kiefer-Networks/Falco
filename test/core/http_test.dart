@@ -7,6 +7,7 @@ import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/http/http.dart';
 import 'package:falco/core/pins/pins.g.dart';
 import 'package:falco/core/pins/x509.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hetzner_cloud_api/hetzner_cloud_api.dart' as cloud;
 
@@ -47,6 +48,25 @@ void main() {
         throwsA(predicate<Object>((e) => toFalcoError(e) is Server)),
       );
       expect(adapter.requests, hasLength(1));
+    });
+
+    test('SET-015 a vault that stays closed fails as Locked, sends nothing '
+        'and is not retried (K3)', () async {
+      final adapter = FakeAdapter((_) => (200, <String, Object?>{}));
+      for (final auth in [
+        storedBearerAuth(() => throw PlatformException(code: 'cancel')),
+        storedBasicAuth(() => throw const Locked()),
+      ]) {
+        Object? error;
+        try {
+          await fakeDio(adapter, auth: auth).get<Object?>('/x');
+        } on Object catch (e) {
+          error = toFalcoError(e);
+        }
+        expect(error, isA<Locked>());
+        expect(retryDelay(0, error!), isNull);
+      }
+      expect(adapter.requests, isEmpty);
     });
 
     test('adds bearer and basic auth', () async {

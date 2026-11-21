@@ -129,18 +129,13 @@ RobotCredentials robotFromValues(Map<String, String> values) =>
 Future<void> checkRobotLogin(ProviderContainer ref, RobotCredentials c) =>
     checkRobot(ref.read(robotDioProvider)(basicAuth(c.user, c.password)));
 
-/// Stores the secrets of a checked project draft and returns the project.
-/// Secrets go first: an account never points at a project without them.
-Future<Project> storeProject(
-  ProviderContainer ref,
-  Map<String, String> values,
-) async {
-  final secrets = ref.read(secretStoreProvider);
+/// Adds the secrets of a checked project draft to [changes] and returns
+/// the project. Secrets go first: an account never points at a project
+/// without them.
+Project storeProject(SecretChanges changes, Map<String, String> values) {
   final project = Project(id: newId(), name: _v(values, 'name'));
-  await secrets.setCloudToken(project.id, _v(values, 'token'));
-  if (s3FromValues(values) case final s3?) {
-    await secrets.setS3(project.id, s3);
-  }
+  changes.cloudToken(project.id, _v(values, 'token'));
+  if (s3FromValues(values) case final s3?) changes.s3(project.id, s3);
   return project;
 }
 
@@ -209,7 +204,10 @@ class _ProjectSetupPageState extends ConsumerState<ProjectSetupPage> {
       if (s3FromValues(_values) case final s3?) {
         await _labelled(l10n.s3Step, () => checkS3Keys(container, s3), l10n);
       }
-      final project = await storeProject(container, _values);
+      late final Project project;
+      await container
+          .read(secretStoreProvider)
+          .apply((c) => project = storeProject(c, _values));
       await repo.save(
         account.copyWith(projects: [...account.projects, project]),
       );
@@ -351,14 +349,12 @@ class _AccountWizardPageState extends ConsumerState<AccountWizardPage> {
         );
       }
       final id = newId();
-      final stored = [
-        for (final p in projects) await storeProject(container, p),
-      ];
-      if (_hasRobot) {
-        await container
-            .read(secretStoreProvider)
-            .setRobot(id, robotFromValues(_robot));
-      }
+      // One vault write for all secrets: one system check.
+      final stored = <Project>[];
+      await container.read(secretStoreProvider).apply((c) {
+        stored.addAll([for (final p in projects) storeProject(c, p)]);
+        if (_hasRobot) c.robot(id, robotFromValues(_robot));
+      });
       final account = Account(
         id: id,
         name: _v(_account, 'name'),

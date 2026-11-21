@@ -160,16 +160,13 @@ Interceptor bearerAuth(String token) => InterceptorsWrapper(
 );
 
 /// Like [bearerAuth], but reads the token per request, so it never stays
-/// in app state (SET-017). A missing token fails as [Unauthorized].
+/// in app state (SET-017). A missing token fails as [Unauthorized], a
+/// vault that stays closed as [Locked].
 Interceptor storedBearerAuth(Future<String?> Function() token) =>
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final value = await token();
-        if (value == null) {
-          return handler.reject(
-            DioException(requestOptions: options, error: const Unauthorized()),
-          );
-        }
+        final value = await _readSecret(token, options, handler);
+        if (value == null) return;
         options.headers[HttpHeaders.authorizationHeader] = 'Bearer $value';
         handler.next(options);
       },
@@ -187,22 +184,40 @@ Interceptor basicAuth(String user, String password) {
 }
 
 /// Like [basicAuth], but reads user and password per request, so they
-/// never stay in app state. Missing credentials fail as [Unauthorized].
+/// never stay in app state. Missing credentials fail as [Unauthorized], a
+/// vault that stays closed as [Locked].
 Interceptor storedBasicAuth(Future<(String, String)?> Function() login) =>
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final value = await login();
-        if (value == null) {
-          return handler.reject(
-            DioException(requestOptions: options, error: const Unauthorized()),
-          );
-        }
+        final value = await _readSecret(login, options, handler);
+        if (value == null) return;
         final (user, password) = value;
         options.headers[HttpHeaders.authorizationHeader] =
             'Basic ${base64.encode(utf8.encode('$user:$password'))}';
         handler.next(options);
       },
     );
+
+/// Reads a secret for a request, or rejects it: [Unauthorized] when there
+/// is none, [Locked] when the vault could not be read. Both are final, a
+/// retry would only ask the user again.
+Future<T?> _readSecret<T extends Object>(
+  Future<T?> Function() read,
+  RequestOptions options,
+  RequestInterceptorHandler handler,
+) async {
+  FalcoError error;
+  try {
+    if (await read() case final value?) return value;
+    error = const Unauthorized();
+  } on FalcoError catch (e) {
+    error = e;
+  } on Object {
+    error = const Locked();
+  }
+  handler.reject(DioException(requestOptions: options, error: error));
+  return null;
+}
 
 /// Turns every error response into a [FalcoError] carried by the
 /// [DioException]. Generated clients accept every status code, so the

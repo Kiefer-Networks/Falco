@@ -137,6 +137,7 @@ UI (Widgets) → Controller (Riverpod Notifier pro Screen, Scope als Parameter)
 - **Pagination** zentral im API Client, nie im Screen.
 - **Fehlermodell:** typisiert (`Unauthorized`, `Forbidden`, `NotFound`,
   `Conflict`, `RateLimited(retryAfter)`, `Invalid(fields)`, `Network`,
+  `PinningFailed`, `Locked` (Tresor zu, Prüfung abgebrochen),
   `Server`), Mapping aus Hetzner Fehlercodes, Texte nur in der UI über l10n.
 - **Contract Tests:** generierte Modelle gegen die aktuellen Specs, plus
   Fixtures für Robot und S3; laufen in jeder CI.
