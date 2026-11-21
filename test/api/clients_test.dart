@@ -1,47 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import 'package:falco/api/robot/robot_client.dart';
 import 'package:falco/api/s3/s3.dart';
-import 'package:falco/core/errors/falco_error.dart';
-import 'package:falco/core/http/http.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fake_http.dart';
 
 void main() {
-  group('Robot client against fixtures', () {
-    RobotClient client(FakeAdapter adapter) => RobotClient(
-      fakeDio(adapter, baseUrl: robotBaseUrl, auth: basicAuth('u', 'p')),
-    );
-
-    test('GET /server', () async {
-      final servers = await client(
-        FakeAdapter((_) => (200, fixture('robot/server_list.json'))),
-      ).servers();
-      expect(servers, hasLength(2));
-      expect(servers.first.number, 321);
-      expect(servers.first.ipv4, '123.123.123.123');
-      expect(servers.first.product, 'DS 3000');
-      expect(servers.last.name, '');
-      expect(servers.last.cancelled, isTrue);
-    });
-
-    test('GET /reset/{number} offers only listed types (BUG-012)', () async {
-      final adapter = FakeAdapter(
-        (_) => (200, fixture('robot/reset_options.json')),
-      );
-      expect(await client(adapter).resetTypes(321), ['sw', 'hw', 'man']);
-      expect(adapter.requests.single.path, '/reset/321');
-    });
-
-    test('Robot errors become FalcoErrors', () async {
-      await expectLater(
-        client(FakeAdapter((_) => (404, fixture('robot/error_not_found.json'))))
-            .servers(),
-        throwsA(predicate<Object>((e) => toFalcoError(e) is NotFound)),
-      );
-    });
-  });
-
   group('S3', () {
     test('SigV4 matches the AWS get-vanilla test vector', () {
       final headers = signV4(

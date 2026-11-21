@@ -553,6 +553,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'delete_subaccount': 'Delete subaccount',
       'reset_subaccount_password': 'Reset subaccount password',
       'change_home_directory': 'Change home directory',
+      'robot_reset': 'Reset',
+      'robot_wol': 'Wake on LAN',
+      'robot_boot_on': 'Activate boot configuration',
+      'robot_boot_off': 'Deactivate boot configuration',
+      'robot_rename': 'Rename server',
+      'robot_cancel': 'Cancel',
+      'robot_withdraw': 'Withdraw cancellation',
+      'robot_rdns': 'Change reverse DNS',
+      'robot_failover': 'Change failover routing',
+      'robot_vswitch': 'Change vSwitch',
+      'robot_key': 'Change SSH key',
+      'robot_address': 'Change IP settings',
+      'robot_firewall': 'Change firewall',
       'other': '',
     });
     return '$_temp0';
@@ -2739,4 +2752,529 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get versionsEmpty => 'No versions.';
+
+  @override
+  String get addressCancelConsequence =>
+      'The address is cancelled at the chosen date and then no longer routed to the server.';
+
+  @override
+  String get bootActivate => 'Activate';
+
+  @override
+  String get bootActivated => 'Active at the next reset';
+
+  @override
+  String get bootDeactivate => 'Deactivate';
+
+  @override
+  String get bootDist => 'Distribution';
+
+  @override
+  String get bootKeysHint =>
+      'Robot keys for the root login; without keys a password is used.';
+
+  @override
+  String get bootLang => 'Language';
+
+  @override
+  String get bootLastLinux => 'Last Linux installation';
+
+  @override
+  String get bootLastRescue => 'Last rescue activation';
+
+  @override
+  String get bootLinux => 'Linux installation';
+
+  @override
+  String get bootNone => 'No boot configuration active.';
+
+  @override
+  String get bootOffConsequence => 'The next reset boots from the disks again.';
+
+  @override
+  String bootOffTitle(String config, String name) {
+    return 'Deactivate $config for $name?';
+  }
+
+  @override
+  String get bootOs => 'Operating system';
+
+  @override
+  String get bootPasswordNote =>
+      'Active at the next reset. Copy the password now; Falco does not store it.';
+
+  @override
+  String get bootRescue => 'Rescue system';
+
+  @override
+  String get bootVnc => 'VNC installation';
+
+  @override
+  String get bootWindows => 'Windows installation';
+
+  @override
+  String cancelAtDate(String date) {
+    return 'At a date (from $date)';
+  }
+
+  @override
+  String get cancelConsequence =>
+      'The server is cancelled at the chosen date. Its data is deleted then.';
+
+  @override
+  String get cancelDate => 'Cancellation date';
+
+  @override
+  String get cancelEarliest => 'Earliest date';
+
+  @override
+  String get cancelNow => 'Immediately';
+
+  @override
+  String get cancelReason => 'Reason (optional)';
+
+  @override
+  String get cancelReserve => 'Reserve location';
+
+  @override
+  String get cancelReserveHint => 'Keeps the rack location for a new server.';
+
+  @override
+  String cancelTitle(String name) {
+    return 'Cancel $name?';
+  }
+
+  @override
+  String get cancelWithdraw => 'Withdraw cancellation';
+
+  @override
+  String get cancelWithdrawConsequence =>
+      'The cancellation is withdrawn; the contract continues.';
+
+  @override
+  String cancelWithdrawTitle(String name) {
+    return 'Withdraw the cancellation of $name?';
+  }
+
+  @override
+  String get cancellation => 'Cancellation';
+
+  @override
+  String cancelledOn(String date) {
+    return 'cancelled for $date';
+  }
+
+  @override
+  String get failoverActive => 'Active on';
+
+  @override
+  String failoverActiveOn(String server) {
+    return 'Active on $server';
+  }
+
+  @override
+  String get failoverEmpty => 'No failover IPs.';
+
+  @override
+  String get failoverNoTargets => 'No other server to route to.';
+
+  @override
+  String get failoverOwner => 'Ordered with';
+
+  @override
+  String get failoverRoute => 'Route';
+
+  @override
+  String get failoverRouteConsequence =>
+      'Traffic to the address goes to the new server within seconds. The address must be configured there.';
+
+  @override
+  String failoverRouteTitle(String ip, String server) {
+    return 'Route $ip to $server?';
+  }
+
+  @override
+  String get failoverUnroute => 'Unroute';
+
+  @override
+  String get failoverUnrouteConsequence =>
+      'The address is routed nowhere; services on it become unreachable.';
+
+  @override
+  String failoverUnrouteTitle(String ip) {
+    return 'Unroute $ip?';
+  }
+
+  @override
+  String get failoverUnrouted => 'Not routed';
+
+  @override
+  String get fileTooLarge => 'The file is too large.';
+
+  @override
+  String get filterCancelled => 'Cancelled';
+
+  @override
+  String get firewallClear => 'Clear firewall';
+
+  @override
+  String get firewallClearConsequence =>
+      'All rules of the server firewall are removed.';
+
+  @override
+  String get firewallClearTitle => 'Clear the firewall?';
+
+  @override
+  String get firewallDisable => 'Disable';
+
+  @override
+  String get firewallEnable => 'Enable';
+
+  @override
+  String get firewallFilterIpv6 => 'Filter IPv6';
+
+  @override
+  String get firewallHetznerServices => 'Allow Hetzner services';
+
+  @override
+  String get firewallRules => 'Rules';
+
+  @override
+  String get firewallUnsaved => 'not applied yet';
+
+  @override
+  String get firewallUseTemplate => 'Apply template';
+
+  @override
+  String get installConsequence =>
+      'At the next reset the installation starts and deletes all data on the disks.';
+
+  @override
+  String installTitle(String name) {
+    return 'Reinstall $name?';
+  }
+
+  @override
+  String get keyBits => 'Bits';
+
+  @override
+  String get keyFromFile => 'From file';
+
+  @override
+  String get macOff => 'Remove MAC';
+
+  @override
+  String get macOffConsequence =>
+      'The address uses the MAC of the server again.';
+
+  @override
+  String macOffTitle(String ip) {
+    return 'Remove the separate MAC of $ip?';
+  }
+
+  @override
+  String get macOn => 'Separate MAC';
+
+  @override
+  String get macOnConsequence =>
+      'Robot creates a separate MAC address, e.g. for a virtual machine.';
+
+  @override
+  String macOnTitle(String ip) {
+    return 'Create a separate MAC for $ip?';
+  }
+
+  @override
+  String get macUnavailable => 'not possible';
+
+  @override
+  String get notCancelled => 'Not cancelled';
+
+  @override
+  String get rdnsCreate => 'Add reverse DNS';
+
+  @override
+  String get rdnsDefault => 'Default reverse DNS';
+
+  @override
+  String get rdnsDeleteConsequence =>
+      'The address answers with the Hetzner default again.';
+
+  @override
+  String rdnsDeleteTitle(String ip) {
+    return 'Delete the reverse DNS of $ip?';
+  }
+
+  @override
+  String get rdnsEmpty => 'No reverse DNS entries.';
+
+  @override
+  String get resetHw => 'Hardware reset';
+
+  @override
+  String get resetMan => 'Manual reset by support';
+
+  @override
+  String get resetManConsequence =>
+      'A technician resets the server by hand; this can take a while.';
+
+  @override
+  String get resetPower => 'Power button';
+
+  @override
+  String get resetPowerLong => 'Power button, long press';
+
+  @override
+  String get resetSw => 'Software reset (Ctrl+Alt+Del)';
+
+  @override
+  String get robotActivityEmpty => 'No Robot changes in this session yet.';
+
+  @override
+  String get robotBoot => 'Boot configuration';
+
+  @override
+  String get robotBroadcast => 'Broadcast';
+
+  @override
+  String get robotCancel => 'Cancel contract';
+
+  @override
+  String get robotDatacenter => 'Data center';
+
+  @override
+  String get robotDone => 'Action completed';
+
+  @override
+  String robotFailed(String reason) {
+    return 'Action failed: $reason';
+  }
+
+  @override
+  String get robotFailover => 'Failover';
+
+  @override
+  String get robotFirewall => 'Firewall';
+
+  @override
+  String get robotIp => 'IP address';
+
+  @override
+  String get robotIps => 'IPs';
+
+  @override
+  String get robotIpsEmpty => 'No single IPs.';
+
+  @override
+  String get robotIpv6Net => 'IPv6 net';
+
+  @override
+  String get robotKeyDeleteConsequence =>
+      'The key is deleted from Robot. Servers keep keys installed earlier.';
+
+  @override
+  String get robotKeysEmpty => 'No SSH keys in Robot yet.';
+
+  @override
+  String get robotLocked => 'Locked';
+
+  @override
+  String get robotMac => 'Separate MAC';
+
+  @override
+  String get robotNetmask => 'Netmask';
+
+  @override
+  String get robotNoAccess => 'This account has no Robot access.';
+
+  @override
+  String get robotNumber => 'Number';
+
+  @override
+  String robotPaidUntil(String date) {
+    return 'paid until $date';
+  }
+
+  @override
+  String get robotPaidUntilLabel => 'Paid until';
+
+  @override
+  String get robotProduct => 'Product';
+
+  @override
+  String get robotResetConsequence =>
+      'The server restarts; unsaved data is lost.';
+
+  @override
+  String get robotSectionDisabled =>
+      'Enable this section for the webservice user in Hetzner Robot.';
+
+  @override
+  String get robotServer => 'Dedicated server';
+
+  @override
+  String get robotServers => 'Servers';
+
+  @override
+  String get robotServersEmpty => 'No dedicated servers.';
+
+  @override
+  String get robotSubnet => 'Subnet';
+
+  @override
+  String get robotSubnets => 'Subnets';
+
+  @override
+  String get robotTemplate => 'Firewall template';
+
+  @override
+  String get robotTemplates => 'Firewall templates';
+
+  @override
+  String get robotTrafficQuota => 'Traffic included';
+
+  @override
+  String get robotVSwitch => 'vSwitch';
+
+  @override
+  String get robotVSwitches => 'vSwitches';
+
+  @override
+  String get robotWol => 'Wake on LAN';
+
+  @override
+  String get ruleAccept => 'accept';
+
+  @override
+  String get ruleAction => 'Action';
+
+  @override
+  String get ruleAny => 'any';
+
+  @override
+  String get ruleDestIp => 'Destination IP';
+
+  @override
+  String get ruleDestPort => 'Destination port';
+
+  @override
+  String get ruleDiscard => 'discard';
+
+  @override
+  String get ruleFrom => 'from';
+
+  @override
+  String get ruleInput => 'Incoming';
+
+  @override
+  String get ruleIpVersion => 'IP version';
+
+  @override
+  String get ruleOutput => 'Outgoing';
+
+  @override
+  String get ruleSourceIp => 'Source IP';
+
+  @override
+  String get ruleSourcePort => 'Source port';
+
+  @override
+  String get ruleTcpFlags => 'TCP flags';
+
+  @override
+  String get ruleTo => 'to';
+
+  @override
+  String get statusCancelled => 'cancelled';
+
+  @override
+  String get templateCreate => 'Create template';
+
+  @override
+  String get templateDefault => 'Default template';
+
+  @override
+  String get templateDeleteConsequence =>
+      'The template is deleted. Server firewalls keep their rules.';
+
+  @override
+  String get templatesEmpty => 'No firewall templates.';
+
+  @override
+  String get trafficDaily => 'Daily limit (MB)';
+
+  @override
+  String get trafficDay => 'Day';
+
+  @override
+  String get trafficHourly => 'Hourly limit (MB)';
+
+  @override
+  String get trafficIn => 'Incoming';
+
+  @override
+  String get trafficMonth => 'Traffic this month';
+
+  @override
+  String get trafficMonthType => 'Month';
+
+  @override
+  String get trafficMonthly => 'Monthly limit (GB)';
+
+  @override
+  String get trafficNone => 'No traffic data for this period.';
+
+  @override
+  String get trafficOut => 'Outgoing';
+
+  @override
+  String get trafficSum => 'Total';
+
+  @override
+  String get trafficTitle => 'Traffic';
+
+  @override
+  String get trafficWarnings => 'Traffic warnings';
+
+  @override
+  String get trafficWarningsOn => 'warnings on';
+
+  @override
+  String get trafficYear => 'Year';
+
+  @override
+  String get vlanHint => 'VLAN ID from 4000 to 4091';
+
+  @override
+  String get vswitchAddServer => 'Add server';
+
+  @override
+  String get vswitchCancelConsequence =>
+      'The vSwitch is cancelled at the chosen date; its servers lose the connection.';
+
+  @override
+  String get vswitchCreate => 'Create vSwitch';
+
+  @override
+  String get vswitchEmpty => 'No vSwitches yet.';
+
+  @override
+  String get vswitchNoServers => 'No servers in this vSwitch.';
+
+  @override
+  String get vswitchRemoveConsequence =>
+      'The server leaves the VLAN; its traffic there stops.';
+
+  @override
+  String vswitchRemoveTitle(String server, String vswitch) {
+    return 'Remove $server from $vswitch?';
+  }
+
+  @override
+  String get wolConsequence => 'A Wake on LAN packet is sent to the server.';
+
+  @override
+  String wolTitle(String name) {
+    return 'Wake $name?';
+  }
 }

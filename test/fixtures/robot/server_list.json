@@ -10,21 +10,34 @@
       "traffic": "5 TB",
       "status": "ready",
       "cancelled": false,
-      "paid_until": "2010-09-02"
+      "paid_until": "2010-09-02",
+      "ip": [
+        "123.123.123.123"
+      ],
+      "subnet": [
+        {
+          "ip": "2a01:4f8:111:4221::",
+          "mask": "64"
+        }
+      ]
     }
   },
   {
     "server": {
       "server_ip": "123.123.123.124",
-      "server_ipv6_net": "2a01:f48:111:4222::",
+      "server_ipv6_net": "2a01:f48:111:4221::",
       "server_number": 421,
-      "server_name": "",
+      "server_name": "server2",
       "product": "X5",
       "dc": "FSN1-DC10",
       "traffic": "2 TB",
       "status": "ready",
-      "cancelled": true,
-      "paid_until": "2010-06-11"
+      "cancelled": false,
+      "paid_until": "2010-06-11",
+      "ip": [
+        "123.123.123.124"
+      ],
+      "subnet": null
     }
   }
 ]

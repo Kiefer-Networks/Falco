@@ -37,6 +37,16 @@ List<RouteBase> get $appRoutes => [
   $boxSnapshotRoute,
   $subaccountRoute,
   $bucketRoute,
+  $robotServerRoute,
+  $robotFirewallRoute,
+  $robotFailoverRoute,
+  $robotVSwitchRoute,
+  $robotKeyRoute,
+  $robotAddressRoute,
+  $robotTemplateRoute,
+  $robotTrafficRoute,
+  $robotActivityRoute,
+  $robotCreateRoute,
 ];
 
 RouteBase get $homeRoute => GoRouteData.$route(
@@ -1051,6 +1061,355 @@ mixin $BucketRoute on GoRouteData {
   @override
   void replace(BuildContext context) => context.replace(location);
 }
+
+RouteBase get $robotServerRoute => GoRouteData.$route(
+  path: '/a/:accountId/robot/servers/:number',
+  hasOverriddenOnExit: false,
+  factory: $RobotServerRoute._fromState,
+);
+
+mixin $RobotServerRoute on GoRouteData {
+  static RobotServerRoute _fromState(GoRouterState state) => RobotServerRoute(
+    accountId: state.pathParameters['accountId']!,
+    number: int.parse(state.pathParameters['number']!),
+  );
+
+  RobotServerRoute get _self => this as RobotServerRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/robot/servers/${Uri.encodeComponent(_self.number.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $robotFirewallRoute => GoRouteData.$route(
+  path: '/a/:accountId/robot/servers/:number/firewall',
+  hasOverriddenOnExit: false,
+  factory: $RobotFirewallRoute._fromState,
+);
+
+mixin $RobotFirewallRoute on GoRouteData {
+  static RobotFirewallRoute _fromState(GoRouterState state) =>
+      RobotFirewallRoute(
+        accountId: state.pathParameters['accountId']!,
+        number: int.parse(state.pathParameters['number']!),
+      );
+
+  RobotFirewallRoute get _self => this as RobotFirewallRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/robot/servers/${Uri.encodeComponent(_self.number.toString())}/firewall',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $robotFailoverRoute => GoRouteData.$route(
+  path: '/a/:accountId/robot/failover/:ip',
+  hasOverriddenOnExit: false,
+  factory: $RobotFailoverRoute._fromState,
+);
+
+mixin $RobotFailoverRoute on GoRouteData {
+  static RobotFailoverRoute _fromState(GoRouterState state) =>
+      RobotFailoverRoute(
+        accountId: state.pathParameters['accountId']!,
+        ip: state.pathParameters['ip']!,
+      );
+
+  RobotFailoverRoute get _self => this as RobotFailoverRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/robot/failover/${Uri.encodeComponent(_self.ip)}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $robotVSwitchRoute => GoRouteData.$route(
+  path: '/a/:accountId/robot/vswitches/:id',
+  hasOverriddenOnExit: false,
+  factory: $RobotVSwitchRoute._fromState,
+);
+
+mixin $RobotVSwitchRoute on GoRouteData {
+  static RobotVSwitchRoute _fromState(GoRouterState state) => RobotVSwitchRoute(
+    accountId: state.pathParameters['accountId']!,
+    id: int.parse(state.pathParameters['id']!),
+  );
+
+  RobotVSwitchRoute get _self => this as RobotVSwitchRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/robot/vswitches/${Uri.encodeComponent(_self.id.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $robotKeyRoute => GoRouteData.$route(
+  path: '/a/:accountId/robot/keys/:fingerprint',
+  hasOverriddenOnExit: false,
+  factory: $RobotKeyRoute._fromState,
+);
+
+mixin $RobotKeyRoute on GoRouteData {
+  static RobotKeyRoute _fromState(GoRouterState state) => RobotKeyRoute(
+    accountId: state.pathParameters['accountId']!,
+    fingerprint: state.pathParameters['fingerprint']!,
+  );
+
+  RobotKeyRoute get _self => this as RobotKeyRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/robot/keys/${Uri.encodeComponent(_self.fingerprint)}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $robotAddressRoute => GoRouteData.$route(
+  path: '/a/:accountId/robot/addresses/:kind/:ip',
+  hasOverriddenOnExit: false,
+  factory: $RobotAddressRoute._fromState,
+);
+
+mixin $RobotAddressRoute on GoRouteData {
+  static RobotAddressRoute _fromState(GoRouterState state) => RobotAddressRoute(
+    accountId: state.pathParameters['accountId']!,
+    kind: _$AddressKindEnumMap._$fromName(state.pathParameters['kind']!)!,
+    ip: state.pathParameters['ip']!,
+  );
+
+  RobotAddressRoute get _self => this as RobotAddressRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/robot/addresses/${Uri.encodeComponent(_$AddressKindEnumMap[_self.kind]!)}/${Uri.encodeComponent(_self.ip)}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+const _$AddressKindEnumMap = {
+  AddressKind.ip: 'ip',
+  AddressKind.subnet: 'subnet',
+};
+
+RouteBase get $robotTemplateRoute => GoRouteData.$route(
+  path: '/a/:accountId/robot/templates/:id',
+  hasOverriddenOnExit: false,
+  factory: $RobotTemplateRoute._fromState,
+);
+
+mixin $RobotTemplateRoute on GoRouteData {
+  static RobotTemplateRoute _fromState(GoRouterState state) =>
+      RobotTemplateRoute(
+        accountId: state.pathParameters['accountId']!,
+        id: int.parse(state.pathParameters['id']!),
+      );
+
+  RobotTemplateRoute get _self => this as RobotTemplateRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/robot/templates/${Uri.encodeComponent(_self.id.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $robotTrafficRoute => GoRouteData.$route(
+  path: '/a/:accountId/robot/traffic',
+  hasOverriddenOnExit: false,
+  factory: $RobotTrafficRoute._fromState,
+);
+
+mixin $RobotTrafficRoute on GoRouteData {
+  static RobotTrafficRoute _fromState(GoRouterState state) => RobotTrafficRoute(
+    accountId: state.pathParameters['accountId']!,
+    ip: state.uri.queryParameters['ip'],
+    subnet: state.uri.queryParameters['subnet'],
+  );
+
+  RobotTrafficRoute get _self => this as RobotTrafficRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/robot/traffic',
+    queryParams: {
+      if (_self.ip != null) 'ip': _self.ip,
+      if (_self.subnet != null) 'subnet': _self.subnet,
+    },
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $robotActivityRoute => GoRouteData.$route(
+  path: '/a/:accountId/robot/activity',
+  hasOverriddenOnExit: false,
+  factory: $RobotActivityRoute._fromState,
+);
+
+mixin $RobotActivityRoute on GoRouteData {
+  static RobotActivityRoute _fromState(GoRouterState state) =>
+      RobotActivityRoute(accountId: state.pathParameters['accountId']!);
+
+  RobotActivityRoute get _self => this as RobotActivityRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/robot/activity',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $robotCreateRoute => GoRouteData.$route(
+  path: '/a/:accountId/robot/create/:kind',
+  hasOverriddenOnExit: false,
+  factory: $RobotCreateRoute._fromState,
+);
+
+mixin $RobotCreateRoute on GoRouteData {
+  static RobotCreateRoute _fromState(GoRouterState state) => RobotCreateRoute(
+    accountId: state.pathParameters['accountId']!,
+    kind: _$RobotCreateKindEnumMap._$fromName(state.pathParameters['kind']!)!,
+  );
+
+  RobotCreateRoute get _self => this as RobotCreateRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/robot/create/${Uri.encodeComponent(_$RobotCreateKindEnumMap[_self.kind]!)}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+const _$RobotCreateKindEnumMap = {
+  RobotCreateKind.vswitch: 'vswitch',
+  RobotCreateKind.rdns: 'rdns',
+  RobotCreateKind.key: 'key',
+  RobotCreateKind.template: 'template',
+};
 
 // **************************************************************************
 // RiverpodGenerator

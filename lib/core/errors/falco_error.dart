@@ -150,6 +150,11 @@ FalcoError fromResponse(int status, Object? body, [String? retryAfter]) {
   }
   return switch (status) {
     401 => Unauthorized(code: code),
+    // Robot throttles with 403; a Retry-After marks it (ROB-003).
+    403 when retryDuration != null => RateLimited(
+      retryAfter: retryDuration,
+      code: code,
+    ),
     403 => Forbidden(code: code),
     404 => NotFound(code: code),
     409 || 423 => Conflict(code: code),

@@ -72,7 +72,10 @@ enum ResourceStatus {
   done(StatusTone.running),
 
   /// A Hetzner action that failed.
-  failed(StatusTone.error);
+  failed(StatusTone.error),
+
+  /// Cancelled, ends at a date (Robot servers, vSwitches).
+  cancelled(StatusTone.error);
 
   new(this.tone);
 
@@ -99,6 +102,7 @@ enum ResourceStatus {
     inProgress => l10n.statusInProgress,
     done => l10n.statusDone,
     failed => l10n.statusFailed,
+    cancelled => l10n.statusCancelled,
   };
 
   /// Token color for this status.

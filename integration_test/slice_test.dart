@@ -25,13 +25,7 @@ void main() {
   testWidgets('ONB-006 ONB-028 SET-006 account with two projects, switch, '
       'servers, reboot, activity', (tester) async {
     final cloud = FakeCloud();
-    // English whatever the device language is.
-    await pumpFalco(
-      tester,
-      cloud,
-      accounts: const [],
-      prefs: const {'language': 'en'},
-    );
+    await pumpFalco(tester, cloud, accounts: const []);
 
     // Welcome pages, then the account wizard with two projects.
     expect(find.text('Choose your language'), findsOneWidget);

@@ -4,6 +4,7 @@
 /// restore need no hidden state (QRS-003).
 library;
 
+import 'package:falco/api/robot/robot_client.dart';
 import 'package:falco/app/scope_home.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/settings/settings.dart';
@@ -20,6 +21,8 @@ import 'package:falco/features/network/load_balancer_pages.dart';
 import 'package:falco/features/network/network_pages.dart';
 import 'package:falco/features/onboarding/welcome_page.dart';
 import 'package:falco/features/placement_groups/placement_group_pages.dart';
+import 'package:falco/features/robot/robot_pages.dart';
+import 'package:falco/features/robot/robot_server_page.dart';
 import 'package:falco/features/servers/create_server_page.dart';
 import 'package:falco/features/servers/server_detail_page.dart';
 import 'package:falco/features/settings/settings_page.dart';
@@ -661,4 +664,142 @@ class BucketRoute extends GoRouteData with $BucketRoute {
     bucket: bucket,
     prefix: prefix,
   );
+}
+
+/// One dedicated server.
+@TypedGoRoute<RobotServerRoute>(path: '/a/:accountId/robot/servers/:number')
+class RobotServerRoute extends GoRouteData with $RobotServerRoute {
+  const new({required this.accountId, required this.number});
+
+  final String accountId;
+  final int number;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RobotServerPage(accountId: accountId, number: number);
+}
+
+/// The firewall of a dedicated server.
+@TypedGoRoute<RobotFirewallRoute>(
+  path: '/a/:accountId/robot/servers/:number/firewall',
+)
+class RobotFirewallRoute extends GoRouteData with $RobotFirewallRoute {
+  const new({required this.accountId, required this.number});
+
+  final String accountId;
+  final int number;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RobotFirewallPage(accountId: accountId, number: number);
+}
+
+/// One failover IP.
+@TypedGoRoute<RobotFailoverRoute>(path: '/a/:accountId/robot/failover/:ip')
+class RobotFailoverRoute extends GoRouteData with $RobotFailoverRoute {
+  const new({required this.accountId, required this.ip});
+
+  final String accountId;
+  final String ip;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RobotFailoverPage(accountId: accountId, ip: ip);
+}
+
+/// One vSwitch.
+@TypedGoRoute<RobotVSwitchRoute>(path: '/a/:accountId/robot/vswitches/:id')
+class RobotVSwitchRoute extends GoRouteData with $RobotVSwitchRoute {
+  const new({required this.accountId, required this.id});
+
+  final String accountId;
+  final int id;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RobotVSwitchPage(accountId: accountId, id: id);
+}
+
+/// One Robot SSH key.
+@TypedGoRoute<RobotKeyRoute>(path: '/a/:accountId/robot/keys/:fingerprint')
+class RobotKeyRoute extends GoRouteData with $RobotKeyRoute {
+  const new({required this.accountId, required this.fingerprint});
+
+  final String accountId;
+  final String fingerprint;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RobotKeyPage(accountId: accountId, fingerprint: fingerprint);
+}
+
+/// One single IP or subnet.
+@TypedGoRoute<RobotAddressRoute>(
+  path: '/a/:accountId/robot/addresses/:kind/:ip',
+)
+class RobotAddressRoute extends GoRouteData with $RobotAddressRoute {
+  const new({required this.accountId, required this.kind, required this.ip});
+
+  final String accountId;
+  final AddressKind kind;
+  final String ip;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RobotAddressPage(accountId: accountId, kind: kind, ip: ip);
+}
+
+/// One firewall template.
+@TypedGoRoute<RobotTemplateRoute>(path: '/a/:accountId/robot/templates/:id')
+class RobotTemplateRoute extends GoRouteData with $RobotTemplateRoute {
+  const new({required this.accountId, required this.id});
+
+  final String accountId;
+  final int id;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RobotTemplatePage(accountId: accountId, id: id);
+}
+
+/// Traffic of `?ip=` or `?subnet=`.
+@TypedGoRoute<RobotTrafficRoute>(path: '/a/:accountId/robot/traffic')
+class RobotTrafficRoute extends GoRouteData with $RobotTrafficRoute {
+  const new({required this.accountId, this.ip, this.subnet});
+
+  final String accountId;
+  final String? ip;
+  final String? subnet;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RobotTrafficPage(accountId: accountId, ip: ip, subnet: subnet);
+}
+
+/// Robot changes of this session.
+@TypedGoRoute<RobotActivityRoute>(path: '/a/:accountId/robot/activity')
+class RobotActivityRoute extends GoRouteData with $RobotActivityRoute {
+  const new({required this.accountId});
+
+  final String accountId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RobotActivityPage(accountId: accountId);
+}
+
+/// What a Robot create wizard creates.
+enum RobotCreateKind { vswitch, rdns, key, template }
+
+/// Create wizard of [kind] in Robot.
+@TypedGoRoute<RobotCreateRoute>(path: '/a/:accountId/robot/create/:kind')
+class RobotCreateRoute extends GoRouteData with $RobotCreateRoute {
+  const new({required this.accountId, required this.kind});
+
+  final String accountId;
+  final RobotCreateKind kind;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      RobotCreatePage(accountId: accountId, kind: kind);
 }

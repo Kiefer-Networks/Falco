@@ -4,6 +4,7 @@ import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/compute/compute_page.dart';
 import 'package:falco/features/network/network_page.dart';
+import 'package:falco/features/robot/robot_page.dart';
 import 'package:falco/features/storage/storage_page.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/ui.dart';
@@ -74,6 +75,22 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
     }
   }
 
+  /// Robot is its own scope: its tab opens the account's Robot, the
+  /// others its first project, when there is one.
+  void _openArea(int area, Account? account) {
+    final robot = widget.scope is RobotScope;
+    if (area == 3 && !robot && (account?.hasRobot ?? false)) {
+      return RobotRoute(accountId: account!.id).go(context);
+    }
+    if (area < 3 && robot && (account?.projects.isNotEmpty ?? false)) {
+      return ProjectRoute(
+        accountId: account!.id,
+        projectId: account.projects.first.id,
+      ).go(context);
+    }
+    setState(() => _area = area);
+  }
+
   bool _exists(Account? account) => switch ((widget.scope, account)) {
     (_, null) => false,
     (ProjectScope(:final projectId), final Account a) => a.projects.any(
@@ -124,6 +141,14 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
               projectId: projectId,
             ).push<void>(context),
           ),
+        if (scope is RobotScope)
+          IconButton(
+            tooltip: l10n.activityTitle,
+            icon: const Icon(Icons.history),
+            onPressed: () =>
+                RobotActivityRoute(accountId: scope.accountId)
+                    .push<void>(context),
+          ),
       ],
       moreMenu: kDebugMode
           ? MoreMenu(
@@ -138,7 +163,7 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
           : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _area,
-        onDestinationSelected: (i) => setState(() => _area = i),
+        onDestinationSelected: (i) => _openArea(i, account),
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.dns_outlined),
@@ -158,11 +183,17 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
           ),
         ],
       ),
-      // Robot follows in Phase 7.
       body: switch (_area) {
         0 when scope is! RobotScope => ComputePage(scope: scope),
         1 when scope is! RobotScope => NetworkPage(scope: scope),
         2 when scope is! RobotScope => StoragePage(scope: scope),
+        3 when scope is RobotScope => RobotPage(accountId: scope.accountId),
+        3 => EmptyHint(
+          message: l10n.robotNoAccess,
+          actionLabel: l10n.robotAdd,
+          onAction: () =>
+              AccountRoute(accountId: scope.accountId).push<void>(context),
+        ),
         _ => EmptyHint(message: l10n.scopeEmpty),
       },
     );

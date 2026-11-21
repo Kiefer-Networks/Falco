@@ -57,7 +57,8 @@ void main() {
     seedSecrets(const [Account(id: 'a1', name: 'Acme', hasRobot: true)]);
     await tester.pumpWidget(await app([true]));
     await tester.pumpAndSettle();
-    expect(find.text('Nothing to show in this scope yet.'), findsOneWidget);
+    // A Robot only account opens its Robot area.
+    expect(find.widgetWithText(Tab, 'Servers'), findsOneWidget);
     expect(find.text('Robot'), findsWidgets);
   });
 

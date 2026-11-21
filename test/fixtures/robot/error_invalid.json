@@ -1,0 +1,11 @@
+{
+  "error": {
+    "status": 400,
+    "code": "INVALID_INPUT",
+    "message": "invalid input",
+    "missing": null,
+    "invalid": [
+      "vlan"
+    ]
+  }
+}

@@ -61,8 +61,7 @@ Future<FakeCloud> openStorage(
 }) async {
   final c = cloud ?? storageCloud();
   setSurface(tester);
-  // English whatever the device language is.
-  await pumpFalco(tester, c, s3: s3, prefs: const {'language': 'en'});
+  await pumpFalco(tester, c, s3: s3);
   await tester.tap(find.text('Storage'));
   await tester.pumpAndSettle();
   await tester.tap(find.widgetWithText(Tab, tab));

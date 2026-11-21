@@ -11,6 +11,10 @@
 // Overlap: a pin that is no longer served is kept and marked `retired`; it
 // is dropped 90 days later, so released app versions keep working across a
 // CA change. An unchanged chain produces no diff.
+//
+// Background transfers to Object Storage run in the platform HTTP stacks,
+// so the root pins of those hosts also go into the Android network
+// security config and the iOS NSPinnedDomains.
 import 'dart:convert';
 import 'dart:io';
 
@@ -27,6 +31,8 @@ const hosts = [
 const retention = Duration(days: 90);
 const statePath = 'tool/pins.json';
 const outputPath = 'lib/core/pins/pins.g.dart';
+const androidPath = 'android/app/src/main/res/xml/network_security_config.xml';
+const iosPath = 'ios/Runner/Info.plist';
 
 Future<void> main(List<String> args) async {
   String? option(String name) {
@@ -106,6 +112,70 @@ Future<void> main(List<String> args) async {
     '${const JsonEncoder.withIndent('  ').convert(next)}\n',
   );
   File(outputPath).writeAsStringSync(_generate(next));
+  final pins = nativePins(next);
+  for (final (path, write) in [
+    (androidPath, androidPins),
+    (iosPath, iosPins),
+  ]) {
+    final file = File(path);
+    file.writeAsStringSync(write(file.readAsStringSync(), pins));
+  }
+}
+
+/// Root pins of the Object Storage hosts, retired ones included, sorted.
+List<String> nativePins(Map<String, Object?> state) => {
+  for (final host in hosts)
+    if (host.endsWith('.your-objectstorage.com'))
+      for (final MapEntry(:key, :value)
+          in (state[host]! as Map)
+              .cast<String, Map<Object?, Object?>>()
+              .entries)
+        if (value['kind'] == 'root') key,
+}.toList()..sort();
+
+/// [xml] with its pin-set holding [pins].
+String androidPins(String xml, List<String> pins) => _replaceOnce(
+  xml,
+  RegExp(r'<pin-set>[\s\S]*?</pin-set>'),
+  [
+    '<pin-set>',
+    for (final p in pins) '            <pin digest="SHA-256">$p</pin>',
+    '        </pin-set>',
+  ].join('\n'),
+);
+
+/// [plist] with its NSPinnedCAIdentities holding [pins].
+String iosPins(String plist, List<String> pins) => _replaceOnce(
+  plist,
+  RegExp(r'(<key>NSPinnedCAIdentities</key>\s*)<array>[\s\S]*?</array>'),
+  [
+    '<array>',
+    for (final p in pins) ...[
+      '${_tabs(5)}<dict>',
+      '${_tabs(6)}<key>SPKI-SHA256-BASE64</key>',
+      '${_tabs(6)}<string>$p</string>',
+      '${_tabs(5)}</dict>',
+    ],
+    '${_tabs(4)}</array>',
+  ].join('\n'),
+  keepGroup: true,
+);
+
+String _tabs(int n) => '\t' * n;
+
+String _replaceOnce(
+  String text,
+  RegExp pattern,
+  String replacement, {
+  bool keepGroup = false,
+}) {
+  if (pattern.allMatches(text).length != 1) {
+    throw StateError('Expected one pin block for $pattern');
+  }
+  return text.replaceFirstMapped(
+    pattern,
+    (m) => keepGroup ? '${m[1]}$replacement' : replacement,
+  );
 }
 
 String _generate(Map<String, Object?> state) {
