@@ -509,6 +509,9 @@ void main() {
       expect(validPort('9000-8000'), isFalse);
       expect(validPort('0'), isFalse);
       expect(validPort('70000'), isFalse);
+      expect(validPort('any'), isTrue);
+      expect(validPort(' ANY '), isTrue);
+      expect(validPort('anything'), isFalse);
       expect(validIps('0.0.0.0/0, ::/0'), isTrue);
       expect(validIps('2001:db8::/32\n10.0.0.0/8'), isTrue);
       expect(validIps(''), isFalse);

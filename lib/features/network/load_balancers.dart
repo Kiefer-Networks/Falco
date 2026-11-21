@@ -138,14 +138,18 @@ class LoadBalancer {
 
   /// Healthy when every target answers on every service.
   ResourceStatus get status {
-    final states = [
-      for (final t in targets)
-        for (final h in jsonList(t['health_status'])) h['status'],
-    ];
+    final states = [for (final t in targets) ...targetHealth(t)];
     if (states.contains('unhealthy')) return ResourceStatus.error;
     return ResourceStatus.running;
   }
 }
+
+/// Health states of [t] per service; a label selector's are those of
+/// the servers it matches.
+List<String> targetHealth(LbTarget t) => [
+  for (final h in jsonList(t['health_status'])) '${h['status']}',
+  for (final n in jsonList(t['targets'])) ...targetHealth(n),
+];
 
 /// All load balancers of [scope] (NET-056).
 @riverpod
@@ -298,7 +302,11 @@ Json targetKey(LbTarget target) => {
     'label_selector' => 'label_selector',
     _ => 'ip',
   }: switch (target['type']) {
-    'server' => {'id': json(target['server'])['id']},
+    // Without the IP the API removes the target on the primary IPv4.
+    'server' => {
+      'id': json(target['server'])['id'],
+      if (target['use_private_ip'] != true) 'ip': ?json(target['server'])['ip'],
+    },
     'label_selector' => {
       'selector': json(target['label_selector'])['selector'],
     },

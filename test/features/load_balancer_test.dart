@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/features/network/certificates.dart';
 import 'package:falco/features/network/load_balancers.dart';
+import 'package:falco/ui/ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -76,7 +77,7 @@ void main() {
         300,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('Server · healthy'), findsOneWidget);
+      expect(find.text('Server · 203.0.113.1 · healthy'), findsOneWidget);
       expect(
         find.text('Label selector · Route via private network'),
         findsOneWidget,
@@ -451,6 +452,30 @@ void main() {
           'server': {'id': 3},
         },
       );
+    });
+
+    test('NET-067 removing a server target names its IP', () {
+      expect(targetKey(serverTargetJson(3)), {
+        'type': 'server',
+        'server': {'id': 3, 'ip': '203.0.113.3'},
+      });
+    });
+
+    test('NET-063 a selector is unhealthy when a matched server is', () {
+      final selector = {
+        'type': 'label_selector',
+        'label_selector': {'selector': 'role=web'},
+        'targets': [
+          serverTargetJson(1),
+          serverTargetJson(2, health: 'unhealthy'),
+        ],
+      };
+      expect(targetHealth(selector), ['healthy', 'unhealthy']);
+      final lb = LoadBalancer.fromJson(
+        loadBalancerJson(id: 1, name: 'front', targets: [selector]),
+        'p1',
+      );
+      expect(lb.status, ResourceStatus.error);
     });
   });
 

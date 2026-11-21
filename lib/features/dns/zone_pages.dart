@@ -29,9 +29,11 @@ Nameserver? parseNameserver(String text) {
       RegExp(r'^([^:\s]+):(\d+)$').firstMatch(t);
   final (address, port) = m == null
       ? (t, 53)
-      : (m.group(1)!, int.parse(m.group(2)!));
-  if (port < 1 || port > 65535 || address.contains(' ')) return null;
-  return (address: address, port: port);
+      : (m.group(1)!, int.tryParse(m.group(2)!));
+  if (port == null || port < 1 || port > 65535 || address.contains(' ')) {
+    return null;
+  }
+  return (address: address, port: port, tsigKey: null, tsigAlgorithm: null);
 }
 
 /// Nameservers of [text], one per line or comma separated; null when one
@@ -157,18 +159,15 @@ Future<bool> showRecordSheet(
         labels: parseLabels(v['labels'] ?? '') ?? const {},
       );
       final known = existing.where((e) => e.key == set.key).firstOrNull;
-      await startTracked(
-        ref,
-        scope,
-        (api) => known == null
-            ? createRrset(api, zone.id, set)
-            : changeRrset(api, zone.id, known, AddRecords(set.records)),
-      );
+      final api = ref.read(cloudApiProvider(scope.projectId));
+      final tracker = ref.read(actionTrackerProvider(scope));
+      final id = await (known == null
+          ? createRrset(api, zone.id, set)
+          : changeRrset(api, zone.id, known, AddRecords(set.records)));
+      tracker.track(id);
       if (known != null && set.ttl != null && set.ttl != known.ttl) {
-        await startTracked(
-          ref,
-          scope,
-          (api) => changeRrset(api, zone.id, known, ChangeRRSetTtl(set.ttl)),
+        tracker.track(
+          await changeRrset(api, zone.id, known, ChangeRRSetTtl(set.ttl)),
         );
       }
     },
@@ -264,21 +263,16 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
       onSave: (v) async {
         final ttl = int.parse(v['ttl']!.trim());
         final labels = parseLabels(v['labels'] ?? '')!;
+        final api = ref.read(cloudApiProvider(_scope.projectId));
+        final tracker = ref.read(actionTrackerProvider(_scope));
+        final container = ProviderScope.containerOf(context, listen: false);
         if (ttl != z.ttl) {
-          await startTracked(
-            ref,
-            _scope,
-            (api) => changeZone(api, z.id, ChangeZoneTtl(ttl)),
-          );
+          tracker.track(await changeZone(api, z.id, ChangeZoneTtl(ttl)));
         }
         if (labels.toString() != z.labels.toString()) {
-          await updateZone(
-            ref.read(cloudApiProvider(_scope.projectId)),
-            z.id,
-            labels,
-          );
+          await updateZone(api, z.id, labels);
         }
-        refreshResource(ref.invalidate, _scope, CloudType.zone, z.id);
+        refreshResource(container.invalidate, _scope, CloudType.zone, z.id);
       },
     );
   }
@@ -295,14 +289,35 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
           initial: current?.address ?? '',
         ),
         FieldSpec('port', l10n.fieldPort, initial: '${current?.port ?? 53}'),
+        FieldSpec(
+          'tsig_algorithm',
+          l10n.fieldTsigAlgorithm,
+          initial: current?.tsigAlgorithm ?? '',
+          options: {'': l10n.tsigNone, for (final a in tsigAlgorithms) a: a},
+        ),
+        FieldSpec(
+          'tsig_key',
+          l10n.fieldTsigKey,
+          secret: true,
+          helper: current?.tsigKey == null ? null : l10n.keepIfEmpty,
+        ),
       ],
       valid: (v) =>
           (v['address'] ?? '').trim().isNotEmpty &&
-          validNameserverPort(v['port']),
+          validNameserverPort(v['port']) &&
+          ((v['tsig_algorithm'] ?? '').isEmpty ||
+              (v['tsig_key'] ?? '').trim().isNotEmpty ||
+              current?.tsigKey != null),
       onSave: (v) {
+        final algorithm = v['tsig_algorithm'] ?? '';
+        final key = (v['tsig_key'] ?? '').trim();
         final next = (
           address: v['address']!.trim(),
           port: int.parse(v['port']!.trim()),
+          tsigAlgorithm: algorithm.isEmpty ? null : algorithm,
+          tsigKey: algorithm.isEmpty
+              ? null
+              : (key.isEmpty ? current?.tsigKey : key),
         );
         return startTracked(
           ref,
@@ -322,16 +337,24 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
   }
 
   /// Bulk edit of the selection: a new value and/or TTL, empty keeps
-  /// (DNS-013); reports success or the number that failed (DNS-014).
+  /// (DNS-013); a new value only when all share one type. Confirms with
+  /// the affected RRSets, then reports success or the number that failed
+  /// (DNS-014).
   Future<void> _bulkEdit(Zone z, List<RRSet> sets) async {
     final l10n = AppLocalizations.of(context);
+    final oneType = sets.map((s) => s.type).toSet().length == 1;
     Map<String, String>? input;
     await FormSheet.show(
       context,
       title: l10n.recordsBulkEdit(sets.length),
       fields: (_) => [
-        FieldSpec('value', l10n.fieldNewValue, helper: l10n.keepIfEmpty),
-        FieldSpec('ttl', l10n.fieldTtl, helper: l10n.keepIfEmpty),
+        if (oneType)
+          FieldSpec('value', l10n.fieldNewValue, helper: l10n.keepIfEmpty),
+        FieldSpec(
+          'ttl',
+          l10n.fieldTtl,
+          helper: oneType ? l10n.keepIfEmpty : l10n.recordsBulkTtlOnly,
+        ),
       ],
       valid: (v) =>
           ((v['value'] ?? '').trim().isNotEmpty ||
@@ -341,10 +364,31 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
     );
     final v = input;
     if (v == null || !mounted) return;
-    final api = ref.read(cloudApiProvider(_scope.projectId));
-    final tracker = ref.read(actionTrackerProvider(_scope));
     final value = (v['value'] ?? '').trim();
     final ttl = int.tryParse(v['ttl']?.trim() ?? '');
+    final ok = await ConfirmSheet.show(
+      context,
+      title: l10n.recordsBulkEdit(sets.length),
+      consequence: value.isEmpty
+          ? l10n.recordsBulkTtlConsequence
+          : l10n.recordsBulkValueConsequence,
+      confirmLabel: l10n.commonSave,
+      resourceName: z.name,
+      facts: [
+        ConfirmFact(
+          l10n.sectionRecords,
+          sets.map((s) => '${s.name} ${s.type}').join('\n'),
+          mono: true,
+        ),
+        if (value.isNotEmpty) ConfirmFact(l10n.fieldNewValue, value),
+        if (ttl != null) ConfirmFact(l10n.fieldTtl, l10n.ttlValue(ttl)),
+      ],
+      destructive: value.isNotEmpty,
+    );
+    if (!ok || !mounted) return;
+    final api = ref.read(cloudApiProvider(_scope.projectId));
+    final tracker = ref.read(actionTrackerProvider(_scope));
+    final container = ProviderScope.containerOf(context, listen: false);
     var failed = 0;
     for (final set in sets) {
       try {
@@ -367,9 +411,9 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
         failed++;
       }
     }
+    refreshResource(container.invalidate, _scope, CloudType.zone, z.id);
     if (!mounted) return;
     setState(() => _selected = null);
-    refreshResource(ref.invalidate, _scope, CloudType.zone, z.id);
     FalcoScaffold.showSnack(
       context,
       failed == 0 ? l10n.recordsUpdated : l10n.recordsFailed(failed),
@@ -390,7 +434,9 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
       );
     }
     final t = (scope: _scope, type: CloudType.zone, id: z.id, name: z.name);
-    final sets = ref.watch(rrsetsProvider(_scope, z.id)).value ?? const [];
+    final setsProvider = rrsetsProvider(_scope, z.id);
+    final setsAsync = ref.watch(setsProvider);
+    final sets = setsAsync.value ?? const <RRSet>[];
     final progress = ref
         .watch(trackedActionProvider(_scope, CloudType.zone, z.id))
         .value;
@@ -410,12 +456,16 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
             : (z.protectDelete ? l10n.protected : null),
         name: z.name,
         ids: [l10n.ttlValue(z.ttl), ...z.nameservers],
-        onRefresh: () => refreshQuietly(ref, provider.future),
+        onRefresh: () => Future.wait([
+          refreshQuietly(ref, provider.future),
+          refreshQuietly(ref, setsProvider.future),
+        ]),
         actions: [
           DetailAction(
             icon: Icons.add,
             label: l10n.recordAdd,
-            onTap: busy || z.secondary
+            // Create or add needs the loaded RRSets (DNS-007).
+            onTap: busy || z.secondary || !setsAsync.hasValue
                 ? null
                 : () => showRecordSheet(context, ref, _scope, z, sets),
           ),
@@ -496,6 +546,7 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
                 for (final p in z.primaries)
                   EntryRow(
                     title: _ns(p),
+                    subtitle: p.tsigAlgorithm,
                     onTap: busy ? null : () => _primary(z, p),
                     removeLabel: l10n.actionRemove,
                     onRemove: busy
@@ -533,7 +584,10 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
                       Text(l10n.selectedCount(selected.length)),
                       TextButton(
                         onPressed: () => setState(
-                          () => _selected = {for (final s in sets) s.key},
+                          () => _selected = {
+                            for (final s in sets)
+                              if (bulkSelectable(s)) s.key,
+                          },
                         ),
                         child: Text(l10n.selectAll),
                       ),
@@ -549,7 +603,20 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
                       ),
                     ],
                   ),
-                if (sets.isEmpty) Text(l10n.recordsEmpty),
+                if (setsAsync.hasError && setsAsync.hasValue)
+                  ErrorBanner(
+                    message: errorText(toFalcoError(setsAsync.error!), l10n),
+                    onRetry: () => ref.invalidate(setsProvider),
+                  )
+                else if (setsAsync.hasError)
+                  ErrorCard(
+                    message: errorText(toFalcoError(setsAsync.error!), l10n),
+                    onRetry: () => ref.invalidate(setsProvider),
+                  )
+                else if (!setsAsync.hasValue)
+                  const LinearProgressIndicator()
+                else if (sets.isEmpty)
+                  Text(l10n.recordsEmpty),
                 for (final s in sets)
                   if (selected != null)
                     CheckboxListTile(
@@ -616,6 +683,11 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
     );
   }
 }
+
+/// Whether "Select all" takes [s]: not the SOA and not the apex NS,
+/// which Hetzner manages (DNS-012).
+bool bulkSelectable(RRSet s) =>
+    s.type != 'SOA' && !(s.type == 'NS' && s.name == '@');
 
 /// A nameserver port, 1 to 65535 (DNS-018).
 bool validNameserverPort(String? text) {
@@ -742,17 +814,17 @@ class RRSetDetailPage extends ConsumerWidget {
                     onSave: (v) async {
                       final ttl = int.tryParse(v['ttl']?.trim() ?? '');
                       final labels = parseLabels(v['labels'] ?? '')!;
+                      final api = ref.read(cloudApiProvider(scope.projectId));
+                      final container = ProviderScope.containerOf(
+                        context,
+                        listen: false,
+                      );
                       if (ttl != s.ttl) await change(ChangeRRSetTtl(ttl));
                       if (labels.toString() != s.labels.toString()) {
-                        await updateRrset(
-                          ref.read(cloudApiProvider(scope.projectId)),
-                          zoneId,
-                          s,
-                          labels,
-                        );
+                        await updateRrset(api, zoneId, s, labels);
                       }
                       refreshResource(
-                        ref.invalidate,
+                        container.invalidate,
                         scope,
                         CloudType.zone,
                         zoneId,
@@ -891,6 +963,7 @@ class _CreateZonePageState extends ConsumerState<CreateZonePage> {
     setState(() => _creating = true);
     final l10n = AppLocalizations.of(context);
     final name = _values['name']!.trim();
+    final tracker = ref.read(actionTrackerProvider(scope));
     final ok = await runChange(
       context,
       ref,
@@ -904,7 +977,7 @@ class _CreateZonePageState extends ConsumerState<CreateZonePage> {
           primaries: _primaries ?? const [],
           labels: parseLabels(_values['labels'] ?? '') ?? const {},
         );
-        ref.read(actionTrackerProvider(scope)).track(r.action);
+        tracker.track(r.action);
       },
       done: l10n.createdMessage(name),
     );

@@ -120,7 +120,9 @@ bool validRule(Map<String, String> v) =>
 FirewallRule ruleOf(Map<String, String> v) => FirewallRule(
   inbound: (v['direction'] ?? 'in') == 'in',
   protocol: v['protocol'] ?? 'tcp',
-  port: hasPort(v['protocol'] ?? 'tcp') ? v['port']?.trim() : null,
+  port: hasPort(v['protocol'] ?? 'tcp')
+      ? v['port']?.trim().toLowerCase()
+      : null,
   ips: splitIps(_ipsOf(v)),
   description: v['description']?.trim(),
 );
@@ -197,9 +199,12 @@ class FirewallDetailPage extends ConsumerWidget {
     // Rules and targets change by actions per applied server; the
     // firewall itself refreshes at once.
     Future<void> track(Future<List<int>> Function(cloud.Server api) run) async {
-      final ids = await run(ref.read(cloudApiProvider(scope.projectId)));
-      ids.forEach(ref.read(actionTrackerProvider(scope)).track);
-      refreshResource(ref.invalidate, scope, CloudType.firewall, f.id);
+      final api = ref.read(cloudApiProvider(scope.projectId));
+      final tracker = ref.read(actionTrackerProvider(scope));
+      final container = ProviderScope.containerOf(context, listen: false);
+      final ids = await run(api);
+      ids.forEach(tracker.track);
+      refreshResource(container.invalidate, scope, CloudType.firewall, f.id);
     }
 
     Future<void> setAll(List<FirewallRule> rules) =>
@@ -423,6 +428,7 @@ class _CreateFirewallPageState extends ConsumerState<CreateFirewallPage> {
     final l10n = AppLocalizations.of(context);
     final name = _values['name']!.trim();
     final selector = (_values['selector'] ?? '').trim();
+    final tracker = ref.read(actionTrackerProvider(scope));
     final ok = await runChange(
       context,
       ref,
@@ -438,7 +444,7 @@ class _CreateFirewallPageState extends ConsumerState<CreateFirewallPage> {
           ],
           labels: parseLabels(_values['labels'] ?? '') ?? const {},
         );
-        r.actions.forEach(ref.read(actionTrackerProvider(scope)).track);
+        r.actions.forEach(tracker.track);
       },
       done: l10n.createdMessage(name),
     );

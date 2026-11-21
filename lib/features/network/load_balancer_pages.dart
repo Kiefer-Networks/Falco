@@ -264,15 +264,14 @@ String targetTitle(LbTarget t, Map<int, String> servers) => switch (t['type']) {
 
 /// A target's kind, routing and health in one line.
 String targetDetail(LbTarget t, AppLocalizations l10n) {
-  final health = {
-    for (final h in jsonList(t['health_status'])) '${h['status']}',
-  };
+  final health = targetHealth(t).toSet();
   return [
     switch (t['type']) {
       'server' => l10n.resourceServer,
       'label_selector' => l10n.labelSelector,
       _ => l10n.fieldAddress,
     },
+    if (t['type'] == 'server') ?json(t['server'])['ip'] as String?,
     if (t['use_private_ip'] == true) l10n.fieldUsePrivateIp,
     if (health.isNotEmpty) health.join(', '),
   ].join(' · ');
@@ -741,6 +740,7 @@ class _CreateLoadBalancerPageState
     setState(() => _creating = true);
     final l10n = AppLocalizations.of(context);
     final name = _values['name']!.trim();
+    final tracker = ref.read(actionTrackerProvider(scope));
     final ok = await runChange(
       context,
       ref,
@@ -757,7 +757,7 @@ class _CreateLoadBalancerPageState
           targets: _targets,
           labels: parseLabels(_values['labels'] ?? '') ?? const {},
         );
-        ref.read(actionTrackerProvider(scope)).track(r.action);
+        tracker.track(r.action);
       },
       done: l10n.createdMessage(name),
     );

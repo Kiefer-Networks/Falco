@@ -66,6 +66,7 @@ class RobotFailoverPage extends ConsumerWidget {
       try {
         final api = ref.read(robotApiProvider(a));
         current = await api.failover(ip);
+        if (!context.mounted) return;
         servers = await ref.read(robotServersProvider(a).future);
       } on Object catch (e) {
         if (context.mounted) {

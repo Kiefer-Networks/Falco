@@ -241,8 +241,10 @@ Future<List<int>> applyFirewall(
 /// Whether [protocol] has ports (NET-007).
 bool hasPort(String protocol) => protocol == 'tcp' || protocol == 'udp';
 
-/// A port: one port or a range `8000-9000`, each 1 to 65535 (NET-008).
+/// A port: `any`, one port or a range `8000-9000`, each 1 to 65535
+/// (NET-008).
 bool validPort(String text) {
+  if (text.trim().toLowerCase() == 'any') return true;
   final parts = text.trim().split('-');
   if (parts.length > 2) return false;
   final ports = [for (final p in parts) int.tryParse(p.trim())];

@@ -5,6 +5,8 @@
 // ignore_for_file: lines_longer_than_80_chars
 library;
 
+import 'dart:convert' show utf8;
+
 import 'package:falco/api/cloud/cloud.dart';
 import 'package:falco/core/http/http.dart';
 import 'package:falco/core/http/pagination.dart';
@@ -37,8 +39,17 @@ bool validTtl(String? text, {bool optional = true}) {
   return n != null && n >= minTtl && n <= maxTtl;
 }
 
-/// A primary nameserver of a secondary zone (DNS-017).
-typedef Nameserver = ({String address, int port});
+/// A primary nameserver of a secondary zone (DNS-017); the TSIG key and
+/// algorithm are null without zone transfer signing.
+typedef Nameserver = ({
+  String address,
+  int port,
+  String? tsigKey,
+  String? tsigAlgorithm,
+});
+
+/// TSIG algorithms of the spec.
+const tsigAlgorithms = ['hmac-md5', 'hmac-sha1', 'hmac-sha256'];
 
 /// A zone as Falco shows it.
 @immutable
@@ -69,7 +80,12 @@ class Zone {
     recordCount: z['record_count'] as int? ?? 0,
     primaries: [
       for (final p in jsonList(z['primary_nameservers']))
-        (address: p['address']! as String, port: p['port'] as int? ?? 53),
+        (
+          address: p['address']! as String,
+          port: p['port'] as int? ?? 53,
+          tsigKey: p['tsig_key'] as String?,
+          tsigAlgorithm: p['tsig_algorithm'] as String?,
+        ),
     ],
     nameservers: [
       ...?(json(z['authoritative_nameservers'])['assigned'] as List?)
@@ -204,7 +220,12 @@ Future<RRSet> rrset(
   return RRSet.fromJson(json(body['rrset']));
 }
 
-Json _primary(Nameserver n) => {'address': n.address, 'port': n.port};
+Json _primary(Nameserver n) => {
+  'address': n.address,
+  'port': n.port,
+  'tsig_key': ?n.tsigKey,
+  'tsig_algorithm': ?n.tsigAlgorithm,
+};
 
 Json _records(List<DnsRecord> records) => {
   'records': [
@@ -511,14 +532,50 @@ Future<int> changeRrset(
 /// Types whose value ends in a host name, which must be absolute.
 const _hostTypes = {'CNAME', 'NS', 'PTR', 'MX', 'SRV'};
 
+/// TXT values typed as quoted strings: `"a" "b"`.
+final _quotedTxt = RegExp(r'^"(?:[^"\\]|\\.)*"(?:\s+"(?:[^"\\]|\\.)*")*$');
+final _quotedPart = RegExp(r'"((?:[^"\\]|\\.)*)"');
+
+/// One byte (or character) of an escaped TXT string: `\DDD`, an escaped
+/// or a plain character.
+final _txtUnit = RegExp(r'\\\d{3}|\\.|.', unicode: true, dotAll: true);
+
+/// The escaped TXT text [escaped] as quoted strings of at most 255 bytes,
+/// the limit of one DNS character string; never splits an escape or a
+/// character.
+String _txtStrings(String escaped) {
+  final out = <String>[];
+  final chunk = StringBuffer();
+  var bytes = 0;
+  for (final m in _txtUnit.allMatches(escaped)) {
+    final u = m[0]!;
+    final n = u.length == 4 && u.startsWith(r'\')
+        ? 1
+        : utf8.encode(u.startsWith(r'\') ? u.substring(1) : u).length;
+    if (bytes + n > 255) {
+      out.add('"$chunk"');
+      chunk.clear();
+      bytes = 0;
+    }
+    chunk.write(u);
+    bytes += n;
+  }
+  out.add('"$chunk"');
+  return out.join(' ');
+}
+
 /// Normalizes [value] of [type] as the API expects it (DNS-009): TXT in
-/// quotes (inner quotes escaped), the host name of CNAME, NS, PTR, MX and
-/// SRV absolute with a trailing dot.
+/// quotes (inner quotes escaped) as strings of at most 255 bytes, the
+/// host name of CNAME, NS, PTR, MX and SRV absolute with a trailing dot.
 String normalizeRecord(String type, String value) {
   final v = value.trim();
   if (type == 'TXT') {
+    if (_quotedTxt.hasMatch(v)) {
+      return [for (final m in _quotedPart.allMatches(v)) _txtStrings(m[1]!)]
+          .join(' ');
+    }
     if (v.length >= 2 && v.startsWith('"') && v.endsWith('"')) return v;
-    return '"${v.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"';
+    return _txtStrings(v.replaceAll(r'\', r'\\').replaceAll('"', r'\"'));
   }
   if (!_hostTypes.contains(type) || v.isEmpty) return v;
   final parts = v.split(RegExp(r'\s+'));

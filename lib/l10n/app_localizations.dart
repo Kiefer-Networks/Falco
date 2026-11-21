@@ -2894,6 +2894,18 @@ abstract class AppLocalizations {
   /// **'TTL'**
   String get fieldTtl;
 
+  /// No description provided for @fieldTsigAlgorithm.
+  ///
+  /// In en, this message translates to:
+  /// **'TSIG algorithm'**
+  String get fieldTsigAlgorithm;
+
+  /// No description provided for @fieldTsigKey.
+  ///
+  /// In en, this message translates to:
+  /// **'TSIG key (base64)'**
+  String get fieldTsigKey;
+
   /// No description provided for @fieldUsePrivateIp.
   ///
   /// In en, this message translates to:
@@ -3317,7 +3329,7 @@ abstract class AppLocalizations {
   /// No description provided for @portHint.
   ///
   /// In en, this message translates to:
-  /// **'One port or a range, e.g. 22 or 8000-9000.'**
+  /// **'One port, a range or any, e.g. 22, 8000-9000 or any.'**
   String get portHint;
 
   /// No description provided for @primariesEmpty.
@@ -3343,6 +3355,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit primary nameserver'**
   String get primaryEdit;
+
+  /// No description provided for @tsigNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get tsigNone;
 
   /// No description provided for @primaryIpCreate.
   ///
@@ -3439,6 +3457,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 record set failed} other{{count} record sets failed}}'**
   String recordsFailed(int count);
+
+  /// No description provided for @recordsBulkTtlOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Different types: only the TTL can change.'**
+  String get recordsBulkTtlOnly;
+
+  /// No description provided for @recordsBulkValueConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Every value of these record sets is replaced by the new value.'**
+  String get recordsBulkValueConsequence;
+
+  /// No description provided for @recordsBulkTtlConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'These record sets get the new TTL.'**
+  String get recordsBulkTtlConsequence;
 
   /// No description provided for @recordsSelect.
   ///

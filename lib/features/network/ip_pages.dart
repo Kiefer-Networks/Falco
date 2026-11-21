@@ -277,6 +277,10 @@ class IpDetailPage extends ConsumerWidget {
               valid: (v) =>
                   (v['name'] ?? '').trim().isNotEmpty && validLabels(v),
               onSave: (v) async {
+                final container = ProviderScope.containerOf(
+                  context,
+                  listen: false,
+                );
                 await updateIp(
                   ref.read(cloudApiProvider(scope.projectId)),
                   kind,
@@ -286,7 +290,7 @@ class IpDetailPage extends ConsumerWidget {
                   description: floating ? v['description']?.trim() : null,
                   autoDelete: floating ? null : v['autoDelete'] == 'true',
                 );
-                refreshResource(ref.invalidate, scope, type, ip.id);
+                refreshResource(container.invalidate, scope, type, ip.id);
               },
             ),
           ),
@@ -408,6 +412,7 @@ class _CreateIpPageState extends ConsumerState<CreateIpPage> {
     final server = _target.startsWith('server:')
         ? int.parse(_target.substring(7))
         : null;
+    final tracker = ref.read(actionTrackerProvider(scope));
     final ok = await runChange(
       context,
       ref,
@@ -423,9 +428,7 @@ class _CreateIpPageState extends ConsumerState<CreateIpPage> {
           description: (_values['description'] ?? '').trim(),
           labels: parseLabels(_values['labels'] ?? '') ?? const {},
         );
-        if (r.action case final a?) {
-          ref.read(actionTrackerProvider(scope)).track(a);
-        }
+        if (r.action case final a?) tracker.track(a);
       },
       done: l10n.createdMessage(name.isEmpty ? l10n.resourceFloatingIp : name),
     );

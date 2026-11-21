@@ -220,7 +220,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | NET-005 | Firewall Regel anlegen | Neue Regel Dialog | `S/cloud/FirewallRuleDialog.kt:92`<br>`S/cloud/CloudFirewallDetailViewModel.kt:83` | `POST /firewalls/{id}/actions/set_rules` | 5 | Widget |
 | NET-006 | Firewall Regel Richtung | Inbound (Quell IPs) oder Outbound (Ziel IPs) | `S/cloud/FirewallRuleDialog.kt:132` |  | 5 | Widget |
 | NET-007 | Firewall Regel Protokoll | tcp, udp, icmp, esp, gre; Port nur bei tcp/udp | `S/cloud/FirewallRuleDialog.kt:58` |  | 5 | Unit |
-| NET-008 | Firewall Regel Port | Einzelport oder Bereich "8000-9000" | `S/cloud/FirewallRuleDialog.kt:161` |  | 5 | Unit |
+| NET-008 | Firewall Regel Port | Einzelport, Bereich "8000-9000" oder "any" | `S/cloud/FirewallRuleDialog.kt:161` |  | 5 | Unit |
 | NET-009 | Firewall Regel IPs | CIDR Liste, Schnellwahl Any IPv4 (0.0.0.0/0) und Any IPv6 (::/0), mindestens eine IP | `S/cloud/FirewallRuleDialog.kt:184` |  | 5 | Unit |
 | NET-010 | Firewall Regel Beschreibung | Freitext optional | `S/cloud/FirewallRuleDialog.kt:174` |  | 5 | Widget |
 | NET-011 | Firewall Regel bearbeiten | Gleicher Dialog vorbefüllt | `S/cloud/FirewallRuleDialog.kt:94` | `POST /firewalls/{id}/actions/set_rules` | 5 | Widget |
@@ -275,11 +275,11 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | NET-060 | LB Service anlegen | Protokoll tcp/http/https, Listen und Ziel Port 1 bis 65535, PROXY protocol | `S/cloud/CloudLoadBalancerDetailScreen.kt:705`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:104` | `POST /load_balancers/{id}/actions/add_service` | 5 | Unit |
 | NET-061 | LB Service bearbeiten | Listen Port nicht änderbar | `S/cloud/CloudLoadBalancerDetailScreen.kt:746`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:108` | `POST /load_balancers/{id}/actions/update_service` | 5 | Widget |
 | NET-062 | LB Service löschen | Bestätigung | `S/cloud/CloudLoadBalancerDetailViewModel.kt:123` | `POST /load_balancers/{id}/actions/delete_service` | 5 | Unit |
-| NET-063 | LB Targets Liste | Server, Label Selector, IP; Leerhinweis | `S/cloud/CloudLoadBalancerDetailScreen.kt:221` | `GET /load_balancers/{id}` | 5 | Golden |
+| NET-063 | LB Targets Liste | Server mit IP, Label Selector, IP; Leerhinweis; Zustand eines Selectors aus seinen Servern | `S/cloud/CloudLoadBalancerDetailScreen.kt:221` | `GET /load_balancers/{id}` | 5 | Golden |
 | NET-064 | LB Target Server | Server ID, "Route via private network" | `S/cloud/CloudLoadBalancerDetailScreen.kt:841`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:127` | `POST /load_balancers/{id}/actions/add_target` | 5 | Widget |
 | NET-065 | LB Target Label Selector | Selector wie role=web,env=prod | `S/cloud/CloudLoadBalancerDetailScreen.kt:858`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:138` | `POST /load_balancers/{id}/actions/add_target` | 5 | Widget |
 | NET-066 | LB Target IP | IP Adresse | `S/cloud/CloudLoadBalancerDetailScreen.kt:872`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:148` | `POST /load_balancers/{id}/actions/add_target` | 5 | Widget |
-| NET-067 | LB Target entfernen | Bestätigung | `S/cloud/CloudLoadBalancerDetailViewModel.kt:161` | `POST /load_balancers/{id}/actions/remove_target` | 5 | Unit |
+| NET-067 | LB Target entfernen | Bestätigung; ein Server Target mit seiner IP | `S/cloud/CloudLoadBalancerDetailViewModel.kt:161` | `POST /load_balancers/{id}/actions/remove_target` | 5 | Unit |
 | NET-068 | LB Algorithmus | Round robin oder Least connections, Speichern nur bei Änderung | `S/cloud/CloudLoadBalancerDetailScreen.kt:586`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:96` | `POST /load_balancers/{id}/actions/change_algorithm` | 5 | Widget |
 | NET-069 | LB Typ ändern | Typliste mit aktuellem markiert, Grenzen max. Verbindungen, Services, Targets | `S/cloud/CloudLoadBalancerDetailScreen.kt:631`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:100` | `GET /load_balancer_types`<br>`POST /load_balancers/{id}/actions/change_type` | 5 | Widget |
 | NET-070 | LB Public Interface | Aktivieren oder deaktivieren | `S/cloud/CloudLoadBalancerDetailScreen.kt:290`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:92` | `POST /load_balancers/{id}/actions/enable_public_interface`<br>`POST /load_balancers/{id}/actions/disable_public_interface` | 5 | Unit |
@@ -317,20 +317,20 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | DNS-003 | Zone bearbeiten | Name gesperrt, nur TTL | `S/dns/ZoneFormDialog.kt:60`<br>`S/dns/DnsScreen.kt:79` | `POST /zones/{id}/actions/change_ttl` | 5 | Widget |
 | DNS-004 | Zone löschen | Bestätigung, alle Records gelöscht; Neu: Stufe 2 | `S/dns/DnsScreen.kt:202`<br>`S/dns/DnsScreen.kt:86` | `DELETE /zones/{id}` | 5 | Unit |
 | DNS-005 | Zonendetail Übersicht | TTL, Status, Anzahl Records | `S/dns/ZoneDetailScreen.kt:422`<br>`S/dns/ZoneDetailViewModel.kt:69` | `GET /zones/{id}`<br>`GET /zones/{id}/rrsets` | 5 | Golden |
-| DNS-006 | Recordliste | Name, Typ, Wert, TTL pro Wert | `S/dns/ZoneDetailScreen.kt:473` | `GET /zones/{id}/rrsets` | 5 | Golden |
+| DNS-006 | Recordliste | Name, Typ, Wert, TTL pro Wert; Aktualisieren lädt die Records neu, ein Fehler zeigt "Erneut versuchen", Anlegen erst nach dem Laden | `S/dns/ZoneDetailScreen.kt:473` | `GET /zones/{id}/rrsets` | 5 | Golden |
 | DNS-007 | Record anlegen | Name, Typ, Wert Pflicht, TTL optional mindestens 60 | `S/dns/RecordDialog.kt:60`<br>`S/dns/ZoneDetailViewModel.kt:100` | `POST /zones/{id}/rrsets/{name}/{type}/actions/add_records`<br>`POST /zones/{id}/rrsets/{name}/{type}/actions/change_ttl` | 5 | Unit |
 | DNS-008 | Record Typen | A, AAAA, CNAME, MX, TXT, NS, SRV, CAA; Neu zusätzlich alle Typen der Spec (PTR, DS, TLSA, HINFO, RP) | `S/dns/RecordDialog.kt:43` |  | 5 | Unit |
-| DNS-009 | Record Wert Normalisierung | TXT Anführungszeichen, FQDN Punkt je Typ | `D/repo/DnsRepo.kt:118` |  | 5 | Unit |
+| DNS-009 | Record Wert Normalisierung | TXT Anführungszeichen, je String höchstens 255 Byte, FQDN Punkt je Typ | `D/repo/DnsRepo.kt:118` |  | 5 | Unit |
 | DNS-010 | Record bearbeiten | Ersetzt Wert im RRSet, TTL Änderung | `S/dns/ZoneDetailScreen.kt:620`<br>`S/dns/ZoneDetailViewModel.kt:102` | `POST /zones/{id}/rrsets/{name}/{type}/actions/set_records`<br>`POST /zones/{id}/rrsets/{name}/{type}/actions/change_ttl` | 5 | Unit |
 | DNS-011 | Record löschen | Entfernt einen Wert aus dem RRSet | `S/dns/ZoneDetailScreen.kt:627`<br>`S/dns/ZoneDetailViewModel.kt:105` | `POST /zones/{id}/rrsets/{name}/{type}/actions/remove_records` | 5 | Unit |
-| DNS-012 | Mehrfachauswahl Records | Auswahl, Alle wählen, Leeren, Zähler | `S/dns/ZoneDetailScreen.kt:460` |  | 5 | Widget |
-| DNS-013 | Sammelbearbeitung | Neuer Wert und/oder TTL (mind. eins), leer heißt behalten | `S/dns/BulkEditDialog.kt:46`<br>`S/dns/ZoneDetailViewModel.kt:113` | `POST /zones/{id}/rrsets/{name}/{type}/actions/set_records` | 5 | Unit |
+| DNS-012 | Mehrfachauswahl Records | Auswahl, Alle wählen (ohne SOA und Apex NS), Leeren, Zähler | `S/dns/ZoneDetailScreen.kt:460` |  | 5 | Widget |
+| DNS-013 | Sammelbearbeitung | Neuer Wert und/oder TTL (mind. eins), leer heißt behalten; neuer Wert nur bei einem Typ; Bestätigung mit den betroffenen Record Sets | `S/dns/BulkEditDialog.kt:46`<br>`S/dns/ZoneDetailViewModel.kt:113` | `POST /zones/{id}/rrsets/{name}/{type}/actions/set_records` | 5 | Unit |
 | DNS-014 | Sammelbearbeitung Ergebnis | "Records updated" oder Anzahl fehlgeschlagener | `S/dns/ZoneDetailScreen.kt:162` |  | 5 | Widget |
 | DNS-015 | Zonendatei importieren | Datei wählen, max. 1 MiB, Bestätigung "ersetzt alle Records"; Neu: Stufe 2 | `S/dns/ZoneDetailScreen.kt:338`<br>`S/dns/ZoneDetailViewModel.kt:125` | `POST /zones/{id}/actions/import_zonefile` | 5 | Integration |
 | DNS-016 | Zonendatei exportieren | BIND Datei über Dateidialog speichern | `S/dns/ZoneDetailScreen.kt:234`<br>`S/dns/ZoneDetailViewModel.kt:143` | `GET /zones/{id}/zonefile` | 5 | Integration |
-| DNS-017 | Primäre Nameserver Liste | Für sekundäre Zonen: Adresse und Port | `S/dns/ZoneDetailScreen.kt:512` | `GET /zones/{id}` | 5 | Golden |
-| DNS-018 | Primären Server hinzufügen | Adresse Pflicht, Port 1 bis 65535 (Standard 53) | `S/dns/PrimaryServerDialog.kt:35`<br>`S/dns/ZoneDetailViewModel.kt:164` | `POST /zones/{id}/actions/change_primary_nameservers` | 5 | Unit |
-| DNS-019 | Primären Server bearbeiten | Gleicher Dialog | `S/dns/PrimaryServerDialog.kt:37`<br>`S/dns/ZoneDetailViewModel.kt:167` | `POST /zones/{id}/actions/change_primary_nameservers` | 5 | Widget |
+| DNS-017 | Primäre Nameserver Liste | Für sekundäre Zonen: Adresse, Port und TSIG Algorithmus | `S/dns/ZoneDetailScreen.kt:512` | `GET /zones/{id}` | 5 | Golden |
+| DNS-018 | Primären Server hinzufügen | Adresse Pflicht, Port 1 bis 65535 (Standard 53), TSIG Algorithmus und Schlüssel optional | `S/dns/PrimaryServerDialog.kt:35`<br>`S/dns/ZoneDetailViewModel.kt:164` | `POST /zones/{id}/actions/change_primary_nameservers` | 5 | Unit |
+| DNS-019 | Primären Server bearbeiten | Gleicher Dialog; TSIG aller Server bleibt erhalten | `S/dns/PrimaryServerDialog.kt:37`<br>`S/dns/ZoneDetailViewModel.kt:167` | `POST /zones/{id}/actions/change_primary_nameservers` | 5 | Widget |
 | DNS-020 | Primären Server entfernen | Bestätigung mit Adresse:Port | `S/dns/ZoneDetailScreen.kt:370`<br>`S/dns/ZoneDetailViewModel.kt:170` | `POST /zones/{id}/actions/change_primary_nameservers` | 5 | Unit |
 | DNS-021 | DNS Action abwarten | Nach jeder Änderung Zone Action bis fertig verfolgen | `D/repo/DnsRepo.kt:61` | `GET /zones/actions/{id}` | 5 | Unit |
 | DNS-022 | Zone sekundär anlegen | Modus primary/secondary mit primären Nameservern beim Anlegen | API neu | `POST /zones` | 5 | Widget |
@@ -421,7 +421,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | ID | Funktion | Details/Regeln | Quelle | API Endpunkt(e) | Phase | Test |
 |---|---|---|---|---|---|---|
 | ROB-001 | Robot Bereich Reiter | Dedicated Server, Failover IPs, vSwitches, Reverse DNS, SSH Keys | `S/robot/RobotScreen.kt:108` |  | 7 | Widget |
-| ROB-002 | Robot kein Zugriff Hinweis | Bei 401/403 pro Bereich: "Enable this section in Hetzner Robot" | `S/robot/FailoverTab.kt:114` |  | 7 | Widget |
+| ROB-002 | Robot kein Zugriff Hinweis | Bei 401/403 pro Bereich: "Enable this section in Hetzner Robot"; ein abgelehnter Login wird erst nach einer Änderung wieder gesendet | `S/robot/FailoverTab.kt:114` |  | 7 | Widget |
 | ROB-003 | Robot Ratenlimit | 429 oder 403 mit Retry-After als Drosselung melden, nie als Auth Fehler | `D/api/HttpClientFactory.kt:199` |  | 7 | Unit |
 | ROB-004 | Robot Serverliste | Name oder Nummer, gekündigt Badge, IPv4, IPv6 Netz, Datacenter, bezahlt bis | `S/robot/RobotScreen.kt:220`<br>`S/robot/RobotScreen.kt:97` | `GET /server` | 7 | Golden |
 | ROB-005 | Robot Liste Schnellaktionen | Reset, Wake-on-LAN aus der Zeile | `S/robot/RobotScreen.kt:311` | `POST /reset/{n}`<br>`POST /wol/{n}` | 7 | Widget |
@@ -476,7 +476,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | ROB-054 | Robot Subnetz Traffic Warnungen | Schwellen setzen | API neu | `POST /subnet/{ip}` | 7 | Widget |
 | ROB-055 | Robot Subnetz MAC | MAC anzeigen, setzen, löschen | API neu | `GET /subnet/{ip}/mac`<br>`PUT /subnet/{ip}/mac`<br>`DELETE /subnet/{ip}/mac` | 7 | Widget |
 | ROB-056 | Robot Subnetz Kündigung | Kündigung anzeigen, setzen, zurückziehen | API neu | `GET /subnet/{ip}/cancellation`<br>`POST /subnet/{ip}/cancellation`<br>`DELETE /subnet/{ip}/cancellation` | 7 | Widget |
-| ROB-057 | Robot Firewall | Server Firewall Status, Regeln, Filter IPv6, Hetzner Dienste | API neu | `GET /firewall/{n}`<br>`POST /firewall/{n}`<br>`DELETE /firewall/{n}` | 7 | Widget |
+| ROB-057 | Robot Firewall | Server Firewall Status, Regeln (mit TCP Flags), Filter IPv6, Hetzner Dienste | API neu | `GET /firewall/{n}`<br>`POST /firewall/{n}`<br>`DELETE /firewall/{n}` | 7 | Widget |
 | ROB-058 | Robot Firewall Vorlagen | Vorlagen listen, anlegen, ändern, löschen | API neu | `GET /firewall/template`<br>`POST /firewall/template`<br>`GET /firewall/template/{id}`<br>`POST /firewall/template/{id}`<br>`DELETE /firewall/template/{id}` | 7 | Widget |
 | ROB-059 | Robot Traffic Abfrage | Traffic frei wählbar nach Zeitraum (Tag, Monat, Jahr) pro IP/Subnetz | `D/repo/RobotRepo.kt:94` | `POST /traffic` | 7 | Golden |
 | ROB-060 | Robot Bestellung | Server, Serverbörse, Addons bestellen; nur nach Entscheidung, Kaufbestätigung Pflicht | API neu | `GET /order/server/product`<br>`POST /order/server/transaction`<br>`GET /order/server_market/product`<br>`POST /order/server_market/transaction`<br>`GET /order/server_addon/{n}/product`<br>`POST /order/server_addon/transaction` | 7 | Integration |

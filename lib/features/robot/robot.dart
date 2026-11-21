@@ -4,6 +4,11 @@
 /// ROB-059).
 library;
 
+import 'dart:convert' show utf8;
+import 'dart:math' show Random;
+
+import 'package:crypto/crypto.dart';
+import 'package:dio/dio.dart' show InterceptorsWrapper;
 import 'package:falco/api/robot/robot_client.dart';
 import 'package:falco/core/actions/action_tracker.dart';
 import 'package:falco/core/errors/falco_error.dart';
@@ -20,14 +25,39 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'robot.g.dart';
 
 /// The Robot webservice of an account; the login is read per request.
+/// Once Robot refuses a login, requests with that login fail at once as
+/// [Unauthorized] until it changes, so a wrong password is not sent
+/// again for every list.
 @Riverpod(keepAlive: true)
 RobotClient robotApi(Ref ref, String accountId) {
   final secrets = ref.watch(secretStoreProvider);
+  // Logins are compared by a keyed hash; the key lives only here.
+  final key = [for (var i = 0; i < 32; i++) Random.secure().nextInt(256)];
+  Digest fingerprint(RobotCredentials c) =>
+      Hmac(sha256, key).convert(utf8.encode('${c.user}\n${c.password}'));
+  Digest? sent;
+  Digest? refused;
   final dio = ref.watch(robotDioProvider)(
     storedBasicAuth(() async {
       final c = await secrets.robot(accountId);
-      return c == null ? null : (c.user, c.password);
+      if (c == null) return null;
+      sent = fingerprint(c);
+      return sent == refused ? null : (c.user, c.password);
     }),
+  );
+  // First, so it sees the answer before errors are mapped.
+  dio.interceptors.insert(
+    0,
+    InterceptorsWrapper(
+      onResponse: (r, handler) {
+        if (r.statusCode == 401) refused = sent;
+        handler.next(r);
+      },
+      onError: (e, handler) {
+        if (e.response?.statusCode == 401) refused = sent;
+        handler.next(e);
+      },
+    ),
   );
   ref.onDispose(dio.close);
   return RobotClient(dio);
@@ -259,13 +289,17 @@ Future<void> saveRobot(
   List<ProviderOrFamily> refresh = const [],
   int? server,
 }) async {
+  // Everything from ref before the first await: the page may be gone
+  // when the request returns.
   final activity = ref.read(robotActivityProvider(accountId).notifier);
+  final api = ref.read(robotApiProvider(accountId));
+  final container = ProviderScope.containerOf(ref.context, listen: false);
   try {
-    await change(ref.read(robotApiProvider(accountId)));
+    await change(api);
   } on Object catch (e) {
     activity.add(command, ok: false, server: server);
     throw toFalcoError(e);
   }
   activity.add(command, ok: true, server: server);
-  refresh.forEach(ref.invalidate);
+  refresh.forEach(container.invalidate);
 }

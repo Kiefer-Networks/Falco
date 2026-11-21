@@ -217,7 +217,7 @@ Future<(String, FirewallRule)?> editRule(
   await FormSheet.show(
     context,
     title: rule == null ? l10n.ruleAdd : l10n.commonEdit,
-    fields: (_) => [
+    fields: (v) => [
       FieldSpec(
         'direction',
         l10n.fieldDirection,
@@ -243,6 +243,12 @@ Future<(String, FirewallRule)?> editRule(
       ),
       for (final f in const ['src_ip', 'src_port', 'dst_ip', 'dst_port'])
         FieldSpec(f, ruleFieldText(f, l10n), initial: rule?[f] ?? ''),
+      if ((v['protocol'] ?? rule?['protocol']) == 'tcp')
+        FieldSpec(
+          'tcp_flags',
+          l10n.ruleTcpFlags,
+          initial: rule?['tcp_flags'] ?? '',
+        ),
       FieldSpec(
         'action',
         l10n.ruleAction,
@@ -254,8 +260,13 @@ Future<(String, FirewallRule)?> editRule(
     onSave: (v) async => result = (
       v['direction'] ?? 'input',
       {
+        // Fields the form does not show stay as they were.
+        for (final MapEntry(:key, :value) in (rule ?? const {}).entries)
+          if (!firewallRuleFields.contains(key)) key: value,
         for (final f in firewallRuleFields)
-          if ((v[f] ?? '').trim().isNotEmpty) f: v[f]!.trim(),
+          if ((v[f] ?? '').trim().isNotEmpty &&
+              (f != 'tcp_flags' || v['protocol'] == 'tcp'))
+            f: v[f]!.trim(),
       },
     ),
   );
@@ -284,6 +295,7 @@ String ruleSummary(FirewallRule rule, AppLocalizations l10n) => [
   if (rule['src_port'] case final p?) ':$p',
   if (rule['dst_ip'] case final ip?) '${l10n.ruleTo} $ip',
   if (rule['dst_port'] case final p?) '→ :$p',
+  ?rule['tcp_flags'],
 ].join(' ');
 
 /// The rules of a firewall or template per direction; tap edits, the

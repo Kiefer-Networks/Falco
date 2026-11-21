@@ -1,9 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:async';
+
+import 'package:falco/api/robot/robot_client.dart';
+import 'package:falco/core/errors/falco_error.dart';
+import 'package:falco/core/secure/secret_store.dart';
+import 'package:falco/features/robot/robot.dart';
+import 'package:falco/features/robot/robot_ui.dart';
+import 'package:falco/l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../fake_cloud.dart';
 import '../fake_robot.dart';
+import '../helpers.dart' show testApp;
 import '../robot_steps.dart';
 import '../steps.dart';
 
@@ -669,6 +679,101 @@ void main() {
       await typeName(tester, 'db');
       await confirm(tester, 'Delete');
       expect(cloud.calls, contains('DELETE /firewall/template/5000'));
+    });
+
+    testWidgets('ROB-057 editing a rule keeps TCP flags and fields the '
+        'form does not show', (tester) async {
+      (String, FirewallRule)? edited;
+      const rule = {
+        'name': 'syn',
+        'protocol': 'tcp',
+        'dst_port': '22',
+        'tcp_flags': 'syn',
+        'action': 'accept',
+        'packet_size': '64',
+      };
+      await tester.pumpWidget(
+        testApp(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () async =>
+                  edited = await editRule(context, rule: rule),
+              child: const Text('edit'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('edit'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('tcp_flags')), findsOneWidget);
+      await enter(tester, 'dst_port', '2222');
+      await tap(tester, 'Save');
+      expect(edited?.$2, {...rule, 'dst_port': '2222'});
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(ruleSummary(rule, l10n), endsWith(' syn'));
+    });
+  });
+
+  group('session safety', () {
+    testWidgets('a Robot save finishes after its page is gone', (tester) async {
+      final c = await fakeContainer(FakeCloud(), accounts: const [acmeRobot]);
+      final done = Completer<void>();
+      late Future<void> pending;
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: c,
+          child: testApp(
+            Consumer(
+              builder: (context, ref, _) => TextButton(
+                onPressed: () => pending = saveRobot(
+                  ref,
+                  'a1',
+                  (_) => done.future,
+                  command: RobotCommand.rdns,
+                  refresh: [robotRdnsProvider('a1')],
+                ),
+                child: const Text('save'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('save'));
+      await tester.pumpWidget(
+        UncontrolledProviderScope(container: c, child: const SizedBox()),
+      );
+      done.complete();
+      await expectLater(pending, completes);
+      expect(c.read(robotActivityProvider('a1')).single.command, 'robot_rdns');
+    });
+
+    test('a refused Robot login is not sent again until it changes', () async {
+      final cloud = FakeCloud();
+      final c = await fakeContainer(cloud, accounts: const [acmeRobot]);
+      final secrets = c.read(secretStoreProvider);
+      await secrets.setRobot(
+        'a1',
+        const RobotCredentials(user: fakeRobotUser, password: 'wrong'),
+      );
+      int sent() => cloud.adapter.requests
+          .where((r) => r.uri.host == 'robot-ws.your-server.de')
+          .length;
+      final api = c.read(robotApiProvider('a1'));
+      final refused = throwsA(
+        predicate<Object>((e) => toFalcoError(e) is Unauthorized),
+      );
+      await expectLater(api.servers(), refused);
+      await expectLater(api.servers(), refused);
+      expect(sent(), 1);
+      await secrets.setRobot(
+        'a1',
+        const RobotCredentials(
+          user: fakeRobotUser,
+          password: fakeRobotPassword,
+        ),
+      );
+      await api.servers();
+      expect(sent(), 2);
     });
   });
 }
