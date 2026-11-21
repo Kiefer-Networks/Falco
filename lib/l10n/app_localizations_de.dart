@@ -357,6 +357,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lockReason => 'Entsperre Falco, um auf deine Server zuzugreifen';
 
   @override
+  String get vaultLostTitle => 'Zugangsdaten gelöscht';
+
+  @override
+  String vaultLostMessage(String accounts) {
+    return 'Das System hat die gespeicherten Zugangsdaten gelöscht, zum Beispiel nach einer Änderung der Fingerabdrücke oder des Gesichts. Gib Tokens und Zugangsdaten erneut ein für: $accounts.';
+  }
+
+  @override
   String get errorUnauthorized =>
       'Die Zugangsdaten wurden abgelehnt. Prüfe Token oder Zugangsdaten.';
 

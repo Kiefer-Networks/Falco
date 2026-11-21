@@ -64,7 +64,10 @@ class MainActivity : FlutterFragmentActivity() {
         clipboard.setPrimaryClip(clip)
         handler.removeCallbacksAndMessages(null)
         handler.postDelayed({
-            if (clipboard.primaryClipDescription?.label == LABEL) {
+            // A background app cannot read the clip on Android 10+ and gets
+            // null: clear then too, skip only a readable foreign clip.
+            val description = clipboard.primaryClipDescription
+            if (description == null || description.label == LABEL) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     clipboard.clearPrimaryClip()
                 } else {
