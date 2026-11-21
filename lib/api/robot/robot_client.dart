@@ -401,8 +401,8 @@ String formEncode(List<(String, String)> form) => [
     '${Uri.encodeQueryComponent(k)}=${Uri.encodeQueryComponent(v)}',
 ].join('&');
 
-/// Robot API calls. Errors arrive as [DioException] carrying a
-/// FalcoError (see ErrorInterceptor).
+/// Robot API calls. Errors arrive as [FalcoError], never as the
+/// [DioException] holding the request.
 class RobotClient {
   /// Creates the client on a pinned, basic auth `dio`.
   const new(this._dio);
@@ -414,15 +414,21 @@ class RobotClient {
     String path, [
     List<(String, String)> form = const [],
   ]) async {
-    final response = await _dio.request<Object?>(
-      path,
-      data: form.isEmpty ? null : formEncode(form),
-      options: Options(
-        method: method,
-        contentType: Headers.formUrlEncodedContentType,
-      ),
-    );
-    return response.data;
+    try {
+      final response = await _dio.request<Object?>(
+        path,
+        data: form.isEmpty ? null : formEncode(form),
+        options: Options(
+          method: method,
+          contentType: Headers.formUrlEncodedContentType,
+        ),
+      );
+      return response.data;
+    } on DioException catch (e, s) {
+      // The DioException keeps the request with its Basic auth header;
+      // only the FalcoError may reach providers and AsyncError.
+      Error.throwWithStackTrace(toFalcoError(e), s);
+    }
   }
 
   Future<Object?> _get(String path) => _call('GET', path);
@@ -432,9 +438,8 @@ class RobotClient {
     try {
       final data = await _get(path);
       return [for (final e in data is List ? data : const <Object?>[]) map(e)];
-    } on DioException catch (e) {
-      if (toFalcoError(e) is NotFound) return const [];
-      rethrow;
+    } on NotFound {
+      return const [];
     }
   }
 
@@ -496,9 +501,8 @@ class RobotClient {
     try {
       await _get('/wol/$number');
       return true;
-    } on DioException catch (e) {
-      if (toFalcoError(e) is NotFound) return false;
-      rethrow;
+    } on NotFound {
+      return false;
     }
   }
 
@@ -560,9 +564,8 @@ class RobotClient {
   Future<RobotRdns?> rdnsOf(String ip) async {
     try {
       return _rdns(await _get('/rdns/${_ip(ip)}'));
-    } on DioException catch (e) {
-      if (toFalcoError(e) is NotFound) return null;
-      rethrow;
+    } on NotFound {
+      return null;
     }
   }
 
@@ -680,8 +683,8 @@ class RobotClient {
     try {
       return _obj(_obj(await _get('/${kind.key}/${_ip(ip)}/mac'))['mac'])['mac']
           as String?;
-    } on DioException catch (e) {
-      if (toFalcoError(e).code == 'MAC_NOT_FOUND') return null;
+    } on FalcoError catch (e) {
+      if (e.code == 'MAC_NOT_FOUND') return null;
       rethrow;
     }
   }

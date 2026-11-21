@@ -69,9 +69,8 @@ Dio Function(S3Credentials c) s3Dio(Ref ref) =>
 Future<void> checkRobot(Dio dio) async {
   try {
     await RobotClient(dio).servers();
-  } on DioException catch (e) {
-    final error = toFalcoError(e);
-    if (error is! NotFound) throw error;
+  } on NotFound {
+    // No servers: the login is valid.
   }
 }
 

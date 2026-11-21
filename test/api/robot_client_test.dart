@@ -521,6 +521,10 @@ void main() {
       );
     });
 
+    test('errors are FalcoErrors, never the request with its login', () {
+      expect(serve('error_not_found', 404).server(1), throwsA(isA<NotFound>()));
+    });
+
     test('ROB-003 403 RATE_LIMIT_EXCEEDED is throttling, not auth', () async {
       await expectLater(
         serve('error_rate_limit', 403).server(321),
