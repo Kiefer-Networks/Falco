@@ -5,6 +5,7 @@ import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/ui/ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -159,11 +160,70 @@ void main() {
       secrets.close();
       expect(await secrets.cloudToken('p1'), 't1');
       expect(bound.reads, 2);
-      // Nothing secret outside the vault.
+      // Nothing secret outside the vault, only the names of its entries.
+      expect(await const FlutterSecureStorage().readAll(), {
+        'vault.keys': '["cloud.p1","cloud.p2"]',
+      });
+      // Android asks on every vault access, else the plugin keeps the key
+      // open after close (L2).
+      expect(bound.android?.toMap()['requireBiometricsPerOperation'], 'true');
+    });
+
+    test('a check reads the vault even when it is open (L3)', () async {
+      await secrets.setCloudToken('p1', 't1');
+      final reads = bound.reads;
+      expect(await secrets.verify(), isTrue);
+      expect(bound.reads, reads + 1);
+    });
+
+    test('concurrent moves into the vault keep every secret (L8)', () async {
+      FlutterSecureStorage.setMockInitialValues({
+        'cloud.p1': 't1',
+        'cloud.p2': 't2',
+        'robot.a1': '{"user":"u","password":"p"}',
+      });
+      await Future.wait([
+        secrets.cloudToken('p1'),
+        secrets.cloudToken('p2'),
+        secrets.robot('a1'),
+      ]);
+      secrets.close();
+      expect(await secrets.cloudToken('p1'), 't1');
+      expect(await secrets.cloudToken('p2'), 't2');
+      expect((await secrets.robot('a1'))?.user, 'u');
+      expect(await const FlutterSecureStorage().read(key: 'cloud.p1'), isNull);
+    });
+
+    test('a vault the system deleted names what is lost (L6)', () async {
+      await secrets.setCloudToken('p1', 't1');
+      await secrets.setRobot(
+        'a1',
+        const RobotCredentials(user: 'u', password: 'p'),
+      );
+      // New fingerprint: Android drops the key and the vault with it.
+      bound.data.clear();
+      secrets.close();
+      expect(await secrets.cloudToken('p1'), isNull);
+      expect(secrets.lost.value, {'cloud.p1', 'robot.a1'});
+      secrets
+        ..lost.value = const {}
+        ..close();
+      await secrets.cloudToken('p1');
+      expect(secrets.lost.value, isEmpty, reason: 'reported once');
+    });
+
+    test('a cancelled prompt on Android keeps the vault bound', () async {
+      bound.fail = true;
+      await expectLater(
+        secrets.setCloudToken('p1', 't1'),
+        throwsA(isA<PlatformException>()),
+      );
       expect(await const FlutterSecureStorage().readAll(), isEmpty);
     });
 
     test('a device without screen lock keeps a working vault', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
       bound.fail = true;
       await secrets.setCloudToken('p1', 't1');
       expect(await secrets.bound, isFalse);
@@ -178,7 +238,9 @@ void main() {
       FlutterSecureStorage.setMockInitialValues({'cloud.p1': 't1'});
       expect(await secrets.cloudToken('p1'), 't1');
       expect(bound.data.keys, ['vault']);
-      expect(await const FlutterSecureStorage().readAll(), isEmpty);
+      expect((await const FlutterSecureStorage().readAll()).keys, [
+        'vault.keys',
+      ]);
     });
 
     test('the lock forgets the open vault', () async {
@@ -197,7 +259,7 @@ void main() {
       await lock.unlock('why');
       lock.paused();
       now = now.add(const Duration(minutes: 5));
-      lock.resumed();
+      expect(lock.resumed(), isTrue);
       final before = bound.reads;
       await secrets.cloudToken('p1');
       expect(bound.reads, before + 1);
@@ -258,6 +320,49 @@ void main() {
       await c.read(appLockProvider.notifier).disable();
       expect(c.read(appLockProvider), AppLockState.unlocked);
       expect(c.read(appSettingsProvider).lock, isFalse);
+    });
+
+    test('an unreadable account list still asks (L10)', () async {
+      FlutterSecureStorage.setMockInitialValues({'accounts': 'not json'});
+      final answers = <bool?>[true];
+      final c = await container(answers);
+      await c.read(appLockProvider.notifier).unlock('why');
+      expect(answers, isEmpty);
+      expect(c.read(appLockProvider), AppLockState.unlocked);
+    });
+
+    test('the device time set back locks, the own prompt is no background '
+        '(L4, L5)', () async {
+      late AppLock lock;
+      var uptime = Duration.zero;
+      final c = ProviderContainer(
+        overrides: [
+          preferencesProvider.overrideWithValue(
+            await testPrefs({'lockTimeout': 300}),
+          ),
+          authenticatorProvider.overrideWithValue((_) async {
+            // The system prompt sends the app to background.
+            lock.paused();
+            uptime += const Duration(minutes: 10);
+            return true;
+          }),
+        ],
+      );
+      addTearDown(c.dispose);
+      lock = c.read(appLockProvider.notifier);
+      final now = DateTime(2026);
+      lock
+        ..now = (() => now)
+        ..uptime = (() => uptime);
+      await lock.unlock('why');
+      expect(lock.resumed(), isFalse);
+      expect(c.read(appLockProvider), AppLockState.unlocked);
+
+      // Ten minutes away, the clock set back by ten minutes.
+      lock.paused();
+      uptime += const Duration(minutes: 10);
+      expect(lock.resumed(), isTrue);
+      expect(c.read(appLockProvider), AppLockState.locked);
     });
 
     test('concurrent unlocks share one prompt', () async {
@@ -330,6 +435,7 @@ class _Bound extends FlutterSecureStorage {
   final data = <String, String>{};
   int reads = 0;
   bool fail = false;
+  AndroidOptions? android;
 
   @override
   Future<String?> read({
@@ -342,6 +448,7 @@ class _Bound extends FlutterSecureStorage {
     WindowsOptions? wOptions,
   }) async {
     reads++;
+    android = aOptions;
     return data[key];
   }
 

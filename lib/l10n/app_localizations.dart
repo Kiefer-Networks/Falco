@@ -698,6 +698,18 @@ abstract class AppLocalizations {
   /// **'Unlock Falco to access your servers'**
   String get lockReason;
 
+  /// No description provided for @vaultLostTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Access data deleted'**
+  String get vaultLostTitle;
+
+  /// No description provided for @vaultLostMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The system deleted the stored access data, for example after a change to the fingerprints or the face. Enter the tokens and credentials again for: {accounts}.'**
+  String vaultLostMessage(String accounts);
+
   /// No description provided for @errorUnauthorized.
   ///
   /// In en, this message translates to:

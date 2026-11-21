@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -57,6 +58,9 @@ class S3Credentials {
 /// authentication bound Keystore key on Android. [open] reads it once per
 /// unlock, [close] forgets it when the app locks. A device without a
 /// screen lock cannot bind the vault; it then lives in the plain store.
+/// On Android every vault read and write asks again
+/// (`requireBiometricsPerOperation`), else the plugin would keep the key
+/// open after [close]; [open] keeps one read per unlock.
 /// The account list is no secret and stays in the plain store, so the
 /// app can start before the unlock.
 class SecretStore {
@@ -78,16 +82,30 @@ class SecretStore {
       accessibility: KeychainAccessibility.unlocked_this_device,
       accessControlFlags: [AccessControlFlag.userPresence],
     ),
-    aOptions: AndroidOptions.biometric(storageNamespace: 'vault'),
+    aOptions: AndroidOptions.biometric(
+      storageNamespace: 'vault',
+      requireBiometricsPerOperation: true,
+    ),
   );
 
   static const _vault = 'vault';
   static const _unbound = 'vault.unbound';
 
+  /// Names of the secrets in the vault, no values: shows which access data
+  /// is gone when the system deleted the vault.
+  static const _keys = 'vault.keys';
+
   final FlutterSecureStorage _plain;
   final FlutterSecureStorage _bound;
   Map<String, String>? _open;
   Future<Map<String, String>>? _opening;
+  Future<void> _writes = Future.value();
+
+  /// Secret names (`cloud.<project>`, `s3.<project>`, `robot.<account>`)
+  /// whose values the system deleted: Android drops the Keystore key when
+  /// fingerprints or the face change, and with it the vault. Set once on
+  /// the read that finds the vault gone; the app shows it and clears it.
+  final lost = ValueNotifier<Set<String>>(const {});
 
   /// Title of the system prompt on Android; set to a localized text by
   /// the app lock.
@@ -107,6 +125,7 @@ class SecretStore {
 
   AndroidOptions get _android => AndroidOptions.biometric(
     storageNamespace: 'vault',
+    requireBiometricsPerOperation: true,
     biometricPromptTitle: prompt,
   );
 
@@ -116,6 +135,19 @@ class SecretStore {
   Future<bool> open() async {
     await _secrets();
     return true;
+  }
+
+  /// Reads the vault again even when it is open, so the system asks the
+  /// user now; a failed check keeps the vault as it was.
+  Future<bool> verify() async {
+    final before = _open;
+    _open = null;
+    try {
+      return await open();
+    } on Object {
+      _open ??= before;
+      rethrow;
+    }
   }
 
   /// Forgets the open vault; the next secret needs a fresh unlock.
@@ -128,9 +160,15 @@ class SecretStore {
           final raw =
               await _bound.read(key: _vault, aOptions: _android) ??
               await _plain.read(key: _unbound);
-          return _open = raw == null
-              ? <String, String>{}
-              : (jsonDecode(raw) as Map).cast<String, String>();
+          if (raw == null) {
+            final known = await _plain.read(key: _keys);
+            if (known != null) {
+              lost.value = {...(jsonDecode(known) as List).cast<String>()};
+              await _plain.delete(key: _keys);
+            }
+            return _open = <String, String>{};
+          }
+          return _open = (jsonDecode(raw) as Map).cast<String, String>();
         } finally {
           _opening = null;
         }
@@ -142,16 +180,32 @@ class SecretStore {
       await _bound.write(key: _vault, value: raw, aOptions: _android);
       await _plain.delete(key: _unbound);
     } on PlatformException {
+      // Android stores unbound by itself without a screen lock: an error
+      // there is a cancelled prompt and must not move the vault out.
+      if (defaultTargetPlatform == TargetPlatform.android) rethrow;
       // No screen lock to bind to: keep a working, unbound vault.
       await _plain.write(key: _unbound, value: raw);
     }
     _open = secrets;
+    await _plain.write(key: _keys, value: jsonEncode(secrets.keys.toList()));
+  }
+
+  /// Applies [change] to the latest vault and saves it if [change] returns
+  /// true. Writes run one after another, so none overwrites another.
+  Future<void> _update(bool Function(Map<String, String> secrets) change) {
+    final done = _writes.then((_) async {
+      final secrets = {...await _secrets()};
+      if (change(secrets)) await _save(secrets);
+    });
+    _writes = done.then((_) {}, onError: (Object _) {});
+    return done;
   }
 
   Future<String?> _get(String key) async {
     final secrets = await _secrets();
     if (secrets[key] case final value?) return value;
-    // Stored one by one before the vault: move it in.
+    // Stored one by one before the vault: move it in, then delete it once
+    // a saved vault holds it.
     final legacy = await _plain.read(key: key);
     if (legacy == null) return null;
     await _set(key, legacy);
@@ -159,15 +213,14 @@ class SecretStore {
     return legacy;
   }
 
-  Future<void> _set(String key, String value) async {
-    await _save({...await _secrets(), key: value});
-  }
+  Future<void> _set(String key, String value) => _update((secrets) {
+    secrets[key] = value;
+    return true;
+  });
 
   Future<void> _delete(String key) async {
     await _plain.delete(key: key);
-    final secrets = await _secrets();
-    if (!secrets.containsKey(key)) return;
-    await _save({...secrets}..remove(key));
+    await _update((secrets) => secrets.remove(key) != null);
   }
 
   /// Cloud API token of a project (also used for Storage Boxes and DNS).

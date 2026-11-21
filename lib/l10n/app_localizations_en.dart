@@ -355,6 +355,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockReason => 'Unlock Falco to access your servers';
 
   @override
+  String get vaultLostTitle => 'Access data deleted';
+
+  @override
+  String vaultLostMessage(String accounts) {
+    return 'The system deleted the stored access data, for example after a change to the fingerprints or the face. Enter the tokens and credentials again for: $accounts.';
+  }
+
+  @override
   String get errorUnauthorized =>
       'The access data was rejected. Check the token or the credentials.';
 

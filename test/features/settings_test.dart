@@ -105,12 +105,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(calls.last, isTrue);
 
+    // Covered, not rebuilt: the page keeps its state (L1).
+    final page = tester.element(find.text('Settings'));
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
     await tester.pump();
-    expect(find.text('Settings'), findsNothing);
+    expect(find.text('Settings').hitTestable(), findsNothing);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
-    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Settings').hitTestable(), findsOneWidget);
+    expect(tester.element(find.text('Settings')), same(page));
   });
 
   testWidgets('SET-012 without a screen lock the app explains it', (

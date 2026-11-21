@@ -7,6 +7,7 @@ import 'package:falco/app/router.dart';
 import 'package:falco/core/http/http.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/secure/app_lock.dart';
+import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/l10n/app_localizations.dart';
@@ -49,6 +50,70 @@ void main() {
     await tester.tap(find.text('Unlock'));
     await tester.pumpAndSettle();
     expect(find.byType(ProjectSetupPage), findsOneWidget);
+  });
+
+  testWidgets('a cancelled prompt is not asked again on return, a lock '
+      'keeps the page (L1, L5)', (tester) async {
+    seedSecrets(const [Account(id: 'a1', name: 'Acme')]);
+    final answers = [false, true];
+    await tester.pumpWidget(await app(answers));
+    await tester.pumpAndSettle();
+    // The resume that ends the cancelled system prompt.
+    tester.binding
+      ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+      ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(answers, [true]);
+    expect(find.text('Falco is locked.'), findsOneWidget);
+    await tester.tap(find.text('Unlock'));
+    await tester.pumpAndSettle();
+    final page = tester.element(find.byType(ProjectSetupPage));
+
+    // Back from background after the auto lock time: locked, page kept.
+    final container = ProviderScope.containerOf(page);
+    final lock = container.read(appLockProvider.notifier);
+    var now = DateTime(2026);
+    lock.now = () => now;
+    answers.add(true);
+    [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+    ].forEach(tester.binding.handleAppLifecycleStateChanged);
+    now = now.add(const Duration(hours: 1));
+    [
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ].forEach(tester.binding.handleAppLifecycleStateChanged);
+    await tester.pumpAndSettle();
+    expect(answers, isEmpty, reason: 'a real lock asks at once');
+    expect(tester.element(find.byType(ProjectSetupPage)), same(page));
+  });
+
+  testWidgets('L6 names the accounts whose access data the system deleted', (
+    tester,
+  ) async {
+    seedSecrets(const [
+      Account(
+        id: 'a1',
+        name: 'Acme',
+        projects: [Project(id: 'p1', name: 'P')],
+      ),
+      Account(id: 'a2', name: 'Other', hasRobot: true),
+    ]);
+    await tester.pumpWidget(await app([true]));
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(Navigator).first);
+    ProviderScope.containerOf(context).read(secretStoreProvider).lost.value = {
+      'cloud.p1',
+    };
+    await tester.pumpAndSettle();
+    expect(find.text('Access data deleted'), findsOneWidget);
+    expect(find.textContaining('again for: Acme.'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('Access data deleted'), findsNothing);
   });
 
   testWidgets('SET-023 the first start asks for no unlock', (tester) async {

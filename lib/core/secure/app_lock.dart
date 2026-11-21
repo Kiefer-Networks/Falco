@@ -12,7 +12,8 @@ part 'app_lock.g.dart';
 /// (local_auth falls back to the PIN, SET-013, BUG-023). Returns false if
 /// the user cancelled and null when the device has no screen lock at all.
 /// With a hardware bound vault, opening it is the check, so the user sees
-/// one prompt (SET-015). Overridden in tests.
+/// one prompt (SET-015); it is read again, so an open vault never answers
+/// for the user. Overridden in tests.
 @Riverpod(keepAlive: true)
 Future<bool?> Function(String reason) authenticator(Ref ref) {
   final auth = LocalAuthentication();
@@ -20,7 +21,7 @@ Future<bool?> Function(String reason) authenticator(Ref ref) {
   return (reason) async {
     if (!await auth.isDeviceSupported()) return null;
     try {
-      if (await secrets.bound) return await secrets.open();
+      if (await secrets.bound) return await secrets.verify();
       return await auth.authenticate(
         localizedReason: reason,
         persistAcrossBackgrounding: true,
@@ -52,10 +53,17 @@ enum AppLockState {
 /// first secret goes into the vault with the platform's own check.
 @Riverpod(keepAlive: true)
 class AppLock extends _$AppLock {
-  DateTime? _pausedAt;
+  (DateTime, Duration)? _pausedAt;
+  int _prompts = 0;
 
-  /// Clock, replaceable in tests.
+  /// Wall clock, replaceable in tests.
   DateTime Function() now = DateTime.now;
+
+  /// Monotonic clock that ignores changes of the device time, replaceable
+  /// in tests.
+  Duration Function() uptime = () => _uptime.elapsed;
+
+  static final _uptime = Stopwatch()..start();
 
   @override
   AppLockState build() => ref.read(appSettingsProvider).lock
@@ -70,11 +78,11 @@ class AppLock extends _$AppLock {
     if (state == AppLockState.unlocked) return Future.value();
     return _pending ??= () async {
       try {
-        if ((await ref.read(scopeRepositoryProvider).accounts()).isEmpty) {
+        if (await _noAccounts()) {
           state = AppLockState.unlocked;
           return;
         }
-        state = switch (await ref.read(authenticatorProvider)(reason)) {
+        state = switch (await check(reason)) {
           true => AppLockState.unlocked,
           false => AppLockState.locked,
           null => AppLockState.unavailable,
@@ -83,6 +91,27 @@ class AppLock extends _$AppLock {
         _pending = null;
       }
     }();
+  }
+
+  /// An unreadable account list counts as accounts: ask rather than open.
+  Future<bool> _noAccounts() async {
+    try {
+      return (await ref.read(scopeRepositoryProvider).accounts()).isEmpty;
+    } on Object {
+      return false;
+    }
+  }
+
+  /// Asks the user through the system prompt, also while unlocked (turning
+  /// the lock off). The app leaving the foreground for the prompt does not
+  /// count as background time.
+  Future<bool?> check(String reason) async {
+    _prompts++;
+    try {
+      return await ref.read(authenticatorProvider)(reason);
+    } finally {
+      _prompts--;
+    }
   }
 
   /// Turns the lock off from the "no screen lock" screen: without a device
@@ -94,18 +123,29 @@ class AppLock extends _$AppLock {
   }
 
   /// Call when the app goes to background.
-  void paused() => _pausedAt ??= now();
+  void paused() {
+    if (_prompts == 0) _pausedAt ??= (now(), uptime());
+  }
 
-  /// Call when the app returns; locks after the auto lock time.
-  void resumed() {
+  /// Call when the app returns; locks after the auto lock time and then
+  /// returns true. Both clocks count: the monotonic one ignores a device
+  /// time set back, the wall clock also runs while the device sleeps. A
+  /// wall clock that went back gives no usable time and locks.
+  bool resumed() {
     final pausedAt = _pausedAt;
     _pausedAt = null;
     final settings = ref.read(appSettingsProvider);
-    if (!settings.lock || pausedAt == null) return;
-    if (now().difference(pausedAt).inSeconds >= settings.lockTimeout) {
+    if (!settings.lock || pausedAt == null) return false;
+    final timeout = Duration(seconds: settings.lockTimeout);
+    final wall = now().difference(pausedAt.$1);
+    if (wall.isNegative ||
+        wall >= timeout ||
+        uptime() - pausedAt.$2 >= timeout) {
       state = AppLockState.locked;
       // Secrets need the next unlock again (SET-015).
       ref.read(secretStoreProvider).close();
+      return true;
     }
+    return false;
   }
 }

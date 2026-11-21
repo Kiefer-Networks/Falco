@@ -144,7 +144,9 @@ class SettingsPage extends ConsumerWidget {
             onChanged: (on) async {
               // Turning the lock off needs the same check as unlocking.
               if (!on &&
-                  await ref.read(authenticatorProvider)(l10n.lockReason) ==
+                  await ref
+                          .read(appLockProvider.notifier)
+                          .check(l10n.lockReason) ==
                       false) {
                 return;
               }
