@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:falco/core/http/http.dart';
 
@@ -16,6 +17,9 @@ class FakeAdapter implements HttpClientAdapter {
   /// All requests seen.
   final requests = <RequestOptions>[];
 
+  /// Body bytes as sent, per request in [requests].
+  final bodies = <List<int>>[];
+
   @override
   Future<ResponseBody> fetch(
     RequestOptions options,
@@ -23,6 +27,24 @@ class FakeAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     requests.add(options);
+    final sent = [
+      if (requestStream != null)
+        for (final chunk in await requestStream.toList()) ...chunk,
+    ];
+    bodies.add(sent);
+    // Like S3: a signed body hash must match the bytes sent.
+    final hash = options.headers['x-amz-content-sha256'];
+    if (hash != null &&
+        hash != 'UNSIGNED-PAYLOAD' &&
+        hash != sha256.convert(sent).toString()) {
+      return ResponseBody.fromString(
+        '<Error><Code>XAmzContentSHA256Mismatch</Code></Error>',
+        400,
+        headers: {
+          Headers.contentTypeHeader: ['application/xml'],
+        },
+      );
+    }
     final (status, body) = handler(options);
     // S3 answers XML (a String), optionally with headers (HeadObject).
     final (text, headers) = switch (body) {

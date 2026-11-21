@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:background_downloader/background_downloader.dart';
 
 import 'package:falco/api/s3/s3.dart';
+import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/storage/object_storage.dart';
 import 'package:falco/features/storage/transfers.dart';
@@ -291,6 +292,18 @@ void main() {
       expect(find.text('moved.txt'), findsOneWidget);
     });
 
+    testWidgets('copy and move refuse a key ending in /', (tester) async {
+      await openBucket(tester);
+      await objectMenu(tester, 'notes.txt', 'Move');
+      await enter(tester, 'key', 'archive/');
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'))
+            .onPressed,
+        isNull,
+      );
+    });
+
     testWidgets('OBJ-015 delete with the name', (tester) async {
       final cloud = await openBucket(tester);
       await objectMenu(tester, 'notes.txt', 'Delete');
@@ -431,7 +444,143 @@ void main() {
     });
   });
 
+  group('transfers', () {
+    test('a failed join keeps the parts and is retried', () async {
+      final cloud = storageCloud();
+      cloud.storage.failJoin = 1;
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider);
+      var event = transfers.events.first;
+      await transfers.upload(
+        projectId: 'p1',
+        location: 'fsn1',
+        bucket: 'media',
+        key: 'big.bin',
+        file: tempFile('big.bin', 'x' * 20),
+        contentType: 'application/octet-stream',
+      );
+      expect(await event, (upload: true, ok: false, name: 'big.bin'));
+      expect(cloud.storage.uploads, hasLength(1));
+      expect(Directory(transfers.partsRoot).listSync(), hasLength(1));
+      expect(s3Calls(cloud).where((c) => c.startsWith('DELETE')), isEmpty);
+      event = transfers.events.first;
+      await transfers.retryJoins();
+      expect(await event, (upload: true, ok: true, name: 'big.bin'));
+      expect(
+        cloud.storage.buckets['fsn1']!['media']!.objects['big.bin']!.size,
+        20,
+      );
+      expect(Directory(transfers.partsRoot).listSync(), isEmpty);
+    });
+
+    test('downloads of the same name do not replace each other', () async {
+      final cloud = storageCloud();
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider) as FakeTransfers;
+      for (final (key, version) in [
+        ('a.txt', null),
+        ('docs/a.txt', null),
+        ('docs/a.txt', 'v0'),
+      ]) {
+        await transfers.download(
+          projectId: 'p1',
+          location: 'fsn1',
+          bucket: 'media',
+          key: key,
+          versionId: version,
+        );
+      }
+      expect(
+        [
+          for (final t in transfers.downloadTasks)
+            '${t.directory}/${t.filename}',
+        ],
+        ['media/a.txt', 'media/docs/a.txt', 'media/docs/a (v0).txt'],
+      );
+    });
+
+    test('a download that cannot be kept is reported as failed', () async {
+      final cloud = storageCloud();
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = (c.read(transfersProvider) as FakeTransfers)
+        ..keeps = false;
+      final event = transfers.events.first;
+      await transfers.download(
+        projectId: 'p1',
+        location: 'fsn1',
+        bucket: 'media',
+        key: 'logo.png',
+      );
+      expect(await event, (upload: false, ok: false, name: 'logo.png'));
+    });
+  });
+
   group('S3', () {
+    Future<T> s3<T>(FakeCloud cloud, Future<T> Function(S3Client c) f) async {
+      final c = await fakeContainer(cloud, s3: true);
+      return await c.read(s3AccessProvider).run('p1', 'fsn1', f);
+    }
+
+    test('keys with empty segments reach S3 as signed', () async {
+      final cloud = storageCloud();
+      await s3(cloud, (c) async {
+        await c.put('media', 'a//b.txt', [1]);
+        await c.head('media', 'a//b.txt');
+      });
+      final objects = cloud.storage.buckets['fsn1']!['media']!.objects;
+      expect(objects['a//b.txt']!.size, 1);
+      expect([
+        for (final r in cloud.adapter.requests) r.uri.path,
+      ], everyElement('/media/a//b.txt'));
+    });
+
+    test('keys with dot segments are refused or deleted by name', () async {
+      expect(validKey('a/../b'), isFalse);
+      expect(validKey('a/./b'), isFalse);
+      expect(validKey('/a'), isFalse);
+      expect(validKey('a..b/.c'), isTrue);
+      final cloud = storageCloud();
+      final objects = cloud.storage.buckets['fsn1']!['media']!.objects
+        ..['x/../notes.txt'] = FakeObject(1);
+      await expectLater(
+        s3(cloud, (c) => c.head('media', 'x/../notes.txt')),
+        throwsA(isA<Invalid>().having((e) => e.code, 'code', dotSegmentKey)),
+      );
+      expect(cloud.adapter.requests, isEmpty);
+      await s3(cloud, (c) => c.delete('media', 'x/../notes.txt'));
+      expect(objects, isNot(contains('x/../notes.txt')));
+      expect(objects, contains('notes.txt'));
+    });
+
+    test('an empty body is sent as the bytes that were hashed', () async {
+      final cloud = storageCloud();
+      await s3(cloud, (c) => c.put('media', 'new/', const []));
+      expect(cloud.adapter.bodies.single, isEmpty);
+      expect(cloud.storage.buckets['fsn1']!['media']!.objects['new/']!.size, 0);
+    });
+
+    test('versions are read from every page', () async {
+      final cloud = storageCloud();
+      cloud.storage.versionPage = 1;
+      final media = cloud.storage.buckets['fsn1']!['media']!;
+      media.objects['notes.txt']!.older.addAll([('v0b', 2), ('v0a', 1)]);
+      media.objects['notes.txt.bak'] = FakeObject(5);
+      media.objects['notes.txt.old'] = FakeObject(5);
+      final versions = await s3(cloud, (c) => c.versions('media', 'notes.txt'));
+      expect([for (final v in versions) v.size], [64, 2, 1]);
+      // Stops at the first other key.
+      expect(cloud.adapter.requests, hasLength(4));
+    });
+
+    test('a copy failing in a 200 body throws', () async {
+      final cloud = storageCloud();
+      cloud.storage.failCopy = true;
+      await expectLater(
+        s3(cloud, (c) => c.copy('media', 'notes.txt', 'media', 'n.txt')),
+        throwsA(isA<Server>()),
+      );
+    });
+
     test('presigned GET matches the AWS example', () {
       final uri = presignV4(
         method: 'GET',

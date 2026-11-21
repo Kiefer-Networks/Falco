@@ -2634,6 +2634,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Datei kann unter diesem Namen nicht gespeichert werden.';
 
   @override
+  String get objectKeyDotSegment =>
+      'Falco kann dieses Objekt nicht öffnen: Sein Schlüssel enthält \".\" oder \"..\" als Ordnernamen, den jeder Link auf einen anderen Schlüssel auflöst.';
+
+  @override
   String get objectMove => 'Verschieben';
 
   @override

@@ -815,6 +815,7 @@
   "objectDownload": "Download",
   "objectInfo": "Info",
   "objectKeyInvalid": "This file cannot be stored under that name.",
+  "objectKeyDotSegment": "Falco cannot open this object: its key contains \".\" or \"..\" as a folder name, which every link resolves to another key.",
   "objectMove": "Move",
   "objectUpload": "Upload",
   "objectVersions": "Versions",

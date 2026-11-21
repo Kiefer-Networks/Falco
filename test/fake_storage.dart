@@ -190,6 +190,15 @@ class FakeStorage {
   /// Downloads the transfers started, as presigned links.
   final downloads = <Uri>[];
 
+  /// Joins that answer 200 with an error body before one succeeds.
+  int failJoin = 0;
+
+  /// Whether copies answer 200 with an error body.
+  bool failCopy = false;
+
+  /// Versions per page of a version listing.
+  int versionPage = 1000;
+
   final _polls = <int, int>{};
   var _next = 500;
 
@@ -475,11 +484,39 @@ class FakeStorage {
             '<DeleteResult>${failed.map((k) => '<Error><Key>$k</Key><Code>AccessDenied</Code></Error>').join()}</DeleteResult>',
           );
         case 'GET' when q.containsKey('versions'):
-          final o0 = b?.objects[q['prefix']];
-          final k = q['prefix']!;
+          // Every version of every key below the prefix, keys in order.
+          final all = [
+            for (final k in (b?.objects.keys.toList() ?? <String>[])..sort())
+              if (k.startsWith(q['prefix']!)) ...[
+                (k, b!.objects[k]!.version, true, b.objects[k]!.size),
+                for (final (v, size) in b.objects[k]!.older)
+                  (k, v, false, size),
+              ],
+          ];
+          var from = 0;
+          if (q['key-marker'] case final km?) {
+            from =
+                all.indexWhere(
+                  (e) => e.$1 == km && e.$2 == q['version-id-marker'],
+                ) +
+                1;
+          }
+          final page = all.skip(from).take(versionPage).toList();
+          final more = from + page.length < all.length;
+          final next = more
+              ? '<NextKeyMarker>${esc(page.last.$1)}</NextKeyMarker>'
+                    '<NextVersionIdMarker>${page.last.$2}</NextVersionIdMarker>'
+              : '';
+          String version((String, String, bool, int) e) =>
+              '<Version><Key>${esc(e.$1)}</Key><VersionId>${e.$2}</VersionId>'
+              '<IsLatest>${e.$3}</IsLatest><LastModified>'
+              '2026-02-0${e.$3 ? 3 : 2}T10:00:00.000Z'
+              '</LastModified><Size>${e.$4}</Size></Version>';
+          final versions = page.map(version).join();
           return (
             200,
-            '<ListVersionsResult>${o0 == null ? '' : ['<Version><Key>${esc(k)}</Key><VersionId>${o0.version}</VersionId><IsLatest>true</IsLatest><LastModified>2026-02-03T10:00:00.000Z</LastModified><Size>${o0.size}</Size></Version>', for (final (v, size) in o0.older) '<Version><Key>${esc(k)}</Key><VersionId>$v</VersionId><IsLatest>false</IsLatest><LastModified>2026-02-02T10:00:00.000Z</LastModified><Size>$size</Size></Version>'].join()}</ListVersionsResult>',
+            '<ListVersionsResult><IsTruncated>$more</IsTruncated>'
+                '$next$versions</ListVersionsResult>',
           );
         case 'GET':
           if (b == null) return noBucket;
@@ -520,8 +557,17 @@ class FakeStorage {
       case 'POST' when q.containsKey('uploadId'):
         final u = uploads.remove(q['uploadId']);
         if (u == null) return (404, '<Error><Code>NoSuchUpload</Code></Error>');
+        if (failJoin > 0) {
+          failJoin--;
+          uploads[q['uploadId']!] = u;
+          // S3 may fail a join with 200 and an error body.
+          return (200, '<Error><Code>InternalError</Code></Error>');
+        }
         _store(b, key, u.$3.values.fold(0, (a, s) => a + s));
-        return (200, '<CompleteMultipartUploadResult/>');
+        return (
+          200,
+          '<CompleteMultipartUploadResult><ETag>"j"</ETag></CompleteMultipartUploadResult>',
+        );
       case 'DELETE' when q.containsKey('uploadId'):
         uploads.remove(q['uploadId']);
         return (204, null);
@@ -547,8 +593,11 @@ class FakeStorage {
         final size = version == null
             ? source.size
             : source.older.firstWhere((v) => v.$1 == version).$2;
+        if (failCopy) {
+          return (200, '<Error><Code>InternalError</Code></Error>');
+        }
         _store(b, key, size);
-        return (200, '<CopyObjectResult/>');
+        return (200, '<CopyObjectResult><ETag>"c"</ETag></CopyObjectResult>');
       case 'PUT':
         _store(b, key, (o.data as List<int>?)?.length ?? 0);
         return (200, null);
@@ -589,9 +638,15 @@ class FakeStorage {
 /// downloads are recorded; each then reports `complete`.
 class FakeTransfers extends ObjectTransfers {
   new(super.s3, this.storage, {super.onUploaded})
-    : super(partSize: storage.partSize);
+    : super(
+        partSize: storage.partSize,
+        partsRoot: Directory.systemTemp.createTempSync('falco-parts').path,
+      );
 
   final FakeStorage storage;
+
+  /// Download tasks handed to the platform.
+  final downloadTasks = <DownloadTask>[];
 
   @override
   Future<void> start() async {}
@@ -604,6 +659,7 @@ class FakeTransfers extends ObjectTransfers {
         storage.upload(url, await File(await t.filePath()).length());
       } else {
         storage.downloads.add(url);
+        downloadTasks.add(t as DownloadTask);
       }
     }
     // Like the platform: updates arrive after enqueue returned.
@@ -617,6 +673,9 @@ class FakeTransfers extends ObjectTransfers {
     }
   }
 
+  /// What keep answers: false when the move to Downloads failed.
+  bool keeps = true;
+
   @override
-  Future<void> keep(DownloadTask task) async {}
+  Future<bool> keep(DownloadTask task) async => keeps;
 }

@@ -56,11 +56,15 @@ final class TransfersProvider
 String _$transfersHash() => r'40f403829a99ee0e74e8c7d106c24f6cffc26784';
 
 /// Finished transfers, for the snackbar of the object browser.
+/// Watching them (the object browser, after the unlock) also retries
+/// pending joins.
 
 @ProviderFor(transferEvents)
 final transferEventsProvider = TransferEventsProvider._();
 
 /// Finished transfers, for the snackbar of the object browser.
+/// Watching them (the object browser, after the unlock) also retries
+/// pending joins.
 
 final class TransferEventsProvider
     extends
@@ -71,6 +75,8 @@ final class TransferEventsProvider
         >
     with $FutureModifier<TransferEvent>, $StreamProvider<TransferEvent> {
   /// Finished transfers, for the snackbar of the object browser.
+  /// Watching them (the object browser, after the unlock) also retries
+  /// pending joins.
   TransferEventsProvider._()
     : super(
         from: null,
@@ -97,4 +103,4 @@ final class TransferEventsProvider
   }
 }
 
-String _$transferEventsHash() => r'0f7792afb3e3976ff3ae023b6a9e2cf9a4ad590d';
+String _$transferEventsHash() => r'bbcf2e23add0701c7d40a49321c082388e3a55e7';

@@ -17,6 +17,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:background_downloader/background_downloader.dart';
+import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/features/storage/object_storage.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
@@ -36,8 +37,17 @@ typedef TransferEvent = ({bool upload, bool ok, String name});
 
 /// Starts and finishes background transfers.
 class ObjectTransfers {
-  new(S3Access s3, {this.onUploaded, this.partSize = defaultPartSize})
-    : _s3 = s3;
+  new(
+    S3Access s3, {
+    this.onUploaded,
+    this.partSize = defaultPartSize,
+    String? partsRoot,
+  }) : _s3 = s3,
+       partsRoot = partsRoot ?? '${Directory.systemTemp.path}/falco-parts';
+
+  /// Folder of the part files, one folder per multipart upload with its
+  /// `job.json` until the upload is joined or aborted.
+  final String partsRoot;
 
   /// Size of upload parts; larger files upload in parts (OBJ-022).
   final int partSize;
@@ -96,13 +106,16 @@ class ObjectTransfers {
   }
 
   /// Puts a finished download where the user finds it: Downloads on
-  /// Android, Falco's folder in the Files app on iOS (OBJ-012).
+  /// Android, Falco's folder in the Files app on iOS (OBJ-012). False when
+  /// it could not be moved.
   @protected
-  Future<void> keep(DownloadTask task) async {
-    if (Platform.isAndroid) {
-      await FileDownloader().moveToSharedStorage(task, SharedStorage.downloads);
-    }
-  }
+  Future<bool> keep(DownloadTask task) async =>
+      !Platform.isAndroid ||
+      await FileDownloader().moveToSharedStorage(
+            task,
+            SharedStorage.downloads,
+          ) !=
+          null;
 
   /// Uploads [file] to [key] in the background (OBJ-007, OBJ-022).
   Future<void> upload({
@@ -144,18 +157,19 @@ class ObjectTransfers {
       (c) => c.createMultipart(bucket, key, contentType),
     );
     final parts = (size / partSize).ceil();
-    final dir = await Directory(
-      '${Directory.systemTemp.path}/falco-parts/${uploadId.hashCode}',
-    ).create(recursive: true);
+    final dir = await Directory('$partsRoot/${uploadId.hashCode}')
+        .create(recursive: true);
+    final job = {...meta, 'u': uploadId, 'n': parts, 'd': dir.path};
+    // What a later retry of the join needs (S3 keys stay in the store).
+    await File('${dir.path}/job.json').writeAsString(jsonEncode(job));
     // ponytail: parts are copies, so a large upload needs its size again
     // in temporary space until it is joined.
     await enqueue([
       for (var n = 1; n <= parts; n++)
-        await task(
-          await _part(file, n, dir),
-          {'partNumber': '$n', 'uploadId': uploadId},
-          {...meta, 'u': uploadId, 'n': parts, 'd': dir.path},
-        ),
+        await task(await _part(file, n, dir), {
+          'partNumber': '$n',
+          'uploadId': uploadId,
+        }, job),
     ]);
   }
 
@@ -191,6 +205,13 @@ class ObjectTransfers {
     required String key,
     String? versionId,
   }) async {
+    // Android 9 and older need the storage permission to move it to
+    // Downloads; asked now, while the user is here.
+    if (Platform.isAndroid) {
+      await FileDownloader().permissions.request(
+        PermissionType.androidSharedStorage,
+      );
+    }
     final url = await _s3.presign(
       projectId,
       location,
@@ -203,7 +224,8 @@ class ObjectTransfers {
     await enqueue([
       DownloadTask(
         url: '$url',
-        filename: baseName(key),
+        directory: downloadDirectory(bucket, key),
+        filename: downloadName(key, versionId),
         displayName: baseName(key),
         group: 'download',
         updates: Updates.statusAndProgress,
@@ -227,26 +249,45 @@ class ObjectTransfers {
     final name = baseName(meta['k']! as String);
     final task = u.task;
     if (task is DownloadTask) {
-      if (ok) await keep(task);
-      _events.add((upload: false, ok: ok, name: name));
+      final kept = ok && await keep(task);
+      _events.add((upload: false, ok: kept, name: name));
       return;
     }
     if (meta['u'] case final String uploadId) {
-      final next = (_joins[uploadId] ?? Future<void>.value()).then(
-        (_) => _joinParts(meta, uploadId, ok: ok),
-      );
-      _joins[uploadId] = next;
-      await next;
+      await _queue(uploadId, () => _joinParts(meta, uploadId, ok: ok));
       return;
     }
     if (ok) onUploaded?.call();
     _events.add((upload: true, ok: ok, name: name));
   }
 
+  Future<void> _queue(String uploadId, Future<void> Function() f) {
+    final next = (_joins[uploadId] ?? Future<void>.value()).then((_) => f());
+    _joins[uploadId] = next;
+    return next;
+  }
+
+  /// Joins (or aborts) multipart uploads whose join failed before, e.g.
+  /// offline or before the unlock (OBJ-022).
+  Future<void> retryJoins() async {
+    final root = Directory(partsRoot);
+    if (!root.existsSync()) return;
+    await for (final dir in root.list()) {
+      final file = File('${dir.path}/job.json');
+      if (!file.existsSync()) continue;
+      final job = (jsonDecode(await file.readAsString()) as Map)
+          .cast<String, Object?>();
+      final abort = job['abort'] == true;
+      final id = job['u']! as String;
+      await _queue(id, () => _joinParts(job, id, ok: !abort, report: !abort));
+    }
+  }
+
   Future<void> _joinParts(
     Map<String, Object?> m,
     String uploadId, {
     required bool ok,
+    bool report = true,
   }) async {
     if (_completing.contains(uploadId)) return;
     final (p, l, b, k) = (
@@ -255,27 +296,68 @@ class ObjectTransfers {
       m['b']! as String,
       m['k']! as String,
     );
+    final dir = Directory(m['d']! as String);
     var done = false;
+    _completing.add(uploadId);
     try {
       if (!ok) {
-        _completing.add(uploadId);
         await _s3.run(p, l, (c) => c.abortMultipart(b, k, uploadId));
       } else {
         final parts = await _s3.run(p, l, (c) => c.parts(b, k, uploadId));
-        if (parts.length < (m['n']! as int)) return;
-        _completing.add(uploadId);
+        if (parts.length < (m['n']! as int)) {
+          _completing.remove(uploadId);
+          return;
+        }
         await _s3.run(p, l, (c) => c.completeMultipart(b, k, uploadId, parts));
         done = true;
       }
-    } on Object {
-      done = false;
+    } on Object catch (e) {
+      // S3 refused for good: nothing to retry. Anything else (offline,
+      // locked, a server error) keeps the parts and the upload id for
+      // retryJoins.
+      // ponytail: a server error that never ends keeps the parts in
+      // temporary space; add a retry limit if that shows up.
+      if (e is! Invalid &&
+          e is! NotFound &&
+          e is! Forbidden &&
+          e is! Conflict) {
+        _completing.remove(uploadId);
+        final file = File('${dir.path}/job.json');
+        if (!ok && file.existsSync()) {
+          await file.writeAsString(jsonEncode({...m, 'abort': true}));
+        }
+        if (report) _events.add((upload: true, ok: false, name: baseName(k)));
+        return;
+      }
+      // Giving up: abort first, so S3 keeps no billed parts.
+      if (ok) {
+        await _s3
+            .run(p, l, (c) => c.abortMultipart(b, k, uploadId))
+            .catchError((Object _) {});
+      }
     }
-    await Directory(m['d']! as String)
-        .delete(recursive: true)
-        .catchError((Object _) => Directory(''));
+    await dir.delete(recursive: true).catchError((Object _) => dir);
     if (done) onUploaded?.call();
-    _events.add((upload: true, ok: done, name: baseName(k)));
+    if (report) _events.add((upload: true, ok: done, name: baseName(k)));
   }
+}
+
+/// Folder of a download below Falco's documents: one per bucket and
+/// prefix, so objects of the same name do not replace each other.
+String downloadDirectory(String bucket, String key) => [
+  bucket,
+  ...(key.split('/')..removeLast()),
+].where((s) => s.isNotEmpty).join('/');
+
+/// File name of a download; an older version gets its id, so it does not
+/// replace the current one.
+String downloadName(String key, String? versionId) {
+  final name = baseName(key);
+  if (versionId == null) return name;
+  final dot = name.lastIndexOf('.');
+  return dot <= 0
+      ? '$name ($versionId)'
+      : '${name.substring(0, dot)} ($versionId)${name.substring(dot)}';
 }
 
 /// The app's transfers; finished uploads refresh the listings.
@@ -286,6 +368,11 @@ ObjectTransfers transfers(Ref ref) => ObjectTransfers(
 );
 
 /// Finished transfers, for the snackbar of the object browser.
+/// Watching them (the object browser, after the unlock) also retries
+/// pending joins.
 @riverpod
-Stream<TransferEvent> transferEvents(Ref ref) =>
-    ref.watch(transfersProvider).events;
+Stream<TransferEvent> transferEvents(Ref ref) {
+  final transfers = ref.watch(transfersProvider);
+  unawaited(transfers.retryJoins().catchError((Object _) {}));
+  return transfers.events;
+}
