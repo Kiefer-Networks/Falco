@@ -2055,6 +2055,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get recordsFromPrimaries =>
+      'The records of a secondary zone come from its primary nameservers.';
+
+  @override
   String get recordsBulkTtlOnly => 'Different types: only the TTL can change.';
 
   @override

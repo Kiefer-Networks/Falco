@@ -121,6 +121,32 @@ void main() {
     await settleAction(tester);
   });
 
+  testWidgets('DNS-022 a secondary zone loads no records and edits only '
+      'labels', (tester) async {
+    final cloud = await openZone(tester, 'example.org');
+    expect(cloud.calls, isNot(contains('GET /zones/6/rrsets')));
+    expect(
+      find.text(
+        'The records of a secondary zone come from its primary nameservers.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byTooltip('More actions'));
+    await tester.pumpAndSettle();
+    expect(find.text('Export'), findsNothing);
+    expect(find.text('Select records'), findsNothing);
+    await tester.tapAt(Offset.zero);
+    await tester.pumpAndSettle();
+    await tile(tester, 'Edit');
+    expect(find.byKey(const ValueKey('ttl')), findsNothing);
+    await enter(tester, 'labels', 'team=dns');
+    await tap(tester, 'Save');
+    expect(cloud.calls.where((c) => c.contains('change_ttl')), isEmpty);
+    expect(cloud.body('PUT /zones/6'), {
+      'labels': {'team': 'dns'},
+    });
+  });
+
   testWidgets('DNS-004 delete needs the zone name', (tester) async {
     final cloud = await openZone(tester);
     await tap(tester, 'Delete');

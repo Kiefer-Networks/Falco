@@ -260,18 +260,22 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
     return FormSheet.show(
       context,
       title: l10n.commonEdit,
+      // A secondary zone has no TTL of its own; only labels change.
       fields: (_) => [
-        FieldSpec(
-          'ttl',
-          l10n.fieldDefaultTtl,
-          initial: '${z.ttl}',
-          helper: l10n.ttlLimits,
-        ),
+        if (!z.secondary)
+          FieldSpec(
+            'ttl',
+            l10n.fieldDefaultTtl,
+            initial: '${z.ttl}',
+            helper: l10n.ttlLimits,
+          ),
         labelsField(l10n, z.labels),
       ],
-      valid: (v) => validTtl(v['ttl'], optional: false) && validLabels(v),
+      valid: (v) =>
+          (z.secondary || validTtl(v['ttl'], optional: false)) &&
+          validLabels(v),
       onSave: (v) async {
-        final ttl = int.parse(v['ttl']!.trim());
+        final ttl = z.secondary ? z.ttl : int.parse(v['ttl']!.trim());
         final labels = parseLabels(v['labels'] ?? '')!;
         final api = ref.read(cloudApiProvider(_scope.projectId));
         final tracker = ref.read(actionTrackerProvider(_scope));
@@ -441,7 +445,10 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
     }
     final t = (scope: _scope, type: CloudType.zone, id: z.id, name: z.name);
     final setsProvider = rrsetsProvider(_scope, z.id);
-    final setsAsync = ref.watch(setsProvider);
+    // A secondary zone's records come from its primaries (AXFR).
+    final setsAsync = z.secondary
+        ? const AsyncData(<RRSet>[])
+        : ref.watch(setsProvider);
     final sets = setsAsync.value ?? const <RRSet>[];
     final progress = ref
         .watch(trackedActionProvider(_scope, CloudType.zone, z.id))
@@ -464,7 +471,7 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
         ids: [l10n.ttlValue(z.ttl), ...z.nameservers],
         onRefresh: () => Future.wait([
           refreshQuietly(ref, provider.future),
-          refreshQuietly(ref, setsProvider.future),
+          if (!z.secondary) refreshQuietly(ref, setsProvider.future),
         ]),
         actions: [
           DetailAction(
@@ -494,22 +501,23 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
                         changeZone(api, z.id, ProtectZone(delete: p)),
                   ),
           ),
-          DetailAction(
-            icon: Icons.download,
-            label: l10n.zoneExport,
-            onTap: () => _export(z),
-          ),
-          DetailAction(
-            label: l10n.recordsSelect,
-            icon: Icons.checklist,
-            onTap: () => setState(() => _selected = {}),
-          ),
-          if (!z.secondary)
+          if (!z.secondary) ...[
+            DetailAction(
+              icon: Icons.download,
+              label: l10n.zoneExport,
+              onTap: () => _export(z),
+            ),
+            DetailAction(
+              label: l10n.recordsSelect,
+              icon: Icons.checklist,
+              onTap: () => setState(() => _selected = {}),
+            ),
             DetailAction(
               label: l10n.zoneImport,
               icon: Icons.upload_file,
               onTap: () => _import(z),
             ),
+          ],
           if (z.secondary)
             DetailAction(
               label: l10n.primaryAdd,
@@ -621,6 +629,8 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
                   )
                 else if (!setsAsync.hasValue)
                   const LinearProgressIndicator()
+                else if (z.secondary)
+                  Text(l10n.recordsFromPrimaries)
                 else if (sets.isEmpty)
                   Text(l10n.recordsEmpty),
                 for (final s in sets)

@@ -564,6 +564,7 @@
   "recordsEditSelected": "Auswahl bearbeiten",
   "recordsEmpty": "Noch keine Records.",
   "recordsFailed": "{count, plural, =1{1 Record Set fehlgeschlagen} other{{count} Record Sets fehlgeschlagen}}",
+  "recordsFromPrimaries": "Die Einträge einer sekundären Zone kommen von ihren primären Nameservern.",
   "recordsBulkTtlOnly": "Verschiedene Typen: nur die TTL ist änderbar.",
   "recordsBulkValueConsequence": "Alle Werte dieser Record Sets werden durch den neuen Wert ersetzt.",
   "recordsBulkTtlConsequence": "Diese Record Sets erhalten die neue TTL.",

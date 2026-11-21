@@ -3476,6 +3476,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 record set failed} other{{count} record sets failed}}'**
   String recordsFailed(int count);
 
+  /// No description provided for @recordsFromPrimaries.
+  ///
+  /// In en, this message translates to:
+  /// **'The records of a secondary zone come from its primary nameservers.'**
+  String get recordsFromPrimaries;
+
   /// No description provided for @recordsBulkTtlOnly.
   ///
   /// In en, this message translates to:

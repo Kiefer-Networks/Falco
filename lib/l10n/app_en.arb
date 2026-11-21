@@ -637,6 +637,7 @@
   "recordsEmpty": "No records yet.",
   "recordsFailed": "{count, plural, =1{1 record set failed} other{{count} record sets failed}}",
   "@recordsFailed": {"placeholders": {"count": {"type": "int"}}},
+  "recordsFromPrimaries": "The records of a secondary zone come from its primary nameservers.",
   "recordsBulkTtlOnly": "Different types: only the TTL can change.",
   "recordsBulkValueConsequence": "Every value of these record sets is replaced by the new value.",
   "recordsBulkTtlConsequence": "These record sets get the new TTL.",
