@@ -16,7 +16,7 @@ Status: Abnahmeliste für den Neubau. Grundlage: [README.md](README.md) (Zielbil
 | Bereich | Präfix | Zeilen | davon neu oder ohne alte UI |
 |---|---|---|---|
 | Onboarding & Accounts | ONB | 42 | 0 |
-| Einstellungen & Sicherheit | SET | 22 | 0 |
+| Einstellungen & Sicherheit | SET | 23 | 1 |
 | Compute | CMP | 99 | 20 |
 | Netzwerk | NET | 94 | 18 |
 | DNS | DNS | 31 | 10 |
@@ -24,8 +24,8 @@ Status: Abnahmeliste für den Neubau. Grundlage: [README.md](README.md) (Zielbil
 | Object Storage | OBJ | 25 | 6 |
 | Robot | ROB | 60 | 24 |
 | Suche & Aktivität | SUC | 40 | 28 |
-| Querschnitt | QRS | 28 | 0 |
-| **Summe** | | **478** | **122** |
+| Querschnitt | QRS | 30 | 0 |
+| **Summe** | | **481** | **123** |
 
 Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endpunkt-zuordnung-alte-app) und die Liste [Nicht übernehmen](#nicht-übernehmen) (Präfix BUG).
 
@@ -103,6 +103,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | SET-020 | Zwischenablage sensibel markieren | Als sensibel markieren; Hinweis wenn System das nicht kann | `C/dialog/SecureRevealDialog.kt:50` |  | 2 | Widget |
 | SET-021 | Geheimnis anzeigen Sheet | Einmalige Anzeige von Passwörtern mit Kopieren und Schließen | `C/dialog/SecureRevealDialog.kt:77` |  | 2 | Widget |
 | SET-022 | Fehlertexte bereinigt | Keine Tokens oder URLs mit Geheimnissen in Fehlermeldungen | `D/util/Errors.kt:20` |  | 2 | Unit |
+| SET-023 | Kein Entsperren vor dem ersten Account | Solange kein Account gespeichert ist, fragt der Start nicht nach Biometrie oder PIN; danach gilt SET-007. Das erste Geheimnis landet mit der Prüfung der Plattform im gebundenen Speicher | API neu |  | 9 | Unit |
 
 ## Compute
 
@@ -557,6 +558,8 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | QRS-026 | Barrierefreiheit | Screenreader Labels, Kontraste, Schriftgrößen |  |  | 9 | Widget |
 | QRS-027 | Tablet Layout | Liste und Detail nebeneinander, Navigation Rail |  |  | 9 | Golden |
 | QRS-028 | Action Tracker | Laufende Actions bis Ende verfolgen, betroffene Ressource neu laden, Fortschritt am Objekt | `D/repo/DnsRepo.kt:61` | `GET /actions/{id}` | 2 | Unit |
+| QRS-029 | Bereichsübersicht | Jeder Bereich der unteren Navigation öffnet eine Übersicht: pro Ressourcentyp eine Kachel mit Anzahl und Status, Server mit ihren ersten Zeilen; keine scrollenden Tabs |  |  | 9 | Golden |
+| QRS-030 | Aktionsleiste im Detail | Alle Aktionen einer Ressource unten: höchstens drei als Knopf mit vollem Text, der Rest im Blatt "Mehr"; genau ein Anlegen pro Screen (FAB), leere Listen ohne Knopf |  |  | 9 | Golden |
 
 ## Endpunkt Zuordnung alte App
 

@@ -21,7 +21,7 @@ import 'package:falco/features/network/load_balancers.dart';
 import 'package:falco/features/network/networks.dart';
 import 'package:falco/features/placement_groups/placement_groups.dart';
 import 'package:falco/features/robot/robot.dart';
-import 'package:falco/features/robot/robot_page.dart';
+import 'package:falco/features/robot/robot_lists.dart';
 import 'package:falco/features/servers/servers.dart';
 import 'package:falco/features/ssh_keys/ssh_keys.dart';
 import 'package:falco/features/storage/object_storage.dart';

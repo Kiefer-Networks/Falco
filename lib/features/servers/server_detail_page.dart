@@ -63,13 +63,64 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
     final off = s.status == ResourceStatus.off && !busy;
     final ops = ServerOps(context, ref, _scope, s);
 
-    MoreMenuItem item(String label, IconData icon, VoidCallback onSelected) =>
-        MoreMenuItem(label: label, icon: icon, onSelected: onSelected);
+    DetailAction item(String label, IconData icon, VoidCallback onTap) =>
+        DetailAction(label: label, icon: icon, onTap: onTap);
 
     return FalcoScaffold(
       title: l10n.resourceServer,
-      moreMenu: MoreMenu(
-        items: [
+      body: DetailPage(
+        status: busy
+            ? switch (progress.command) {
+                'reboot_server' || 'reset_server' => ResourceStatus.rebooting,
+                'start_server' || 'poweron_server' => ResourceStatus.starting,
+                'shutdown_server' ||
+                'stop_server' ||
+                'poweroff_server' => ResourceStatus.stopping,
+                'rebuild_server' => ResourceStatus.rebuilding,
+                'delete_server' => ResourceStatus.deleting,
+                _ => ResourceStatus.inProgress,
+              }
+            : s.status,
+        statusDetail: busy
+            ? '${progress.progress} %'
+            : [
+                if (s.protectDelete || s.protectRebuild) l10n.protected,
+                if (s.rescue) l10n.rescueActive,
+              ].join(' · ').nullIfEmpty,
+        name: s.name,
+        ids: [
+          if (s.ipv4 case final ip?) formatIp(ip),
+          if (s.ipv6 case final ip?) formatIp(ip),
+        ],
+        onRefresh: () => refreshQuietly(ref, provider.future),
+        actions: [
+          if (off)
+            DetailAction(
+              icon: Icons.play_arrow,
+              label: l10n.actionPowerOn,
+              onTap: () => ops.power(ServerPower.powerOn),
+            )
+          else
+            DetailAction(
+              icon: Icons.power_settings_new,
+              label: l10n.actionShutdown,
+              onTap: running ? () => ops.power(ServerPower.shutdown) : null,
+            ),
+          DetailAction(
+            icon: Icons.refresh,
+            label: l10n.actionReboot,
+            onTap: running ? () => ops.power(ServerPower.reboot) : null,
+          ),
+          DetailAction(
+            icon: Icons.terminal,
+            label: l10n.actionConsole,
+            onTap: running ? ops.console : null,
+          ),
+          DetailAction(
+            icon: Icons.power_off_outlined,
+            label: l10n.actionPowerOff,
+            onTap: running ? () => ops.power(ServerPower.powerOff) : null,
+          ),
           item(l10n.commonEdit, Icons.edit_outlined, ops.edit),
           item(l10n.actionSnapshot, Icons.photo_camera_outlined, ops.snapshot),
           item(
@@ -99,66 +150,11 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
           item(l10n.fieldProtection, Icons.lock_outline, ops.protection),
           item(l10n.reverseDns, Icons.dns_outlined, ops.reverseDns),
           item(l10n.networkAttach, Icons.hub_outlined, ops.attachNetwork),
-          MoreMenuItem(
+          DetailAction(
             label: l10n.actionReset,
             icon: Icons.restart_alt,
             destructive: true,
-            onSelected: () => ops.power(ServerPower.reset),
-          ),
-        ],
-      ),
-      body: DetailPage(
-        status: busy
-            ? switch (progress.command) {
-                'reboot_server' || 'reset_server' => ResourceStatus.rebooting,
-                'start_server' || 'poweron_server' => ResourceStatus.starting,
-                'shutdown_server' ||
-                'stop_server' ||
-                'poweroff_server' => ResourceStatus.stopping,
-                'rebuild_server' => ResourceStatus.rebuilding,
-                'delete_server' => ResourceStatus.deleting,
-                _ => ResourceStatus.inProgress,
-              }
-            : s.status,
-        statusDetail: busy
-            ? '${progress.progress} %'
-            : [
-                if (s.protectDelete || s.protectRebuild) l10n.protected,
-                if (s.rescue) l10n.rescueActive,
-              ].join(' · ').nullIfEmpty,
-        name: s.name,
-        ids: [
-          if (s.ipv4 case final ip?) formatIp(ip),
-          if (s.ipv6 case final ip?) formatIp(ip),
-        ],
-        onRefresh: () => refreshQuietly(ref, provider.future),
-        actions: [
-          ActionTile(
-            icon: Icons.refresh,
-            label: l10n.actionReboot,
-            onTap: running ? () => ops.power(ServerPower.reboot) : null,
-          ),
-          ActionTile(
-            icon: Icons.power_settings_new,
-            label: l10n.actionShutdown,
-            onTap: running ? () => ops.power(ServerPower.shutdown) : null,
-          ),
-          if (off)
-            ActionTile(
-              icon: Icons.play_arrow,
-              label: l10n.actionPowerOn,
-              onTap: () => ops.power(ServerPower.powerOn),
-            )
-          else
-            ActionTile(
-              icon: Icons.power_off_outlined,
-              label: l10n.actionPowerOff,
-              onTap: running ? () => ops.power(ServerPower.powerOff) : null,
-            ),
-          ActionTile(
-            icon: Icons.terminal,
-            label: l10n.actionConsole,
-            onTap: running ? ops.console : null,
+            onTap: () => ops.power(ServerPower.reset),
           ),
         ],
         sections: [

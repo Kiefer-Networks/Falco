@@ -34,12 +34,7 @@ class ServerList extends ConsumerWidget {
           ? errorText(toFalcoError(async.error!), l10n)
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
-      empty: EmptyHint(
-        message: l10n.emptyServers,
-        actionLabel: l10n.actionCreateServer,
-        onAction: () =>
-            CreateRoute.of(scope, CreateKind.server).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.emptyServers),
       searchText: (s) => '${s.name} ${s.address ?? ''}',
       filters: [
         ResourceFilter(l10n.filterAll, (_) => true),
@@ -60,24 +55,33 @@ class ServerList extends ConsumerWidget {
           (a, b) => b.created.compareTo(a.created),
         ),
       ],
-      itemBuilder: (context, s) => ResourceRow(
-        status: s.status,
-        name: s.name,
-        monoLine: [
-          if (s.address case final a?) formatIp(a),
-          s.type.toUpperCase(),
-          s.location,
-          if (accounts != null) projectName(accounts, s.projectId),
-        ].join(' · '),
-        onTap: () => openDetail(
-          context,
-          ServerRoute(
-            accountId: scope.accountId,
-            projectId: s.projectId,
-            serverId: s.id,
-          ),
-        ),
-      ),
+      itemBuilder: (context, s) => serverRow(context, scope, s, accounts),
     );
   }
 }
+
+/// The row of server [s]: status, name, IP, type, location and, with
+/// "All projects", the project ([accounts] given). Opens the detail.
+Widget serverRow(
+  BuildContext context,
+  Scope scope,
+  CloudServer s,
+  List<Account>? accounts,
+) => ResourceRow(
+  status: s.status,
+  name: s.name,
+  monoLine: [
+    if (s.address case final a?) formatIp(a),
+    s.type.toUpperCase(),
+    s.location,
+    if (accounts != null) projectName(accounts, s.projectId),
+  ].join(' · '),
+  onTap: () => openDetail(
+    context,
+    ServerRoute(
+      accountId: scope.accountId,
+      projectId: s.projectId,
+      serverId: s.id,
+    ),
+  ),
+);

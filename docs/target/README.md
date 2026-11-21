@@ -77,6 +77,12 @@ Regeln:
 
 - **Telefon:** Untere Navigationsleiste mit 4 Zielen: Compute, Netzwerk,
   Storage, Robot. Dazu oben rechts Suche und Aktivität.
+- **Bereichsübersicht:** Jedes Ziel öffnet eine Übersicht mit einer Kachel
+  pro Ressourcentyp (Symbol, Name, Anzahl, Status Zusammenfassung mit
+  Statusbalken). Server und Dedicated Server zeigen in ihrer Kachel die
+  ersten Zeilen (Status, Name, IP, Typ, Standort). Ein Tipp auf die Kachel
+  öffnet die Liste des Typs als eigene Seite. Keine Tabs, nichts scrollt
+  seitlich aus dem Bild.
 - **Tablet:** Navigation Rail mit denselben Zielen, Liste und Detail
   nebeneinander.
 - **Kopfzeile jedes Screens:** Account und Projekt als Wechsler
@@ -94,12 +100,15 @@ Regeln:
 | Aufgabe | Genau ein Muster |
 |---|---|
 | Liste | Kopfzeile mit Titel und Anzahl, Suche und Filter Chips, Sortierung im Menü, Pull to Refresh, kompakte Zeilen (Status, Name, Mono Zeile) |
-| Leer | Illustrationsfreier Hinweis mit einer klaren Aktion ("Server erstellen") |
+| Übersicht | `AreaOverview`: Kacheln pro Ressourcentyp mit Anzahl und Status, Tipp öffnet die Liste; lädt nichts, ist der Hinweis "Nicht verfügbar" an der Kachel, lädt gar nichts, steht die Fehlerkarte darüber |
+| Leer | `EmptyHint`: Symbol und ein Satz, nie ein Knopf. Angelegt wird über den FAB des Screens |
+| Blockiert | `ActionHint`: ein Satz und genau ein Knopf, nur wenn der ganze Screen ohne diese Handlung nicht weitergeht (Entsperren, fehlender Robot Zugang, fehlende S3 Schlüssel); nie für leere Listen |
 | Fehler | Fehlerkarte mit Ursache in Klartext und "Erneut versuchen"; bei vorhandenen Daten bleiben diese sichtbar, Fehler als Banner |
 | Laden | Skeleton Zeilen beim ersten Laden, danach nur Fortschrittsbalken |
-| Detail | Kopf (Status, Name, Mono Kennungen) → primäre Aktionen als Kacheln (max. 4) → Abschnitte (Übersicht, Metriken, Netzwerk, Einstellungen, Aktivität) → Gefahrenzone ganz unten |
-| Weitere Aktionen | Ein "Mehr" Menü in der Kopfzeile; nie Buttons im Inhalt verstreut, nie doppelt |
-| Anlegen | Immer ein Vollbild Wizard (Schritte, Zusammenfassung, Erstellen), Projekt Schritt nur wenn Scope "Alle Projekte" |
+| Detail | Kopf (Status, Name, Mono Kennungen) → Abschnitte (Übersicht, Metriken, Netzwerk, Einstellungen, Aktivität) → Gefahrenzone ganz unten im Inhalt. Alle Aktionen der Ressource in der Aktionsleiste unten (`DetailActionBar`) |
+| Aktionen im Detail | Aktionsleiste am unteren Rand, in Daumenreichweite: höchstens drei Aktionen als Knopf mit vollem Text (bricht um, wird nie abgeschnitten), alle weiteren im Blatt "Mehr". Kein Mehr Menü in der Kopfzeile einer Detailseite, keine Aktionsknöpfe im Inhalt außer der Gefahrenzone |
+| Weitere Aktionen sonst | Screens ohne Detail (Objekt Browser, Liste einer Zeile) nutzen ein "Mehr" Menü in der Kopfzeile bzw. an der Zeile; nie doppelt |
+| Anlegen | Genau ein Einstieg pro Screen: der FAB unten rechts auf der Liste des Typs ("+ Server erstellen"). Er öffnet immer einen Vollbild Wizard (Schritte, Zusammenfassung, Erstellen), Projekt Schritt nur wenn Scope "Alle Projekte". Übersicht und Leer Hinweis haben keinen Anlegen Knopf |
 | Bearbeiten | Bottom Sheet mit Formular und Speichern |
 | Bestätigen | Stufe 1: Sheet mit Titel, Folgen, primärer Aktion (Neustart, Ausschalten, Abhängen, Schutz ändern). Stufe 2: zusätzlich Namen eintippen (Löschen, Neuaufsetzen, Daten überschreiben). Die Regel steht im Code, nicht pro Screen |
 | Rückmeldung | Eine Snackbar pro Screen; laufende Hetzner Actions zusätzlich als Fortschritt am Objekt und in der Aktivität |
@@ -138,7 +147,11 @@ UI (Widgets) → Controller (Riverpod Notifier pro Screen, Scope als Parameter)
   aktualisiert (Abschnitt 9). Ein fehlschlagender Pin zeigt einen
   verständlichen Fehler, nie einen stillen Fallback.
 - Tokens und Keys nur in Keychain/Keystore, Zugriff nur nach Entsperren;
-  App Sperre beim Start und nach Hintergrundzeit (einstellbar).
+  App Sperre beim Start und nach Hintergrundzeit (einstellbar). Solange
+  kein Account gespeichert ist, gibt es nichts zu schützen: der erste Start
+  fragt nicht nach Biometrie oder PIN. Das erste Geheimnis schreibt die
+  Plattform mit ihrer eigenen Prüfung in den gebundenen Speicher, ab dann
+  sperrt jeder Start.
 - Bildschirmschutz in den Apps Übersichten, keine Screenshots von Geheimnissen.
 - Keine Analyse, kein Tracking, keine Drittanbieter Dienste.
 - Logs ohne Header, Bodies und Tokens; Release Builds ohne Debug Logging.

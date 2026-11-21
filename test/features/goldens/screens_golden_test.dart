@@ -31,10 +31,7 @@ void main() {
 
   Future<void> network(WidgetTester tester, String tab) async {
     await tap(tester, 'Network');
-    await tester.ensureVisible(find.widgetWithText(Tab, tab));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(Tab, tab));
-    await tester.pumpAndSettle();
+    await tap(tester, tab);
   }
 
   Future<void> settings(WidgetTester tester) async {
@@ -88,9 +85,15 @@ void main() {
       await tester.scrollUntilVisible(find.text('ABOUT FALCO'), 200);
       await tap(tester, 'About Falco');
     },
-    'server_list': (_) async {},
+    'compute_overview': (_) async {},
+    'server_list': (tester) => tap(tester, 'Servers'),
     'server_detail': (tester) async {
       await tester.tap(find.text('web-1'));
+      await tester.pumpAndSettle();
+    },
+    'server_more_actions': (tester) async {
+      await tap(tester, 'web-1');
+      await tester.tap(find.byTooltip('More actions'));
       await tester.pumpAndSettle();
     },
     'confirm_reboot': (tester) async {
@@ -117,11 +120,13 @@ void main() {
       await tap(tester, 'Delete');
     },
     'create_server_type': (tester) async {
+      await tap(tester, 'Servers');
       await tap(tester, 'Create server');
       await tap(tester, 'fsn1');
       await tap(tester, 'Next');
     },
     'create_server_summary': (tester) async {
+      await tap(tester, 'Servers');
       await tap(tester, 'Create server');
       await tap(tester, 'fsn1');
       await tap(tester, 'Next');
@@ -220,7 +225,9 @@ void main() {
     'accounts': 'ONB-021 ONB-022 ONB-023 BUG-004',
     'account': 'ONB-029',
     'about': 'ONB-040',
+    'compute_overview': 'QRS-029',
     'server_list': 'CMP-003',
+    'server_more_actions': 'QRS-030',
     'server_detail': 'CMP-016 CMP-017 CMP-018',
     'server_metrics': 'CMP-027',
     'server_danger': 'CMP-049',

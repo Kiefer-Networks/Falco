@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/l10n/app_localizations.dart';
+import 'package:falco/ui/detail_page.dart';
 import 'package:falco/ui/theme/falco_colors.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -37,7 +38,8 @@ class FalcoScaffold extends StatelessWidget {
   /// The single "more" menu (usually `MoreMenu`).
   final Widget? moreMenu;
 
-  /// Bottom navigation.
+  /// Bottom navigation. A [DetailPage] body brings its own: the
+  /// [DetailActionBar] of its actions.
   final Widget? bottomNavigationBar;
 
   /// Floating action button.
@@ -59,7 +61,13 @@ class FalcoScaffold extends StatelessWidget {
         actions: [...actions, ?moreMenu, const SizedBox(width: 4)],
       ),
       body: body,
-      bottomNavigationBar: bottomNavigationBar,
+      bottomNavigationBar:
+          bottomNavigationBar ??
+          switch (body) {
+            DetailPage(:final actions) when actions.isNotEmpty =>
+              DetailActionBar(actions: actions),
+            _ => null,
+          },
       floatingActionButton: floatingActionButton,
     );
   }

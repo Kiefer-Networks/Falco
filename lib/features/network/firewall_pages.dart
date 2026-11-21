@@ -39,12 +39,7 @@ class FirewallList extends ConsumerWidget {
           ? errorText(toFalcoError(async.error!), l10n)
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
-      empty: EmptyHint(
-        message: l10n.emptyFirewalls,
-        actionLabel: l10n.firewallCreate,
-        onAction: () =>
-            CreateRoute.of(scope, CreateKind.firewall).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.emptyFirewalls),
       searchText: (f) => f.name,
       filters: [
         ResourceFilter(l10n.filterAll, (_) => true),
@@ -305,7 +300,7 @@ class FirewallDetailPage extends ConsumerWidget {
         ids: [l10n.ruleCount(f.rules.length)],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.add,
             label: l10n.ruleAdd,
             onTap: () => showRuleSheet(
@@ -314,12 +309,12 @@ class FirewallDetailPage extends ConsumerWidget {
               save: (rule) => setAll([...f.rules, rule]),
             ),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.shield_outlined,
             label: l10n.firewallApply,
             onTap: apply,
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => editNameAndLabels(

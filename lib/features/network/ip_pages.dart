@@ -52,11 +52,6 @@ class IpList extends ConsumerWidget {
       onRefresh: () => refreshQuietly(ref, provider.future),
       empty: EmptyHint(
         message: floating ? l10n.emptyFloatingIps : l10n.emptyPrimaryIps,
-        actionLabel: floating ? l10n.floatingIpCreate : l10n.primaryIpCreate,
-        onAction: () => CreateRoute.of(
-          scope,
-          floating ? CreateKind.floatingIp : CreateKind.primaryIp,
-        ).push<void>(context),
       ),
       searchText: (i) => '${i.name} ${i.ip}',
       filters: [
@@ -187,13 +182,13 @@ class IpDetailPage extends ConsumerWidget {
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           if (ip.server == null)
-            ActionTile(
+            DetailAction(
               icon: Icons.link,
               label: l10n.ipAssign,
               onTap: busy ? null : assign,
             )
           else
-            ActionTile(
+            DetailAction(
               icon: Icons.link_off,
               label: l10n.ipUnassign,
               onTap: busy
@@ -215,7 +210,7 @@ class IpDetailPage extends ConsumerWidget {
                           changeIp(api, kind, ip.id, const UnassignIp()),
                     ),
             ),
-          ActionTile(
+          DetailAction(
             icon: Icons.dns_outlined,
             label: l10n.reverseDns,
             onTap: busy
@@ -250,7 +245,7 @@ class IpDetailPage extends ConsumerWidget {
                     ),
                   ),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => FormSheet.show(
@@ -295,7 +290,7 @@ class IpDetailPage extends ConsumerWidget {
               },
             ),
           ),
-          ActionTile(
+          DetailAction(
             icon: ip.protectDelete ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
             onTap: busy

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../fake_cloud.dart';
+import '../steps.dart';
 
 const _unauthorized =
     'The access data was rejected. Check the token or the credentials.';
@@ -28,6 +29,7 @@ void main() {
 
     testWidgets('filters by status', (tester) async {
       await pumpFalco(tester, FakeCloud());
+      await openList(tester, 'Servers');
       await tester.tap(find.text('Off'));
       await tester.pumpAndSettle();
       expect(find.text('db-1'), findsOneWidget);
@@ -36,7 +38,11 @@ void main() {
 
     testWidgets('CMP-004 empty project shows the empty hint', (tester) async {
       await pumpFalco(tester, FakeCloud(servers: []));
+      await openList(tester, 'Servers');
       expect(find.text('No servers in this project yet.'), findsOneWidget);
+      // The one create entry is the button at the bottom.
+      expect(find.text('Create server'), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsOneWidget);
     });
 
     testWidgets('rejected token shows the error card with retry', (
@@ -44,6 +50,7 @@ void main() {
     ) async {
       final cloud = FakeCloud()..failWith = (401, errorJson('unauthorized'));
       await pumpFalco(tester, cloud);
+      await openList(tester, 'Servers');
       expect(find.text(_unauthorized), findsOneWidget);
       cloud.failWith = null;
       await tester.tap(find.text('Try again'));
@@ -54,6 +61,7 @@ void main() {
     testWidgets('failed refresh keeps the data under a banner', (tester) async {
       final cloud = FakeCloud();
       await pumpFalco(tester, cloud);
+      await openList(tester, 'Servers');
       cloud.failWith = (503, errorJson('unavailable'));
       await tester.fling(find.text('web-1'), const Offset(0, 400), 1000);
       await tester.pumpAndSettle();
@@ -190,15 +198,11 @@ void main() {
       tester,
     ) async {
       final cloud = await openDetail(tester);
-      await tester.tap(find.byTooltip('More actions'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Reset'));
-      await tester.pumpAndSettle();
+      await more(tester, 'Reset');
       expect(find.text('Reset web-1?'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Power off'));
-      await tester.pumpAndSettle();
+      await more(tester, 'Power off');
       expect(find.text('Power off web-1?'), findsOneWidget);
       await tester.tap(find.widgetWithText(FilledButton, 'Power off'));
       await tester.pumpAndSettle();

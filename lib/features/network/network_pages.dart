@@ -38,12 +38,7 @@ class NetworkList extends ConsumerWidget {
           ? errorText(toFalcoError(async.error!), l10n)
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
-      empty: EmptyHint(
-        message: l10n.emptyNetworks,
-        actionLabel: l10n.networkCreate,
-        onAction: () =>
-            CreateRoute.of(scope, CreateKind.network).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.emptyNetworks),
       searchText: (n) => '${n.name} ${n.ipRange}',
       sorts: [ResourceSort(l10n.sortName, (a, b) => a.name.compareTo(b.name))],
       itemBuilder: (context, n) => ResourceRow(
@@ -138,54 +133,6 @@ class NetworkDetailPage extends ConsumerWidget {
 
     return FalcoScaffold(
       title: l10n.resourceNetwork,
-      moreMenu: MoreMenu(
-        items: [
-          MoreMenuItem(
-            label: l10n.networkChangeRange,
-            icon: Icons.open_in_full,
-            onSelected: () => FormSheet.show(
-              context,
-              title: l10n.networkChangeRange,
-              fields: (_) => [
-                FieldSpec(
-                  'range',
-                  l10n.fieldIpRange,
-                  initial: n.ipRange,
-                  helper: l10n.networkRangeHint,
-                ),
-              ],
-              valid: (v) => validRangeChange(v['range'] ?? '', n.ipRange),
-              onSave: (v) => change(ChangeIpRange(v['range']!.trim())),
-            ),
-          ),
-          MoreMenuItem(
-            label: n.exposeRoutes
-                ? l10n.networkExposeOff
-                : l10n.networkExposeOn,
-            icon: Icons.alt_route,
-            onSelected: () async {
-              final ok = await ConfirmSheet.show(
-                context,
-                title: n.exposeRoutes
-                    ? l10n.networkExposeOff
-                    : l10n.networkExposeOn,
-                consequence: l10n.networkExposeConsequence,
-                confirmLabel: l10n.commonSave,
-                resourceName: n.name,
-              );
-              if (ok && context.mounted) {
-                await runChange(
-                  context,
-                  ref,
-                  t,
-                  (api) =>
-                      updateNetwork(api, n.id, exposeRoutes: !n.exposeRoutes),
-                );
-              }
-            },
-          ),
-        ],
-      ),
       body: DetailPage(
         status: busy ? ResourceStatus.inProgress : ResourceStatus.available,
         statusDetail: busy
@@ -195,7 +142,7 @@ class NetworkDetailPage extends ConsumerWidget {
         ids: [n.ipRange],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.add_box_outlined,
             label: l10n.subnetAdd,
             onTap: busy
@@ -208,7 +155,7 @@ class NetworkDetailPage extends ConsumerWidget {
                     onSave: (v) => change(AddSubnet(subnetOf(v))),
                   ),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.alt_route,
             label: l10n.routeAdd,
             onTap: busy
@@ -237,7 +184,7 @@ class NetworkDetailPage extends ConsumerWidget {
                     ),
                   ),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => editNameAndLabels(
@@ -249,7 +196,7 @@ class NetworkDetailPage extends ConsumerWidget {
                   updateNetwork(api, n.id, name: name, labels: labels),
             ),
           ),
-          ActionTile(
+          DetailAction(
             icon: n.protectDelete ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
             onTap: busy
@@ -262,6 +209,50 @@ class NetworkDetailPage extends ConsumerWidget {
                     start: (api, p) =>
                         changeNetwork(api, n.id, ProtectNetwork(delete: p)),
                   ),
+          ),
+          DetailAction(
+            label: l10n.networkChangeRange,
+            icon: Icons.open_in_full,
+            onTap: () => FormSheet.show(
+              context,
+              title: l10n.networkChangeRange,
+              fields: (_) => [
+                FieldSpec(
+                  'range',
+                  l10n.fieldIpRange,
+                  initial: n.ipRange,
+                  helper: l10n.networkRangeHint,
+                ),
+              ],
+              valid: (v) => validRangeChange(v['range'] ?? '', n.ipRange),
+              onSave: (v) => change(ChangeIpRange(v['range']!.trim())),
+            ),
+          ),
+          DetailAction(
+            label: n.exposeRoutes
+                ? l10n.networkExposeOff
+                : l10n.networkExposeOn,
+            icon: Icons.alt_route,
+            onTap: () async {
+              final ok = await ConfirmSheet.show(
+                context,
+                title: n.exposeRoutes
+                    ? l10n.networkExposeOff
+                    : l10n.networkExposeOn,
+                consequence: l10n.networkExposeConsequence,
+                confirmLabel: l10n.commonSave,
+                resourceName: n.name,
+              );
+              if (ok && context.mounted) {
+                await runChange(
+                  context,
+                  ref,
+                  t,
+                  (api) =>
+                      updateNetwork(api, n.id, exposeRoutes: !n.exposeRoutes),
+                );
+              }
+            },
           ),
         ],
         sections: [

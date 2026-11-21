@@ -17,8 +17,7 @@ void main() {
 
   Future<void> storage(WidgetTester tester, String tab) async {
     await tap(tester, 'Storage');
-    await tester.tap(find.widgetWithText(Tab, tab));
-    await tester.pumpAndSettle();
+    await openList(tester, tab);
   }
 
   final screens = <String, Future<void> Function(WidgetTester)>{

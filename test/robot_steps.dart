@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Steps of the Robot area tests (widget, golden, integration).
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart';
 
 import 'fake_cloud.dart';
 import 'steps.dart';
@@ -23,13 +22,8 @@ Future<FakeCloud> openRobot(
   return c;
 }
 
-/// Switches to [tab] of the Robot area.
-Future<void> robotTab(WidgetTester tester, String tab) async {
-  await tester.ensureVisible(find.widgetWithText(Tab, tab));
-  await tester.pumpAndSettle();
-  await tester.tap(find.widgetWithText(Tab, tab));
-  await tester.pumpAndSettle();
-}
+/// Opens the list [tab] from the Robot overview.
+Future<void> robotTab(WidgetTester tester, String tab) => openList(tester, tab);
 
 /// Opens server [name] of the server list.
 Future<FakeCloud> openRobotServer(

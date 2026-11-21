@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/l10n/app_localizations.dart';
-import 'package:falco/ui/action_tile.dart';
 import 'package:falco/ui/mono.dart';
 import 'package:falco/ui/sheets.dart';
 import 'package:falco/ui/status_badge.dart';
@@ -23,9 +22,36 @@ class DetailSection {
   final Widget child;
 }
 
-/// The one detail layout: header (status, name, mono ids), up to four
-/// [ActionTile]s, sections, and the danger zone at the very bottom.
-/// Wrap it in a `FalcoScaffold` that carries the more menu.
+/// An action of a [DetailPage]: a button of its bottom action bar or an
+/// entry of its "More" sheet.
+@immutable
+class DetailAction {
+  /// Creates an action; a null [onTap] disables it.
+  const new({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.destructive = false,
+  });
+
+  /// Icon of the button or sheet entry.
+  final IconData icon;
+
+  /// Localized label, never cut off.
+  final String label;
+
+  /// Tap callback; null disables the action.
+  final VoidCallback? onTap;
+
+  /// Draws the entry in the error color (reset, delete selected).
+  final bool destructive;
+}
+
+/// The one detail layout: header (status, name, mono ids), sections and
+/// the danger zone at the very bottom of the content. Every action of the
+/// resource goes into [actions]; the `FalcoScaffold` this page is the
+/// body of shows them as its [DetailActionBar] at the bottom of the
+/// screen, where snackbars rise above it. No more menu in the top bar.
 class DetailPage extends StatelessWidget {
   /// Creates a detail page.
   const new({
@@ -38,7 +64,7 @@ class DetailPage extends StatelessWidget {
     this.dangerZone = const [],
     this.onRefresh,
     super.key,
-  }) : assert(actions.length <= 4, 'A detail page has at most 4 actions');
+  });
 
   /// Resource status; null for things without one (an account).
   final ResourceStatus? status;
@@ -52,8 +78,9 @@ class DetailPage extends StatelessWidget {
   /// Mono identifiers (IPs, IDs), joined by " · ".
   final List<String> ids;
 
-  /// Primary actions, at most four.
-  final List<ActionTile> actions;
+  /// Every action, most important first; the first
+  /// [DetailActionBar.slots] are buttons, the rest sit behind "More".
+  final List<DetailAction> actions;
 
   /// Sections in order (overview, metrics, network, settings, activity).
   final List<DetailSection> sections;
@@ -119,22 +146,6 @@ class DetailPage extends StatelessWidget {
             ),
           ),
         ),
-        if (actions.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: FalcoSpacing.l),
-            child: Row(
-              children: [
-                for (final (i, a) in actions.indexed) ...[
-                  if (i > 0) const SizedBox(width: FalcoSpacing.s),
-                  Expanded(child: a),
-                ],
-                for (var i = actions.length; i < 4; i++) ...[
-                  const SizedBox(width: FalcoSpacing.s),
-                  const Spacer(),
-                ],
-              ],
-            ),
-          ),
         for (final s in sections)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
@@ -171,6 +182,153 @@ class DetailPage extends StatelessWidget {
     return refresh == null
         ? list
         : RefreshIndicator(onRefresh: refresh, child: list);
+  }
+}
+
+/// The bottom action bar of a [DetailPage], in thumb reach: up to
+/// [slots] actions as icon buttons with their full label, the rest in a
+/// "More" sheet. Labels wrap instead of being cut off.
+class DetailActionBar extends StatelessWidget {
+  /// Creates the bar for [actions].
+  const new({required this.actions, super.key});
+
+  /// Buttons shown before "More".
+  static const slots = 3;
+
+  /// Every action, most important first.
+  final List<DetailAction> actions;
+
+  Future<void> _more(BuildContext context, List<DetailAction> rest) async {
+    final l10n = AppLocalizations.of(context);
+    final c = FalcoColors.of(context);
+    final picked = await showFalcoSheet<DetailAction>(
+      context,
+      Builder(
+        builder: (context) => SheetFrame(
+          title: l10n.moreActions,
+          children: [
+            Column(
+              children: [
+                for (final a in rest)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    enabled: a.onTap != null,
+                    leading: Icon(
+                      a.icon,
+                      color: a.destructive ? c.error : c.textSecondary,
+                    ),
+                    title: Text(
+                      a.label,
+                      style: TextStyle(color: a.destructive ? c.error : null),
+                    ),
+                    onTap: () => Navigator.pop(context, a),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    picked?.onTap?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FalcoColors.of(context);
+    final l10n = AppLocalizations.of(context);
+    final overflow = actions.length > slots;
+    final shown = overflow ? actions.take(slots) : actions;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border(top: BorderSide(color: c.hairline)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: FalcoSpacing.s,
+            vertical: FalcoSpacing.xs,
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final a in shown)
+                  Expanded(
+                    child: _BarButton(
+                      icon: a.icon,
+                      label: a.label,
+                      color: a.destructive ? c.error : null,
+                      onTap: a.onTap,
+                    ),
+                  ),
+                if (overflow)
+                  Expanded(
+                    child: Tooltip(
+                      message: l10n.moreActions,
+                      child: _BarButton(
+                        icon: Icons.more_horiz,
+                        label: l10n.commonMore,
+                        onTap: () =>
+                            _more(context, actions.skip(slots).toList()),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BarButton extends StatelessWidget {
+  const new({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FalcoColors.of(context);
+    final fg = onTap == null ? c.textMuted : (color ?? c.text);
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      label: label,
+      excludeSemantics: true,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(FalcoRadius.card),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 22, color: fg),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, height: 1.2, color: fg),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -14,31 +14,41 @@ typedef _Open = Future<void> Function(WidgetTester tester);
 Future<void> _area(WidgetTester tester, String name, [String? tab]) async {
   await tester.tap(find.text(name).last);
   await tester.pumpAndSettle();
-  if (tab == null) return;
-  await tester.ensureVisible(find.widgetWithText(Tab, tab));
-  await tester.pumpAndSettle();
-  await tester.tap(find.widgetWithText(Tab, tab));
-  await tester.pumpAndSettle();
+  if (tab != null) await openList(tester, tab);
 }
 
 final _screens = <String, (List<Account>, FakeCloud Function(), _Open)>{
-  'servers': (const [acme], FakeCloud.new, (_) async {}),
+  'compute overview': (const [acme], FakeCloud.new, (_) async {}),
+  'servers': (const [acme], FakeCloud.new, (t) => openList(t, 'Servers')),
   'server detail': (const [acme], FakeCloud.new, (t) => tap(t, 'web-1')),
   'firewalls': (
     const [acme],
     () => FakeCloud(firewalls: [firewallJson(id: 51, name: 'web')]),
     (t) => _area(t, 'Network', 'Firewalls'),
   ),
-  'storage boxes': (const [acme], storageCloud, (t) => _area(t, 'Storage')),
+  'storage boxes': (
+    const [acme],
+    storageCloud,
+    (t) => _area(t, 'Storage', 'Storage Boxes'),
+  ),
   'storage box detail': (
     const [acme],
     storageCloud,
     (t) async {
-      await _area(t, 'Storage');
+      await _area(t, 'Storage', 'Storage Boxes');
       await tap(t, 'backup');
     },
   ),
-  'robot servers': (const [acmeRobot], FakeCloud.new, (t) => _area(t, 'Robot')),
+  'robot overview': (
+    const [acmeRobot],
+    FakeCloud.new,
+    (t) => _area(t, 'Robot'),
+  ),
+  'robot servers': (
+    const [acmeRobot],
+    FakeCloud.new,
+    (t) => _area(t, 'Robot', 'Servers'),
+  ),
   'search': (
     const [acme],
     FakeCloud.new,

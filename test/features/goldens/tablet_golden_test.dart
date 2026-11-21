@@ -22,10 +22,7 @@ void main() {
   Future<void> area(WidgetTester tester, String name, [String? tab]) async {
     await tester.tap(find.text(name).last);
     await tester.pumpAndSettle();
-    if (tab != null) {
-      await tester.tap(find.widgetWithText(Tab, tab));
-      await tester.pumpAndSettle();
-    }
+    if (tab != null) await openList(tester, tab);
   }
 
   final screens = <String, (Size, List<Account>, FakeCloud Function(), Steps)>{
@@ -33,7 +30,10 @@ void main() {
       _tablet,
       const [acme],
       FakeCloud.new,
-      (tester) => tap(tester, 'web-1'),
+      (tester) async {
+        await openList(tester, 'Servers');
+        await tap(tester, 'web-1');
+      },
     ),
     'tablet_portrait_servers': (
       const Size(800, 1280),
@@ -65,7 +65,7 @@ void main() {
       const [acme],
       storageCloud,
       (tester) async {
-        await area(tester, 'Storage');
+        await area(tester, 'Storage', 'Storage Boxes');
         await tap(tester, 'backup');
       },
     ),

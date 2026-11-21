@@ -2,11 +2,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:falco/app/areas.dart';
 import 'package:falco/app/router.dart';
 import 'package:falco/core/http/http.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/core/settings/settings.dart';
+import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/main.dart';
 import 'package:falco/ui/ui.dart';
@@ -39,13 +41,23 @@ void main() {
   });
 
   testWidgets('stays locked until authentication succeeds', (tester) async {
+    seedSecrets(const [Account(id: 'a1', name: 'Acme')]);
     await tester.pumpWidget(await app([false, true]));
     await tester.pumpAndSettle();
     expect(find.text('Falco is locked.'), findsOneWidget);
-    expect(find.text('Choose your language'), findsNothing);
+    expect(find.byType(ProjectSetupPage), findsNothing);
     await tester.tap(find.text('Unlock'));
     await tester.pumpAndSettle();
+    expect(find.byType(ProjectSetupPage), findsOneWidget);
+  });
+
+  testWidgets('SET-023 the first start asks for no unlock', (tester) async {
+    final answers = [false];
+    await tester.pumpWidget(await app(answers));
+    await tester.pumpAndSettle();
+    expect(find.text('Falco is locked.'), findsNothing);
     expect(find.text('Choose your language'), findsOneWidget);
+    expect(answers, [false]);
   });
 
   testWidgets('scope routes carry the scope in the path (QRS-003, BUG-007)', (
@@ -59,7 +71,7 @@ void main() {
     await tester.pumpWidget(await app([true]));
     await tester.pumpAndSettle();
     // A Robot only account opens its Robot area.
-    expect(find.widgetWithText(Tab, 'Servers'), findsOneWidget);
+    expect(find.byType(AreaOverviewPage), findsOneWidget);
     expect(find.text('Robot'), findsWidgets);
   });
 

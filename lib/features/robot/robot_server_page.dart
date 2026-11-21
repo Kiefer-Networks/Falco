@@ -5,7 +5,7 @@ import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/format/format.dart';
 import 'package:falco/features/compute/compute_ui.dart';
 import 'package:falco/features/robot/robot.dart';
-import 'package:falco/features/robot/robot_page.dart';
+import 'package:falco/features/robot/robot_lists.dart';
 import 'package:falco/features/robot/robot_ui.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/ui.dart';
@@ -71,46 +71,6 @@ class _ServerDetail extends ConsumerWidget {
 
     return FalcoScaffold(
       title: l10n.robotServer,
-      moreMenu: MoreMenu(
-        items: [
-          for (final k in const [BootKind.linux, BootKind.vnc])
-            if (k != BootKind.vnc || s.vnc)
-              MoreMenuItem(
-                label: bootText(k, l10n),
-                icon: Icons.install_desktop,
-                onSelected: () => boot[k]?.active ?? false
-                    ? _deactivate(context, ref, k)
-                    : _activate(context, ref, k),
-              ),
-          if (s.windows)
-            MoreMenuItem(
-              label: bootText(BootKind.windows, l10n),
-              icon: Icons.window,
-              onSelected: () => boot[BootKind.windows]?.active ?? false
-                  ? _deactivate(context, ref, BootKind.windows)
-                  : _activate(context, ref, BootKind.windows),
-            ),
-          for (final k in const [BootKind.rescue, BootKind.linux])
-            MoreMenuItem(
-              label: lastBootText(k, l10n),
-              icon: Icons.history,
-              onSelected: () => _showLast(context, ref, k),
-            ),
-          MoreMenuItem(
-            label: l10n.robotFirewall,
-            icon: Icons.shield_outlined,
-            onSelected: () =>
-                RobotFirewallRoute(accountId: a, number: n).push<void>(context),
-          ),
-          if (s.ipv4 case final ip?)
-            MoreMenuItem(
-              label: l10n.trafficTitle,
-              icon: Icons.swap_vert,
-              onSelected: () =>
-                  RobotTrafficRoute(accountId: a, ip: ip).push<void>(context),
-            ),
-        ],
-      ),
       body: DetailPage(
         status: serverStatus(s),
         statusDetail: s.cancelled
@@ -125,12 +85,12 @@ class _ServerDetail extends ConsumerWidget {
           await refreshQuietly(ref, robotServerProvider(a, n).future);
         },
         actions: [
-          ActionTile(
+          DetailAction(
             icon: Icons.restart_alt,
             label: l10n.actionReset,
             onTap: s.reset ? () => _reset(context, ref) : null,
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.medical_services_outlined,
             label: rescue?.active ?? false ? l10n.rescueOff : l10n.rescueOn,
             onTap: !s.rescue
@@ -139,16 +99,52 @@ class _ServerDetail extends ConsumerWidget {
                 ? () => _deactivate(context, ref, BootKind.rescue)
                 : () => _activate(context, ref, BootKind.rescue),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.power_settings_new,
             label: l10n.robotWol,
             onTap: wol ? () => wakeOnLan(context, ref, a, s) : null,
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => _rename(context, ref),
           ),
+          for (final k in const [BootKind.linux, BootKind.vnc])
+            if (k != BootKind.vnc || s.vnc)
+              DetailAction(
+                label: bootText(k, l10n),
+                icon: Icons.install_desktop,
+                onTap: () => boot[k]?.active ?? false
+                    ? _deactivate(context, ref, k)
+                    : _activate(context, ref, k),
+              ),
+          if (s.windows)
+            DetailAction(
+              label: bootText(BootKind.windows, l10n),
+              icon: Icons.window,
+              onTap: () => boot[BootKind.windows]?.active ?? false
+                  ? _deactivate(context, ref, BootKind.windows)
+                  : _activate(context, ref, BootKind.windows),
+            ),
+          for (final k in const [BootKind.rescue, BootKind.linux])
+            DetailAction(
+              label: lastBootText(k, l10n),
+              icon: Icons.history,
+              onTap: () => _showLast(context, ref, k),
+            ),
+          DetailAction(
+            label: l10n.robotFirewall,
+            icon: Icons.shield_outlined,
+            onTap: () =>
+                RobotFirewallRoute(accountId: a, number: n).push<void>(context),
+          ),
+          if (s.ipv4 case final ip?)
+            DetailAction(
+              label: l10n.trafficTitle,
+              icon: Icons.swap_vert,
+              onTap: () =>
+                  RobotTrafficRoute(accountId: a, ip: ip).push<void>(context),
+            ),
         ],
         sections: [
           DetailSection(

@@ -553,8 +553,9 @@ void main() {
           find.text('198.51.100.11 · IPv4 · Not assigned · fsn1'),
           findsOneWidget,
         );
-        await tester.tap(find.widgetWithText(Tab, 'Primary IPs'));
+        await tester.pageBack();
         await tester.pumpAndSettle();
+        await openList(tester, 'Primary IPs');
         expect(
           find.text('198.51.100.20 · IPv4 · web-1 · fsn1'),
           findsOneWidget,
@@ -726,6 +727,7 @@ void main() {
       final cloud = withIps();
       setSurface(tester);
       await pumpFalco(tester, cloud);
+      await openList(tester, 'Servers');
       await tap(tester, 'Create server');
       await tap(tester, 'fsn1');
       await tap(tester, 'Next');

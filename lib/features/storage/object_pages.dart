@@ -57,7 +57,7 @@ class BucketList extends ConsumerWidget {
     final provider = bucketsProvider(scope);
     final async = ref.watch(provider);
     if (async.hasValue && async.value == null) {
-      return EmptyHint(
+      return ActionHint(
         message: l10n.s3NoKeysHint,
         actionLabel: l10n.accountManage,
         onAction: () =>
@@ -75,12 +75,7 @@ class BucketList extends ConsumerWidget {
           ? errorText(toFalcoError(async.error!), l10n)
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
-      empty: EmptyHint(
-        message: l10n.emptyBuckets,
-        actionLabel: l10n.bucketCreate,
-        onAction: () =>
-            CreateRoute.of(scope, CreateKind.bucket).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.emptyBuckets),
       searchText: (b) => b.name,
       filters: [
         ResourceFilter(l10n.filterAll, (_) => true),
@@ -350,11 +345,7 @@ class _BucketPageState extends ConsumerState<BucketPage> {
             ? errorText(toFalcoError(async.error!), l10n)
             : null,
         onRefresh: () => refreshQuietly(ref, provider.future),
-        empty: EmptyHint(
-          message: l10n.emptyObjects,
-          actionLabel: l10n.objectUpload,
-          onAction: _upload,
-        ),
+        empty: EmptyHint(message: l10n.emptyObjects),
         searchText: (e) => baseName(e.key),
         sorts: [
           ResourceSort(l10n.sortName, (a, b) => a.key.compareTo(b.key)),

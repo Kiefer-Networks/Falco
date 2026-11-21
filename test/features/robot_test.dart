@@ -18,7 +18,7 @@ List<(String, String)> sentForm(FakeCloud c, String call) => FakeRobot.form(
 
 void main() {
   group('area', () {
-    testWidgets('ROB-001 tabs of the Robot area', (tester) async {
+    testWidgets('ROB-001 the Robot overview lists its types', (tester) async {
       await openRobot(tester);
       for (final tab in [
         'Servers',
@@ -30,7 +30,7 @@ void main() {
         'Subnets',
         'Firewall templates',
       ]) {
-        expect(find.widgetWithText(Tab, tab), findsOneWidget);
+        expect(find.text(tab), findsOneWidget);
       }
     });
 
@@ -50,7 +50,7 @@ void main() {
     testWidgets('ROB-003 throttling is reported as throttling', (tester) async {
       final cloud = FakeCloud();
       cloud.robot.failures['server'] = FakeRobot.rateLimited();
-      await openRobot(tester, cloud: cloud);
+      await openRobot(tester, tab: 'Servers', cloud: cloud);
       expect(
         find.text('Too many requests. Wait a moment and try again.'),
         findsOneWidget,

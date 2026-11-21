@@ -7,6 +7,7 @@ library;
 import 'dart:async';
 
 import 'package:falco/api/robot/robot_client.dart';
+import 'package:falco/app/areas.dart';
 import 'package:falco/app/scope_home.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/settings/settings.dart';
@@ -357,6 +358,34 @@ class RobotRoute extends GoRouteData with $RobotRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       ScopeHomePage(scope: RobotScope(accountId));
+}
+
+/// The list of one resource type: a Cloud type of a project, or of "All
+/// projects" when [projectId] is null; a Robot type of the account.
+@TypedGoRoute<ResourcesRoute>(path: '/a/:accountId/list/:kind')
+class ResourcesRoute extends GoRouteData with $ResourcesRoute {
+  const new({required this.accountId, required this.kind, this.projectId});
+
+  /// The route listing [kind] in [scope].
+  factory of(Scope scope, ResourceKind kind) => ResourcesRoute(
+    accountId: scope.accountId,
+    kind: kind,
+    projectId: scope is ProjectScope ? scope.projectId : null,
+  );
+
+  final String accountId;
+  final ResourceKind kind;
+  final String? projectId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => ResourceListPage(
+    scope: kind.area == Area.robot
+        ? RobotScope(accountId)
+        : projectId == null
+        ? AllProjectsScope(accountId)
+        : ProjectScope(accountId, projectId!),
+    kind: kind,
+  );
 }
 
 /// What a create wizard creates.

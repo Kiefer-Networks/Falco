@@ -91,17 +91,17 @@ void main() {
       expect(find.text('db-1'), findsNothing);
     });
 
-    testWidgets('in landscape a phone gets the rail and keeps the tab', (
+    testWidgets('in landscape a phone gets the rail and keeps the area', (
       tester,
     ) async {
       size(tester, const Size(390, 844));
       await pumpFalco(tester, FakeCloud());
-      await tester.tap(find.widgetWithText(Tab, 'Volumes'));
+      await tester.tap(find.text('Network'));
       await tester.pumpAndSettle();
       size(tester, const Size(844, 390));
       await tester.pumpAndSettle();
       expect(find.byType(NavigationRail), findsOneWidget);
-      expect(find.text('VOLUMES · 0'), findsOneWidget);
+      expect(find.text('Firewalls'), findsOneWidget);
     });
   });
 }

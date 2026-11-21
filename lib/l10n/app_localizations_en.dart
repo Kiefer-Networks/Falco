@@ -46,6 +46,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moreActions => 'More actions';
 
   @override
+  String get commonMore => 'More';
+
+  @override
+  String get overviewUnavailable => 'Not available';
+
+  @override
+  String overviewStatusCount(String status, int count) {
+    return '$status: $count';
+  }
+
+  @override
   String get listSort => 'Sort';
 
   @override

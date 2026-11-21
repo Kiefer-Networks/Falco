@@ -26,6 +26,10 @@ class _LockGateState extends ConsumerState<LockGate>
     with WidgetsBindingObserver {
   bool _inactive = false;
 
+  /// An unlock is running: the system prompt is up, or the first start
+  /// finds no account and opens without one. The cover then stays blank.
+  bool _unlocking = false;
+
   @override
   void initState() {
     super.initState();
@@ -57,7 +61,10 @@ class _LockGateState extends ConsumerState<LockGate>
     if (!mounted) return;
     final reason = AppLocalizations.of(context).lockReason;
     ref.read(secretStoreProvider).prompt = reason;
-    ref.read(appLockProvider.notifier).unlock(reason).ignore();
+    setState(() => _unlocking = true);
+    ref.read(appLockProvider.notifier).unlock(reason).whenComplete(() {
+      if (mounted) setState(() => _unlocking = false);
+    }).ignore();
   }
 
   @override
@@ -68,12 +75,14 @@ class _LockGateState extends ConsumerState<LockGate>
       return widget.child;
     }
     final l10n = AppLocalizations.of(context);
+    if (_unlocking) return const Scaffold();
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: switch (state) {
             AppLockState.unlocked => const SizedBox.shrink(),
-            AppLockState.locked => EmptyHint(
+            AppLockState.locked => ActionHint(
+              icon: Icons.lock_outline,
               message: l10n.lockTitle,
               actionLabel: l10n.lockUnlock,
               onAction: _unlock,
@@ -81,7 +90,8 @@ class _LockGateState extends ConsumerState<LockGate>
             AppLockState.unavailable => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                EmptyHint(
+                ActionHint(
+                  icon: Icons.lock_open_outlined,
                   message: l10n.lockUnavailable,
                   actionLabel: l10n.commonRetry,
                   onAction: _unlock,

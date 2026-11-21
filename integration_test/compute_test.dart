@@ -17,7 +17,9 @@ void main() {
     final cloud = FakeCloud(sshKeys: [sshKeyJson(id: 61, name: 'laptop')]);
     await pumpFalco(tester, cloud);
 
-    // Create: location, type, image, key, defaults, name.
+    // Create from the server list: location, type, image, key, defaults,
+    // name.
+    await openList(tester, 'Servers');
     await tap(tester, 'Create server');
     await tap(tester, 'fsn1');
     await tap(tester, 'Next');

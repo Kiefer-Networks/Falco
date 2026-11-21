@@ -44,12 +44,7 @@ class VolumeList extends ConsumerWidget {
           ? errorText(toFalcoError(async.error!), l10n)
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
-      empty: EmptyHint(
-        message: l10n.emptyVolumes,
-        actionLabel: l10n.volumeCreate,
-        onAction: () =>
-            CreateRoute.of(scope, CreateKind.volume).push<void>(context),
-      ),
+      empty: EmptyHint(message: l10n.emptyVolumes),
       searchText: (v) => v.name,
       filters: [
         ResourceFilter(l10n.filterAll, (_) => true),
@@ -140,23 +135,23 @@ class VolumeDetailPage extends ConsumerWidget {
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           if (v.server == null)
-            ActionTile(
+            DetailAction(
               icon: Icons.link,
               label: l10n.volumeAttach,
               onTap: busy ? null : () => _attach(context, ref, v),
             )
           else
-            ActionTile(
+            DetailAction(
               icon: Icons.link_off,
               label: l10n.volumeDetach,
               onTap: busy ? null : () => _detach(context, ref, v, server),
             ),
-          ActionTile(
+          DetailAction(
             icon: Icons.open_in_full,
             label: l10n.volumeResize,
             onTap: busy ? null : () => _resize(context, ref, v),
           ),
-          ActionTile(
+          DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             onTap: () => editNameAndLabels(
@@ -168,7 +163,7 @@ class VolumeDetailPage extends ConsumerWidget {
                   updateVolume(api, v.id, name: name, labels: labels),
             ),
           ),
-          ActionTile(
+          DetailAction(
             icon: v.protectDelete ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
             onTap: busy ? null : protect,

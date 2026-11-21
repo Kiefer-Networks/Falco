@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/app/areas.dart';
 import 'package:falco/app/router.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/accounts/accounts.dart';
-import 'package:falco/features/compute/compute_page.dart';
-import 'package:falco/features/network/network_page.dart';
-import 'package:falco/features/robot/robot_page.dart';
-import 'package:falco/features/storage/storage_page.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/foundation.dart';
@@ -13,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Home of a scope: scope switcher on top, the four areas at the bottom
-/// (Compute, Network, Storage, Robot).
+/// (Compute, Network, Storage, Robot), each opening its overview.
 class ScopeHomePage extends ConsumerStatefulWidget {
   const new({required this.scope, this.area = 0, super.key});
 
@@ -139,17 +136,15 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
     final body = ListDetail(
       key: ValueKey(_area),
       list: switch (_area) {
-        0 when scope is! RobotScope => ComputePage(scope: scope),
-        1 when scope is! RobotScope => NetworkPage(scope: scope),
-        2 when scope is! RobotScope => StoragePage(scope: scope),
-        3 when scope is RobotScope => RobotPage(accountId: scope.accountId),
-        3 => EmptyHint(
+        3 when scope is! RobotScope => ActionHint(
+          icon: Icons.storage_outlined,
           message: l10n.robotNoAccess,
           actionLabel: l10n.robotAdd,
           onAction: () =>
               AccountRoute(accountId: scope.accountId).push<void>(context),
         ),
-        _ => EmptyHint(message: l10n.scopeEmpty),
+        < 3 when scope is RobotScope => EmptyHint(message: l10n.scopeEmpty),
+        _ => AreaOverviewPage(scope: scope, area: Area.values[_area]),
       },
     );
     return FalcoScaffold(

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Steps of the Network area tests (widget and integration).
-import 'package:falco/ui/ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -18,10 +17,7 @@ Future<FakeCloud> openNetwork(
   await pumpFalco(tester, c);
   await tester.tap(find.text('Network'));
   await tester.pumpAndSettle();
-  await tester.ensureVisible(find.widgetWithText(Tab, tab));
-  await tester.pumpAndSettle();
-  await tester.tap(find.widgetWithText(Tab, tab));
-  await tester.pumpAndSettle();
+  await openList(tester, tab);
   return c;
 }
 
@@ -30,11 +26,8 @@ Future<void> enter(WidgetTester tester, String key, String text) async {
   await tester.pumpAndSettle();
 }
 
-/// Taps the action tile [label] (the same word may be a fact label).
-Future<void> tile(WidgetTester tester, String label) async {
-  await tester.tap(find.widgetWithText(ActionTile, label));
-  await tester.pumpAndSettle();
-}
+/// Runs the detail action [label] (the same word may be a fact label).
+Future<void> tile(WidgetTester tester, String label) => more(tester, label);
 
 Future<void> typeName(WidgetTester tester, String name) =>
     enter(tester, 'confirm-name', name);
