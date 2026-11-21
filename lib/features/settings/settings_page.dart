@@ -37,7 +37,8 @@ class SettingsPage extends ConsumerWidget {
     final c = FalcoColors.of(context);
     final s = ref.watch(appSettingsProvider);
     final notifier = ref.read(appSettingsProvider.notifier);
-    final accounts = ref.watch(accountsProvider).value ?? const [];
+    final accounts =
+        ref.watch(accountsProvider.select((a) => a.value)) ?? const [];
     final themes = {
       'system': l10n.settingsSystem,
       FalcoVariant.light.name: l10n.showcaseLight,

@@ -26,7 +26,7 @@ class PlacementGroupList extends ConsumerWidget {
     final provider = placementGroupsProvider(scope);
     final async = ref.watch(provider);
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     return ResourceList<PlacementGroup>(
       title: l10n.resourcePlacementGroups,
@@ -54,11 +54,14 @@ class PlacementGroupList extends ConsumerWidget {
           l10n.serverCount(g.servers.length),
           if (accounts != null) projectName(accounts, g.projectId),
         ].join(' · '),
-        onTap: () => PlacementGroupRoute(
-          accountId: scope.accountId,
-          projectId: g.projectId,
-          groupId: g.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          PlacementGroupRoute(
+            accountId: scope.accountId,
+            projectId: g.projectId,
+            groupId: g.id,
+          ),
+        ),
       ),
     );
   }

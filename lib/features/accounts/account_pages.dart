@@ -83,7 +83,7 @@ class AccountsPage extends ConsumerWidget {
                       ),
                   ],
                 ),
-                onTap: () => AccountRoute(accountId: a.id).push<void>(context),
+                onTap: () => openDetail(context, AccountRoute(accountId: a.id)),
               ),
           ],
         ),
@@ -104,7 +104,7 @@ class AccountPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final c = FalcoColors.of(context);
-    final accounts = ref.watch(accountsProvider).value;
+    final accounts = ref.watch(accountsProvider.select((a) => a.value));
     final account = accounts?.where((a) => a.id == accountId).firstOrNull;
     final settings = ref.watch(appSettingsProvider);
     if (account == null) {

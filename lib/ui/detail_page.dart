@@ -7,6 +7,7 @@ import 'package:falco/ui/status_badge.dart';
 import 'package:falco/ui/theme/falco_colors.dart';
 import 'package:falco/ui/theme/falco_text.dart';
 import 'package:falco/ui/theme/tokens.dart';
+import 'package:flutter/semantics.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A titled section of a [DetailPage].
@@ -85,25 +86,37 @@ class DetailPage extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (status case final status?) ...[
-                StatusBadge(status: status, detail: statusDetail),
-                const SizedBox(height: 6),
-              ],
-              Semantics(
-                header: true,
-                child: Text(
-                  name,
-                  style: Theme.of(context).textTheme.headlineSmall,
+          // Screen readers say the name first, then status and ids.
+          child: Semantics(
+            container: true,
+            explicitChildNodes: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (status case final status?) ...[
+                  Semantics(
+                    sortKey: const OrdinalSortKey(1),
+                    child: StatusBadge(status: status, detail: statusDetail),
+                  ),
+                  const SizedBox(height: 6),
+                ],
+                Semantics(
+                  header: true,
+                  sortKey: const OrdinalSortKey(0),
+                  child: Text(
+                    name,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
                 ),
-              ),
-              if (ids.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Mono(ids.join(' · '), maxLines: 2),
+                if (ids.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Semantics(
+                    sortKey: const OrdinalSortKey(2),
+                    child: Mono(ids.join(' · '), maxLines: 2),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
         if (actions.isNotEmpty)

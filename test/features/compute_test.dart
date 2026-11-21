@@ -265,7 +265,7 @@ void main() {
       expect(cloud.calls, contains('GET /placement_groups/41'));
     });
 
-    testWidgets('CMP-066 CMP-091 create with a type from the spec', (
+    testWidgets('CMP-066 CMP-091 BUG-008 create with a type from the spec', (
       tester,
     ) async {
       final cloud = await openTab(tester, 'Placement groups');

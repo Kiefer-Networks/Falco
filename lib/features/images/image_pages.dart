@@ -35,7 +35,7 @@ class ImageList extends ConsumerWidget {
     final provider = imagesProvider(scope);
     final async = ref.watch(provider);
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     return ResourceList<CloudImage>(
       title: l10n.resourceImages,
@@ -72,11 +72,14 @@ class ImageList extends ConsumerWidget {
           ?i.source,
           if (accounts != null) projectName(accounts, i.projectId),
         ].join(' · '),
-        onTap: () => ImageRoute(
-          accountId: scope.accountId,
-          projectId: i.projectId,
-          imageId: i.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          ImageRoute(
+            accountId: scope.accountId,
+            projectId: i.projectId,
+            imageId: i.id,
+          ),
+        ),
       ),
     );
   }

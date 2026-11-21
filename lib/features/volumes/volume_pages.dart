@@ -34,7 +34,7 @@ class VolumeList extends ConsumerWidget {
         (s.projectId, s.id): s.name,
     };
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     return ResourceList<Volume>(
       title: l10n.resourceVolumes,
@@ -72,11 +72,14 @@ class VolumeList extends ConsumerWidget {
           },
           if (accounts != null) projectName(accounts, v.projectId),
         ].join(' · '),
-        onTap: () => VolumeRoute(
-          accountId: scope.accountId,
-          projectId: v.projectId,
-          volumeId: v.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          VolumeRoute(
+            accountId: scope.accountId,
+            projectId: v.projectId,
+            volumeId: v.id,
+          ),
+        ),
       ),
     );
   }

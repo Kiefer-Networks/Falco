@@ -176,10 +176,10 @@ class RobotServerList extends ConsumerWidget {
             s.dc,
             l10n.robotPaidUntil(s.paidUntil),
           ].join(' · '),
-          onTap: () => RobotServerRoute(
-            accountId: accountId,
-            number: s.number,
-          ).push<void>(context),
+          onTap: () => openDetail(
+            context,
+            RobotServerRoute(accountId: accountId, number: s.number),
+          ),
         ),
       ),
     );
@@ -250,10 +250,10 @@ class FailoverList extends ConsumerWidget {
           null => l10n.failoverUnrouted,
           final ip => l10n.failoverActiveOn(names[ip] ?? ip),
         },
-        onTap: () => RobotFailoverRoute(
-          accountId: accountId,
-          ip: f.ip,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          RobotFailoverRoute(accountId: accountId, ip: f.ip),
+        ),
       ),
     );
   }
@@ -286,10 +286,10 @@ class VSwitchList extends ConsumerWidget {
         status: v.cancelled ? ResourceStatus.cancelled : ResourceStatus.active,
         name: v.name,
         monoLine: 'VLAN ${v.vlan} · #${v.id}',
-        onTap: () => RobotVSwitchRoute(
-          accountId: accountId,
-          id: v.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          RobotVSwitchRoute(accountId: accountId, id: v.id),
+        ),
       ),
     );
   }
@@ -367,10 +367,10 @@ class RobotKeyList extends ConsumerWidget {
         status: ResourceStatus.available,
         name: k.name,
         monoLine: '${k.fingerprint} · ${k.type} · ${k.size} bit',
-        onTap: () => RobotKeyRoute(
-          accountId: accountId,
-          fingerprint: k.fingerprint,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          RobotKeyRoute(accountId: accountId, fingerprint: k.fingerprint),
+        ),
       ),
     );
   }
@@ -405,11 +405,10 @@ class AddressList extends ConsumerWidget {
           if (a.failover) l10n.robotFailover,
           if (a.warnings) l10n.trafficWarningsOn,
         ].join(' · '),
-        onTap: () => RobotAddressRoute(
-          accountId: accountId,
-          kind: kind,
-          ip: a.ip,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          RobotAddressRoute(accountId: accountId, kind: kind, ip: a.ip),
+        ),
       ),
     );
   }
@@ -446,10 +445,10 @@ class TemplateList extends ConsumerWidget {
           if (t.isDefault) l10n.templateDefault,
           if (t.whitelistHos) l10n.firewallHetznerServices,
         ].join(' · '),
-        onTap: () => RobotTemplateRoute(
-          accountId: accountId,
-          id: t.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          RobotTemplateRoute(accountId: accountId, id: t.id),
+        ),
       ),
     );
   }

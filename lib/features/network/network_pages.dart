@@ -28,7 +28,7 @@ class NetworkList extends ConsumerWidget {
     final provider = networksProvider(scope);
     final async = ref.watch(provider);
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     return ResourceList<CloudNetwork>(
       title: l10n.resourceNetworks,
@@ -54,11 +54,14 @@ class NetworkList extends ConsumerWidget {
           l10n.subnetCount(n.subnets.length),
           if (accounts != null) projectName(accounts, n.projectId),
         ].join(' · '),
-        onTap: () => NetworkRoute(
-          accountId: scope.accountId,
-          projectId: n.projectId,
-          networkId: n.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          NetworkRoute(
+            accountId: scope.accountId,
+            projectId: n.projectId,
+            networkId: n.id,
+          ),
+        ),
       ),
     );
   }

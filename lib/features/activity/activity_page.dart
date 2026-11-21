@@ -34,58 +34,61 @@ class ActivityPage extends ConsumerWidget {
         a.started != null && now.difference(a.started!) <= d;
     return FalcoScaffold(
       title: l10n.activityTitle,
-      body: ResourceList<ActionProgress>(
-        title: l10n.activityTitle,
-        items: items,
-        loading: async.isLoading,
-        error: async.hasError
-            ? errorText(toFalcoError(async.error!), l10n)
-            : null,
-        onRefresh: () => refreshQuietly(ref, provider.future),
-        empty: EmptyHint(message: l10n.activityEmpty),
-        searchText: (a) => [
-          actionCommandText(a.command, l10n),
-          for (final (t, id) in a.resources) '${resourceTypeText(t, l10n)} $id',
-        ].join(' '),
-        filters: [
-          ResourceFilter(l10n.filterAll, (_) => true),
-          ResourceFilter(l10n.filterInProgress, (a) => !a.done),
-          ResourceFilter(
-            l10n.filterFailed,
-            (a) => a.status == ActionStatus.error,
-          ),
-        ],
-        menuFilters: [
-          if (type == null)
-            ResourceMenuFilter(l10n.activityType, [
-              ResourceFilter(l10n.filterAll, (_) => true),
-              for (final t in {
-                for (final a in items ?? const <ActionProgress>[])
-                  for (final (t, _) in a.resources) t,
-              })
-                ResourceFilter(
-                  resourceTypeText(t, l10n),
-                  (a) => a.resources.any((r) => r.$1 == t),
-                ),
+      body: ListDetail(
+        list: ResourceList<ActionProgress>(
+          title: l10n.activityTitle,
+          items: items,
+          loading: async.isLoading,
+          error: async.hasError
+              ? errorText(toFalcoError(async.error!), l10n)
+              : null,
+          onRefresh: () => refreshQuietly(ref, provider.future),
+          empty: EmptyHint(message: l10n.activityEmpty),
+          searchText: (a) => [
+            actionCommandText(a.command, l10n),
+            for (final (t, id) in a.resources)
+              '${resourceTypeText(t, l10n)} $id',
+          ].join(' '),
+          filters: [
+            ResourceFilter(l10n.filterAll, (_) => true),
+            ResourceFilter(l10n.filterInProgress, (a) => !a.done),
+            ResourceFilter(
+              l10n.filterFailed,
+              (a) => a.status == ActionStatus.error,
+            ),
+          ],
+          menuFilters: [
+            if (type == null)
+              ResourceMenuFilter(l10n.activityType, [
+                ResourceFilter(l10n.filterAll, (_) => true),
+                for (final t in {
+                  for (final a in items ?? const <ActionProgress>[])
+                    for (final (t, _) in a.resources) t,
+                })
+                  ResourceFilter(
+                    resourceTypeText(t, l10n),
+                    (a) => a.resources.any((r) => r.$1 == t),
+                  ),
+              ]),
+            ResourceMenuFilter(l10n.activityTime, [
+              ResourceFilter(l10n.activityAnyTime, (_) => true),
+              ResourceFilter(
+                l10n.activityLastDay,
+                (a) => within(a, const Duration(days: 1)),
+              ),
+              ResourceFilter(
+                l10n.activityLastWeek,
+                (a) => within(a, const Duration(days: 7)),
+              ),
+              ResourceFilter(
+                l10n.activityLastMonth,
+                (a) => within(a, const Duration(days: 30)),
+              ),
             ]),
-          ResourceMenuFilter(l10n.activityTime, [
-            ResourceFilter(l10n.activityAnyTime, (_) => true),
-            ResourceFilter(
-              l10n.activityLastDay,
-              (a) => within(a, const Duration(days: 1)),
-            ),
-            ResourceFilter(
-              l10n.activityLastWeek,
-              (a) => within(a, const Duration(days: 7)),
-            ),
-            ResourceFilter(
-              l10n.activityLastMonth,
-              (a) => within(a, const Duration(days: 30)),
-            ),
-          ]),
-        ],
-        groupOf: (a) => activityGroup(a, now, l10n),
-        itemBuilder: (context, a) => ActivityRow(action: a, scope: scope),
+          ],
+          groupOf: (a) => activityGroup(a, now, l10n),
+          itemBuilder: (context, a) => ActivityRow(action: a, scope: scope),
+        ),
       ),
     );
   }
@@ -151,7 +154,7 @@ class ActivityRow extends StatelessWidget {
         if (!a.done) '${a.progress} %',
         ?a.errorCode,
       ].join(' · '),
-      onTap: route == null ? null : () => route.push<void>(context),
+      onTap: route == null ? null : () => openDetail(context, route),
     );
   }
 }

@@ -17,19 +17,23 @@ abstract final class SensitiveClipboard {
   static const _channel = MethodChannel('falco/clipboard');
   static Timer? _fallbackTimer;
 
-  /// Copies [text] as sensitive data.
-  static Future<void> copy(String text) async {
+  /// Copies [text] as sensitive data. Returns false when the system
+  /// cannot mark it sensitive (a plain copy, still cleared after
+  /// [expiry]), so the caller can say so (SET-020).
+  static Future<bool> copy(String text) async {
     _fallbackTimer?.cancel();
     try {
       await _channel.invokeMethod<void>('setSensitive', {
         'text': text,
         'expirySeconds': expiry.inSeconds,
       });
+      return true;
     } on MissingPluginException {
       await Clipboard.setData(ClipboardData(text: text));
       _fallbackTimer = Timer(expiry, () {
         unawaited(Clipboard.setData(const ClipboardData(text: '')));
       });
+      return false;
     }
   }
 }

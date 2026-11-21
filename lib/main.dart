@@ -41,21 +41,22 @@ class FalcoApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.watch(appSettingsProvider);
+    // Only what the app frame shows: the lock or default account settings
+    // do not rebuild every screen.
+    final (variant, accent, language) = ref.watch(
+      appSettingsProvider.select((s) => (s.variant, s.accent, s.language)),
+    );
     // Null variant follows the system: light by day, dark by night.
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
-      theme: falcoTheme(
-        variant: s.variant ?? FalcoVariant.light,
-        accent: s.accent,
-      ),
+      theme: falcoTheme(variant: variant ?? FalcoVariant.light, accent: accent),
       darkTheme: falcoTheme(
-        variant: s.variant ?? FalcoVariant.dark,
-        accent: s.accent,
+        variant: variant ?? FalcoVariant.dark,
+        accent: accent,
       ),
-      themeMode: s.variant == null ? ThemeMode.system : ThemeMode.light,
-      locale: s.language == null ? null : Locale(s.language!),
+      themeMode: variant == null ? ThemeMode.system : ThemeMode.light,
+      locale: language == null ? null : Locale(language),
       localizationsDelegates: falcoLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: ref.watch(routerProvider),

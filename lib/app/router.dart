@@ -4,6 +4,8 @@
 /// restore need no hidden state (QRS-003).
 library;
 
+import 'dart:async';
+
 import 'package:falco/api/robot/robot_client.dart';
 import 'package:falco/app/scope_home.dart';
 import 'package:falco/core/scope/scope.dart';
@@ -60,6 +62,19 @@ GoRouteData scopeRoute(Scope scope) => switch (scope) {
   AllProjectsScope(:final accountId) => AllProjectsRoute(accountId: accountId),
   RobotScope(:final accountId) => RobotRoute(accountId: accountId),
 };
+
+/// Opens the detail [route] of a list row: beside the list while its
+/// [ListDetail] shows two panes (QRS-027), else as a page of its own.
+/// Detail routes build from their parameters only, so the list's router
+/// state serves as theirs.
+void openDetail(BuildContext context, GoRouteData route) {
+  final pane = ListDetail.maybeOf(context);
+  if (pane == null) {
+    unawaited(route.push<void>(context));
+  } else {
+    pane.show(route.location, route.build(context, GoRouterState.of(context)));
+  }
+}
 
 /// Start: the first scope of the default account (ONB-027), else of the
 /// first account, or the welcome pages when there is none (ONB-006).

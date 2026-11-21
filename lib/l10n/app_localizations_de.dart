@@ -69,11 +69,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine Verbindung zum Server. Prüfe dein Netzwerk.';
 
   @override
+  String get detailPick => 'Wähle einen Eintrag, um seine Details zu sehen.';
+
+  @override
   String get copied => 'In die Zwischenablage kopiert';
 
   @override
   String copiedSensitive(int seconds) {
     return 'Kopiert. Die Zwischenablage wird nach $seconds s geleert.';
+  }
+
+  @override
+  String copiedPlain(int seconds) {
+    return 'Kopiert. Dieses System kann es nicht vor anderen Apps verbergen; die Zwischenablage wird nach $seconds s geleert.';
   }
 
   @override

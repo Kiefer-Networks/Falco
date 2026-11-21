@@ -29,7 +29,7 @@ class FirewallList extends ConsumerWidget {
     final provider = firewallsProvider(scope);
     final async = ref.watch(provider);
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     return ResourceList<Firewall>(
       title: l10n.resourceFirewalls,
@@ -60,11 +60,14 @@ class FirewallList extends ConsumerWidget {
           l10n.ruleCount(f.rules.length),
           if (accounts != null) projectName(accounts, f.projectId),
         ].join(' · '),
-        onTap: () => FirewallRoute(
-          accountId: scope.accountId,
-          projectId: f.projectId,
-          firewallId: f.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          FirewallRoute(
+            accountId: scope.accountId,
+            projectId: f.projectId,
+            firewallId: f.id,
+          ),
+        ),
       ),
     );
   }

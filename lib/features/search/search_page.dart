@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import 'dart:async';
 
+import 'package:falco/app/router.dart';
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/features/search/search.dart';
 import 'package:falco/l10n/app_localizations.dart';
@@ -44,63 +44,65 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     final empty = index.hits.isEmpty && (index.loading || index.failed > 0);
     return FalcoScaffold(
       title: l10n.commonSearch,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: TextField(
-              controller: _query,
-              autofocus: true,
-              onChanged: (_) => setState(() {}),
-              onSubmitted: ref.read(recentSearchesProvider.notifier).add,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: l10n.searchHint,
-                prefixIcon: const Icon(Icons.search, size: 20),
-                suffixIcon: q.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: l10n.searchClear,
-                        icon: const Icon(Icons.close, size: 20),
-                        onPressed: () => _search(''),
-                      ),
+      body: ListDetail(
+        list: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: TextField(
+                controller: _query,
+                autofocus: true,
+                onChanged: (_) => setState(() {}),
+                onSubmitted: ref.read(recentSearchesProvider.notifier).add,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: l10n.searchHint,
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: q.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: l10n.searchClear,
+                          icon: const Icon(Icons.close, size: 20),
+                          onPressed: () => _search(''),
+                        ),
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: q.trim().isEmpty
-                ? _Recent(
-                    recent: recent,
-                    onPick: _search,
-                    onClear: ref.read(recentSearchesProvider.notifier).clear,
-                  )
-                : ResourceList<SearchHit>(
-                    title: l10n.searchResults,
-                    items: empty ? null : searchHits(index.hits, q),
-                    loading: index.loading,
-                    // With hits a failed source shows as the list banner.
-                    error: index.error == null
-                        ? null
-                        : errorText(toFalcoError(index.error!), l10n),
-                    onRefresh: () async => refreshSearch(ref),
-                    empty: EmptyHint(message: l10n.searchNoMatches),
-                    groupOf: (h) => searchGroupText(h.group, l10n),
-                    itemBuilder: (context, h) => ResourceRow(
-                      status: h.status,
-                      name: h.name,
-                      monoLine: [
-                        h.detail(l10n),
-                        h.where,
-                      ].where((s) => s.isNotEmpty).join(' · '),
-                      onTap: () {
-                        ref.read(recentSearchesProvider.notifier).add(q);
-                        unawaited(h.route.push<void>(context));
-                      },
+            Expanded(
+              child: q.trim().isEmpty
+                  ? _Recent(
+                      recent: recent,
+                      onPick: _search,
+                      onClear: ref.read(recentSearchesProvider.notifier).clear,
+                    )
+                  : ResourceList<SearchHit>(
+                      title: l10n.searchResults,
+                      items: empty ? null : searchHits(index.hits, q),
+                      loading: index.loading,
+                      // With hits a failed source shows as the list banner.
+                      error: index.error == null
+                          ? null
+                          : errorText(toFalcoError(index.error!), l10n),
+                      onRefresh: () async => refreshSearch(ref),
+                      empty: EmptyHint(message: l10n.searchNoMatches),
+                      groupOf: (h) => searchGroupText(h.group, l10n),
+                      itemBuilder: (context, h) => ResourceRow(
+                        status: h.status,
+                        name: h.name,
+                        monoLine: [
+                          h.detail(l10n),
+                          h.where,
+                        ].where((s) => s.isNotEmpty).join(' · '),
+                        onTap: () {
+                          ref.read(recentSearchesProvider.notifier).add(q);
+                          openDetail(context, h.route);
+                        },
+                      ),
                     ),
-                  ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

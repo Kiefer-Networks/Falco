@@ -40,7 +40,7 @@ class IpList extends ConsumerWidget {
         (s.projectId, s.id): s.name,
     };
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     return ResourceList<PublicIp>(
       title: floating ? l10n.resourceFloatingIps : l10n.resourcePrimaryIps,
@@ -80,12 +80,15 @@ class IpList extends ConsumerWidget {
           i.location,
           if (accounts != null) projectName(accounts, i.projectId),
         ].join(' · '),
-        onTap: () => IpRoute(
-          accountId: scope.accountId,
-          projectId: i.projectId,
-          kind: kind,
-          ipId: i.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          IpRoute(
+            accountId: scope.accountId,
+            projectId: i.projectId,
+            kind: kind,
+            ipId: i.id,
+          ),
+        ),
       ),
     );
   }

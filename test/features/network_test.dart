@@ -423,7 +423,7 @@ void main() {
       await settleAction(tester);
     });
 
-    testWidgets('NET-015 NET-016 NET-017 remove from a server, rename, '
+    testWidgets('NET-015 NET-016 NET-017 BUG-018 remove from a server, rename, '
         'delete', (tester) async {
       final cloud = await openNetwork(
         tester,
@@ -541,19 +541,26 @@ void main() {
       ],
     );
 
-    testWidgets('NET-018 NET-031 lists with IP, type, server, location', (
-      tester,
-    ) async {
-      await openNetwork(tester, 'Floating IPs', cloud: withIps());
-      expect(find.text('198.51.100.10 · IPv4 · web-1 · fsn1'), findsOneWidget);
-      expect(
-        find.text('198.51.100.11 · IPv4 · Not assigned · fsn1'),
-        findsOneWidget,
-      );
-      await tester.tap(find.widgetWithText(Tab, 'Primary IPs'));
-      await tester.pumpAndSettle();
-      expect(find.text('198.51.100.20 · IPv4 · web-1 · fsn1'), findsOneWidget);
-    });
+    testWidgets(
+      'NET-018 NET-031 BUG-011 lists with IP, type, server, location',
+      (tester) async {
+        await openNetwork(tester, 'Floating IPs', cloud: withIps());
+        expect(
+          find.text('198.51.100.10 · IPv4 · web-1 · fsn1'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('198.51.100.11 · IPv4 · Not assigned · fsn1'),
+          findsOneWidget,
+        );
+        await tester.tap(find.widgetWithText(Tab, 'Primary IPs'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('198.51.100.20 · IPv4 · web-1 · fsn1'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('empty states', (tester) async {
       await openNetwork(tester, 'Floating IPs');

@@ -67,11 +67,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNetwork => 'No connection to the server. Check your network.';
 
   @override
+  String get detailPick => 'Pick an entry to see its details.';
+
+  @override
   String get copied => 'Copied to clipboard';
 
   @override
   String copiedSensitive(int seconds) {
     return 'Copied. The clipboard clears in $seconds s.';
+  }
+
+  @override
+  String copiedPlain(int seconds) {
+    return 'Copied. This system cannot hide it from other apps; the clipboard clears in $seconds s.';
   }
 
   @override

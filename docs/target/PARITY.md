@@ -5,7 +5,7 @@ Status: Abnahmeliste für den Neubau. Grundlage: [README.md](README.md) (Zielbil
 ## Benutzung als Abnahmeliste
 
 1. Jede Zeile ist eine prüfbare Anforderung. Eine Phase ist erst abgenommen, wenn alle Zeilen mit ihrer Phasennummer erfüllt und durch den genannten Test abgedeckt sind.
-2. Der Test trägt die ID im Namen (z. B. `test('CMP-012 ...')`), damit `grep` die Abdeckung zeigt. Fehlt ein Test zur ID, gilt die Zeile als offen.
+2. Der Test trägt die ID im Namen (z. B. `test('CMP-012 ...')`), damit `grep` die Abdeckung zeigt. Fehlt ein Test zur ID, gilt die Zeile als offen. `dart run tool/parity_check.dart` prüft das in jeder CI; eine Zeile ohne Test steht nur mit Grund im Abschnitt [Zurückgestellt](#zurückgestellt).
 3. **Quelle** zeigt die Stelle im alten Code (Pfade relativ zu `app/src/main/kotlin/de/kiefer_networks/falco/`, `S/` = `ui/screens/`, `C/` = `ui/components/`, `D/` = `data/`). "API neu" heißt: die alte App kann das nicht, die API bietet es, der Neubau liefert es. "Alt nur Repository" heißt: Code existiert, aber keine Oberfläche.
 4. **API Endpunkt(e)**: Cloud Pfade relativ zu `https://api.hetzner.cloud/v1`, Storage Boxen zu `https://api.hetzner.com/v1`, Robot zu `https://robot-ws.your-server.de`, S3 als Operationsname.
 5. Regeln aus der alten App (Grenzen, Pflichtfelder) gelten weiter, außer sie stehen unter [Nicht übernehmen](#nicht-übernehmen). Bedienmuster (Bestätigungsstufen, Wizard, Edit Sheet) richten sich immer nach README Abschnitt 5, nicht nach der alten Umsetzung.
@@ -775,3 +775,13 @@ Bekannte Fehler und Einschränkungen von Falco 2.x. Der Neubau darf sie nicht na
 | BUG-021 | Code ohne Oberfläche (tot): u. a. `createLoadBalancer`, `deleteCertificate`, `renameSshKey`, `updateStorageBoxSubaccount`, `uploadLink`, `bootOptions` | `D/repo/CloudRepo.kt`<br>`D/repo/RobotRepo.kt`<br>`D/repo/S3Repo.kt` | Nur bauen, was eine Zeile in diesem Inventar hat |
 | BUG-022 | Aktivitätslimit fest 30 Einträge ohne Nachladen | `S/cloud/CloudServerDetailViewModel.kt:361` | Pagination wie alle Listen |
 | BUG-023 | Biometrie Sonderweg Android 9/10 | `D/auth/BiometricGate.kt:37` | local_auth Standardverhalten |
+
+## Zurückgestellt
+
+Zeilen ohne Test, jede mit Grund. `tool/parity_check.dart` akzeptiert eine Zeile ohne Test nur, wenn sie hier steht.
+
+| ID | Grund |
+|---|---|
+| ROB-060 | Bestellungen kosten Geld und brauchen eine Entscheidung zu Umfang und Kaufbestätigung; kommt nach Release 3.0 als eigene Phase. |
+| QRS-023 | Die Benachrichtigungen der Transfers zeigt background_downloader nativ; Tests ersetzen das Plugin durch FakeTransfers, geprüft wird es beim Gerätetest der Uploads (OBJ-007). |
+| BUG-021 | Regel für den Bau ("nur bauen, was eine Zeile hat"), kein Laufzeitverhalten; gesichert durch Review und diese Liste. |

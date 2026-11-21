@@ -90,11 +90,12 @@ class _SecretRevealState extends State<SecretReveal> {
           IconButton(
             tooltip: l10n.commonCopy,
             onPressed: () async {
-              await SensitiveClipboard.copy(widget.secret);
+              final marked = await SensitiveClipboard.copy(widget.secret);
               if (context.mounted) {
+                final s = SensitiveClipboard.expiry.inSeconds;
                 FalcoScaffold.showSnack(
                   context,
-                  l10n.copiedSensitive(SensitiveClipboard.expiry.inSeconds),
+                  marked ? l10n.copiedSensitive(s) : l10n.copiedPlain(s),
                 );
               }
             },

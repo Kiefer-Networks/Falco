@@ -65,7 +65,7 @@ class BucketList extends ConsumerWidget {
       );
     }
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     return ResourceList<Bucket>(
       title: l10n.resourceBuckets,
@@ -102,12 +102,15 @@ class BucketList extends ConsumerWidget {
           if (b.created case final c?) formatDateTime(c, l10n.localeName),
           if (accounts != null) projectName(accounts, b.projectId),
         ].join(' · '),
-        onTap: () => BucketRoute(
-          accountId: scope.accountId,
-          projectId: b.projectId,
-          region: b.location,
-          bucket: b.name,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          BucketRoute(
+            accountId: scope.accountId,
+            projectId: b.projectId,
+            region: b.location,
+            bucket: b.name,
+          ),
+        ),
       ),
     );
   }
@@ -855,11 +858,12 @@ Future<void> showLink(BuildContext context, String title, String link) =>
                 icon: const Icon(Icons.content_copy),
                 label: Text(l10n.commonCopy),
                 onPressed: () async {
-                  await SensitiveClipboard.copy(link);
+                  final marked = await SensitiveClipboard.copy(link);
                   if (context.mounted) {
+                    final s = SensitiveClipboard.expiry.inSeconds;
                     FalcoScaffold.showSnack(
                       context,
-                      l10n.copiedSensitive(SensitiveClipboard.expiry.inSeconds),
+                      marked ? l10n.copiedSensitive(s) : l10n.copiedPlain(s),
                     );
                   }
                 },

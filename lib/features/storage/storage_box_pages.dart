@@ -142,7 +142,7 @@ class StorageBoxList extends ConsumerWidget {
     final provider = storageBoxesProvider(scope);
     final async = ref.watch(provider);
     final accounts = scope is AllProjectsScope
-        ? ref.watch(accountsProvider).value
+        ? ref.watch(accountsProvider.select((a) => a.value))
         : null;
     return ResourceList<StorageBox>(
       title: l10n.resourceStorageBoxes,
@@ -177,11 +177,14 @@ class StorageBoxList extends ConsumerWidget {
           if (b.protectDelete) l10n.protected,
           if (accounts != null) projectName(accounts, b.projectId),
         ].where((s) => s.isNotEmpty).join(' · '),
-        onTap: () => StorageBoxRoute(
-          accountId: scope.accountId,
-          projectId: b.projectId,
-          boxId: b.id,
-        ).push<void>(context),
+        onTap: () => openDetail(
+          context,
+          StorageBoxRoute(
+            accountId: scope.accountId,
+            projectId: b.projectId,
+            boxId: b.id,
+          ),
+        ),
       ),
     );
   }

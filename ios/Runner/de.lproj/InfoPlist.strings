@@ -1,0 +1,2 @@
+/* Face ID prompt, German (Info.plist holds the English text). */
+"NSFaceIDUsageDescription" = "Face ID entsperrt Falco und schützt deine Zugangsdaten.";

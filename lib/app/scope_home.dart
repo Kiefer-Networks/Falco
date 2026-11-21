@@ -126,6 +126,32 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
         if (mounted) const HomeRoute().go(context);
       });
     }
+    // Tablets and phones in landscape get a rail instead of the bottom bar
+    // (README section 4).
+    final rail = MediaQuery.sizeOf(context).width >= FalcoBreakpoint.rail;
+    void open(int i) => _openArea(i, account);
+    final areas = [
+      (Icons.dns_outlined, l10n.navCompute),
+      (Icons.hub_outlined, l10n.navNetwork),
+      (Icons.inventory_2_outlined, l10n.navStorage),
+      (Icons.storage_outlined, l10n.navRobot),
+    ];
+    final body = ListDetail(
+      key: ValueKey(_area),
+      list: switch (_area) {
+        0 when scope is! RobotScope => ComputePage(scope: scope),
+        1 when scope is! RobotScope => NetworkPage(scope: scope),
+        2 when scope is! RobotScope => StoragePage(scope: scope),
+        3 when scope is RobotScope => RobotPage(accountId: scope.accountId),
+        3 => EmptyHint(
+          message: l10n.robotNoAccess,
+          actionLabel: l10n.robotAdd,
+          onAction: () =>
+              AccountRoute(accountId: scope.accountId).push<void>(context),
+        ),
+        _ => EmptyHint(message: l10n.scopeEmpty),
+      },
+    );
     return FalcoScaffold(
       scopeSwitcher: ScopeSwitcherButton(
         caption: account?.name,
@@ -177,41 +203,37 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
               ],
             )
           : null,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _area,
-        onDestinationSelected: (i) => _openArea(i, account),
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.dns_outlined),
-            label: l10n.navCompute,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.hub_outlined),
-            label: l10n.navNetwork,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.inventory_2_outlined),
-            label: l10n.navStorage,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.storage_outlined),
-            label: l10n.navRobot,
-          ),
+      bottomNavigationBar: rail
+          ? null
+          : NavigationBar(
+              selectedIndex: _area,
+              onDestinationSelected: open,
+              destinations: [
+                for (final (icon, label) in areas)
+                  NavigationDestination(icon: Icon(icon), label: label),
+              ],
+            ),
+      // One Row either way, so the area keeps its state on rotation.
+      body: Row(
+        children: [
+          if (rail) ...[
+            NavigationRail(
+              selectedIndex: _area,
+              onDestinationSelected: open,
+              labelType: NavigationRailLabelType.all,
+              destinations: [
+                for (final (icon, label) in areas)
+                  NavigationRailDestination(
+                    icon: Icon(icon),
+                    label: Text(label),
+                  ),
+              ],
+            ),
+            const VerticalDivider(width: 1),
+          ],
+          Expanded(child: body),
         ],
       ),
-      body: switch (_area) {
-        0 when scope is! RobotScope => ComputePage(scope: scope),
-        1 when scope is! RobotScope => NetworkPage(scope: scope),
-        2 when scope is! RobotScope => StoragePage(scope: scope),
-        3 when scope is RobotScope => RobotPage(accountId: scope.accountId),
-        3 => EmptyHint(
-          message: l10n.robotNoAccess,
-          actionLabel: l10n.robotAdd,
-          onAction: () =>
-              AccountRoute(accountId: scope.accountId).push<void>(context),
-        ),
-        _ => EmptyHint(message: l10n.scopeEmpty),
-      },
     );
   }
 }

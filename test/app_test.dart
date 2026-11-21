@@ -7,6 +7,7 @@ import 'package:falco/core/http/http.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/core/settings/settings.dart';
+import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/main.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,7 +48,7 @@ void main() {
     expect(find.text('Choose your language'), findsOneWidget);
   });
 
-  testWidgets('scope routes carry the scope in the path (QRS-003)', (
+  testWidgets('scope routes carry the scope in the path (QRS-003, BUG-007)', (
     tester,
   ) async {
     expect(scopeRoute(const ProjectScope('a1', 'p1')).location, '/a/a1/p/p1');
@@ -76,11 +77,37 @@ void main() {
     expect(falcoUserAgent, startsWith('Falco/$appVersion ('));
   });
 
-  test('English and German ARB files have the same keys', () {
+  test('SET-005 BUG-020 only complete languages: English and German, with '
+      'the same keys', () {
+    expect(AppLocalizations.supportedLocales, const [
+      Locale('de'),
+      Locale('en'),
+    ]);
+    expect(
+      Directory('lib/l10n')
+          .listSync()
+          .map((f) => f.path)
+          .where((p) => p.endsWith('.arb')),
+      unorderedEquals(['lib/l10n/app_de.arb', 'lib/l10n/app_en.arb']),
+    );
     Set<String> keys(String path) =>
         (jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>).keys
             .where((k) => !k.startsWith('@'))
             .toSet();
     expect(keys('lib/l10n/app_de.arb'), keys('lib/l10n/app_en.arb'));
+  });
+
+  test('SET-005 iOS asks for Face ID in German too', () {
+    final strings = File('ios/Runner/de.lproj/InfoPlist.strings')
+        .readAsStringSync();
+    expect(strings, contains('"NSFaceIDUsageDescription" = "Face ID'));
+    final project = File('ios/Runner.xcodeproj/project.pbxproj')
+        .readAsStringSync();
+    expect(project, contains('path = de.lproj/InfoPlist.strings;'));
+    expect(project, contains('InfoPlist.strings in Resources'));
+    expect(
+      File('ios/Runner/Info.plist').readAsStringSync(),
+      contains('<string>de</string>'),
+    );
   });
 }

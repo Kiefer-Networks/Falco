@@ -92,3 +92,12 @@ abstract final class FalcoRadius {
 
 /// Minimum touch target edge in dp.
 const double kFalcoMinTouchTarget = 48;
+
+/// Window widths that change the layout (Material window size classes).
+abstract final class FalcoBreakpoint {
+  /// From here a navigation rail replaces the bottom bar.
+  static const double rail = 600;
+
+  /// From here lists show their detail beside them (QRS-027).
+  static const double twoPane = 840;
+}
