@@ -1,31 +1,43 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/l10n/app_localizations.dart';
+import 'package:falco/ui/showcase/showcase_page.dart';
+import 'package:falco/ui/ui.dart';
 import 'package:material_ui/material_ui.dart';
 
 void main() {
+  registerFontLicenses();
   runApp(const FalcoApp());
 }
 
-/// Root widget. Phase 0 only proves that the toolchain builds and runs on
-/// Android and iOS; theme, routing and features arrive in later phases.
-class FalcoApp extends StatelessWidget {
+/// Root widget. Until features exist, the design system showcase is home.
+class FalcoApp extends StatefulWidget {
+  /// Creates the app.
   const new({super.key});
+
+  @override
+  State<FalcoApp> createState() => _FalcoAppState();
+}
+
+class _FalcoAppState extends State<FalcoApp> {
+  FalcoVariant _variant = FalcoVariant.dark;
+  AccentPreset _accent = AccentPreset.amber;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Falco',
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.dark,
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0F1113),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFF2A33A),
-          surface: Color(0xFF16191C),
-          onSurface: Color(0xFFE8E6E1),
-        ),
+      theme: falcoTheme(variant: _variant, accent: _accent),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: ShowcasePage(
+        variant: _variant,
+        accent: _accent,
+        onThemeChanged: (variant, accent) => setState(() {
+          _variant = variant;
+          _accent = accent;
+        }),
       ),
-      home: const Scaffold(body: Center(child: Text('Falco'))),
     );
   }
 }
