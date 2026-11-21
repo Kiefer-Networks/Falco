@@ -363,4 +363,140 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorServer => 'The server reported an error. Try again later.';
+
+  @override
+  String get statusInProgress => 'in progress';
+
+  @override
+  String get statusDone => 'done';
+
+  @override
+  String get statusFailed => 'failed';
+
+  @override
+  String get navCompute => 'Compute';
+
+  @override
+  String get navNetwork => 'Network';
+
+  @override
+  String get navStorage => 'Storage';
+
+  @override
+  String get navRobot => 'Robot';
+
+  @override
+  String get activityTitle => 'Activity';
+
+  @override
+  String get activityEmpty => 'No actions yet.';
+
+  @override
+  String get activityShowAll => 'Show all activity';
+
+  @override
+  String get filterRunning => 'Running';
+
+  @override
+  String get filterOff => 'Off';
+
+  @override
+  String get filterInProgress => 'In progress';
+
+  @override
+  String get filterFailed => 'Failed';
+
+  @override
+  String get actionPowerOn => 'Power on';
+
+  @override
+  String get actionPowerOff => 'Power off';
+
+  @override
+  String get actionReset => 'Reset';
+
+  @override
+  String shutdownTitle(String name) {
+    return 'Shut down $name?';
+  }
+
+  @override
+  String get shutdownConsequence =>
+      'The operating system is asked to shut down through ACPI. The server stays off until you power it on.';
+
+  @override
+  String powerOffTitle(String name) {
+    return 'Power off $name?';
+  }
+
+  @override
+  String get powerOffConsequence =>
+      'The power is cut immediately, like pulling the plug. Unsaved data can be lost.';
+
+  @override
+  String resetTitle(String name) {
+    return 'Reset $name?';
+  }
+
+  @override
+  String get resetConsequence =>
+      'The server is restarted hard, like pressing the reset button. Unsaved data can be lost.';
+
+  @override
+  String get actionFailed => 'The action failed.';
+
+  @override
+  String get fieldVcpu => 'vCPU';
+
+  @override
+  String get fieldMemory => 'Memory';
+
+  @override
+  String get fieldDisk => 'Disk';
+
+  @override
+  String get fieldImage => 'Image';
+
+  @override
+  String get metricDisk => 'Disk';
+
+  @override
+  String get metricRead => 'read';
+
+  @override
+  String get metricWrite => 'write';
+
+  @override
+  String get sectionActivity => 'Activity';
+
+  @override
+  String get accountAdd => 'Add account';
+
+  @override
+  String get projectAdd => 'Add project';
+
+  @override
+  String get accountStep => 'Account';
+
+  @override
+  String get projectStep => 'Cloud project';
+
+  @override
+  String get fieldAccountName => 'Account name';
+
+  @override
+  String get fieldProjectName => 'Project name';
+
+  @override
+  String get fieldApiToken => 'API token';
+
+  @override
+  String get tokenHint =>
+      'Create a token with read and write access in the Hetzner Cloud Console under Security, API tokens.';
+
+  @override
+  String get tokenCheckSave => 'Check and save';
+
+  @override
+  String get tokenHidden => 'hidden';
 }

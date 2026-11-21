@@ -367,4 +367,140 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get errorServer =>
       'Der Server hat einen Fehler gemeldet. Versuche es später erneut.';
+
+  @override
+  String get statusInProgress => 'läuft';
+
+  @override
+  String get statusDone => 'erledigt';
+
+  @override
+  String get statusFailed => 'fehlgeschlagen';
+
+  @override
+  String get navCompute => 'Compute';
+
+  @override
+  String get navNetwork => 'Netzwerk';
+
+  @override
+  String get navStorage => 'Storage';
+
+  @override
+  String get navRobot => 'Robot';
+
+  @override
+  String get activityTitle => 'Aktivität';
+
+  @override
+  String get activityEmpty => 'Noch keine Aktionen.';
+
+  @override
+  String get activityShowAll => 'Gesamte Aktivität';
+
+  @override
+  String get filterRunning => 'Läuft';
+
+  @override
+  String get filterOff => 'Aus';
+
+  @override
+  String get filterInProgress => 'In Arbeit';
+
+  @override
+  String get filterFailed => 'Fehlgeschlagen';
+
+  @override
+  String get actionPowerOn => 'Einschalten';
+
+  @override
+  String get actionPowerOff => 'Ausschalten';
+
+  @override
+  String get actionReset => 'Reset';
+
+  @override
+  String shutdownTitle(String name) {
+    return '$name herunterfahren?';
+  }
+
+  @override
+  String get shutdownConsequence =>
+      'Das Betriebssystem wird über ACPI zum Herunterfahren aufgefordert. Der Server bleibt aus, bis du ihn einschaltest.';
+
+  @override
+  String powerOffTitle(String name) {
+    return '$name ausschalten?';
+  }
+
+  @override
+  String get powerOffConsequence =>
+      'Der Strom wird sofort getrennt, wie beim Ziehen des Steckers. Nicht gespeicherte Daten können verloren gehen.';
+
+  @override
+  String resetTitle(String name) {
+    return '$name zurücksetzen?';
+  }
+
+  @override
+  String get resetConsequence =>
+      'Der Server wird hart neu gestartet, wie mit der Reset Taste. Nicht gespeicherte Daten können verloren gehen.';
+
+  @override
+  String get actionFailed => 'Die Aktion ist fehlgeschlagen.';
+
+  @override
+  String get fieldVcpu => 'vCPU';
+
+  @override
+  String get fieldMemory => 'Arbeitsspeicher';
+
+  @override
+  String get fieldDisk => 'Festplatte';
+
+  @override
+  String get fieldImage => 'Image';
+
+  @override
+  String get metricDisk => 'Festplatte';
+
+  @override
+  String get metricRead => 'lesen';
+
+  @override
+  String get metricWrite => 'schreiben';
+
+  @override
+  String get sectionActivity => 'Aktivität';
+
+  @override
+  String get accountAdd => 'Account hinzufügen';
+
+  @override
+  String get projectAdd => 'Projekt hinzufügen';
+
+  @override
+  String get accountStep => 'Account';
+
+  @override
+  String get projectStep => 'Cloud Projekt';
+
+  @override
+  String get fieldAccountName => 'Accountname';
+
+  @override
+  String get fieldProjectName => 'Projektname';
+
+  @override
+  String get fieldApiToken => 'API Token';
+
+  @override
+  String get tokenHint =>
+      'Lege in der Hetzner Cloud Console unter Sicherheit, API Tokens einen Token mit Lese und Schreibrecht an.';
+
+  @override
+  String get tokenCheckSave => 'Prüfen und speichern';
+
+  @override
+  String get tokenHidden => 'verborgen';
 }

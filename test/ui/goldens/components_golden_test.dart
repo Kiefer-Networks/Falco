@@ -5,42 +5,15 @@ library;
 
 import 'package:falco/ui/showcase/showcase_page.dart';
 import 'package:falco/ui/ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../helpers.dart';
 
-/// Accepts sub percent pixel differences so goldens made on macOS also
-/// pass on the Linux CI runner (different font rasterization).
-class _TolerantComparator extends LocalFileComparator {
-  new(super.testFile);
-
-  static const double _tolerance = 0.005;
-
-  @override
-  Future<bool> compare(Uint8List imageBytes, Uri golden) async {
-    final result = await GoldenFileComparator.compareLists(
-      imageBytes,
-      await getGoldenBytes(golden),
-    );
-    if (result.passed || result.diffPercent <= _tolerance) {
-      result.dispose();
-      return true;
-    }
-    final error = await generateFailureOutput(result, golden, basedir);
-    result.dispose();
-    throw FlutterError(error);
-  }
-}
-
 const _width = 390.0;
 
 void main() {
-  final base = goldenFileComparator as LocalFileComparator;
-  goldenFileComparator = _TolerantComparator(
-    base.basedir.resolve('components_golden_test.dart'),
-  );
+  useTolerantGoldens('components_golden_test.dart');
 
   Future<void> pumpCase(
     WidgetTester tester,

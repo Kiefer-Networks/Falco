@@ -715,6 +715,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server reported an error. Try again later.'**
   String get errorServer;
+
+  /// No description provided for @statusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'in progress'**
+  String get statusInProgress;
+
+  /// No description provided for @statusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'done'**
+  String get statusDone;
+
+  /// No description provided for @statusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'failed'**
+  String get statusFailed;
+
+  /// No description provided for @navCompute.
+  ///
+  /// In en, this message translates to:
+  /// **'Compute'**
+  String get navCompute;
+
+  /// No description provided for @navNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get navNetwork;
+
+  /// No description provided for @navStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get navStorage;
+
+  /// No description provided for @navRobot.
+  ///
+  /// In en, this message translates to:
+  /// **'Robot'**
+  String get navRobot;
+
+  /// No description provided for @activityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get activityTitle;
+
+  /// No description provided for @activityEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No actions yet.'**
+  String get activityEmpty;
+
+  /// No description provided for @activityShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all activity'**
+  String get activityShowAll;
+
+  /// No description provided for @filterRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get filterRunning;
+
+  /// No description provided for @filterOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get filterOff;
+
+  /// No description provided for @filterInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get filterInProgress;
+
+  /// No description provided for @filterFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get filterFailed;
+
+  /// No description provided for @actionPowerOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Power on'**
+  String get actionPowerOn;
+
+  /// No description provided for @actionPowerOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Power off'**
+  String get actionPowerOff;
+
+  /// No description provided for @actionReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get actionReset;
+
+  /// No description provided for @shutdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shut down {name}?'**
+  String shutdownTitle(String name);
+
+  /// No description provided for @shutdownConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The operating system is asked to shut down through ACPI. The server stays off until you power it on.'**
+  String get shutdownConsequence;
+
+  /// No description provided for @powerOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Power off {name}?'**
+  String powerOffTitle(String name);
+
+  /// No description provided for @powerOffConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The power is cut immediately, like pulling the plug. Unsaved data can be lost.'**
+  String get powerOffConsequence;
+
+  /// No description provided for @resetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset {name}?'**
+  String resetTitle(String name);
+
+  /// No description provided for @resetConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The server is restarted hard, like pressing the reset button. Unsaved data can be lost.'**
+  String get resetConsequence;
+
+  /// No description provided for @actionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The action failed.'**
+  String get actionFailed;
+
+  /// No description provided for @fieldVcpu.
+  ///
+  /// In en, this message translates to:
+  /// **'vCPU'**
+  String get fieldVcpu;
+
+  /// No description provided for @fieldMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get fieldMemory;
+
+  /// No description provided for @fieldDisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Disk'**
+  String get fieldDisk;
+
+  /// No description provided for @fieldImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get fieldImage;
+
+  /// No description provided for @metricDisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Disk'**
+  String get metricDisk;
+
+  /// No description provided for @metricRead.
+  ///
+  /// In en, this message translates to:
+  /// **'read'**
+  String get metricRead;
+
+  /// No description provided for @metricWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'write'**
+  String get metricWrite;
+
+  /// No description provided for @sectionActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get sectionActivity;
+
+  /// No description provided for @accountAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add account'**
+  String get accountAdd;
+
+  /// No description provided for @projectAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add project'**
+  String get projectAdd;
+
+  /// No description provided for @accountStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountStep;
+
+  /// No description provided for @projectStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud project'**
+  String get projectStep;
+
+  /// No description provided for @fieldAccountName.
+  ///
+  /// In en, this message translates to:
+  /// **'Account name'**
+  String get fieldAccountName;
+
+  /// No description provided for @fieldProjectName.
+  ///
+  /// In en, this message translates to:
+  /// **'Project name'**
+  String get fieldProjectName;
+
+  /// No description provided for @fieldApiToken.
+  ///
+  /// In en, this message translates to:
+  /// **'API token'**
+  String get fieldApiToken;
+
+  /// No description provided for @tokenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a token with read and write access in the Hetzner Cloud Console under Security, API tokens.'**
+  String get tokenHint;
+
+  /// No description provided for @tokenCheckSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Check and save'**
+  String get tokenCheckSave;
+
+  /// No description provided for @tokenHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'hidden'**
+  String get tokenHidden;
 }
 
 class _AppLocalizationsDelegate

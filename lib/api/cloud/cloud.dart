@@ -6,8 +6,12 @@ import 'package:dio/dio.dart';
 import 'package:falco/core/actions/action_tracker.dart';
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/http/http.dart';
+import 'package:falco/core/secure/secret_store.dart';
 import 'package:hetzner_cloud_api/hetzner_cloud_api.dart' as cloud;
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tonik_util/tonik_util.dart';
+
+part 'cloud.g.dart';
 
 /// Base URL of the Cloud API (includes DNS).
 const cloudBaseUrl = 'https://api.hetzner.cloud/v1';
@@ -17,6 +21,35 @@ cloud.Server cloudServer(Dio dio) => cloud.CustomServer(
   baseUrl: dio.options.baseUrl,
   serverConfig: ServerConfig<Dio>.client(dio),
 );
+
+/// Creates the pinned Cloud API dio with an auth interceptor. Tests
+/// override this with a fake transport.
+@Riverpod(keepAlive: true)
+Dio Function(Interceptor auth) cloudDio(Ref ref) =>
+    (auth) =>
+        createDio(baseUrl: cloudBaseUrl, userAgent: falcoUserAgent, auth: auth);
+
+/// The Cloud API of one project. The token is read from the SecretStore
+/// per request.
+@Riverpod(keepAlive: true)
+cloud.Server cloudApi(Ref ref, String projectId) {
+  final secrets = ref.watch(secretStoreProvider);
+  final dio = ref.watch(cloudDioProvider)(
+    storedBearerAuth(() => secrets.cloudToken(projectId)),
+  );
+  ref.onDispose(dio.close);
+  return cloudServer(dio);
+}
+
+/// Checks the token behind [dio] with one small list call; throws its
+/// [FalcoError]
+/// (ONB-017). Nothing is stored.
+Future<void> checkCloudToken(Dio dio) async {
+  final response = await unwrap(
+    cloud.ServersApi(cloudServer(dio)).listServers(perPage: 1),
+  );
+  if (response is! cloud.ListServersResponse200) throw const Server();
+}
 
 /// Loads one Cloud action for the [ActionTracker].
 Future<ActionProgress> Function(int id) cloudActionFetcher(
@@ -40,5 +73,6 @@ Future<ActionProgress> Function(int id) cloudActionFetcher(
     progress: a.progress,
     resources: [for (final r in a.resources) (r.$type, r.id)],
     errorCode: a.error?.code,
+    started: a.started,
   );
 };

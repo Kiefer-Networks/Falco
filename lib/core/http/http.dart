@@ -13,6 +13,13 @@ import 'package:falco/core/pins/pins.g.dart';
 import 'package:falco/core/pins/x509.dart';
 import 'package:tonik_util/tonik_util.dart';
 
+/// App version; a test keeps it equal to the pubspec version.
+const appVersion = '3.0.0';
+
+/// User-Agent of every request: version and platform from the build
+/// (BUG-009).
+final falcoUserAgent = 'Falco/$appVersion (${Platform.operatingSystem})';
+
 /// Connect timeout (QRS-020).
 const connectTimeout = Duration(seconds: 15);
 
@@ -99,6 +106,22 @@ Interceptor bearerAuth(String token) => InterceptorsWrapper(
     handler.next(options);
   },
 );
+
+/// Like [bearerAuth], but reads the token per request, so it never stays
+/// in app state (SET-017). A missing token fails as [Unauthorized].
+Interceptor storedBearerAuth(Future<String?> Function() token) =>
+    InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final value = await token();
+        if (value == null) {
+          return handler.reject(
+            DioException(requestOptions: options, error: const Unauthorized()),
+          );
+        }
+        options.headers[HttpHeaders.authorizationHeader] = 'Bearer $value';
+        handler.next(options);
+      },
+    );
 
 /// Sends HTTP basic auth (Robot webservice).
 Interceptor basicAuth(String user, String password) {

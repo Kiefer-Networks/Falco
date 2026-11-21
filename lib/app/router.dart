@@ -4,11 +4,14 @@
 /// restore need no hidden state (QRS-003).
 library;
 
+import 'package:falco/app/scope_home.dart';
 import 'package:falco/app/theme_settings.dart';
 import 'package:falco/core/scope/scope.dart';
-import 'package:falco/l10n/app_localizations.dart';
+import 'package:falco/features/accounts/accounts.dart';
+import 'package:falco/features/activity/activity_page.dart';
+import 'package:falco/features/servers/server_detail_page.dart';
 import 'package:falco/ui/showcase/showcase_page.dart';
-import 'package:falco/ui/ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -34,11 +37,41 @@ GoRouteData scopeRoute(Scope scope) => switch (scope) {
   RobotScope(:final accountId) => RobotRoute(accountId: accountId),
 };
 
-/// Design system showcase; home until features exist.
-@TypedGoRoute<ShowcaseRoute>(path: '/')
-class ShowcaseRoute extends GoRouteData with $ShowcaseRoute {
-  /// Creates the route.
+/// Start: the first scope of the first account, or the account setup when
+/// there is none (ONB-006).
+@TypedGoRoute<HomeRoute>(path: '/')
+class HomeRoute extends GoRouteData with $HomeRoute {
   const new();
+
+  @override
+  Future<String?> redirect(BuildContext context, GoRouterState state) async {
+    final accounts = await ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(accountsProvider.future);
+    final a = accounts.firstOrNull;
+    if (a == null) return const SetupRoute().location;
+    if (a.projects.firstOrNull case final p?) {
+      return ProjectRoute(accountId: a.id, projectId: p.id).location;
+    }
+    return a.hasRobot
+        ? RobotRoute(accountId: a.id).location
+        : AddProjectRoute(accountId: a.id).location;
+  }
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const Scaffold(body: Center(child: CircularProgressIndicator()));
+}
+
+/// Design system showcase, debug builds only.
+@TypedGoRoute<ShowcaseRoute>(path: '/showcase')
+class ShowcaseRoute extends GoRouteData with $ShowcaseRoute {
+  const new();
+
+  @override
+  String? redirect(BuildContext context, GoRouterState state) =>
+      kDebugMode ? null : const HomeRoute().location;
 
   @override
   Widget build(BuildContext context, GoRouterState state) => Consumer(
@@ -51,6 +84,28 @@ class ShowcaseRoute extends GoRouteData with $ShowcaseRoute {
       );
     },
   );
+}
+
+/// New account with its first Cloud project.
+@TypedGoRoute<SetupRoute>(path: '/setup')
+class SetupRoute extends GoRouteData with $SetupRoute {
+  const new();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ProjectSetupPage();
+}
+
+/// New Cloud project of an account.
+@TypedGoRoute<AddProjectRoute>(path: '/a/:accountId/projects/new')
+class AddProjectRoute extends GoRouteData with $AddProjectRoute {
+  const new({required this.accountId});
+
+  final String accountId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ProjectSetupPage(accountId: accountId);
 }
 
 /// Home of one Cloud project.
@@ -68,6 +123,42 @@ class ProjectRoute extends GoRouteData with $ProjectRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       ScopeHomePage(scope: ProjectScope(accountId, projectId));
+}
+
+/// One Cloud server.
+@TypedGoRoute<ServerRoute>(path: '/a/:accountId/p/:projectId/servers/:serverId')
+class ServerRoute extends GoRouteData with $ServerRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.serverId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int serverId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => ServerDetailPage(
+    scope: ProjectScope(accountId, projectId),
+    serverId: serverId,
+  );
+}
+
+/// Activity of a project, or of one server with `?server-id=`.
+@TypedGoRoute<ActivityRoute>(path: '/a/:accountId/p/:projectId/activity')
+class ActivityRoute extends GoRouteData with $ActivityRoute {
+  const new({required this.accountId, required this.projectId, this.serverId});
+
+  final String accountId;
+  final String projectId;
+  final int? serverId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => ActivityPage(
+    scope: ProjectScope(accountId, projectId),
+    serverId: serverId,
+  );
 }
 
 /// Home of "all projects" of an account.
@@ -96,26 +187,4 @@ class RobotRoute extends GoRouteData with $RobotRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       ScopeHomePage(scope: RobotScope(accountId));
-}
-
-/// Placeholder home of a scope until the feature areas exist (Phase 2b).
-class ScopeHomePage extends StatelessWidget {
-  /// Creates the page.
-  const new({required this.scope, super.key});
-
-  /// Scope of the page.
-  final Scope scope;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return FalcoScaffold(
-      title: l10n.appTitle,
-      body: EmptyHint(
-        message: l10n.scopeEmpty,
-        actionLabel: l10n.commonBack,
-        onAction: () => const ShowcaseRoute().go(context),
-      ),
-    );
-  }
 }
