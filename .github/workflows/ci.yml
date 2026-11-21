@@ -52,7 +52,7 @@ jobs:
         run: flutter analyze --fatal-infos
 
       - name: Tests
-        run: flutter test --reporter expanded
+        run: flutter test --reporter expanded --exclude-tags golden
 
   build-android:
     name: Build Debug APK
@@ -123,6 +123,9 @@ jobs:
         run: |
           flutter pub get --enforce-lockfile
           flutter build ios --no-codesign --debug
+
+      - name: Golden tests
+        run: flutter test --tags golden
 
   dependency-review:
     name: Dependency Review

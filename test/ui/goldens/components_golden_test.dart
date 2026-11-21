@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Goldens are rendered on macOS; CI runs them only on the macOS job.
+@Tags(['golden'])
+library;
 
 import 'package:falco/ui/showcase/showcase_page.dart';
 import 'package:falco/ui/ui.dart';
