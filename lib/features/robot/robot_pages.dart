@@ -1348,8 +1348,13 @@ class _RobotCreatePageState extends ConsumerState<RobotCreatePage> {
       FalcoScaffold.showSnack(context, l10n.fileTooLarge);
       return;
     }
+    final text = picked.text;
+    if (text == null) {
+      FalcoScaffold.showSnack(context, l10n.fileNotText);
+      return;
+    }
     setState(() {
-      _values = {..._values, 'key': picked.text!.trim()};
+      _values = {..._values, 'key': text.trim()};
       _files++;
     });
   }

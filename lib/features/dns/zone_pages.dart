@@ -219,7 +219,10 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
     if (picked == null || !mounted) return;
     final text = picked.text;
     if (text == null) {
-      FalcoScaffold.showSnack(context, l10n.zonefileTooLarge);
+      FalcoScaffold.showSnack(
+        context,
+        picked.tooLarge ? l10n.zonefileTooLarge : l10n.fileNotText,
+      );
       return;
     }
     // Replacing every record is destructive: level 2 (DNS-015, BUG-002).

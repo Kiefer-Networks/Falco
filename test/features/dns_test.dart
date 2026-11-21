@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:convert' show utf8;
+
 import 'package:falco/api/cloud/cloud.dart';
+import 'package:falco/core/files/text_files.dart' show decodeText;
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/dns/zone_pages.dart';
 import 'package:falco/features/dns/zones.dart';
@@ -268,6 +271,15 @@ void main() {
       expect(find.text('The file is larger than 1 MiB.'), findsOneWidget);
     },
   );
+
+  testWidgets('DNS-015 a file that is not UTF-8 text says so', (tester) async {
+    expect(decodeText([0xff, 0xfe]), isNull);
+    expect(decodeText(utf8.encode('www IN A 203.0.113.5')), isNotNull);
+    final cloud = await openZone(tester);
+    cloud.files.picked = (text: null, tooLarge: false);
+    await more(tester, 'Import zone file');
+    expect(find.text('The file is not UTF-8 text.'), findsOneWidget);
+  });
 
   testWidgets('DNS-016 export saves the BIND file', (tester) async {
     final cloud = await openZone(tester);

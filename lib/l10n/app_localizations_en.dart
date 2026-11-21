@@ -2964,6 +2964,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get failoverUnrouted => 'Not routed';
 
   @override
+  String get fileNotText => 'The file is not UTF-8 text.';
+
+  @override
   String get fileTooLarge => 'The file is too large.';
 
   @override

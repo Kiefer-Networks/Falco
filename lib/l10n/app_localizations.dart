@@ -4952,6 +4952,12 @@ abstract class AppLocalizations {
   /// **'Not routed'**
   String get failoverUnrouted;
 
+  /// No description provided for @fileNotText.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is not UTF-8 text.'**
+  String get fileNotText;
+
   /// No description provided for @fileTooLarge.
   ///
   /// In en, this message translates to:

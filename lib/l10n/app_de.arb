@@ -810,6 +810,7 @@
   "failoverUnrouteConsequence": "Die Adresse zeigt auf keinen Server mehr; Dienste darauf sind nicht mehr erreichbar.",
   "failoverUnrouteTitle": "Routing von {ip} aufheben?",
   "failoverUnrouted": "Nicht geroutet",
+  "fileNotText": "Die Datei ist kein UTF-8 Text.",
   "fileTooLarge": "Die Datei ist zu groß.",
   "filterCancelled": "Gekündigt",
   "firewallClear": "Firewall leeren",

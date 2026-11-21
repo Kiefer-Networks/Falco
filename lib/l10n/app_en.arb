@@ -926,6 +926,7 @@
   "failoverUnrouteTitle": "Unroute {ip}?",
   "@failoverUnrouteTitle": {"placeholders": {"ip": {"type": "String"}}},
   "failoverUnrouted": "Not routed",
+  "fileNotText": "The file is not UTF-8 text.",
   "fileTooLarge": "The file is too large.",
   "filterCancelled": "Cancelled",
   "firewallClear": "Clear firewall",
