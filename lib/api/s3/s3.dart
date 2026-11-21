@@ -5,9 +5,11 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/http/http.dart';
 import 'package:xml/xml.dart';
 
@@ -202,9 +204,20 @@ String _encode(String s) => Uri.encodeComponent(s).replaceAllMapped(
   (m) => '%${m[0]!.codeUnitAt(0).toRadixString(16).toUpperCase()}',
 );
 
+/// Code of the [Invalid] for a key with a `.` or `..` segment.
+const dotSegmentKey = 'dot_segment_key';
+
+/// Whether [key] has a `.` or `..` segment. Every URL normalizes these
+/// away, so such a key cannot be addressed by path: a request would hit
+/// another key.
+bool hasDotSegment(String key) =>
+    key.split('/').any((s) => s == '.' || s == '..');
+
 /// Path and query of [key] in [bucket] (path style), encoded exactly as
-/// it is signed, so keys with any character work.
+/// it is signed, so keys with any character work. Throws [Invalid] for a
+/// key with a dot segment.
 String s3Path(String bucket, [String key = '', Map<String, String>? query]) {
+  if (hasDotSegment(key)) throw const Invalid(code: dotSegmentKey);
   final path =
       '/${[bucket, if (key.isNotEmpty) ...key.split('/')].map(_encode).join('/')}';
   return query == null || query.isEmpty
@@ -242,13 +255,18 @@ class S3Client {
   /// S3 XML namespace of request bodies.
   static const xmlns = 'http://s3.amazonaws.com/doc/2006-03-01/';
 
+  /// Absolute URL of [path]: dio collapses `//` only in relative paths,
+  /// so keys with empty segments reach S3 as signed.
+  String _url(String path) =>
+      '${_dio.options.baseUrl.replaceFirst(RegExp(r'/+$'), '')}$path';
+
   Future<Response<String>> _send(
     String method,
     String path, {
     String? body,
     Map<String, String> headers = const {},
   }) => _dio.request<String>(
-    path,
+    _url(path),
     data: body,
     options: Options(
       method: method,
@@ -380,16 +398,20 @@ class S3Client {
   }
 
   /// Stores [bytes] at [key]; an empty `name/` key is a folder (OBJ-024).
-  Future<void> put(String bucket, String key, List<int> bytes) =>
-      _dio.request<String>(
-        s3Path(bucket, key),
-        data: bytes,
-        options: Options(
-          method: 'PUT',
-          headers: {Headers.contentLengthHeader: bytes.length},
-          responseType: ResponseType.plain,
-        ),
-      );
+  /// Sent as [Uint8List], the only list dio sends as is (others it
+  /// encodes as JSON), so the body is what was hashed.
+  Future<void> put(String bucket, String key, List<int> bytes) {
+    final data = Uint8List.fromList(bytes);
+    return _dio.request<String>(
+      _url(s3Path(bucket, key)),
+      data: data,
+      options: Options(
+        method: 'PUT',
+        headers: {Headers.contentLengthHeader: data.length},
+        responseType: ResponseType.plain,
+      ),
+    );
+  }
 
   /// Copies an object, or one version of it, to [toBucket]/[toKey]
   /// (OBJ-013, OBJ-023).
@@ -399,19 +421,28 @@ class S3Client {
     String toBucket,
     String toKey, {
     String? versionId,
-  }) => _send(
-    'PUT',
-    s3Path(toBucket, toKey),
-    headers: {
-      'x-amz-copy-source':
-          s3Path(bucket, key) +
-          (versionId == null ? '' : '?versionId=${_encode(versionId)}'),
-    },
+  }) async => _result(
+    await _send(
+      'PUT',
+      s3Path(toBucket, toKey),
+      headers: {
+        'x-amz-copy-source':
+            s3Path(bucket, key) +
+            (versionId == null ? '' : '?versionId=${_encode(versionId)}'),
+      },
+    ),
+    'CopyObjectResult',
   );
 
-  /// Deletes [key] (OBJ-015).
-  Future<void> delete(String bucket, String key) =>
-      _send('DELETE', s3Path(bucket, key));
+  /// Deletes [key] (OBJ-015). A key with a dot segment goes by name in a
+  /// `DeleteObjects` body, as no path reaches it.
+  Future<void> delete(String bucket, String key) async {
+    if (!hasDotSegment(key)) {
+      await _send('DELETE', s3Path(bucket, key));
+    } else if ((await deleteMany(bucket, [key])).isNotEmpty) {
+      throw const Forbidden();
+    }
+  }
 
   /// Deletes [keys] at once; returns those S3 could not delete (OBJ-017).
   Future<List<String>> deleteMany(String bucket, List<String> keys) async {
@@ -435,24 +466,43 @@ class S3Client {
     ];
   }
 
-  /// Versions and delete markers of [key], newest first (OBJ-023).
+  /// Versions and delete markers of [key], newest first, every page
+  /// (OBJ-023).
   Future<List<S3Version>> versions(String bucket, String key) async {
-    final doc = await _xml(
-      'GET',
-      s3Path(bucket, '', {'versions': '', 'prefix': key}),
-    );
-    return [
-      for (final v in doc.rootElement.childElements)
-        if ((v.localName == 'Version' || v.localName == 'DeleteMarker') &&
-            _text(v, 'Key') == key)
-          (
-            versionId: _text(v, 'VersionId') ?? '',
-            latest: _text(v, 'IsLatest') == 'true',
-            deleteMarker: v.localName == 'DeleteMarker',
-            size: int.tryParse(_text(v, 'Size') ?? '') ?? 0,
-            modified: _date(_text(v, 'LastModified')),
-          ),
-    ];
+    final found = <S3Version>[];
+    String? keyMarker;
+    String? versionMarker;
+    do {
+      final root = (await _xml(
+        'GET',
+        s3Path(bucket, '', {
+          'versions': '',
+          'prefix': key,
+          'key-marker': ?keyMarker,
+          'version-id-marker': ?versionMarker,
+        }),
+      )).rootElement;
+      // Keys sort after their prefix: another key ends the versions.
+      var past = false;
+      for (final v in root.childElements) {
+        if (v.localName != 'Version' && v.localName != 'DeleteMarker') continue;
+        if (_text(v, 'Key') != key) {
+          past = true;
+          continue;
+        }
+        found.add((
+          versionId: _text(v, 'VersionId') ?? '',
+          latest: _text(v, 'IsLatest') == 'true',
+          deleteMarker: v.localName == 'DeleteMarker',
+          size: int.tryParse(_text(v, 'Size') ?? '') ?? 0,
+          modified: _date(_text(v, 'LastModified')),
+        ));
+      }
+      final more = !past && _text(root, 'IsTruncated') == 'true';
+      keyMarker = more ? _text(root, 'NextKeyMarker') : null;
+      versionMarker = more ? _text(root, 'NextVersionIdMarker') : null;
+    } while (keyMarker != null);
+    return found;
   }
 
   /// Starts a multipart upload of [key]; returns its upload id (OBJ-022).
@@ -504,18 +554,35 @@ class S3Client {
     String key,
     String uploadId,
     List<(int, String)> parts,
-  ) => _send(
-    'POST',
-    s3Path(bucket, key, {'uploadId': uploadId}),
-    body:
-        '<CompleteMultipartUpload>'
-        '${(parts..sort((a, b) => a.$1 - b.$1)).map(_part).join()}'
-        '</CompleteMultipartUpload>',
+  ) async => _result(
+    await _send(
+      'POST',
+      s3Path(bucket, key, {'uploadId': uploadId}),
+      body:
+          '<CompleteMultipartUpload>'
+          '${(parts..sort((a, b) => a.$1 - b.$1)).map(_part).join()}'
+          '</CompleteMultipartUpload>',
+    ),
+    'CompleteMultipartUploadResult',
   );
 
   /// Drops an unfinished multipart upload and its parts.
   Future<void> abortMultipart(String bucket, String key, String uploadId) =>
       _send('DELETE', s3Path(bucket, key, {'uploadId': uploadId}));
+}
+
+/// Checks the body of a copy or a join: S3 may answer 200 and still fail,
+/// with an `<Error>` body. Only [root] with an ETag is success.
+void _result(Response<String> r, String root) {
+  XmlElement? e;
+  try {
+    e = XmlDocument.parse(r.data ?? '').rootElement;
+  } on XmlException {
+    e = null;
+  }
+  if (e?.localName != root || _text(e!, 'ETag') == null) {
+    throw Server(code: e == null ? null : _text(e, 'Code'));
+  }
 }
 
 String _part((int, String) p) =>

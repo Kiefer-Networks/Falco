@@ -201,10 +201,11 @@ bool validBucketName(String name) =>
     !name.contains('..') &&
     !RegExp(r'^\d+\.\d+\.\d+\.\d+$').hasMatch(name);
 
-/// An object key: 1 to 1024 bytes of UTF-8 (OBJ-008).
+/// An object key: 1 to 1024 bytes of UTF-8, not starting with `/`, no
+/// `.` or `..` segment (OBJ-008).
 bool validKey(String key) {
   final n = utf8.encode(key).length;
-  return n > 0 && n <= 1024;
+  return n > 0 && n <= 1024 && !key.startsWith('/') && !hasDotSegment(key);
 }
 
 /// A MIME type of the form `type/subtype` (OBJ-008).

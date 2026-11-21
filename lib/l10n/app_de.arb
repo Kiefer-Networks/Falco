@@ -715,6 +715,7 @@
   "objectDownload": "Herunterladen",
   "objectInfo": "Info",
   "objectKeyInvalid": "Diese Datei kann unter diesem Namen nicht gespeichert werden.",
+  "objectKeyDotSegment": "Falco kann dieses Objekt nicht öffnen: Sein Schlüssel enthält \".\" oder \"..\" als Ordnernamen, den jeder Link auf einen anderen Schlüssel auflöst.",
   "objectMove": "Verschieben",
   "objectUpload": "Hochladen",
   "objectVersions": "Versionen",

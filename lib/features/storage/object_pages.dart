@@ -40,7 +40,14 @@ Future<bool> runS3(
     }
     return true;
   } on FalcoError catch (e) {
-    if (context.mounted) FalcoScaffold.showSnack(context, errorText(e, l10n));
+    if (context.mounted) {
+      FalcoScaffold.showSnack(
+        context,
+        e is Invalid && e.code == dotSegmentKey
+            ? l10n.objectKeyDotSegment
+            : errorText(e, l10n),
+      );
+    }
     return false;
   }
 }
@@ -667,7 +674,10 @@ class _BucketPageState extends ConsumerState<BucketPage> {
       ],
       valid: (v) {
         final key = v['key'] ?? '';
-        return validKey(key) && !(v['bucket'] == _b && key == o.key);
+        // A trailing `/` would hide the object as a folder marker.
+        return validKey(key) &&
+            !key.endsWith('/') &&
+            !(v['bucket'] == _b && key == o.key);
       },
       onSave: (v) async {
         await _run((c) async {
@@ -747,7 +757,7 @@ class _BucketPageState extends ConsumerState<BucketPage> {
       },
       onSave: (v) async {
         await _run(
-          (c) => c.put(_b, '${widget.prefix}${v['name']!.trim()}/', const []),
+          (c) => c.put(_b, '${widget.prefix}${v['name']!.trim()}/', []),
         );
         _refresh();
       },

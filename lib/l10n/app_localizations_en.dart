@@ -2624,6 +2624,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get objectKeyInvalid => 'This file cannot be stored under that name.';
 
   @override
+  String get objectKeyDotSegment =>
+      'Falco cannot open this object: its key contains \".\" or \"..\" as a folder name, which every link resolves to another key.';
+
+  @override
   String get objectMove => 'Move';
 
   @override

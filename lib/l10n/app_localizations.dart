@@ -4388,6 +4388,12 @@ abstract class AppLocalizations {
   /// **'This file cannot be stored under that name.'**
   String get objectKeyInvalid;
 
+  /// No description provided for @objectKeyDotSegment.
+  ///
+  /// In en, this message translates to:
+  /// **'Falco cannot open this object: its key contains \".\" or \"..\" as a folder name, which every link resolves to another key.'**
+  String get objectKeyDotSegment;
+
   /// No description provided for @objectMove.
   ///
   /// In en, this message translates to:

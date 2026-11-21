@@ -397,13 +397,13 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | OBJ-005 | Versionierung an/aussetzen | Aktivieren oder Aussetzen mit Erklärung | `S/s3/S3Screen.kt:389`<br>`S/s3/S3Screen.kt:127` | `S3 PutBucketVersioning` | 6 | Unit |
 | OBJ-006 | Objektbrowser | Ordner per Prefix, Navigation in Unterordner, Objektname, Größe | `S/s3/ObjectBrowserScreen.kt:277`<br>`S/s3/ObjectBrowserViewModel.kt:77` | `S3 ListObjectsV2` | 6 | Golden |
 | OBJ-007 | Objekt hochladen | Datei wählen, Upload im Vordergrunddienst mit Benachrichtigung | `S/s3/ObjectBrowserScreen.kt:351`<br>`D/s3/UploadService.kt:57` | `S3 PutObject` | 6 | Integration |
-| OBJ-008 | Upload Prüfung | Bucketname Regex, Key max. 1024 Zeichen, MIME Format | `D/s3/UploadService.kt:130` |  | 6 | Unit |
+| OBJ-008 | Upload Prüfung | Bucketname Regex, Key max. 1024 Zeichen ohne führendes `/` und ohne Segment `.` oder `..`, MIME Format | `D/s3/UploadService.kt:130` |  | 6 | Unit |
 | OBJ-009 | Upload Benachrichtigung | Kanal "falco_uploads", Fortschritt und Ergebnis | `D/s3/UploadService.kt:176` |  | 6 | Integration |
 | OBJ-010 | Objekt Info | Größe, zuletzt geändert, Content Type, ETag | `S/s3/ObjectInfoSheet.kt:45`<br>`S/s3/ObjectBrowserViewModel.kt:174` | `S3 HeadObject` | 6 | Widget |
 | OBJ-011 | Freigabelink | Ablauf 1 h, 24 h, 7 Tage; Link kopieren oder teilen | `S/s3/ShareLinkDialog.kt:37`<br>`S/s3/ObjectBrowserViewModel.kt:116` | `S3 presigned GET` | 6 | Unit |
 | OBJ-012 | Objekt herunterladen | Speichern in Downloads, Meldung "Download saved" | `S/s3/ObjectBrowserScreen.kt:576`<br>`S/s3/ObjectBrowserViewModel.kt:128`<br>`D/s3/S3DownloadHelper.kt` | `S3 GetObject` | 6 | Integration |
 | OBJ-013 | Objekt kopieren | Ziel Bucket, Prefix optional, Ziel Key | `S/s3/CopyMoveDialog.kt:74`<br>`S/s3/ObjectBrowserViewModel.kt:141` | `S3 CopyObject` | 6 | Unit |
-| OBJ-014 | Objekt verschieben | Kopieren und Quelle löschen | `S/s3/ObjectBrowserScreen.kt:584`<br>`S/s3/ObjectBrowserViewModel.kt:158` | `S3 CopyObject`<br>`S3 DeleteObject` | 6 | Unit |
+| OBJ-014 | Objekt verschieben | Kopieren und Quelle löschen, nur nach bestätigter Kopie; Ziel Key endet nicht auf `/` | `S/s3/ObjectBrowserScreen.kt:584`<br>`S/s3/ObjectBrowserViewModel.kt:158` | `S3 CopyObject`<br>`S3 DeleteObject` | 6 | Unit |
 | OBJ-015 | Objekt löschen | Bestätigung mit Name | `S/s3/ObjectBrowserScreen.kt:374`<br>`S/s3/ObjectBrowserViewModel.kt:92` | `S3 DeleteObject` | 6 | Unit |
 | OBJ-016 | Mehrfachauswahl Objekte | Auswahl, Zähler, Auswahl aufheben | `S/s3/ObjectBrowserScreen.kt:460` |  | 6 | Widget |
 | OBJ-017 | Mehrere Objekte löschen | Bestätigung mit Anzahl, Teilerfolg ausgewertet | `S/s3/ObjectBrowserScreen.kt:399`<br>`S/s3/ObjectBrowserViewModel.kt:103`<br>`D/api/S3Client.kt:244` | `S3 DeleteObjects` | 6 | Unit |
@@ -411,7 +411,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | OBJ-019 | S3 Zugang pro Projekt | S3 Daten am Cloud Projekt, ein Endpoint pro Projekt | `S/cloud/ProjectFormScreen.kt:124` |  | 6 | Unit |
 | OBJ-020 | Mehrere Standorte | Alle Standorte (fsn1, nbg1, hel1) eines Projekts gleichzeitig | API neu | `S3 ListBuckets` | 6 | Integration |
 | OBJ-021 | Hintergrund Download | Download über background_downloader mit Fortschritt | API neu | `S3 GetObject` | 6 | Integration |
-| OBJ-022 | Mehrteiliger Upload | Große Dateien in Teilen hochladen | API neu | `S3 CreateMultipartUpload` | 6 | Integration |
+| OBJ-022 | Mehrteiliger Upload | Große Dateien in Teilen hochladen; scheitert das Zusammenfügen, bleiben die Teile und es wird später erneut versucht, Aufgeben bricht den Upload ab | API neu | `S3 CreateMultipartUpload` | 6 | Integration |
 | OBJ-023 | Objektversionen | Versionen listen, alte Version laden oder wiederherstellen | API neu | `S3 ListObjectVersions` | 6 | Widget |
 | OBJ-024 | Ordner anlegen | Leeres Prefix Objekt anlegen | API neu | `S3 PutObject` | 6 | Unit |
 | OBJ-025 | Upload Link | Presigned PUT Link (alt nur Repository) | `D/repo/S3Repo.kt:35` | `S3 presigned PUT` | 6 | Unit |
