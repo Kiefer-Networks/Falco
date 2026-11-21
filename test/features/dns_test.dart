@@ -215,23 +215,24 @@ void main() {
     expect(find.text('3 record sets failed'), findsOneWidget);
   });
 
-  testWidgets('DNS-015 import replaces all records after the typed name', (
-    tester,
-  ) async {
-    final cloud = await openZone(tester);
-    cloud.files.picked = (text: 'www IN A 203.0.113.5', tooLarge: false);
-    await more(tester, 'Import zone file');
-    expect(find.text('Replace all records of example.com?'), findsOneWidget);
-    await typeName(tester, 'example.com');
-    await confirm(tester, 'Import zone file');
-    expect(cloud.body('POST /zones/5/actions/import_zonefile'), {
-      'zonefile': 'www IN A 203.0.113.5',
-    });
-    await settleAction(tester);
-    cloud.files.picked = (text: null, tooLarge: true);
-    await more(tester, 'Import zone file');
-    expect(find.text('The file is larger than 1 MiB.'), findsOneWidget);
-  });
+  testWidgets(
+    'DNS-015 QRS-025 import replaces all records after the typed name',
+    (tester) async {
+      final cloud = await openZone(tester);
+      cloud.files.picked = (text: 'www IN A 203.0.113.5', tooLarge: false);
+      await more(tester, 'Import zone file');
+      expect(find.text('Replace all records of example.com?'), findsOneWidget);
+      await typeName(tester, 'example.com');
+      await confirm(tester, 'Import zone file');
+      expect(cloud.body('POST /zones/5/actions/import_zonefile'), {
+        'zonefile': 'www IN A 203.0.113.5',
+      });
+      await settleAction(tester);
+      cloud.files.picked = (text: null, tooLarge: true);
+      await more(tester, 'Import zone file');
+      expect(find.text('The file is larger than 1 MiB.'), findsOneWidget);
+    },
+  );
 
   testWidgets('DNS-016 export saves the BIND file', (tester) async {
     final cloud = await openZone(tester);

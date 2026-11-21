@@ -5545,6 +5545,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wake {name}?'**
   String wolTitle(String name);
+
+  /// No description provided for @activityType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get activityType;
+
+  /// No description provided for @activityTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get activityTime;
+
+  /// No description provided for @activityAnyTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Any time'**
+  String get activityAnyTime;
+
+  /// No description provided for @activityLastDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 24 hours'**
+  String get activityLastDay;
+
+  /// No description provided for @activityLastWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get activityLastWeek;
+
+  /// No description provided for @activityLastMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get activityLastMonth;
+
+  /// No description provided for @activityToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get activityToday;
+
+  /// No description provided for @activityYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get activityYesterday;
+
+  /// No description provided for @activityEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get activityEarlier;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Name, IP, label or ID'**
+  String get searchHint;
+
+  /// No description provided for @searchStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Search servers, IPs, labels and IDs in all accounts, projects and Robot.'**
+  String get searchStart;
+
+  /// No description provided for @searchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get searchClear;
+
+  /// No description provided for @searchRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent searches'**
+  String get searchRecent;
+
+  /// No description provided for @searchResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Results'**
+  String get searchResults;
+
+  /// No description provided for @searchNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches.'**
+  String get searchNoMatches;
+
+  /// No description provided for @searchDedicated.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedicated servers'**
+  String get searchDedicated;
+
+  /// No description provided for @searchRobotKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Robot SSH keys'**
+  String get searchRobotKeys;
 }
 
 class _AppLocalizationsDelegate

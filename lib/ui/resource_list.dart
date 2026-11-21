@@ -19,6 +19,20 @@ class ResourceFilter<T> {
   final bool Function(T item) test;
 }
 
+/// A filter menu of a [ResourceList] next to the sort menu, e.g. a
+/// resource type or a time range; the first option is the default.
+@immutable
+class ResourceMenuFilter<T> {
+  /// Creates a filter menu.
+  const new(this.label, this.options);
+
+  /// Localized name, shown as "label: option".
+  final String label;
+
+  /// The options; one is selected.
+  final List<ResourceFilter<T>> options;
+}
+
 /// A sort option of a [ResourceList].
 @immutable
 class ResourceSort<T> {
@@ -51,6 +65,8 @@ class ResourceList<T> extends StatefulWidget {
     this.searchText,
     this.filters = const [],
     this.sorts = const [],
+    this.menuFilters = const [],
+    this.groupOf,
     super.key,
   });
 
@@ -84,6 +100,13 @@ class ResourceList<T> extends StatefulWidget {
   /// Sort options; the first is the default.
   final List<ResourceSort<T>> sorts;
 
+  /// Filter menus beside the sort menu.
+  final List<ResourceMenuFilter<T>> menuFilters;
+
+  /// Section header of an item; a header shows wherever it changes, so
+  /// [items] come ordered by group.
+  final String Function(T item)? groupOf;
+
   @override
   State<ResourceList<T>> createState() => _ResourceListState<T>();
 }
@@ -92,6 +115,17 @@ class _ResourceListState<T> extends State<ResourceList<T>> {
   String _query = '';
   int _filter = 0;
   int _sort = 0;
+  late List<int> _menus = [for (final _ in widget.menuFilters) 0];
+
+  @override
+  void didUpdateWidget(ResourceList<T> old) {
+    super.didUpdateWidget(old);
+    final n = widget.menuFilters;
+    _menus = [
+      for (final (i, m) in n.indexed)
+        if (i < _menus.length && _menus[i] < m.options.length) _menus[i] else 0,
+    ];
+  }
 
   List<T> _visible(List<T> items) {
     final q = _query.trim().toLowerCase();
@@ -100,6 +134,9 @@ class _ResourceListState<T> extends State<ResourceList<T>> {
     final result = [
       for (final item in items)
         if ((filter == null || filter.test(item)) &&
+            widget.menuFilters.indexed.every(
+              (m) => m.$2.options[_menus[m.$1]].test(item),
+            ) &&
             (q.isEmpty ||
                 search == null ||
                 search(item).toLowerCase().contains(q)))
@@ -112,7 +149,6 @@ class _ResourceListState<T> extends State<ResourceList<T>> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final c = FalcoColors.of(context);
     final items = widget.items;
     final error = widget.error;
     final visible = items == null ? null : _visible(items);
@@ -135,13 +171,36 @@ class _ResourceListState<T> extends State<ResourceList<T>> {
     } else if (visible.isEmpty) {
       content = _scrollable([EmptyHint(message: l10n.listNoMatches)]);
     } else {
+      final groupOf = widget.groupOf;
       content = RefreshIndicator(
         onRefresh: widget.onRefresh,
         child: ListView.builder(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: FalcoSpacing.s),
           itemCount: visible.length,
-          itemBuilder: (context, i) => widget.itemBuilder(context, visible[i]),
+          itemBuilder: (context, i) {
+            final row = widget.itemBuilder(context, visible[i]);
+            final group = groupOf?.call(visible[i]);
+            if (group == null || (i > 0 && groupOf!(visible[i - 1]) == group)) {
+              return row;
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 16, 8, 4),
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      group.toUpperCase(),
+                      style: FalcoText.of(context).sectionLabel,
+                    ),
+                  ),
+                ),
+                row,
+              ],
+            );
+          },
         ),
       );
     }
@@ -189,33 +248,21 @@ class _ResourceListState<T> extends State<ResourceList<T>> {
                   style: FalcoText.of(context).sectionLabel,
                 ),
               ),
+              for (final (i, m) in widget.menuFilters.indexed)
+                _MenuButton(
+                  tooltip: m.label,
+                  text: '${m.label}: ${m.options[_menus[i]].label}',
+                  options: [for (final o in m.options) o.label],
+                  selected: _menus[i],
+                  onSelected: (v) => setState(() => _menus[i] = v),
+                ),
               if (widget.sorts.length > 1)
-                PopupMenuButton<int>(
+                _MenuButton(
                   tooltip: l10n.listSort,
-                  initialValue: _sort,
+                  text: l10n.listSortBy(widget.sorts[_sort].label),
+                  options: [for (final s in widget.sorts) s.label],
+                  selected: _sort,
                   onSelected: (i) => setState(() => _sort = i),
-                  itemBuilder: (context) => [
-                    for (final (i, s) in widget.sorts.indexed)
-                      PopupMenuItem(value: i, child: Text(s.label)),
-                  ],
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: kFalcoMinTouchTarget,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Center(
-                        widthFactor: 1,
-                        child: Text(
-                          l10n.listSortBy(widget.sorts[_sort].label),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: c.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
             ],
           ),
@@ -244,6 +291,50 @@ class _ResourceListState<T> extends State<ResourceList<T>> {
     child: ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       children: children,
+    ),
+  );
+}
+
+/// A compact menu in the list header: sort or a filter menu.
+class _MenuButton extends StatelessWidget {
+  const new({
+    required this.tooltip,
+    required this.text,
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String tooltip;
+  final String text;
+  final List<String> options;
+  final int selected;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<int>(
+    tooltip: tooltip,
+    initialValue: selected,
+    onSelected: onSelected,
+    itemBuilder: (context) => [
+      for (final (i, o) in options.indexed)
+        PopupMenuItem(value: i, child: Text(o)),
+    ],
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: kFalcoMinTouchTarget),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Center(
+          widthFactor: 1,
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              color: FalcoColors.of(context).textSecondary,
+            ),
+          ),
+        ),
+      ),
     ),
   );
 }

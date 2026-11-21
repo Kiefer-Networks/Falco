@@ -3277,4 +3277,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String wolTitle(String name) {
     return 'Wake $name?';
   }
+
+  @override
+  String get activityType => 'Type';
+
+  @override
+  String get activityTime => 'Time';
+
+  @override
+  String get activityAnyTime => 'Any time';
+
+  @override
+  String get activityLastDay => 'Last 24 hours';
+
+  @override
+  String get activityLastWeek => 'Last 7 days';
+
+  @override
+  String get activityLastMonth => 'Last 30 days';
+
+  @override
+  String get activityToday => 'Today';
+
+  @override
+  String get activityYesterday => 'Yesterday';
+
+  @override
+  String get activityEarlier => 'Earlier';
+
+  @override
+  String get searchHint => 'Name, IP, label or ID';
+
+  @override
+  String get searchStart =>
+      'Search servers, IPs, labels and IDs in all accounts, projects and Robot.';
+
+  @override
+  String get searchClear => 'Clear';
+
+  @override
+  String get searchRecent => 'Recent searches';
+
+  @override
+  String get searchResults => 'Results';
+
+  @override
+  String get searchNoMatches => 'Nothing matches.';
+
+  @override
+  String get searchDedicated => 'Dedicated servers';
+
+  @override
+  String get searchRobotKeys => 'Robot SSH keys';
 }

@@ -12,7 +12,7 @@ void main() {
   });
 
   group('formatBytes', () {
-    test('uses binary units', () {
+    test('QRS-015 uses binary units', () {
       expect(formatBytes(0, 'en'), '0 B');
       expect(formatBytes(1023, 'en'), '1,023 B');
       expect(formatBytes(1024, 'en'), '1 KiB');

@@ -1028,5 +1028,22 @@
   "@vswitchRemoveTitle": {"placeholders": {"server": {"type": "String"}, "vswitch": {"type": "String"}}},
   "wolConsequence": "A Wake on LAN packet is sent to the server.",
   "wolTitle": "Wake {name}?",
-  "@wolTitle": {"placeholders": {"name": {"type": "String"}}}
+  "@wolTitle": {"placeholders": {"name": {"type": "String"}}},
+  "activityType": "Type",
+  "activityTime": "Time",
+  "activityAnyTime": "Any time",
+  "activityLastDay": "Last 24 hours",
+  "activityLastWeek": "Last 7 days",
+  "activityLastMonth": "Last 30 days",
+  "activityToday": "Today",
+  "activityYesterday": "Yesterday",
+  "activityEarlier": "Earlier",
+  "searchHint": "Name, IP, label or ID",
+  "searchStart": "Search servers, IPs, labels and IDs in all accounts, projects and Robot.",
+  "searchClear": "Clear",
+  "searchRecent": "Recent searches",
+  "searchResults": "Results",
+  "searchNoMatches": "Nothing matches.",
+  "searchDedicated": "Dedicated servers",
+  "searchRobotKeys": "Robot SSH keys"
 }

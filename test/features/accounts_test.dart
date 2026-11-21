@@ -577,36 +577,39 @@ void main() {
   });
 
   group('scope switcher', () {
-    testWidgets('ONB-034 ONB-035 SET-006 projects, all projects, Robot, add '
-        'and manage; a switch loads the new scope', (tester) async {
-      final cloud = FakeCloud();
-      await pumpFalco(tester, cloud, accounts: [acmeTwo]);
-      await tester.tap(
-        find.bySemanticsLabel('Switch account or project: prod'),
-      );
-      await tester.pumpAndSettle();
-      for (final entry in [
-        'All projects',
-        'prod',
-        'staging',
-        'Robot',
-        'Add project',
-        'Manage account',
-      ]) {
-        expect(find.text(entry), findsWidgets, reason: entry);
-      }
-      final before = cloud.calls.length;
-      await tapText(tester, 'staging');
-      expect(find.text('staging'), findsOneWidget);
-      expect(cloud.calls.length, greaterThan(before));
+    testWidgets(
+      'ONB-034 ONB-035 SET-006 QRS-002 projects, all projects, Robot, add '
+      'and manage; a switch loads the new scope',
+      (tester) async {
+        final cloud = FakeCloud();
+        await pumpFalco(tester, cloud, accounts: [acmeTwo]);
+        await tester.tap(
+          find.bySemanticsLabel('Switch account or project: prod'),
+        );
+        await tester.pumpAndSettle();
+        for (final entry in [
+          'All projects',
+          'prod',
+          'staging',
+          'Robot',
+          'Add project',
+          'Manage account',
+        ]) {
+          expect(find.text(entry), findsWidgets, reason: entry);
+        }
+        final before = cloud.calls.length;
+        await tapText(tester, 'staging');
+        expect(find.text('staging'), findsOneWidget);
+        expect(cloud.calls.length, greaterThan(before));
 
-      await tester.tap(
-        find.bySemanticsLabel('Switch account or project: staging'),
-      );
-      await tester.pumpAndSettle();
-      await tapText(tester, 'All projects');
-      expect(find.text('All projects'), findsOneWidget);
-    });
+        await tester.tap(
+          find.bySemanticsLabel('Switch account or project: staging'),
+        );
+        await tester.pumpAndSettle();
+        await tapText(tester, 'All projects');
+        expect(find.text('All projects'), findsOneWidget);
+      },
+    );
 
     test('ONB-036 the scope travels in the route, not in hidden state', () {
       expect(

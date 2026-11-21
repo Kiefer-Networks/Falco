@@ -454,7 +454,7 @@ void main() {
       final cloud = storageCloud();
       cloud.storage.actions.add(_done(802, 'create_snapshot'));
       final c = await fakeContainer(cloud);
-      final all = await c.read(activityProvider(_scope, null).future);
+      final all = await c.read(activityProvider(_scope).future);
       expect(all.map((a) => a.command), contains('create_snapshot'));
       final mine = await c.read(boxActionsProvider(_scope, 41).future);
       expect(mine.single.id, 802);

@@ -7,6 +7,7 @@ import 'package:falco/core/format/format.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/activity/activity.dart';
+import 'package:falco/features/activity/activity_page.dart';
 import 'package:falco/features/compute/compute_ui.dart';
 import 'package:falco/features/dns/zones.dart';
 import 'package:falco/l10n/app_localizations.dart';
@@ -589,6 +590,7 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
               ],
             ),
           ),
+          activitySection(l10n, _scope, CloudType.zone, z.id),
         ],
         dangerZone: [
           DeleteButton(

@@ -8,6 +8,7 @@ import 'package:falco/api/s3/s3.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/storage/object_storage.dart';
 import 'package:falco/features/storage/transfers.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -224,7 +225,7 @@ void main() {
       expect(find.text('new.txt'), findsOneWidget);
     });
 
-    testWidgets('OBJ-011 share link with expiry', (tester) async {
+    testWidgets('OBJ-011 QRS-024 share link with expiry', (tester) async {
       await openBucket(tester);
       await objectMenu(tester, 'notes.txt', 'Share link');
       await tap(tester, '24 hours');
@@ -241,6 +242,24 @@ void main() {
         startsWith('FAKEACCESSKEY/'),
       );
       expect(find.text('Share'), findsOneWidget);
+
+      // QRS-024: the system share sheet gets the link.
+      final shared = <Object?>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('dev.fluttercommunity.plus/share'),
+        (call) async {
+          shared.add((call.arguments as Map)['uri']);
+          return 'dev.fluttercommunity.plus/share/unavailable';
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          const MethodChannel('dev.fluttercommunity.plus/share'),
+          null,
+        ),
+      );
+      await tap(tester, 'Share');
+      expect(shared, [link]);
     });
 
     testWidgets('OBJ-012 OBJ-021 download in the background', (tester) async {
