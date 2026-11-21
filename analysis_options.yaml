@@ -4,7 +4,7 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
-    - "lib/api/**/generated/**"
+    - "packages/**"
     - "lib/l10n/app_localizations*.dart"
     - build/**
     - android/**

@@ -45,6 +45,12 @@ jobs:
       - name: Dependencies
         run: flutter pub get --enforce-lockfile
 
+      # Riverpod and go_router code is committed; fail when it is stale.
+      - name: Generated code is current
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          git diff --exit-code -- lib
+
       - name: Format
         run: dart format --output=none --set-exit-if-changed lib test
 

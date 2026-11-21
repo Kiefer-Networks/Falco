@@ -324,4 +324,47 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get deleteConsequence =>
       'Der Server und seine Festplatte werden gelöscht. Das lässt sich nicht rückgängig machen.';
+
+  @override
+  String get scopeEmpty => 'In diesem Bereich gibt es noch nichts anzuzeigen.';
+
+  @override
+  String get lockTitle => 'Falco ist gesperrt.';
+
+  @override
+  String get lockUnlock => 'Entsperren';
+
+  @override
+  String get lockReason => 'Entsperre Falco, um auf deine Server zuzugreifen';
+
+  @override
+  String get errorUnauthorized =>
+      'Die Zugangsdaten wurden abgelehnt. Prüfe Token oder Zugangsdaten.';
+
+  @override
+  String get errorForbidden =>
+      'Diesem Zugang fehlt die Berechtigung für diese Aktion, zum Beispiel bei einem Token nur mit Leserechten.';
+
+  @override
+  String get errorNotFound => 'Diese Ressource existiert nicht mehr.';
+
+  @override
+  String get errorConflict =>
+      'Die Ressource ist geschützt, gesperrt oder beschäftigt. Versuche es später erneut.';
+
+  @override
+  String get errorRateLimited =>
+      'Zu viele Anfragen. Warte einen Moment und versuche es erneut.';
+
+  @override
+  String get errorInvalid =>
+      'Die Eingabe wurde abgelehnt. Prüfe die markierten Felder.';
+
+  @override
+  String get errorPinning =>
+      'Dem Serverzertifikat wird nicht vertraut. Die Verbindung wurde gestoppt, um deine Zugangsdaten zu schützen.';
+
+  @override
+  String get errorServer =>
+      'Der Server hat einen Fehler gemeldet. Versuche es später erneut.';
 }

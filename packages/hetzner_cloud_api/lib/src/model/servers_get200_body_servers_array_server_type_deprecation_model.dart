@@ -1,0 +1,172 @@
+// Generated code - do not modify by hand
+
+// ignore_for_file: no_leading_underscores_for_library_prefixes
+
+import 'dart:convert' as _i4;
+import 'dart:core' as _i3;
+
+import 'package:meta/meta.dart' as _i2;
+import 'package:tonik_util/tonik_util.dart' as _i1;
+
+/// This field is deprecated.
+///
+/// Use the `deprecation` object in the `locations` field instead (`.locations[].deprecation`).
+///
+@_i2.immutable
+@_i3.Deprecated('This class is deprecated.')
+class $RawServersGet200BodyServersArrayServerTypeDeprecationModel
+    extends _i1.ObjectParameterEncodable
+    implements _i1.UriEncodable {
+  const $RawServersGet200BodyServersArrayServerTypeDeprecationModel({
+    required this.unavailableAfter,
+    required this.announced,
+  });
+
+  factory $RawServersGet200BodyServersArrayServerTypeDeprecationModel.fromSimple(
+    _i3.String? value, {
+    required _i3.bool explode,
+    _i3.bool isHeader = false,
+  }) {
+    final _$values = value.decodeObject(
+      explode: explode,
+      explodeSeparator: ',',
+      expectedKeys: {r'unavailable_after', r'announced'},
+      listKeys: {},
+      context: r'$RawServersGet200BodyServersArrayServerTypeDeprecationModel',
+      isHeader: isHeader,
+      percentDecodeKeys: false,
+    );
+    return $RawServersGet200BodyServersArrayServerTypeDeprecationModel(
+      unavailableAfter: _$values[r'unavailable_after'].decodeSimpleDateTime(
+        context: r'$RawServersGet200BodyServersArrayServerTypeDeprecationModel.unavailable_after',
+      ),
+      announced: _$values[r'announced'].decodeSimpleDateTime(
+        context: r'$RawServersGet200BodyServersArrayServerTypeDeprecationModel.announced',
+      ),
+    );
+  }
+
+  factory $RawServersGet200BodyServersArrayServerTypeDeprecationModel.fromJson(
+    _i3.Object? json,
+  ) {
+    final _$map = json.decodeMap(
+      context: r'$RawServersGet200BodyServersArrayServerTypeDeprecationModel',
+    );
+    return $RawServersGet200BodyServersArrayServerTypeDeprecationModel(
+      unavailableAfter: _$map[r'unavailable_after'].decodeJsonDateTime(
+        context: r'$RawServersGet200BodyServersArrayServerTypeDeprecationModel.unavailable_after',
+      ),
+      announced: _$map[r'announced'].decodeJsonDateTime(
+        context: r'$RawServersGet200BodyServersArrayServerTypeDeprecationModel.announced',
+      ),
+    );
+  }
+
+  factory $RawServersGet200BodyServersArrayServerTypeDeprecationModel.fromForm(
+    _i3.String? value, {
+    required _i3.bool explode,
+  }) {
+    final _$values = value.decodeObject(
+      explode: explode,
+      explodeSeparator: '&',
+      expectedKeys: {r'unavailable_after', r'announced'},
+      listKeys: {},
+      context: r'$RawServersGet200BodyServersArrayServerTypeDeprecationModel',
+    );
+    return $RawServersGet200BodyServersArrayServerTypeDeprecationModel(
+      unavailableAfter: _$values[r'unavailable_after'].decodeFormDateTime(
+        context: r'$RawServersGet200BodyServersArrayServerTypeDeprecationModel.unavailable_after',
+      ),
+      announced: _$values[r'announced'].decodeFormDateTime(
+        context: r'$RawServersGet200BodyServersArrayServerTypeDeprecationModel.announced',
+      ),
+    );
+  }
+
+  /// Date of the deprecated resource removal.
+  ///
+  /// Once this date is reached, the resource will not be returned
+  /// by resource type "list" endpoint, and the resource can not be
+  /// used to create new resources. For example, if this is an
+  /// image, you can not create new servers with this image after
+  /// the mentioned date.
+  ///
+  ///
+  /// **Example**:
+  /// ```
+  /// 2023-09-01T00:00:00Z
+  /// ```
+  final _i3.DateTime unavailableAfter;
+
+  /// Date of the deprecation announcement.
+  ///
+  ///
+  /// **Example**:
+  /// ```
+  /// 2023-06-01T00:00:00Z
+  /// ```
+  final _i3.DateTime announced;
+
+  @_i3.override
+  _i3.Object? toJson() => {
+    r'unavailable_after': this.unavailableAfter.toTimeZonedIso8601String(),
+    r'announced': this.announced.toTimeZonedIso8601String(),
+  };
+
+  $RawServersGet200BodyServersArrayServerTypeDeprecationModel Function({
+    _i3.DateTime? unavailableAfter,
+    _i3.DateTime? announced,
+  })
+  get copyWith {
+    return ({_i3.DateTime? unavailableAfter, _i3.DateTime? announced}) =>
+        $RawServersGet200BodyServersArrayServerTypeDeprecationModel(
+          unavailableAfter: unavailableAfter ?? this.unavailableAfter,
+          announced: announced ?? this.announced,
+        );
+  }
+
+  @_i3.override
+  _i3.bool operator ==(_i3.Object other) {
+    if (_i3.identical(this, other)) return true;
+    return other
+            is $RawServersGet200BodyServersArrayServerTypeDeprecationModel &&
+        other.unavailableAfter == this.unavailableAfter &&
+        other.announced == this.announced;
+  }
+
+  @_i3.override
+  _i3.int get hashCode {
+    return _i3.Object.hashAll([this.unavailableAfter, this.announced]);
+  }
+
+  _i1.EncodingShape get currentEncodingShape => _i1.EncodingShape.complex;
+
+  @_i3.override
+  _i3.Map<_i3.String, _i1.PropertyValue> parameterProperties({
+    _i3.bool allowEmpty = true,
+  }) {
+    final _$result = <_i3.String, _i1.PropertyValue>{};
+    _$result[r'unavailable_after'] = _i1.PropertyValue.scalar(
+      this.unavailableAfter.toTimeZonedIso8601String(),
+    );
+    _$result[r'announced'] = _i1.PropertyValue.scalar(
+      this.announced.toTimeZonedIso8601String(),
+    );
+    return _$result;
+  }
+
+  @_i3.override
+  _i3.String uriEncode({
+    required _i3.bool allowEmpty,
+    required _i4.Encoding textEncoding,
+    _i3.bool useQueryComponent = false,
+    _i3.bool allowReserved = false,
+  }) {
+    throw _i1.EncodingException(
+      r'Cannot uriEncode $RawServersGet200BodyServersArrayServerTypeDeprecationModel: complex types cannot be URI-encoded',
+    );
+  }
+}
+
+typedef ServersGet200BodyServersArrayServerTypeDeprecationModel =
+    $RawServersGet200BodyServersArrayServerTypeDeprecationModel?;

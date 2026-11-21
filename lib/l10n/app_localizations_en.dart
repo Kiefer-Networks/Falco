@@ -322,4 +322,45 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteConsequence =>
       'The server and its disk are deleted. This cannot be undone.';
+
+  @override
+  String get scopeEmpty => 'Nothing to show in this scope yet.';
+
+  @override
+  String get lockTitle => 'Falco is locked.';
+
+  @override
+  String get lockUnlock => 'Unlock';
+
+  @override
+  String get lockReason => 'Unlock Falco to access your servers';
+
+  @override
+  String get errorUnauthorized =>
+      'The access data was rejected. Check the token or the credentials.';
+
+  @override
+  String get errorForbidden =>
+      'This access lacks the permission for this action, for example a read only token.';
+
+  @override
+  String get errorNotFound => 'This resource no longer exists.';
+
+  @override
+  String get errorConflict =>
+      'The resource is protected, locked or busy. Try again later.';
+
+  @override
+  String get errorRateLimited =>
+      'Too many requests. Wait a moment and try again.';
+
+  @override
+  String get errorInvalid => 'The input was rejected. Check the marked fields.';
+
+  @override
+  String get errorPinning =>
+      'The server certificate is not trusted. The connection was stopped to protect your access data.';
+
+  @override
+  String get errorServer => 'The server reported an error. Try again later.';
 }

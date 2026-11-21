@@ -90,5 +90,17 @@
   "rebootTitle": "{name} neu starten?",
   "rebootConsequence": "Der Server startet über ACPI neu. Offene Verbindungen brechen während des Starts ab, meist für weniger als eine Minute.",
   "deleteTitle": "{name} löschen?",
-  "deleteConsequence": "Der Server und seine Festplatte werden gelöscht. Das lässt sich nicht rückgängig machen."
+  "deleteConsequence": "Der Server und seine Festplatte werden gelöscht. Das lässt sich nicht rückgängig machen.",
+  "scopeEmpty": "In diesem Bereich gibt es noch nichts anzuzeigen.",
+  "lockTitle": "Falco ist gesperrt.",
+  "lockUnlock": "Entsperren",
+  "lockReason": "Entsperre Falco, um auf deine Server zuzugreifen",
+  "errorUnauthorized": "Die Zugangsdaten wurden abgelehnt. Prüfe Token oder Zugangsdaten.",
+  "errorForbidden": "Diesem Zugang fehlt die Berechtigung für diese Aktion, zum Beispiel bei einem Token nur mit Leserechten.",
+  "errorNotFound": "Diese Ressource existiert nicht mehr.",
+  "errorConflict": "Die Ressource ist geschützt, gesperrt oder beschäftigt. Versuche es später erneut.",
+  "errorRateLimited": "Zu viele Anfragen. Warte einen Moment und versuche es erneut.",
+  "errorInvalid": "Die Eingabe wurde abgelehnt. Prüfe die markierten Felder.",
+  "errorPinning": "Dem Serverzertifikat wird nicht vertraut. Die Verbindung wurde gestoppt, um deine Zugangsdaten zu schützen.",
+  "errorServer": "Der Server hat einen Fehler gemeldet. Versuche es später erneut."
 }

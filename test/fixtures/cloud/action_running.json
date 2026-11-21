@@ -1,0 +1,12 @@
+{
+  "action": {
+    "id": 13,
+    "command": "start_server",
+    "status": "running",
+    "progress": 50,
+    "started": "2026-11-21T10:00:00+00:00",
+    "finished": null,
+    "resources": [{"id": 42, "type": "server"}],
+    "error": null
+  }
+}

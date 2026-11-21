@@ -1,43 +1,33 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/app/lock_gate.dart';
+import 'package:falco/app/router.dart';
+import 'package:falco/app/theme_settings.dart';
 import 'package:falco/l10n/app_localizations.dart';
-import 'package:falco/ui/showcase/showcase_page.dart';
 import 'package:falco/ui/ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 void main() {
   registerFontLicenses();
-  runApp(const FalcoApp());
+  runApp(const ProviderScope(child: FalcoApp()));
 }
 
-/// Root widget. Until features exist, the design system showcase is home.
-class FalcoApp extends StatefulWidget {
+/// Root widget: theme, l10n, app lock and router.
+class FalcoApp extends ConsumerWidget {
   /// Creates the app.
   const new({super.key});
 
   @override
-  State<FalcoApp> createState() => _FalcoAppState();
-}
-
-class _FalcoAppState extends State<FalcoApp> {
-  FalcoVariant _variant = FalcoVariant.dark;
-  AccentPreset _accent = AccentPreset.amber;
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(themeSettingsProvider);
+    return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
-      theme: falcoTheme(variant: _variant, accent: _accent),
+      theme: falcoTheme(variant: theme.variant, accent: theme.accent),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: ShowcasePage(
-        variant: _variant,
-        accent: _accent,
-        onThemeChanged: (variant, accent) => setState(() {
-          _variant = variant;
-          _accent = accent;
-        }),
-      ),
+      routerConfig: ref.watch(routerProvider),
+      builder: (context, child) => LockGate(child: child!),
     );
   }
 }
