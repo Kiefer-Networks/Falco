@@ -155,6 +155,14 @@ class _FormFieldsState extends State<FormFields> {
                 text: _values[f.key] ??= f.initial,
               ),
               obscureText: f.secret && !f.multiline,
+              // iOS shows no system menu for obscured fields, so paste
+              // would be impossible there; they get the Flutter menu.
+              contextMenuBuilder: (context, state) =>
+                  !f.secret && SystemContextMenu.isSupportedByField(state)
+                  ? SystemContextMenu.editableText(editableTextState: state)
+                  : AdaptiveTextSelectionToolbar.editableText(
+                      editableTextState: state,
+                    ),
               minLines: f.multiline ? 3 : null,
               maxLines: f.multiline ? 8 : 1,
               keyboardType: f.multiline ? TextInputType.multiline : null,
