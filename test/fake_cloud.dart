@@ -356,6 +356,9 @@ class FakeCloud {
   /// The file dialogs: what a pick returns, what was saved.
   final files = FakeTextFiles();
 
+  /// Whether load balancer metrics have samples.
+  bool lbMetrics = true;
+
   /// Objects per collection, e.g. `collections['volumes']`.
   final Map<String, List<Map<String, Object?>>> collections;
   final List<Map<String, Object?>> actions;
@@ -697,9 +700,12 @@ class FakeCloud {
         return (200, {'members': members, 'meta': _meta(members.length)});
       case ('GET', ['load_balancers', _, 'metrics']):
         final t = now.millisecondsSinceEpoch / 1000;
+        // No samples with [lbMetrics] off: goldens without a time axis.
         List<List<Object>> values(String v) => [
-          [t - 60, v],
-          [t, v],
+          if (lbMetrics) ...[
+            [t - 60, v],
+            [t, v],
+          ],
         ];
         return (
           200,

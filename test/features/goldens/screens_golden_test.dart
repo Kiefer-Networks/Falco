@@ -238,7 +238,7 @@ void main() {
     'primary_ip_detail': 'NET-031 NET-034',
     'load_balancers': 'NET-056',
     'load_balancer_detail': 'NET-057 NET-058',
-    'load_balancer_services': 'NET-059 NET-063 NET-078',
+    'load_balancer_services': 'NET-059 NET-063',
     'certificates': 'NET-079',
     'certificate_detail': 'NET-082',
     'zones': 'DNS-001',
@@ -371,7 +371,7 @@ void main() {
                   ),
                 ],
               },
-            ),
+            )..lbMetrics = false,
             accounts: name.startsWith('welcome') || name.startsWith('account_')
                 ? const []
                 : const [acme],
