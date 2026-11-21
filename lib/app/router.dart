@@ -10,6 +10,7 @@ import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/accounts/account_pages.dart';
 import 'package:falco/features/accounts/accounts.dart';
+import 'package:falco/features/activity/activity.dart';
 import 'package:falco/features/activity/activity_page.dart';
 import 'package:falco/features/dns/zone_pages.dart';
 import 'package:falco/features/images/image_pages.dart';
@@ -23,12 +24,14 @@ import 'package:falco/features/onboarding/welcome_page.dart';
 import 'package:falco/features/placement_groups/placement_group_pages.dart';
 import 'package:falco/features/robot/robot_pages.dart';
 import 'package:falco/features/robot/robot_server_page.dart';
+import 'package:falco/features/search/search_page.dart';
 import 'package:falco/features/servers/create_server_page.dart';
 import 'package:falco/features/servers/server_detail_page.dart';
 import 'package:falco/features/settings/settings_page.dart';
 import 'package:falco/features/ssh_keys/ssh_key_pages.dart';
 import 'package:falco/features/storage/object_pages.dart';
 import 'package:falco/features/storage/storage_box_pages.dart';
+import 'package:falco/features/storage/storage_boxes.dart';
 import 'package:falco/features/volumes/volume_pages.dart';
 import 'package:falco/ui/showcase/showcase_page.dart';
 import 'package:falco/ui/ui.dart';
@@ -183,11 +186,12 @@ class AddProjectRoute extends GoRouteData with $AddProjectRoute {
       ProjectSetupPage(accountId: accountId);
 }
 
-/// Home of one Cloud project.
+/// Home of one Cloud project, on tab `?area=` (0 Compute, 1 Network,
+/// 2 Storage).
 @TypedGoRoute<ProjectRoute>(path: '/a/:accountId/p/:projectId')
 class ProjectRoute extends GoRouteData with $ProjectRoute {
   /// Creates the route.
-  const new({required this.accountId, required this.projectId});
+  const new({required this.accountId, required this.projectId, this.area = 0});
 
   /// Account id.
   final String accountId;
@@ -195,9 +199,12 @@ class ProjectRoute extends GoRouteData with $ProjectRoute {
   /// Project id.
   final String projectId;
 
+  /// Bottom tab shown first.
+  final int area;
+
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      ScopeHomePage(scope: ProjectScope(accountId, projectId));
+      ScopeHomePage(scope: ProjectScope(accountId, projectId), area: area);
 }
 
 /// One Cloud server.
@@ -220,34 +227,107 @@ class ServerRoute extends GoRouteData with $ServerRoute {
   );
 }
 
-/// Activity of a project, or of one server with `?server-id=`.
+/// Activity of a project, or of one resource with `?type=&id=`.
 @TypedGoRoute<ActivityRoute>(path: '/a/:accountId/p/:projectId/activity')
 class ActivityRoute extends GoRouteData with $ActivityRoute {
-  const new({required this.accountId, required this.projectId, this.serverId});
+  const new({
+    required this.accountId,
+    required this.projectId,
+    this.type,
+    this.id,
+  });
 
   final String accountId;
   final String projectId;
-  final int? serverId;
+
+  /// Resource type as the API names it, e.g. `server`.
+  final String? type;
+  final int? id;
 
   @override
   Widget build(BuildContext context, GoRouterState state) => ActivityPage(
     scope: ProjectScope(accountId, projectId),
-    serverId: serverId,
+    type: type,
+    id: id,
   );
 }
 
-/// Home of "all projects" of an account.
+/// Search over every account, project and Robot access (SUC-001).
+@TypedGoRoute<SearchRoute>(path: '/search')
+class SearchRoute extends GoRouteData with $SearchRoute {
+  const new();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => const SearchPage();
+}
+
+/// The detail route of Cloud resource [type] [id] in [scope], or null
+/// for a type without a page of its own (activity and search links).
+GoRouteData? resourceRoute(ProjectScope scope, String type, int id) {
+  final (a, p) = (scope.accountId, scope.projectId);
+  return switch (type) {
+    CloudType.server => ServerRoute(accountId: a, projectId: p, serverId: id),
+    CloudType.volume => VolumeRoute(accountId: a, projectId: p, volumeId: id),
+    CloudType.image => ImageRoute(accountId: a, projectId: p, imageId: id),
+    CloudType.placementGroup => PlacementGroupRoute(
+      accountId: a,
+      projectId: p,
+      groupId: id,
+    ),
+    CloudType.sshKey => SshKeyRoute(accountId: a, projectId: p, keyId: id),
+    CloudType.network => NetworkRoute(
+      accountId: a,
+      projectId: p,
+      networkId: id,
+    ),
+    CloudType.firewall => FirewallRoute(
+      accountId: a,
+      projectId: p,
+      firewallId: id,
+    ),
+    CloudType.floatingIp => IpRoute(
+      accountId: a,
+      projectId: p,
+      kind: IpKind.floating,
+      ipId: id,
+    ),
+    CloudType.primaryIp => IpRoute(
+      accountId: a,
+      projectId: p,
+      kind: IpKind.primary,
+      ipId: id,
+    ),
+    CloudType.loadBalancer => LoadBalancerRoute(
+      accountId: a,
+      projectId: p,
+      lbId: id,
+    ),
+    CloudType.certificate => CertificateRoute(
+      accountId: a,
+      projectId: p,
+      certificateId: id,
+    ),
+    CloudType.zone => ZoneRoute(accountId: a, projectId: p, zoneId: id),
+    storageBoxType => StorageBoxRoute(accountId: a, projectId: p, boxId: id),
+    _ => null,
+  };
+}
+
+/// Home of "all projects" of an account, on tab `?area=`.
 @TypedGoRoute<AllProjectsRoute>(path: '/a/:accountId/all')
 class AllProjectsRoute extends GoRouteData with $AllProjectsRoute {
   /// Creates the route.
-  const new({required this.accountId});
+  const new({required this.accountId, this.area = 0});
 
   /// Account id.
   final String accountId;
 
+  /// Bottom tab shown first.
+  final int area;
+
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      ScopeHomePage(scope: AllProjectsScope(accountId));
+      ScopeHomePage(scope: AllProjectsScope(accountId), area: area);
 }
 
 /// Home of the Robot access of an account.

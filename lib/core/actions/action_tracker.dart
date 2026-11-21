@@ -26,6 +26,7 @@ class ActionProgress {
     this.resources = const [],
     this.errorCode,
     this.started,
+    this.finished,
   });
 
   /// Action id.
@@ -48,6 +49,9 @@ class ActionProgress {
 
   /// Start time, when the API reported it (activity view).
   final DateTime? started;
+
+  /// End time of an ended action, when the API reported it.
+  final DateTime? finished;
 
   /// True once the action ended.
   bool get done => status != ActionStatus.running;

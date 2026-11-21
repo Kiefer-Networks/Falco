@@ -64,7 +64,9 @@ void main() {
       );
     });
 
-    testWidgets('all projects name the project per row', (tester) async {
+    testWidgets('QRS-022 all projects name the project per row', (
+      tester,
+    ) async {
       const two = Account(
         id: 'a1',
         name: 'Acme',
@@ -249,7 +251,7 @@ void main() {
         ),
         'Brand new thing',
       );
-      expect(find.text('server #1 · 5 minutes ago'), findsOneWidget);
+      expect(find.textContaining('Server #1 · '), findsOneWidget);
       expect(cloud.calls, contains('GET /servers/actions'));
       await tester.tap(find.text('Failed'));
       await tester.pumpAndSettle();

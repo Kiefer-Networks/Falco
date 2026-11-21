@@ -6,6 +6,7 @@ import 'package:falco/core/format/format.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/activity/activity.dart';
+import 'package:falco/features/activity/activity_page.dart';
 import 'package:falco/features/compute/catalog.dart';
 import 'package:falco/features/compute/compute_ui.dart';
 import 'package:falco/features/network/ips.dart';
@@ -358,6 +359,7 @@ class IpDetailPage extends ConsumerWidget {
                 ).push<void>(context),
               ),
             ),
+          activitySection(l10n, scope, type, ip.id),
         ],
         dangerZone: [
           DeleteButton(

@@ -214,7 +214,6 @@ class StorageBoxDetailPage extends ConsumerWidget {
     final busy = progress != null && !progress.done;
     final snapshots = ref.watch(boxSnapshotsProvider(scope, b.id)).value;
     final subs = ref.watch(subaccountsProvider(scope, b.id)).value;
-    final actions = ref.watch(boxActionsProvider(scope, b.id)).value;
     final locale = l10n.localeName;
     Future<void> act(Future<int> Function(box.Server api) start) =>
         runBoxAction(context, ref, scope, start);
@@ -438,13 +437,7 @@ class StorageBoxDetailPage extends ConsumerWidget {
                 ),
             ], l10n.emptySubaccounts),
           ),
-          DetailSection(
-            title: l10n.sectionActivity,
-            child: entries([
-              for (final a in (actions ?? const []).take(10))
-                ActivityRow(action: a),
-            ], l10n.activityEmpty),
-          ),
+          activitySection(l10n, scope, storageBoxType, b.id),
         ],
         dangerZone: [
           DeleteButton(

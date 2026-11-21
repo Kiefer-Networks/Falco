@@ -36,6 +36,11 @@ String formatRelative(DateTime time, DateTime now, AppLocalizations l10n) {
 String formatDateTime(DateTime time, String locale) =>
     DateFormat.yMMMd(locale).add_Hm().format(time.toLocal());
 
+/// Formats the day of [time] in local time, e.g. `Nov 21, 2026` (en) or
+/// `21.11.2026` (de).
+String formatDate(DateTime time, String locale) =>
+    DateFormat.yMMMd(locale).format(time.toLocal());
+
 /// Formats [amount] in [currency] (ISO 4217), e.g. `€4.51` (en) or
 /// `4,51 €` (de). Hetzner returns prices as decimal strings; parse them
 /// with `num.parse` before calling.

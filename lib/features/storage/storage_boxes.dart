@@ -387,6 +387,7 @@ ActionProgress boxAction(Json a) => ActionProgress(
   ],
   errorCode: json(a['error'])['code'] as String?,
   started: DateTime.tryParse(a['started'] as String? ?? ''),
+  finished: DateTime.tryParse(a['finished'] as String? ?? ''),
 );
 
 /// Loads one Storage Box action for the [ActionTracker] (STB-027).

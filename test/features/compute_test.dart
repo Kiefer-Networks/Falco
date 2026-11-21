@@ -437,7 +437,7 @@ void main() {
         ],
       );
       final container = await fakeContainer(cloud);
-      final all = await container.read(activityProvider(_scope, null).future);
+      final all = await container.read(activityProvider(_scope).future);
       expect({for (final a in all) a.id}, {11, 12, 13});
       expect(
         cloud.calls,

@@ -17,9 +17,6 @@ import 'package:falco/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Entries of the activity section before "Show all".
-const _activityPreview = 5;
-
 /// Server detail: header, power tiles, overview, network, attached
 /// resources, metrics, activity, danger zone; everything else in the more
 /// menu (CMP-015 to CMP-049).
@@ -221,7 +218,7 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
               ],
             ),
           ),
-          DetailSection(title: l10n.sectionActivity, child: _activity(l10n)),
+          activitySection(l10n, _scope, CloudType.server, widget.serverId),
         ],
         dangerZone: [
           OutlinedButton.icon(
@@ -255,28 +252,6 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
         data: (period) =>
             serverMetricsProvider(_scope, widget.serverId, metric, period),
       );
-
-  Widget _activity(AppLocalizations l10n) {
-    final actions =
-        ref.watch(activityProvider(_scope, widget.serverId)).value ?? const [];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final a in actions.take(_activityPreview)) ActivityRow(action: a),
-        if (actions.isEmpty)
-          Text(l10n.activityEmpty)
-        else
-          TextButton(
-            onPressed: () => ActivityRoute(
-              accountId: _scope.accountId,
-              projectId: _scope.projectId,
-              serverId: widget.serverId,
-            ).push<void>(context),
-            child: Text(l10n.activityShowAll),
-          ),
-      ],
-    );
-  }
 }
 
 /// Public IPs with reverse DNS, private networks with remove and alias

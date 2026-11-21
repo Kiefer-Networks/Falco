@@ -329,7 +329,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Reset'), findsOneWidget);
       expect(find.text('Wake on LAN'), findsOneWidget);
-      expect(find.textContaining('server #321'), findsNWidgets(2));
+      expect(find.textContaining('Server #321'), findsNWidgets(2));
       expect(find.text('failed'), findsOneWidget);
     });
   });

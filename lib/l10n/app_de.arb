@@ -907,5 +907,22 @@
   "vswitchRemoveConsequence": "Der Server verlässt das VLAN; sein Verkehr dort endet.",
   "vswitchRemoveTitle": "{server} aus {vswitch} entfernen?",
   "wolConsequence": "Ein Wake on LAN Paket geht an den Server.",
-  "wolTitle": "{name} aufwecken?"
+  "wolTitle": "{name} aufwecken?",
+  "activityType": "Typ",
+  "activityTime": "Zeitraum",
+  "activityAnyTime": "Beliebig",
+  "activityLastDay": "Letzte 24 Stunden",
+  "activityLastWeek": "Letzte 7 Tage",
+  "activityLastMonth": "Letzte 30 Tage",
+  "activityToday": "Heute",
+  "activityYesterday": "Gestern",
+  "activityEarlier": "Früher",
+  "searchHint": "Name, IP, Label oder ID",
+  "searchStart": "Suche nach Servern, IPs, Labels und IDs in allen Accounts, Projekten und Robot.",
+  "searchClear": "Leeren",
+  "searchRecent": "Letzte Suchen",
+  "searchResults": "Treffer",
+  "searchNoMatches": "Keine Treffer.",
+  "searchDedicated": "Dedicated Server",
+  "searchRobotKeys": "Robot SSH Keys"
 }

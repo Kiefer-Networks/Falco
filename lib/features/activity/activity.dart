@@ -124,36 +124,65 @@ void refreshResource(
 }
 
 /// Actions of a project, newest first: every resource type with an
-/// action list. With [serverId] those of one server. All pages, like
+/// action list (SUC-006). With [type] and [id] those of one resource
+/// (CMP-045, SUC-011 and the action lists per type). All pages, like
 /// every list (BUG-022).
 @riverpod
 Future<List<ActionProgress>> activity(
   Ref ref,
-  ProjectScope scope,
-  int? serverId,
-) async {
+  ProjectScope scope, {
+  String? type,
+  int? id,
+}) async {
+  if (type == storageBoxType && id != null) {
+    return await boxActions(ref, scope, id);
+  }
   final api = ref.watch(cloudApiProvider(scope.projectId));
   Future<List<ActionProgress>> list(
     Future<TonikResult<Object?, Response<Object?>>> Function(int page) call,
   ) => fetchAllJson(call, 'actions', _action);
-  if (serverId != null) {
-    return await list(
-      (page) => cloud.ServerActionsApi(api).listServerActions(
-        id: serverId,
-        sort: [cloud.ServersIdActionsParametersArrayModel.starteddesc],
-        page: page,
-        perPage: maxPerPage,
-      ),
-    );
-  }
   const n = maxPerPage;
+  if (id != null) {
+    final Future<TonikResult<Object?, Response<Object?>>> Function(int p)?
+    call = switch (type) {
+      CloudType.server => (p) => cloud.ServerActionsApi(
+        api,
+      ).listServerActions(id: id, page: p, perPage: n),
+      CloudType.volume => (p) => cloud.VolumeActionsApi(
+        api,
+      ).listVolumeActions(id: id, page: p, perPage: n),
+      CloudType.image => (p) => cloud.ImageActionsApi(
+        api,
+      ).listImageActions(id: id, page: p, perPage: n),
+      CloudType.network => (p) => cloud.NetworkActionsApi(
+        api,
+      ).listNetworkActions(id: id, page: p, perPage: n),
+      CloudType.firewall => (p) => cloud.FirewallActionsApi(
+        api,
+      ).listFirewallActions(id: id, page: p, perPage: n),
+      CloudType.floatingIp => (p) => cloud.FloatingIpActionsApi(
+        api,
+      ).listFloatingIpActions(id: id, page: p, perPage: n),
+      CloudType.primaryIp => (p) => cloud.PrimaryIpActionsApi(
+        api,
+      ).listPrimaryIpActions(id: id, page: p, perPage: n),
+      CloudType.loadBalancer => (p) => cloud.LoadBalancerActionsApi(
+        api,
+      ).listLoadBalancerActions(id: id, page: p, perPage: n),
+      CloudType.certificate => (p) => cloud.CertificateActionsApi(
+        api,
+      ).listCertificateActions(id: id, page: p, perPage: n),
+      CloudType.zone => (p) => cloud.ZoneActionsApi(
+        api,
+      ).listZoneActions(idOrName: '$id', page: p, perPage: n),
+      _ => null,
+    };
+    return call == null ? const [] : _newestFirst(await list(call));
+  }
   final lists = await Future.wait([
     list(
-      (p) => cloud.ServerActionsApi(api).listServersActions(
-        sort: [cloud.ServersActionsParametersArrayModel.starteddesc],
-        page: p,
-        perPage: n,
-      ),
+      (p) =>
+          cloud.ServerActionsApi(api).listServersActions(page: p, perPage: n),
     ),
     list(
       (p) =>
@@ -204,12 +233,13 @@ Future<List<ActionProgress>> activity(
     for (final l in lists)
       for (final a in l) a.id: a,
   };
-  final all = [...byId.values, ...boxes]
-    ..sort(
-      (a, b) => (b.started ?? DateTime(0)).compareTo(a.started ?? DateTime(0)),
-    );
-  return all;
+  return _newestFirst([...byId.values, ...boxes]);
 }
+
+List<ActionProgress> _newestFirst(List<ActionProgress> all) => all
+  ..sort(
+    (a, b) => (b.started ?? DateTime(0)).compareTo(a.started ?? DateTime(0)),
+  );
 
 /// Every action list has the schema of `GET /servers/actions`; one mapper.
 ActionProgress _action(Json json) {
@@ -228,6 +258,7 @@ ActionProgress _action(Json json) {
     resources: [for (final r in a.resources) (r.$type, r.id)],
     errorCode: a.error?.code,
     started: a.started,
+    finished: a.finished,
   );
 }
 

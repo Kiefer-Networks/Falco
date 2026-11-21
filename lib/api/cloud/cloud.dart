@@ -107,6 +107,7 @@ Future<ActionProgress> Function(int id) cloudActionFetcher(
     resources: [for (final r in a.resources) (r.$type, r.id)],
     errorCode: a.error?.code,
     started: a.started,
+    finished: a.finished,
   );
 };
 

@@ -12,6 +12,19 @@ import '../../helpers.dart';
 
 const _width = 390.0;
 
+// PARITY rows a component golden covers.
+const _parity = {
+  'error_card': 'QRS-005',
+  'resource_list_error': 'QRS-005',
+  'resource_list_loading': 'QRS-006',
+  'empty_hint': 'QRS-007',
+  'resource_list_empty': 'QRS-007',
+  'status_badge_running': 'QRS-011',
+  'detail_page': 'QRS-012',
+  'create_wizard_step': 'QRS-013',
+  'metric_chart_multi': 'QRS-014',
+};
+
 void main() {
   useTolerantGoldens('components_golden_test.dart');
 
@@ -30,7 +43,7 @@ void main() {
   for (final variant in [FalcoVariant.dark, FalcoVariant.light]) {
     group(variant.name, () {
       for (final c in showcaseCases()) {
-        testWidgets(c.id, (tester) async {
+        testWidgets('${c.id} ${_parity[c.id] ?? ''}'.trim(), (tester) async {
           await pumpCase(tester, c, variant);
           await expectLater(
             find.byType(MaterialApp),
@@ -39,7 +52,7 @@ void main() {
         });
       }
 
-      testWidgets('more_menu_open', (tester) async {
+      testWidgets('more_menu_open QRS-008', (tester) async {
         final c = showcaseCases().firstWhere((c) => c.id == 'falco_scaffold');
         await pumpCase(tester, c, variant);
         await tester.tap(find.byTooltip('More actions'));

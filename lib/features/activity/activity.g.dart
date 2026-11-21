@@ -9,14 +9,16 @@ part of 'activity.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Actions of a project, newest first: every resource type with an
-/// action list. With [serverId] those of one server. All pages, like
+/// action list (SUC-006). With [type] and [id] those of one resource
+/// (CMP-045, SUC-011 and the action lists per type). All pages, like
 /// every list (BUG-022).
 
 @ProviderFor(activity)
 final activityProvider = ActivityFamily._();
 
 /// Actions of a project, newest first: every resource type with an
-/// action list. With [serverId] those of one server. All pages, like
+/// action list (SUC-006). With [type] and [id] those of one resource
+/// (CMP-045, SUC-011 and the action lists per type). All pages, like
 /// every list (BUG-022).
 
 final class ActivityProvider
@@ -30,11 +32,12 @@ final class ActivityProvider
         $FutureModifier<List<ActionProgress>>,
         $FutureProvider<List<ActionProgress>> {
   /// Actions of a project, newest first: every resource type with an
-  /// action list. With [serverId] those of one server. All pages, like
+  /// action list (SUC-006). With [type] and [id] those of one resource
+  /// (CMP-045, SUC-011 and the action lists per type). All pages, like
   /// every list (BUG-022).
   ActivityProvider._({
     required ActivityFamily super.from,
-    required (ProjectScope, int?) super.argument,
+    required (ProjectScope, {String? type, int? id}) super.argument,
   }) : super(
          retry: null,
          name: r'activityProvider',
@@ -61,8 +64,8 @@ final class ActivityProvider
 
   @override
   FutureOr<List<ActionProgress>> create(Ref ref) {
-    final argument = this.argument as (ProjectScope, int?);
-    return activity(ref, argument.$1, argument.$2);
+    final argument = this.argument as (ProjectScope, {String? type, int? id});
+    return activity(ref, argument.$1, type: argument.type, id: argument.id);
   }
 
   @override
@@ -76,17 +79,18 @@ final class ActivityProvider
   }
 }
 
-String _$activityHash() => r'c1fd076eccfb881cfa56c1b303d71026d50a39cc';
+String _$activityHash() => r'39ab5735f51a7a0086f6e8c59d29bd8d43302024';
 
 /// Actions of a project, newest first: every resource type with an
-/// action list. With [serverId] those of one server. All pages, like
+/// action list (SUC-006). With [type] and [id] those of one resource
+/// (CMP-045, SUC-011 and the action lists per type). All pages, like
 /// every list (BUG-022).
 
 final class ActivityFamily extends $Family
     with
         $FunctionalFamilyOverride<
           FutureOr<List<ActionProgress>>,
-          (ProjectScope, int?)
+          (ProjectScope, {String? type, int? id})
         > {
   ActivityFamily._()
     : super(
@@ -98,11 +102,12 @@ final class ActivityFamily extends $Family
       );
 
   /// Actions of a project, newest first: every resource type with an
-  /// action list. With [serverId] those of one server. All pages, like
+  /// action list (SUC-006). With [type] and [id] those of one resource
+  /// (CMP-045, SUC-011 and the action lists per type). All pages, like
   /// every list (BUG-022).
 
-  ActivityProvider call(ProjectScope scope, int? serverId) =>
-      ActivityProvider._(argument: (scope, serverId), from: this);
+  ActivityProvider call(ProjectScope scope, {String? type, int? id}) =>
+      ActivityProvider._(argument: (scope, type: type, id: id), from: this);
 
   @override
   String toString() => r'activityProvider';

@@ -15,16 +15,22 @@ import 'package:material_ui/material_ui.dart';
 /// Home of a scope: scope switcher on top, the four areas at the bottom
 /// (Compute, Network, Storage, Robot).
 class ScopeHomePage extends ConsumerStatefulWidget {
-  const new({required this.scope, super.key});
+  const new({required this.scope, this.area = 0, super.key});
 
   final Scope scope;
+
+  /// Area of a project scope shown first (0 Compute, 1 Network, 2 Storage).
+  final int area;
 
   @override
   ConsumerState<ScopeHomePage> createState() => _ScopeHomePageState();
 }
 
 class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
-  late int _area = widget.scope is RobotScope ? 3 : 0;
+  late int _area = widget.scope is RobotScope ? 3 : widget.area.clamp(0, 2);
+
+  /// The area a project scope keeps when the scope changes.
+  int get _projectArea => _area < 3 ? _area : 0;
 
   Future<void> _switchScope(List<Account> accounts) async {
     final scope = widget.scope;
@@ -67,16 +73,20 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
         ProjectRoute(
           accountId: choice.accountId,
           projectId: choice.projectId!,
+          area: _projectArea,
         ).go(context);
       case ScopeKind.allProjects:
-        AllProjectsRoute(accountId: choice.accountId).go(context);
+        AllProjectsRoute(
+          accountId: choice.accountId,
+          area: _projectArea,
+        ).go(context);
       case ScopeKind.robot:
         RobotRoute(accountId: choice.accountId).go(context);
     }
   }
 
   /// Robot is its own scope: its tab opens the account's Robot, the
-  /// others its first project, when there is one.
+  /// others the tapped area of its first project, when there is one.
   void _openArea(int area, Account? account) {
     final robot = widget.scope is RobotScope;
     if (area == 3 && !robot && (account?.hasRobot ?? false)) {
@@ -86,6 +96,7 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
       return ProjectRoute(
         accountId: account!.id,
         projectId: account.projects.first.id,
+        area: area,
       ).go(context);
     }
     setState(() => _area = area);
@@ -126,6 +137,11 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
         onTap: () => _switchScope(accounts),
       ),
       actions: [
+        IconButton(
+          tooltip: l10n.commonSearch,
+          icon: const Icon(Icons.search),
+          onPressed: () => const SearchRoute().push<void>(context),
+        ),
         IconButton(
           tooltip: l10n.settingsTitle,
           icon: const Icon(Icons.account_circle_outlined),

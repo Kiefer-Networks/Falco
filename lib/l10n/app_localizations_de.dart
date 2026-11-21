@@ -3290,4 +3290,56 @@ class AppLocalizationsDe extends AppLocalizations {
   String wolTitle(String name) {
     return '$name aufwecken?';
   }
+
+  @override
+  String get activityType => 'Typ';
+
+  @override
+  String get activityTime => 'Zeitraum';
+
+  @override
+  String get activityAnyTime => 'Beliebig';
+
+  @override
+  String get activityLastDay => 'Letzte 24 Stunden';
+
+  @override
+  String get activityLastWeek => 'Letzte 7 Tage';
+
+  @override
+  String get activityLastMonth => 'Letzte 30 Tage';
+
+  @override
+  String get activityToday => 'Heute';
+
+  @override
+  String get activityYesterday => 'Gestern';
+
+  @override
+  String get activityEarlier => 'Früher';
+
+  @override
+  String get searchHint => 'Name, IP, Label oder ID';
+
+  @override
+  String get searchStart =>
+      'Suche nach Servern, IPs, Labels und IDs in allen Accounts, Projekten und Robot.';
+
+  @override
+  String get searchClear => 'Leeren';
+
+  @override
+  String get searchRecent => 'Letzte Suchen';
+
+  @override
+  String get searchResults => 'Treffer';
+
+  @override
+  String get searchNoMatches => 'Keine Treffer.';
+
+  @override
+  String get searchDedicated => 'Dedicated Server';
+
+  @override
+  String get searchRobotKeys => 'Robot SSH Keys';
 }

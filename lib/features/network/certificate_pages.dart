@@ -5,6 +5,7 @@ import 'package:falco/core/format/format.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/activity/activity.dart';
+import 'package:falco/features/activity/activity_page.dart';
 import 'package:falco/features/compute/compute_ui.dart';
 import 'package:falco/features/network/certificates.dart';
 import 'package:falco/features/network/load_balancers.dart';
@@ -204,6 +205,7 @@ class CertificateDetailPage extends ConsumerWidget {
                 ),
             ], l10n.certificateUnused),
           ),
+          activitySection(l10n, scope, CloudType.certificate, c.id),
         ],
         dangerZone: [
           DeleteButton(

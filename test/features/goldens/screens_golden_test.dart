@@ -255,8 +255,20 @@ void main() {
             tester,
             FakeCloud(
               actions: [
-                FakeCloud.action(11, 'reboot_server', 1),
-                FakeCloud.action(12, 'start_server', 2, status: 'error'),
+                // A fixed day: no label moves with the clock.
+                FakeCloud.action(
+                  11,
+                  'reboot_server',
+                  1,
+                  started: DateTime(2026, 3, 1, 14, 5),
+                ),
+                FakeCloud.action(
+                  12,
+                  'start_server',
+                  2,
+                  status: 'error',
+                  started: DateTime(2026, 3, 1, 13, 5),
+                ),
               ],
               servers: [
                 serverJson(

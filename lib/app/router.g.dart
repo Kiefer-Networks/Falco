@@ -19,6 +19,7 @@ List<RouteBase> get $appRoutes => [
   $projectRoute,
   $serverRoute,
   $activityRoute,
+  $searchRoute,
   $allProjectsRoute,
   $robotRoute,
   $createRoute,
@@ -315,6 +316,7 @@ mixin $ProjectRoute on GoRouteData {
   static ProjectRoute _fromState(GoRouterState state) => ProjectRoute(
     accountId: state.pathParameters['accountId']!,
     projectId: state.pathParameters['projectId']!,
+    area: _$convertMapValue('area', state.uri.queryParameters, int.parse) ?? 0,
   );
 
   ProjectRoute get _self => this as ProjectRoute;
@@ -322,6 +324,7 @@ mixin $ProjectRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
     '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}',
+    queryParams: {if (_self.area != 0) 'area': _self.area.toString()},
   );
 
   @override
@@ -336,6 +339,15 @@ mixin $ProjectRoute on GoRouteData {
 
   @override
   void replace(BuildContext context) => context.replace(location);
+}
+
+T? _$convertMapValue<T>(
+  String key,
+  Map<String, String> map,
+  T? Function(String) converter,
+) {
+  final value = map[key];
+  return value == null ? null : converter(value);
 }
 
 RouteBase get $serverRoute => GoRouteData.$route(
@@ -382,11 +394,8 @@ mixin $ActivityRoute on GoRouteData {
   static ActivityRoute _fromState(GoRouterState state) => ActivityRoute(
     accountId: state.pathParameters['accountId']!,
     projectId: state.pathParameters['projectId']!,
-    serverId: _$convertMapValue(
-      'server-id',
-      state.uri.queryParameters,
-      int.tryParse,
-    ),
+    type: state.uri.queryParameters['type'],
+    id: _$convertMapValue('id', state.uri.queryParameters, int.tryParse),
   );
 
   ActivityRoute get _self => this as ActivityRoute;
@@ -395,7 +404,8 @@ mixin $ActivityRoute on GoRouteData {
   String get location => GoRouteData.$location(
     '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/activity',
     queryParams: {
-      if (_self.serverId != null) 'server-id': _self.serverId!.toString(),
+      if (_self.type != null) 'type': _self.type,
+      if (_self.id != null) 'id': _self.id!.toString(),
     },
   );
 
@@ -413,13 +423,30 @@ mixin $ActivityRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-T? _$convertMapValue<T>(
-  String key,
-  Map<String, String> map,
-  T? Function(String) converter,
-) {
-  final value = map[key];
-  return value == null ? null : converter(value);
+RouteBase get $searchRoute => GoRouteData.$route(
+  path: '/search',
+  hasOverriddenOnExit: false,
+  factory: $SearchRoute._fromState,
+);
+
+mixin $SearchRoute on GoRouteData {
+  static SearchRoute _fromState(GoRouterState state) => const SearchRoute();
+
+  @override
+  String get location => GoRouteData.$location('/search');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
 }
 
 RouteBase get $allProjectsRoute => GoRouteData.$route(
@@ -429,14 +456,18 @@ RouteBase get $allProjectsRoute => GoRouteData.$route(
 );
 
 mixin $AllProjectsRoute on GoRouteData {
-  static AllProjectsRoute _fromState(GoRouterState state) =>
-      AllProjectsRoute(accountId: state.pathParameters['accountId']!);
+  static AllProjectsRoute _fromState(GoRouterState state) => AllProjectsRoute(
+    accountId: state.pathParameters['accountId']!,
+    area: _$convertMapValue('area', state.uri.queryParameters, int.parse) ?? 0,
+  );
 
   AllProjectsRoute get _self => this as AllProjectsRoute;
 
   @override
-  String get location =>
-      GoRouteData.$location('/a/${Uri.encodeComponent(_self.accountId)}/all');
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/all',
+    queryParams: {if (_self.area != 0) 'area': _self.area.toString()},
+  );
 
   @override
   void go(BuildContext context) => context.go(location);

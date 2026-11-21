@@ -18,7 +18,7 @@ void main() {
       expect(ConfirmSheet.matches('', 'db-primary'), isFalse);
     });
 
-    testWidgets('confirm stays disabled until the name matches', (
+    testWidgets('QRS-010 confirm stays disabled until the name matches', (
       tester,
     ) async {
       bool? result;
@@ -60,9 +60,8 @@ void main() {
       expect(result, isTrue);
     });
 
-    testWidgets('level 1 confirms without typing, cancel resolves false', (
-      tester,
-    ) async {
+    testWidgets('QRS-009 level 1 confirms without typing, cancel resolves '
+        'false', (tester) async {
       final results = <bool>[];
       await tester.pumpWidget(
         testApp(
@@ -215,7 +214,7 @@ void main() {
       expect(find.byType(ListTile), findsNWidgets(3));
     });
 
-    testWidgets('pull to refresh calls onRefresh', (tester) async {
+    testWidgets('QRS-004 pull to refresh calls onRefresh', (tester) async {
       await tester.pumpWidget(testApp(list(items: items)));
       await tester.fling(find.text('alpha'), const Offset(0, 400), 1000);
       await tester.pumpAndSettle();
