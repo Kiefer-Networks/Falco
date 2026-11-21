@@ -49,3 +49,6 @@ secrets/
 # Local test data
 test-tokens.txt
 .claude-session-state.md
+
+# Golden test failure output
+test/**/failures/
