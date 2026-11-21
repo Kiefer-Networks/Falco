@@ -7,6 +7,13 @@
 build/
 coverage/
 *.g.dart.tmp
+*.log
+app.*.symbols
+app.*.map.json
+migrate_working_dir/
+.widget_preview/
+**/doc/api/
+dist/
 
 # IDE / OS
 *.iml
@@ -21,6 +28,8 @@ android/local.properties
 android/.gradle/
 android/captures/
 android/app/release/
+/android/app/debug
+/android/app/profile
 android/key.properties
 
 # iOS
@@ -31,6 +40,7 @@ ios/Flutter/Flutter.podspec
 ios/Flutter/Generated.xcconfig
 ios/Flutter/ephemeral/
 ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/.last_build_id
 ios/Runner/GeneratedPluginRegistrant.*
 **/xcuserdata/
 *.xcuserstate

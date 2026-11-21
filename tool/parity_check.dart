@@ -4,7 +4,7 @@
 //   dart run tool/parity_check.dart
 //
 // A row counts as covered when its id appears in a test name under test/
-// or integration_test/ (`test('CMP-012 ...')`, or a name map of a golden
+// (`test('CMP-012 ...')`, or a name map of a golden
 // loop: any string literal, never a comment), or as deferred when the
 // section "Zurückgestellt" of PARITY.md lists it with a reason. Exits 1
 // and names the open rows otherwise.
@@ -34,14 +34,14 @@ void main() {
     }
   }
 
+  // Only test/: CI runs no integration tests, so integration_test/ proves
+  // nothing.
   final named = <String>{};
-  for (final dir in ['test', 'integration_test']) {
-    for (final f in Directory(dir).listSync(recursive: true)) {
-      if (f is! File || !f.path.endsWith('.dart')) continue;
-      for (final t in _token.allMatches(f.readAsStringSync())) {
-        if (t[0]!.startsWith('//')) continue;
-        named.addAll(_id.allMatches(t[0]!).map((m) => m[0]!));
-      }
+  for (final f in Directory('test').listSync(recursive: true)) {
+    if (f is! File || !f.path.endsWith('.dart')) continue;
+    for (final t in _token.allMatches(f.readAsStringSync())) {
+      if (t[0]!.startsWith('//')) continue;
+      named.addAll(_id.allMatches(t[0]!).map((m) => m[0]!));
     }
   }
 

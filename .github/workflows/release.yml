@@ -85,6 +85,21 @@ jobs:
             exit 1
           fi
 
+      # Only commits that went through review on main are released.
+      - name: Tag commit is on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # behind: main contains the commit; identical: it is main's head.
+          status=$(gh api "repos/$REPO/compare/main...$GITHUB_SHA" --jq .status)
+          if [ "$status" != behind ] && [ "$status" != identical ]; then
+            echo "::error::Tag $TAG points to $GITHUB_SHA, which is not on main"
+            exit 1
+          fi
+
   android:
     name: Android (AAB + APK)
     needs: preflight
