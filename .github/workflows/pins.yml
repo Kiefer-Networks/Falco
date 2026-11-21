@@ -56,16 +56,13 @@ jobs:
           # transfers run in the platform HTTP stacks).
           files=(tool/pins.json lib/core/pins/pins.g.dart
             android/app/src/main/res/xml/network_security_config.xml
-            ios/Runner/Info.plist)
-          if git diff --quiet -- "${files[@]}"; then
+            android/app/src/main/res/raw ios/Runner/Info.plist)
+          if [ -z "$(git status --porcelain -- "${files[@]}")" ]; then
             echo "Pins unchanged"
             exit 0
           fi
           branch="pins/update-$(date -u +%Y-%m-%d)"
-          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
-            echo "Branch $branch exists already"
-            exit 0
-          fi
+          title="chore: Update certificate pins"
           {
             echo "The certificate chain of at least one API host changed."
             echo "Retired pins stay 90 days so released versions keep working."
@@ -75,12 +72,26 @@ jobs:
             echo '```'
             echo
             echo '```diff'
-            git diff -- tool/pins.json | grep -v '"der"'
+            { git diff -- tool/pins.json | grep -v '"der"' || true; }
             echo '```'
             echo
             echo "Close and reopen this PR to run CI. When squash merging,"
             echo "remove the Co-authored-by line of the bot from the message."
           } > "$RUNNER_TEMP/body.md"
+          open_pr() {
+            gh pr create --base "$BASE" --head "$branch" --title "$title" \
+              --body-file "$RUNNER_TEMP/body.md" && return
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
+            exit 1
+          }
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            if [ "$(gh pr list --head "$branch" --json number --jq length)" != 0 ]; then
+              echo "PR for $branch is open already"
+            else
+              open_pr
+            fi
+            exit 0
+          fi
           # Commit through the API so GitHub signs it; the author stays
           # github-actions[bot].
           git add -- "${files[@]}"
@@ -90,12 +101,12 @@ jobs:
             base64 -w0 -- "$f" > "$RUNNER_TEMP/content.b64"
             jq -cn --arg path "$f" --rawfile contents "$RUNNER_TEMP/content.b64" \
               '{path: $path, contents: $contents}' >> "$RUNNER_TEMP/additions.jsonl"
-          done < <(git diff --cached --name-only --diff-filter=d -z)
-          git diff --cached --name-only --diff-filter=D -z \
+          done < <(git diff --cached --name-only --no-renames --diff-filter=d -z)
+          git diff --cached --name-only --no-renames --diff-filter=D -z \
             | jq -Rs 'split("\u0000") | map(select(. != "") | {path: .})' \
             > "$RUNNER_TEMP/deletions.json"
           jq -n --arg repo "$GITHUB_REPOSITORY" --arg branch "$branch" \
-            --arg head "$head" --arg message "chore: Update certificate pins" \
+            --arg head "$head" --arg message "$title" \
             --slurpfile additions "$RUNNER_TEMP/additions.jsonl" \
             --slurpfile deletions "$RUNNER_TEMP/deletions.json" \
             '{query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }",
@@ -111,6 +122,4 @@ jobs:
             gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
             exit 1
           fi
-          gh pr create --base "$BASE" --head "$branch" \
-            --title "chore: Update certificate pins" \
-            --body-file "$RUNNER_TEMP/body.md"
+          open_pr
