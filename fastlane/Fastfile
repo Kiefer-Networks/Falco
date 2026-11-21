@@ -1,0 +1,80 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Store lanes for .github/workflows/release.yml. Credentials come only from
+# environment variables set by the workflow; nothing is read from disk.
+opt_out_usage
+skip_docs
+
+PACKAGE = "de.kiefer_networks.falco"
+BUNDLE_ID = "de.kiefer-networks.falco"
+
+platform :android do
+  # Uploads the signed AAB with listing texts and changelog to the internal
+  # track. Screenshots are uploaded by hand (docs/target/RELEASE.md).
+  lane :internal do |options|
+    upload_to_play_store(
+      package_name: PACKAGE,
+      json_key_data: ENV.fetch("PLAY_SERVICE_ACCOUNT_JSON"),
+      track: "internal",
+      aab: options.fetch(:aab),
+      metadata_path: "fastlane/metadata/android",
+      skip_upload_apk: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+  end
+
+  # Promotes the internal release of version_code to another track.
+  lane :promote do |options|
+    upload_to_play_store(
+      package_name: PACKAGE,
+      json_key_data: ENV.fetch("PLAY_SERVICE_ACCOUNT_JSON"),
+      track: "internal",
+      track_promote_to: options.fetch(:track),
+      version_code: options.fetch(:version_code).to_i,
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+  end
+end
+
+platform :ios do
+  def asc_key
+    app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8_BASE64"),
+      is_key_content_base64: true,
+    )
+  end
+
+  lane :beta do |options|
+    upload_to_testflight(
+      api_key: asc_key,
+      app_identifier: BUNDLE_ID,
+      ipa: options.fetch(:ipa),
+      skip_waiting_for_build_processing: true,
+    )
+  end
+
+  # Submits an uploaded build with the listing texts for App Review.
+  # Screenshots and App Privacy answers are maintained in App Store Connect.
+  lane :submit do |options|
+    deliver(
+      api_key: asc_key,
+      app_identifier: BUNDLE_ID,
+      app_version: options.fetch(:version),
+      build_number: options.fetch(:build_number),
+      metadata_path: "fastlane/metadata/ios",
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      submit_for_review: true,
+      automatic_release: false,
+      force: true,
+      precheck_include_in_app_purchases: false,
+    )
+  end
+end

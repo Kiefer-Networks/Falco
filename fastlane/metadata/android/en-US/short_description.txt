@@ -1,1 +1,1 @@
-Manage Hetzner Cloud, Robot, DNS and Object Storage from your phone.
+Manage Hetzner Cloud, DNS, Storage and Robot. No tracking, data stays local.

@@ -165,7 +165,8 @@ UI (Widgets) → Controller (Riverpod Notifier pro Screen, Scope als Parameter)
 
 Die bestehenden Härtungen bleiben: Actions per SHA, minimale Rechte,
 zizmor, Dependency Review, Rulesets, signierte Commits und Tags,
-Geheimnisse nur in der Environment `release`.
+Geheimnisse nur in der Environment `release`. Einrichtung und Ablauf des
+Releases: [RELEASE.md](RELEASE.md).
 
 ## 10. Repository und Migration
 
