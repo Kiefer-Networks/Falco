@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:math';
+
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/feedback.dart';
@@ -127,10 +129,19 @@ class _ResourceListState<T> extends State<ResourceList<T>> {
   @override
   void didUpdateWidget(ResourceList<T> old) {
     super.didUpdateWidget(old);
-    final n = widget.menuFilters;
+    // Options may change order or count on a refresh (activity types):
+    // the selection follows its label, or falls back to the first.
     _menus = [
-      for (final (i, m) in n.indexed)
-        if (i < _menus.length && _menus[i] < m.options.length) _menus[i] else 0,
+      for (final (i, m) in widget.menuFilters.indexed)
+        if (i < _menus.length && i < old.menuFilters.length)
+          max(
+            0,
+            m.options.indexWhere(
+              (o) => o.label == old.menuFilters[i].options[_menus[i]].label,
+            ),
+          )
+        else
+          0,
     ];
   }
 

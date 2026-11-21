@@ -38,6 +38,17 @@ void main() {
       expect(find.text('db-1'), findsOneWidget);
     });
 
+    testWidgets('the create button stays on the list pane', (tester) async {
+      size(tester, const Size(1280, 800));
+      await pumpFalco(tester, FakeCloud());
+      await openList(tester, 'Servers');
+      await tap(tester, 'web-1');
+      expect(
+        tester.getRect(find.byType(FloatingActionButton)).right,
+        lessThan(tester.getRect(find.byType(VerticalDivider).last).left),
+      );
+    });
+
     testWidgets('a detail that closes itself only empties the pane', (
       tester,
     ) async {

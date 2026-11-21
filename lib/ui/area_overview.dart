@@ -154,6 +154,7 @@ class _Tile extends StatelessWidget {
     final header = Semantics(
       button: true,
       label: [t.label, ?t.count?.toString(), ?line].join(', '),
+      onTap: t.onTap,
       excludeSemantics: true,
       child: InkWell(
         borderRadius: radius,

@@ -47,16 +47,19 @@ class CopyableValue extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final c = FalcoColors.of(context);
+    Future<void> copy() async {
+      await Clipboard.setData(ClipboardData(text: copyText ?? value));
+      if (context.mounted) FalcoScaffold.showSnack(context, l10n.copied);
+    }
+
     return Semantics(
       button: true,
       label: l10n.copyValue(value),
+      onTap: copy,
       excludeSemantics: true,
       child: InkWell(
         borderRadius: BorderRadius.circular(FalcoRadius.small),
-        onTap: () async {
-          await Clipboard.setData(ClipboardData(text: copyText ?? value));
-          if (context.mounted) FalcoScaffold.showSnack(context, l10n.copied);
-        },
+        onTap: copy,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: kFalcoMinTouchTarget),
           child: Row(

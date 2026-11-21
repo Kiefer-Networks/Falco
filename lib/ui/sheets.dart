@@ -519,11 +519,13 @@ class ScopeSwitcherButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: '${l10n.scopeSwitch}: $scopeName',
+      onTap: onTap,
       excludeSemantics: true,
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
-        child: Padding(
+        child: Container(
+          constraints: const BoxConstraints(minHeight: kFalcoMinTouchTarget),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           child: Row(
             mainAxisSize: MainAxisSize.min,

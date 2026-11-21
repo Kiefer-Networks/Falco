@@ -225,9 +225,14 @@ class FormSheet extends StatefulWidget {
 }
 
 class _FormSheetState extends State<FormSheet> {
-  late Map<String, String> _values = FormFields.initialValues(
-    widget.fields(const {}),
-  );
+  var _entered = <String, String>{};
+
+  /// What was entered over the initial values of the fields shown now, so
+  /// a field that appears later (after a choice) counts with its default.
+  Map<String, String> get _values => {
+    ...FormFields.initialValues(widget.fields(_entered)),
+    ..._entered,
+  };
   bool _saving = false;
   String? _error;
 
@@ -259,7 +264,7 @@ class _FormSheetState extends State<FormSheet> {
         if (_error case final error?) ErrorBanner(message: error),
         FormFields(
           fields: widget.fields(_values),
-          onChanged: (v) => setState(() => _values = v),
+          onChanged: (v) => setState(() => _entered = {..._entered, ...v}),
         ),
       ],
     ),
@@ -330,7 +335,8 @@ class _ChoiceListState extends State<ChoiceList> {
   @override
   Widget build(BuildContext context) {
     final c = FalcoColors.of(context);
-    final q = _query.trim().toLowerCase();
+    // Without a search field there is no query to filter by.
+    final q = widget.searchable ? _query.trim().toLowerCase() : '';
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

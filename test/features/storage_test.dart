@@ -267,6 +267,24 @@ void main() {
       await settleAction(tester);
     });
 
+    testWidgets('STB-030 a plan turned on counts the defaults it shows', (
+      tester,
+    ) async {
+      final cloud = await openBox(tester);
+      await more(tester, 'Snapshot plan');
+      await chip(tester, 'enabled', 'No');
+      await tap(tester, 'Save');
+      await settleAction(tester);
+      await more(tester, 'Snapshot plan');
+      await chip(tester, 'enabled', 'Yes');
+      await tap(tester, 'Save');
+      expect(
+        cloud.body('POST /storage_boxes/41/actions/enable_snapshot_plan'),
+        containsPair('max_snapshots', 10),
+      );
+      await settleAction(tester);
+    });
+
     testWidgets('STB-030 STB-031 snapshot plan on and off', (tester) async {
       final cloud = await openBox(tester);
       await more(tester, 'Snapshot plan');
