@@ -55,13 +55,17 @@ final class S3AccessProvider
 String _$s3AccessHash() => r'329acbb5633cb56ac3e1e354b3c0e61dc13e7c3a';
 
 /// Buckets of every project of [scope] with S3 keys, at all locations
-/// (OBJ-001, OBJ-020). Null when no project has keys.
+/// (OBJ-001, OBJ-020). Null when no project has keys. A location that
+/// fails leaves the others standing: the result is then a [PartialList]
+/// naming it with its project.
 
 @ProviderFor(buckets)
 final bucketsProvider = BucketsFamily._();
 
 /// Buckets of every project of [scope] with S3 keys, at all locations
-/// (OBJ-001, OBJ-020). Null when no project has keys.
+/// (OBJ-001, OBJ-020). Null when no project has keys. A location that
+/// fails leaves the others standing: the result is then a [PartialList]
+/// naming it with its project.
 
 final class BucketsProvider
     extends
@@ -72,7 +76,9 @@ final class BucketsProvider
         >
     with $FutureModifier<List<Bucket>?>, $FutureProvider<List<Bucket>?> {
   /// Buckets of every project of [scope] with S3 keys, at all locations
-  /// (OBJ-001, OBJ-020). Null when no project has keys.
+  /// (OBJ-001, OBJ-020). Null when no project has keys. A location that
+  /// fails leaves the others standing: the result is then a [PartialList]
+  /// naming it with its project.
   BucketsProvider._({
     required BucketsFamily super.from,
     required Scope super.argument,
@@ -117,10 +123,12 @@ final class BucketsProvider
   }
 }
 
-String _$bucketsHash() => r'5fa76b5fb9aab2ab42db4f9f5c19d01cce0d269b';
+String _$bucketsHash() => r'6c46fa5bcc7a21a57dae2a54c6de1365531352c8';
 
 /// Buckets of every project of [scope] with S3 keys, at all locations
-/// (OBJ-001, OBJ-020). Null when no project has keys.
+/// (OBJ-001, OBJ-020). Null when no project has keys. A location that
+/// fails leaves the others standing: the result is then a [PartialList]
+/// naming it with its project.
 
 final class BucketsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Bucket>?>, Scope> {
@@ -134,7 +142,9 @@ final class BucketsFamily extends $Family
       );
 
   /// Buckets of every project of [scope] with S3 keys, at all locations
-  /// (OBJ-001, OBJ-020). Null when no project has keys.
+  /// (OBJ-001, OBJ-020). Null when no project has keys. A location that
+  /// fails leaves the others standing: the result is then a [PartialList]
+  /// naming it with its project.
 
   BucketsProvider call(Scope scope) =>
       BucketsProvider._(argument: scope, from: this);
