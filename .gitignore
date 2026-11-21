@@ -73,3 +73,5 @@ fastlane/screenshots/
 fastlane/metadata/android/*/images/
 # Distribution signing written by release.yml
 ios/Flutter/Signing.xcconfig
+# Public root certificates written by tool/pins.dart (Android trust anchors)
+!android/app/src/main/res/raw/pin_*.der

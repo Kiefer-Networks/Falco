@@ -17,14 +17,14 @@ void main() {
     expect(pins, isNotEmpty);
     final android = File(androidPath).readAsStringSync();
     final ios = File(iosPath).readAsStringSync();
-    expect(androidPins(android, pins), android);
+    expect(androidPins(android, pins, nativeRoots(state).keys), android);
     expect(iosPins(ios, pins), ios);
   });
 
   test('tool/pins.dart rewrites changed native pins', () {
     final android = androidPins(File(androidPath).readAsStringSync(), [
       'new-pin=',
-    ]);
+    ], const []);
     expect(android, contains('<pin digest="SHA-256">new-pin=</pin>'));
     expect(android, isNot(contains(pins.first)));
     final ios = iosPins(File(iosPath).readAsStringSync(), ['new-pin=']);
