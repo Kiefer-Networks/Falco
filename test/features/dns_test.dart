@@ -197,6 +197,7 @@ void main() {
     );
     await enter(tester, 'ttl', '900');
     await tap(tester, 'Save');
+    await confirm(tester, 'Save');
     expect(cloud.body('POST /zones/5/rrsets/@/A/actions/change_ttl'), {
       'ttl': 900,
     });
@@ -207,12 +208,46 @@ void main() {
   testWidgets('DNS-014 bulk edit counts failures', (tester) async {
     final cloud = await openZone(tester);
     await more(tester, 'Select records');
-    await tap(tester, 'Select all');
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pumpAndSettle();
     await tap(tester, 'Edit selected');
     await enter(tester, 'value', '203.0.113.9');
-    cloud.failWith = (422, errorJson('invalid_input'));
     await tap(tester, 'Save');
-    expect(find.text('3 record sets failed'), findsOneWidget);
+    expect(find.textContaining('replaced by the new value'), findsOneWidget);
+    cloud.failWith = (422, errorJson('invalid_input'));
+    await confirm(tester, 'Save');
+    expect(find.text('1 record set failed'), findsOneWidget);
+  });
+
+  testWidgets('DNS-012 DNS-013 select all skips SOA and apex NS; mixed '
+      'types change only the TTL, after a confirmation', (tester) async {
+    final cloud = withZone();
+    cloud.rrsets[5]!.addAll([
+      rrsetJson(
+        zone: 5,
+        name: '@',
+        type: 'SOA',
+        values: ['ns.example. dns.example. 1 86400 10800 3600000 3600'],
+      ),
+      rrsetJson(zone: 5, name: '@', type: 'NS', values: ['ns1.example.']),
+      rrsetJson(zone: 5, name: 'sub', type: 'NS', values: ['ns2.example.']),
+    ]);
+    await openNetwork(tester, 'DNS', cloud: cloud);
+    await tap(tester, 'example.com');
+    await more(tester, 'Select records');
+    await tap(tester, 'Select all');
+    expect(find.text('4 selected'), findsOneWidget);
+    await tap(tester, 'Edit selected');
+    expect(find.byKey(const ValueKey('value')), findsNothing);
+    await enter(tester, 'ttl', '900');
+    await tap(tester, 'Save');
+    expect(find.text('Edit 4 record sets'), findsOneWidget);
+    // The confirmation lists the affected RRSets, one per line.
+    expect(find.text('@ A\nwww CNAME\n@ TXT\nsub NS'), findsOneWidget);
+    expect(cloud.calls.where((c) => c.contains('change_ttl')), isEmpty);
+    await confirm(tester, 'Save');
+    expect(cloud.calls.where((c) => c.contains('change_ttl')), hasLength(4));
+    await settleAction(tester);
   });
 
   testWidgets(
@@ -289,6 +324,69 @@ void main() {
       ],
     });
     await settleAction(tester);
+  });
+
+  testWidgets('DNS-018 DNS-019 TSIG of primaries is kept and editable', (
+    tester,
+  ) async {
+    final cloud = FakeCloud(
+      zones: [
+        zoneJson(
+          id: 6,
+          name: 'example.org',
+          primaries: [
+            {
+              'address': '192.0.2.53',
+              'port': 53,
+              'tsig_key': 'c2VjcmV0',
+              'tsig_algorithm': 'hmac-sha256',
+            },
+          ],
+        ),
+      ],
+    );
+    await openNetwork(tester, 'DNS', cloud: cloud);
+    await tap(tester, 'example.org');
+    expect(find.text('hmac-sha256'), findsOneWidget);
+    await more(tester, 'Add primary nameserver');
+    await enter(tester, 'address', '192.0.2.54');
+    await tap(tester, 'hmac-sha1');
+    await enter(tester, 'tsig_key', 'a2V5');
+    await tap(tester, 'Save');
+    expect(cloud.body('POST /zones/6/actions/change_primary_nameservers'), {
+      'primary_nameservers': [
+        {
+          'address': '192.0.2.53',
+          'port': 53,
+          'tsig_key': 'c2VjcmV0',
+          'tsig_algorithm': 'hmac-sha256',
+        },
+        {
+          'address': '192.0.2.54',
+          'port': 53,
+          'tsig_key': 'a2V5',
+          'tsig_algorithm': 'hmac-sha1',
+        },
+      ],
+    });
+    await settleAction(tester);
+  });
+
+  testWidgets('DNS-006 refresh reloads the records; a failure keeps them '
+      'with a retry', (tester) async {
+    final cloud = await openZone(tester);
+    int loads() => cloud.calls.where((c) => c.endsWith('/rrsets')).length;
+    final before = loads();
+    cloud.failWith = (503, errorJson('unavailable'));
+    await tester.fling(find.text('www CNAME'), const Offset(0, 400), 1000);
+    await tester.pumpAndSettle();
+    expect(loads(), greaterThan(before));
+    expect(find.text('www CNAME'), findsOneWidget);
+    expect(find.byTooltip('Try again'), findsOneWidget);
+    cloud.failWith = null;
+    await tester.tap(find.byTooltip('Try again'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Try again'), findsNothing);
   });
 
   group('RRSet detail', () {
@@ -406,6 +504,19 @@ void main() {
     expect(normalizeRecord('A', ' 203.0.113.1 '), '203.0.113.1');
   });
 
+  test('DNS-009 TXT values over 255 bytes go out as several strings', () {
+    final long = 'a' * 300;
+    expect(normalizeRecord('TXT', long), '"${'a' * 255}" "${'a' * 45}"');
+    expect(
+      normalizeRecord('TXT', '"$long" "b"'),
+      '"${'a' * 255}" "${'a' * 45}" "b"',
+    );
+    // An escape counts as one byte and is never split.
+    expect(normalizeRecord('TXT', '${'a' * 254}"x'), '"${'a' * 254}\\"" "x"');
+    // Bytes, not characters: ü takes two.
+    expect(normalizeRecord('TXT', 'ü' * 128), '"${'ü' * 127}" "ü"');
+  });
+
   test('DNS-002 DNS-007 BUG-003 one TTL rule from the spec', () {
     expect(validTtl(''), isTrue);
     expect(validTtl('', optional: false), isFalse);
@@ -433,16 +544,18 @@ void main() {
   });
 
   test('DNS-018 nameserver parsing', () {
-    expect(parseNameserver('192.0.2.1'), (address: '192.0.2.1', port: 53));
-    expect(parseNameserver('ns.example.com:5353'), (
-      address: 'ns.example.com',
-      port: 5353,
-    ));
-    expect(parseNameserver('[2001:db8::1]:53'), (
-      address: '2001:db8::1',
+    expect(parseNameserver('192.0.2.1'), (
+      address: '192.0.2.1',
       port: 53,
+      tsigKey: null,
+      tsigAlgorithm: null,
     ));
+    expect(parseNameserver('ns.example.com:5353')?.port, 5353);
+    expect(parseNameserver('[2001:db8::1]:53')?.address, '2001:db8::1');
     expect(parseNameserver('192.0.2.1:70000'), isNull);
+    // A digit run past int range is invalid, not a crash in build.
+    expect(parseNameserver('192.0.2.1:${'9' * 30}'), isNull);
+    expect(parseNameservers('192.0.2.1:${'9' * 30}'), isNull);
     expect(parseNameservers('a.example\nb.example:54'), hasLength(2));
     expect(validNameserverPort('53'), isTrue);
   });

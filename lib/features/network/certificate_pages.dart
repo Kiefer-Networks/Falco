@@ -252,6 +252,7 @@ class _CreateCertificatePageState extends ConsumerState<CreateCertificatePage> {
     setState(() => _creating = true);
     final l10n = AppLocalizations.of(context);
     final name = _values['name']!.trim();
+    final tracker = ref.read(actionTrackerProvider(scope));
     final ok = await runChange(
       context,
       ref,
@@ -265,9 +266,7 @@ class _CreateCertificatePageState extends ConsumerState<CreateCertificatePage> {
           privateKey: _managed ? '' : _values['key'] ?? '',
           labels: parseLabels(_values['labels'] ?? '') ?? const {},
         );
-        if (r.action case final a?) {
-          ref.read(actionTrackerProvider(scope)).track(a);
-        }
+        if (r.action case final a?) tracker.track(a);
       },
       done: l10n.createdMessage(name),
     );

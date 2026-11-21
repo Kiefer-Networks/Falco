@@ -1710,6 +1710,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get fieldTtl => 'TTL';
 
   @override
+  String get fieldTsigAlgorithm => 'TSIG Algorithmus';
+
+  @override
+  String get fieldTsigKey => 'TSIG Schlüssel (Base64)';
+
+  @override
   String get fieldUsePrivateIp => 'Über privates Netzwerk';
 
   @override
@@ -1954,7 +1960,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nur größer, mit dem aktuellen Bereich darin. Das lässt sich nicht rückgängig machen.';
 
   @override
-  String get portHint => 'Ein Port oder ein Bereich, z. B. 22 oder 8000-9000.';
+  String get portHint =>
+      'Ein Port, ein Bereich oder any, z. B. 22, 8000-9000 oder any.';
 
   @override
   String get primariesEmpty => 'Noch keine primären Nameserver.';
@@ -1968,6 +1975,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get primaryEdit => 'Primären Nameserver bearbeiten';
+
+  @override
+  String get tsigNone => 'Keiner';
 
   @override
   String get primaryIpCreate => 'Primary IP erstellen';
@@ -2047,6 +2057,18 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get recordsBulkTtlOnly =>
+      'Verschiedene Typen: nur die TTL ist änderbar.';
+
+  @override
+  String get recordsBulkValueConsequence =>
+      'Alle Werte dieser Record Sets werden durch den neuen Wert ersetzt.';
+
+  @override
+  String get recordsBulkTtlConsequence =>
+      'Diese Record Sets erhalten die neue TTL.';
 
   @override
   String get recordsSelect => 'Records auswählen';
