@@ -4,6 +4,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -26,6 +27,19 @@ class TextFiles {
       return (text: null, tooLarge: true);
     }
     return (text: await file.xFile.readAsString(), tooLarge: false);
+  }
+
+  /// Lets the user pick any file to upload (OBJ-007); null when
+  /// cancelled. A picked document without a path is copied to a
+  /// temporary file named like it.
+  Future<File?> pickFile() async {
+    final f = (await FilePicker.pickFiles()).firstOrNull;
+    if (f == null) return null;
+    if (f.path case final path?) return File(path);
+    final dir = await Directory.systemTemp.createTemp('falco-upload');
+    final copy = '${dir.path}/${f.name}';
+    await f.xFile.saveTo(copy);
+    return File(copy);
   }
 
   /// Lets the user save [text] as [name]; false when cancelled.

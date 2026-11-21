@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:async';
+
 import 'package:falco/app/lock_gate.dart';
 import 'package:falco/app/router.dart';
 import 'package:falco/core/settings/settings.dart';
+import 'package:falco/features/storage/transfers.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,11 +15,13 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   registerFontLicenses();
   final prefs = await SharedPreferences.getInstance();
+  final container = ProviderContainer(
+    overrides: [preferencesProvider.overrideWithValue(prefs)],
+  );
+  // Picks up transfers that went on while Falco was closed.
+  unawaited(container.read(transfersProvider).start());
   runApp(
-    ProviderScope(
-      overrides: [preferencesProvider.overrideWithValue(prefs)],
-      child: const FalcoApp(),
-    ),
+    UncontrolledProviderScope(container: container, child: const FalcoApp()),
   );
 }
 

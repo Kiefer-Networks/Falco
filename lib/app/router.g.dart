@@ -33,6 +33,10 @@ List<RouteBase> get $appRoutes => [
   $zoneRoute,
   $ipRoute,
   $rRSetRoute,
+  $storageBoxRoute,
+  $boxSnapshotRoute,
+  $subaccountRoute,
+  $bucketRoute,
 ];
 
 RouteBase get $homeRoute => GoRouteData.$route(
@@ -515,6 +519,8 @@ const _$CreateKindEnumMap = {
   CreateKind.loadBalancer: 'load-balancer',
   CreateKind.certificate: 'certificate',
   CreateKind.zone: 'zone',
+  CreateKind.storageBox: 'storage-box',
+  CreateKind.bucket: 'bucket',
 };
 
 extension<T extends Enum> on Map<T, String> {
@@ -889,6 +895,147 @@ mixin $RRSetRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
     '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/zones/${Uri.encodeComponent(_self.zoneId.toString())}/rrsets/${Uri.encodeComponent(_self.name)}/${Uri.encodeComponent(_self.type)}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $storageBoxRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/storage-boxes/:boxId',
+  hasOverriddenOnExit: false,
+  factory: $StorageBoxRoute._fromState,
+);
+
+mixin $StorageBoxRoute on GoRouteData {
+  static StorageBoxRoute _fromState(GoRouterState state) => StorageBoxRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    boxId: int.parse(state.pathParameters['boxId']!),
+  );
+
+  StorageBoxRoute get _self => this as StorageBoxRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/storage-boxes/${Uri.encodeComponent(_self.boxId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $boxSnapshotRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/storage-boxes/:boxId/snapshots/:snapshotId',
+  hasOverriddenOnExit: false,
+  factory: $BoxSnapshotRoute._fromState,
+);
+
+mixin $BoxSnapshotRoute on GoRouteData {
+  static BoxSnapshotRoute _fromState(GoRouterState state) => BoxSnapshotRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    boxId: int.parse(state.pathParameters['boxId']!),
+    snapshotId: int.parse(state.pathParameters['snapshotId']!),
+  );
+
+  BoxSnapshotRoute get _self => this as BoxSnapshotRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/storage-boxes/${Uri.encodeComponent(_self.boxId.toString())}/snapshots/${Uri.encodeComponent(_self.snapshotId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $subaccountRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/storage-boxes/:boxId/subaccounts/:subaccountId',
+  hasOverriddenOnExit: false,
+  factory: $SubaccountRoute._fromState,
+);
+
+mixin $SubaccountRoute on GoRouteData {
+  static SubaccountRoute _fromState(GoRouterState state) => SubaccountRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    boxId: int.parse(state.pathParameters['boxId']!),
+    subaccountId: int.parse(state.pathParameters['subaccountId']!),
+  );
+
+  SubaccountRoute get _self => this as SubaccountRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/storage-boxes/${Uri.encodeComponent(_self.boxId.toString())}/subaccounts/${Uri.encodeComponent(_self.subaccountId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $bucketRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/buckets/:region/:bucket',
+  hasOverriddenOnExit: false,
+  factory: $BucketRoute._fromState,
+);
+
+mixin $BucketRoute on GoRouteData {
+  static BucketRoute _fromState(GoRouterState state) => BucketRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    region: state.pathParameters['region']!,
+    bucket: state.pathParameters['bucket']!,
+    prefix: state.uri.queryParameters['prefix'] ?? '',
+  );
+
+  BucketRoute get _self => this as BucketRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/buckets/${Uri.encodeComponent(_self.region)}/${Uri.encodeComponent(_self.bucket)}',
+    queryParams: {if (_self.prefix != '') 'prefix': _self.prefix},
   );
 
   @override

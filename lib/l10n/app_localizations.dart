@@ -971,7 +971,7 @@ abstract class AppLocalizations {
   /// No description provided for @actionCommand.
   ///
   /// In en, this message translates to:
-  /// **'{command, select, start_server{Power on server} stop_server{Power off server} poweron_server{Power on server} poweroff_server{Power off server} shutdown_server{Shut down server} reboot_server{Reboot server} reset_server{Reset server} create_server{Create server} delete_server{Delete server} rebuild_server{Rebuild server} change_server_type{Change server type} enable_rescue{Enable rescue mode} disable_rescue{Disable rescue mode} attach_iso{Attach ISO} detach_iso{Detach ISO} create_image{Create image} enable_backup{Enable backups} disable_backup{Disable backups} change_protection{Change protection} change_dns_ptr{Change reverse DNS} reset_password{Reset root password} request_console{Open console} attach_volume{Attach volume} detach_volume{Detach volume} resize_volume{Resize volume} create_volume{Create volume} attach_to_network{Attach to network} detach_from_network{Detach from network} add_to_placement_group{Add to placement group} remove_from_placement_group{Remove from placement group} assign_floating_ip{Assign Floating IP} unassign_floating_ip{Unassign Floating IP} assign_primary_ip{Assign Primary IP} unassign_primary_ip{Unassign Primary IP} apply_firewall{Apply firewall} remove_firewall{Remove firewall} set_firewall_rules{Set firewall rules} other{}}'**
+  /// **'{command, select, start_server{Power on server} stop_server{Power off server} poweron_server{Power on server} poweroff_server{Power off server} shutdown_server{Shut down server} reboot_server{Reboot server} reset_server{Reset server} create_server{Create server} delete_server{Delete server} rebuild_server{Rebuild server} change_server_type{Change server type} enable_rescue{Enable rescue mode} disable_rescue{Disable rescue mode} attach_iso{Attach ISO} detach_iso{Detach ISO} create_image{Create image} enable_backup{Enable backups} disable_backup{Disable backups} change_protection{Change protection} change_dns_ptr{Change reverse DNS} reset_password{Reset root password} request_console{Open console} attach_volume{Attach volume} detach_volume{Detach volume} resize_volume{Resize volume} create_volume{Create volume} attach_to_network{Attach to network} detach_from_network{Detach from network} add_to_placement_group{Add to placement group} remove_from_placement_group{Remove from placement group} assign_floating_ip{Assign Floating IP} unassign_floating_ip{Unassign Floating IP} assign_primary_ip{Assign Primary IP} unassign_primary_ip{Unassign Primary IP} apply_firewall{Apply firewall} remove_firewall{Remove firewall} set_firewall_rules{Set firewall rules} create{Create} delete{Delete} change_type{Change type} update_access_settings{Change access} rollback_snapshot{Roll back snapshot} enable_snapshot_plan{Enable snapshot plan} disable_snapshot_plan{Disable snapshot plan} create_snapshot{Create snapshot} delete_snapshot{Delete snapshot} create_subaccount{Add subaccount} delete_subaccount{Delete subaccount} reset_subaccount_password{Reset subaccount password} change_home_directory{Change home directory} other{}}'**
   String actionCommand(String command);
 
   /// No description provided for @accountManage.
@@ -3919,6 +3919,684 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The file is larger than 1 MiB.'**
   String get zonefileTooLarge;
+
+  /// No description provided for @accessExternal.
+  ///
+  /// In en, this message translates to:
+  /// **'Reachable externally'**
+  String get accessExternal;
+
+  /// No description provided for @accessReadonly.
+  ///
+  /// In en, this message translates to:
+  /// **'Read only'**
+  String get accessReadonly;
+
+  /// No description provided for @accessSamba.
+  ///
+  /// In en, this message translates to:
+  /// **'Samba (SMB)'**
+  String get accessSamba;
+
+  /// No description provided for @accessSsh.
+  ///
+  /// In en, this message translates to:
+  /// **'SSH and SFTP'**
+  String get accessSsh;
+
+  /// No description provided for @accessWebdav.
+  ///
+  /// In en, this message translates to:
+  /// **'WebDAV'**
+  String get accessWebdav;
+
+  /// No description provided for @accessZfs.
+  ///
+  /// In en, this message translates to:
+  /// **'ZFS snapshot folder'**
+  String get accessZfs;
+
+  /// No description provided for @boxAccessSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Access'**
+  String get boxAccessSettings;
+
+  /// No description provided for @boxAutomatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get boxAutomatic;
+
+  /// No description provided for @boxAutomaticSnapshots.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic snapshots'**
+  String get boxAutomaticSnapshots;
+
+  /// No description provided for @boxChangeType.
+  ///
+  /// In en, this message translates to:
+  /// **'Change type'**
+  String get boxChangeType;
+
+  /// No description provided for @boxDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The Storage Box, its snapshots and subaccounts are deleted with all data. This cannot be undone.'**
+  String get boxDeleteConsequence;
+
+  /// No description provided for @boxEveryDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get boxEveryDay;
+
+  /// No description provided for @boxMaxSnapshots.
+  ///
+  /// In en, this message translates to:
+  /// **'Snapshots to keep'**
+  String get boxMaxSnapshots;
+
+  /// No description provided for @boxNewFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'New folder'**
+  String get boxNewFolder;
+
+  /// No description provided for @boxPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'12 to 128 characters with upper and lower case, a digit and a special character.'**
+  String get boxPasswordHint;
+
+  /// No description provided for @boxPlanDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily at {time}'**
+  String boxPlanDaily(String time);
+
+  /// No description provided for @boxPlanHour.
+  ///
+  /// In en, this message translates to:
+  /// **'Hour'**
+  String get boxPlanHour;
+
+  /// No description provided for @boxPlanKeeps.
+  ///
+  /// In en, this message translates to:
+  /// **'{when}, keeps {count}'**
+  String boxPlanKeeps(String when, int count);
+
+  /// No description provided for @boxPlanMinute.
+  ///
+  /// In en, this message translates to:
+  /// **'Minute'**
+  String get boxPlanMinute;
+
+  /// No description provided for @boxPlanMonthday.
+  ///
+  /// In en, this message translates to:
+  /// **'Day of the month'**
+  String get boxPlanMonthday;
+
+  /// No description provided for @boxPlanMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly on day {day} at {time}'**
+  String boxPlanMonthly(int day, String time);
+
+  /// No description provided for @boxPlanUtc.
+  ///
+  /// In en, this message translates to:
+  /// **'Times are UTC.'**
+  String get boxPlanUtc;
+
+  /// No description provided for @boxPlanWeekday.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekday'**
+  String get boxPlanWeekday;
+
+  /// No description provided for @boxPlanWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'{day}s at {time}'**
+  String boxPlanWeekly(String day, String time);
+
+  /// No description provided for @boxResetPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset password'**
+  String get boxResetPassword;
+
+  /// No description provided for @boxRollback.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll back'**
+  String get boxRollback;
+
+  /// No description provided for @boxRollbackConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'All data of the Storage Box is replaced with the state of this snapshot. Newer data is lost.'**
+  String get boxRollbackConsequence;
+
+  /// No description provided for @boxRollbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll back to {name}?'**
+  String boxRollbackTitle(String name);
+
+  /// No description provided for @boxSnapshotCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create snapshot'**
+  String get boxSnapshotCreate;
+
+  /// No description provided for @boxSnapshotDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The snapshot is deleted. This cannot be undone.'**
+  String get boxSnapshotDeleteConsequence;
+
+  /// No description provided for @boxSnapshotPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Snapshot plan'**
+  String get boxSnapshotPlan;
+
+  /// No description provided for @boxUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage'**
+  String get boxUsage;
+
+  /// No description provided for @boxUsedData.
+  ///
+  /// In en, this message translates to:
+  /// **'Used by data'**
+  String get boxUsedData;
+
+  /// No description provided for @boxUsedOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{used} of {size} used'**
+  String boxUsedOf(String used, String size);
+
+  /// No description provided for @boxUsedSnapshots.
+  ///
+  /// In en, this message translates to:
+  /// **'Used by snapshots'**
+  String get boxUsedSnapshots;
+
+  /// No description provided for @bucketCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create bucket'**
+  String get bucketCreate;
+
+  /// No description provided for @bucketDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete bucket'**
+  String get bucketDelete;
+
+  /// No description provided for @bucketDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The bucket is deleted. It must be empty.'**
+  String get bucketDeleteConsequence;
+
+  /// No description provided for @bucketNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'3 to 63 lower case letters, digits, dots and hyphens.'**
+  String get bucketNameHint;
+
+  /// No description provided for @bucketNotEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The bucket is not empty. Delete its objects first.'**
+  String get bucketNotEmpty;
+
+  /// No description provided for @bucketPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get bucketPrivate;
+
+  /// No description provided for @bucketPublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get bucketPublic;
+
+  /// No description provided for @bucketPublicHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Public: everyone can read the objects without a link.'**
+  String get bucketPublicHint;
+
+  /// No description provided for @bucketSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Bucket settings'**
+  String get bucketSettings;
+
+  /// No description provided for @bucketVersioning.
+  ///
+  /// In en, this message translates to:
+  /// **'Versioning'**
+  String get bucketVersioning;
+
+  /// No description provided for @bucketVersioningHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled keeps every version of an object. Suspended keeps existing versions but adds no new ones; versioning cannot be turned off again.'**
+  String get bucketVersioningHint;
+
+  /// No description provided for @bucketVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility'**
+  String get bucketVisibility;
+
+  /// No description provided for @commonShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get commonShare;
+
+  /// No description provided for @days.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String days(int count);
+
+  /// No description provided for @downloadSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Download saved: {name}'**
+  String downloadSaved(String name);
+
+  /// No description provided for @downloadStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading {name} in the background'**
+  String downloadStarted(String name);
+
+  /// No description provided for @emptyBoxSnapshots.
+  ///
+  /// In en, this message translates to:
+  /// **'No snapshots yet.'**
+  String get emptyBoxSnapshots;
+
+  /// No description provided for @emptyBuckets.
+  ///
+  /// In en, this message translates to:
+  /// **'No buckets in this project yet.'**
+  String get emptyBuckets;
+
+  /// No description provided for @emptyObjects.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder is empty.'**
+  String get emptyObjects;
+
+  /// No description provided for @emptyStorageBoxes.
+  ///
+  /// In en, this message translates to:
+  /// **'No Storage Boxes in this project yet.'**
+  String get emptyStorageBoxes;
+
+  /// No description provided for @emptySubaccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'No subaccounts yet.'**
+  String get emptySubaccounts;
+
+  /// No description provided for @fieldContentType.
+  ///
+  /// In en, this message translates to:
+  /// **'Content type'**
+  String get fieldContentType;
+
+  /// No description provided for @fieldEtag.
+  ///
+  /// In en, this message translates to:
+  /// **'ETag'**
+  String get fieldEtag;
+
+  /// No description provided for @fieldFolderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder name'**
+  String get fieldFolderName;
+
+  /// No description provided for @fieldHomeDirectory.
+  ///
+  /// In en, this message translates to:
+  /// **'Home directory'**
+  String get fieldHomeDirectory;
+
+  /// No description provided for @fieldKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Key'**
+  String get fieldKey;
+
+  /// No description provided for @fieldModified.
+  ///
+  /// In en, this message translates to:
+  /// **'Last modified'**
+  String get fieldModified;
+
+  /// No description provided for @fieldPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get fieldPassword;
+
+  /// No description provided for @fieldPasswordRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat password'**
+  String get fieldPasswordRepeat;
+
+  /// No description provided for @fieldServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get fieldServer;
+
+  /// No description provided for @fieldUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get fieldUsername;
+
+  /// No description provided for @folderCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create folder'**
+  String get folderCreate;
+
+  /// No description provided for @hours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour} other{{count} hours}}'**
+  String hours(int count);
+
+  /// No description provided for @objectCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get objectCopy;
+
+  /// No description provided for @objectDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The objects are deleted. With versioning, older versions stay.'**
+  String get objectDeleteConsequence;
+
+  /// No description provided for @objectDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get objectDownload;
+
+  /// No description provided for @objectInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get objectInfo;
+
+  /// No description provided for @objectKeyInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'This file cannot be stored under that name.'**
+  String get objectKeyInvalid;
+
+  /// No description provided for @objectMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Move'**
+  String get objectMove;
+
+  /// No description provided for @objectUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload'**
+  String get objectUpload;
+
+  /// No description provided for @objectVersions.
+  ///
+  /// In en, this message translates to:
+  /// **'Versions'**
+  String get objectVersions;
+
+  /// No description provided for @objectsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Delete 1 object?} other{Delete {count} objects?}}'**
+  String objectsDeleteTitle(int count);
+
+  /// No description provided for @objectsDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 object deleted} other{{count} objects deleted}}'**
+  String objectsDeleted(int count);
+
+  /// No description provided for @objectsDeletedPartly.
+  ///
+  /// In en, this message translates to:
+  /// **'{deleted} deleted, {failed} failed and stay selected'**
+  String objectsDeletedPartly(int deleted, int failed);
+
+  /// No description provided for @resourceBoxSnapshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Snapshot'**
+  String get resourceBoxSnapshot;
+
+  /// No description provided for @resourceBucket.
+  ///
+  /// In en, this message translates to:
+  /// **'Bucket'**
+  String get resourceBucket;
+
+  /// No description provided for @resourceBuckets.
+  ///
+  /// In en, this message translates to:
+  /// **'Buckets'**
+  String get resourceBuckets;
+
+  /// No description provided for @resourceObjectStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Object Storage'**
+  String get resourceObjectStorage;
+
+  /// No description provided for @resourceStorageBox.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage Box'**
+  String get resourceStorageBox;
+
+  /// No description provided for @resourceStorageBoxes.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage Boxes'**
+  String get resourceStorageBoxes;
+
+  /// No description provided for @resourceSubaccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Subaccount'**
+  String get resourceSubaccount;
+
+  /// No description provided for @s3NoKeysHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This project has no S3 keys. Add them to the project to use Object Storage.'**
+  String get s3NoKeysHint;
+
+  /// No description provided for @sectionSnapshots.
+  ///
+  /// In en, this message translates to:
+  /// **'Snapshots'**
+  String get sectionSnapshots;
+
+  /// No description provided for @sectionSubaccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Subaccounts'**
+  String get sectionSubaccounts;
+
+  /// No description provided for @selectionClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get selectionClear;
+
+  /// No description provided for @shareExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid for'**
+  String get shareExpiry;
+
+  /// No description provided for @shareLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Share link'**
+  String get shareLink;
+
+  /// No description provided for @statusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'active'**
+  String get statusActive;
+
+  /// No description provided for @statusLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'locked'**
+  String get statusLocked;
+
+  /// No description provided for @storageBoxCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Storage Box'**
+  String get storageBoxCreate;
+
+  /// No description provided for @subaccountCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Add subaccount'**
+  String get subaccountCreate;
+
+  /// No description provided for @subaccountDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The subaccount can no longer log in. Its files stay in the Storage Box.'**
+  String get subaccountDeleteConsequence;
+
+  /// No description provided for @transferDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer finished'**
+  String get transferDone;
+
+  /// No description provided for @transferFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer failed'**
+  String get transferFailed;
+
+  /// No description provided for @transferFailedNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer of {name} failed'**
+  String transferFailedNamed(String name);
+
+  /// No description provided for @transferRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Transferring'**
+  String get transferRunning;
+
+  /// No description provided for @uploadDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded: {name}'**
+  String uploadDone(String name);
+
+  /// No description provided for @uploadLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload link'**
+  String get uploadLink;
+
+  /// No description provided for @uploadStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {name} in the background'**
+  String uploadStarted(String name);
+
+  /// No description provided for @versionDeleteMarker.
+  ///
+  /// In en, this message translates to:
+  /// **'deleted'**
+  String get versionDeleteMarker;
+
+  /// No description provided for @versionLatest.
+  ///
+  /// In en, this message translates to:
+  /// **'current'**
+  String get versionLatest;
+
+  /// No description provided for @versionRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get versionRestore;
+
+  /// No description provided for @versionRestoreConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'This version becomes the current object again; the current one stays as an older version.'**
+  String get versionRestoreConsequence;
+
+  /// No description provided for @versionRestoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore this version of {name}?'**
+  String versionRestoreTitle(String name);
+
+  /// No description provided for @versioningEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get versioningEnabled;
+
+  /// No description provided for @versioningNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never enabled'**
+  String get versioningNever;
+
+  /// No description provided for @versioningSuspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended'**
+  String get versioningSuspended;
+
+  /// No description provided for @versionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No versions.'**
+  String get versionsEmpty;
 }
 
 class _AppLocalizationsDelegate

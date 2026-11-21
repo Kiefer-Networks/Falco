@@ -13,6 +13,7 @@ import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/scope/scope_repository.dart';
 import 'package:falco/core/secure/secret_store.dart';
 import 'package:hetzner_cloud_api/hetzner_cloud_api.dart' as cloud;
+import 'package:hetzner_storage_box_api/hetzner_storage_box_api.dart' as box;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tonik_util/tonik_util.dart';
 
@@ -44,6 +45,33 @@ cloud.Server cloudApi(Ref ref, String projectId) {
   );
   ref.onDispose(dio.close);
   return cloudServer(dio);
+}
+
+/// Base URL of the Storage Box API; it takes the project's Cloud token.
+const storageBoxBaseUrl = 'https://api.hetzner.com/v1';
+
+/// Creates the pinned Storage Box API dio with an auth interceptor. Tests
+/// override this with a fake transport.
+@Riverpod(keepAlive: true)
+Dio Function(Interceptor auth) storageBoxDio(Ref ref) =>
+    (auth) => createDio(
+      baseUrl: storageBoxBaseUrl,
+      userAgent: falcoUserAgent,
+      auth: auth,
+    );
+
+/// The Storage Box API of one project, with the project's Cloud token.
+@Riverpod(keepAlive: true)
+box.Server storageBoxApi(Ref ref, String projectId) {
+  final secrets = ref.watch(secretStoreProvider);
+  final dio = ref.watch(storageBoxDioProvider)(
+    storedBearerAuth(() => secrets.cloudToken(projectId)),
+  );
+  ref.onDispose(dio.close);
+  return box.CustomServer(
+    baseUrl: dio.options.baseUrl,
+    serverConfig: ServerConfig<Dio>.client(dio),
+  );
 }
 
 /// Checks the token behind [dio] with one small list call; throws its

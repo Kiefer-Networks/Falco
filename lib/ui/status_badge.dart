@@ -56,6 +56,12 @@ enum ResourceStatus {
   /// Not usable (images).
   unavailable(StatusTone.off),
 
+  /// In service (Storage Boxes).
+  active(StatusTone.running),
+
+  /// Locked by Hetzner (Storage Boxes).
+  locked(StatusTone.off),
+
   /// Unknown status from the API.
   unknown(StatusTone.off),
 
@@ -87,6 +93,8 @@ enum ResourceStatus {
     error => l10n.statusError,
     available => l10n.statusAvailable,
     unavailable => l10n.statusUnavailable,
+    active => l10n.statusActive,
+    locked => l10n.statusLocked,
     unknown => l10n.statusUnknown,
     inProgress => l10n.statusInProgress,
     done => l10n.statusDone,

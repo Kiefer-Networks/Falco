@@ -1,16 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-/// S3 (Object Storage) on dio: AWS Signature Version 4 and the pinned dio.
+/// S3 (Object Storage) on dio: AWS Signature Version 4, presigned links,
+/// the pinned dio and the operations Falco uses, parsed from S3's XML.
 library;
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:falco/core/http/http.dart';
+import 'package:xml/xml.dart';
 
 /// SHA-256 of an empty body.
 const emptyPayloadHash =
     'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+
+/// Payload hash of a presigned request: the body is not signed.
+const unsignedPayload = 'UNSIGNED-PAYLOAD';
 
 /// Signs a request with AWS SigV4 and returns the headers to add
 /// (`x-amz-date`, `Authorization`). [headers] are signed as given; `host`
@@ -27,25 +33,92 @@ Map<String, String> signV4({
   String service = 's3',
 }) {
   final amzDate = _amzDate(now.toUtc());
-  final day = amzDate.substring(0, 8);
   final signed = <String, String>{
     for (final MapEntry(:key, :value) in headers.entries)
       key.toLowerCase(): value.trim().replaceAll(RegExp(r'\s+'), ' '),
-    'host': uri.hasPort && !_defaultPort(uri)
-        ? '${uri.host}:${uri.port}'
-        : uri.host,
+    'host': _host(uri),
     'x-amz-date': amzDate,
   };
+  final (scope, signature) = _sign(
+    method: method,
+    uri: uri,
+    query: uri.queryParametersAll,
+    headers: signed,
+    payloadHash: payloadHash,
+    secretKey: secretKey,
+    region: region,
+    amzDate: amzDate,
+    service: service,
+  );
   final names = signed.keys.toList()..sort();
-  final query = [
-    for (final MapEntry(:key, :value) in uri.queryParametersAll.entries)
-      for (final v in value) '${_encode(key)}=${_encode(v)}',
-  ]..sort();
+  return {
+    'x-amz-date': amzDate,
+    'Authorization':
+        'AWS4-HMAC-SHA256 Credential=$accessKey/$scope, '
+        'SignedHeaders=${names.join(';')}, Signature=$signature',
+  };
+}
+
+/// A presigned link for [method] on [uri], valid for [expires] (at most
+/// 7 days): anyone holding it can make that one request without keys
+/// (OBJ-011, OBJ-025, background transfers). Only `host` is signed.
+Uri presignV4({
+  required String method,
+  required Uri uri,
+  required String accessKey,
+  required String secretKey,
+  required String region,
+  required DateTime now,
+  required Duration expires,
+}) {
+  final amzDate = _amzDate(now.toUtc());
+  final day = amzDate.substring(0, 8);
+  final query = {
+    ...uri.queryParametersAll,
+    'X-Amz-Algorithm': ['AWS4-HMAC-SHA256'],
+    'X-Amz-Credential': ['$accessKey/$day/$region/s3/aws4_request'],
+    'X-Amz-Date': [amzDate],
+    'X-Amz-Expires': ['${expires.inSeconds}'],
+    'X-Amz-SignedHeaders': ['host'],
+  };
+  final (_, signature) = _sign(
+    method: method,
+    uri: uri,
+    query: query,
+    headers: {'host': _host(uri)},
+    payloadHash: unsignedPayload,
+    secretKey: secretKey,
+    region: region,
+    amzDate: amzDate,
+    service: 's3',
+  );
+  return Uri.parse(
+    '${uri.scheme}://${_host(uri)}${_path(uri)}?'
+    '${_query({
+      ...query,
+      'X-Amz-Signature': [signature],
+    })}',
+  );
+}
+
+(String scope, String signature) _sign({
+  required String method,
+  required Uri uri,
+  required Map<String, List<String>> query,
+  required Map<String, String> headers,
+  required String payloadHash,
+  required String secretKey,
+  required String region,
+  required String amzDate,
+  required String service,
+}) {
+  final day = amzDate.substring(0, 8);
+  final names = headers.keys.toList()..sort();
   final canonical = [
     method.toUpperCase(),
-    '/${uri.pathSegments.map(_encode).join('/')}',
-    query.join('&'),
-    for (final n in names) '$n:${signed[n]}',
+    _path(uri),
+    _query(query),
+    for (final n in names) '$n:${headers[n]}',
     '',
     names.join(';'),
     payloadHash,
@@ -61,14 +134,18 @@ Map<String, String> signV4({
   for (final part in [day, region, service, 'aws4_request']) {
     key = Hmac(sha256, key).convert(utf8.encode(part)).bytes;
   }
-  final signature = Hmac(sha256, key).convert(utf8.encode(toSign)).toString();
-  return {
-    'x-amz-date': amzDate,
-    'Authorization':
-        'AWS4-HMAC-SHA256 Credential=$accessKey/$scope, '
-        'SignedHeaders=${names.join(';')}, Signature=$signature',
-  };
+  return (scope, Hmac(sha256, key).convert(utf8.encode(toSign)).toString());
 }
+
+String _host(Uri uri) =>
+    uri.hasPort && !_defaultPort(uri) ? '${uri.host}:${uri.port}' : uri.host;
+
+String _path(Uri uri) => '/${uri.pathSegments.map(_encode).join('/')}';
+
+String _query(Map<String, List<String>> query) => ([
+  for (final MapEntry(:key, :value) in query.entries)
+    for (final v in value) '${_encode(key)}=${_encode(v)}',
+]..sort()).join('&');
 
 /// Creates a pinned dio for an S3 [endpoint] (e.g.
 /// `https://fsn1.your-objectstorage.com`) that signs every request.
@@ -90,7 +167,7 @@ Dio createS3Dio({
           null => emptyPayloadHash,
           List<int>() => sha256.convert(data).toString(),
           String() => sha256.convert(utf8.encode(data)).toString(),
-          _ => 'UNSIGNED-PAYLOAD',
+          _ => unsignedPayload,
         };
         options.headers['x-amz-content-sha256'] = hash;
         options.headers.addAll(
@@ -124,3 +201,329 @@ String _encode(String s) => Uri.encodeComponent(s).replaceAllMapped(
   RegExp("[!*'()]"),
   (m) => '%${m[0]!.codeUnitAt(0).toRadixString(16).toUpperCase()}',
 );
+
+/// Path and query of [key] in [bucket] (path style), encoded exactly as
+/// it is signed, so keys with any character work.
+String s3Path(String bucket, [String key = '', Map<String, String>? query]) {
+  final path =
+      '/${[bucket, if (key.isNotEmpty) ...key.split('/')].map(_encode).join('/')}';
+  return query == null || query.isEmpty
+      ? path
+      : '$path?${_query({
+          for (final MapEntry(:key, :value) in query.entries) key: [value],
+        })}';
+}
+
+/// An object as a listing or `HeadObject` shows it.
+typedef S3Object = ({
+  String key,
+  int size,
+  DateTime? modified,
+  String? etag,
+  String? contentType,
+});
+
+/// One version of an object (OBJ-023); a delete marker has no data.
+typedef S3Version = ({
+  String versionId,
+  bool latest,
+  bool deleteMarker,
+  int size,
+  DateTime? modified,
+});
+
+/// The S3 operations Falco uses, on a signing dio from [createS3Dio].
+/// Errors arrive as `FalcoError` from the dio's interceptor.
+class S3Client {
+  const new(this._dio);
+
+  final Dio _dio;
+
+  /// S3 XML namespace of request bodies.
+  static const xmlns = 'http://s3.amazonaws.com/doc/2006-03-01/';
+
+  Future<Response<String>> _send(
+    String method,
+    String path, {
+    String? body,
+    Map<String, String> headers = const {},
+  }) => _dio.request<String>(
+    path,
+    data: body,
+    options: Options(
+      method: method,
+      headers: {
+        ...headers,
+        if (body != null) Headers.contentTypeHeader: 'application/xml',
+      },
+      responseType: ResponseType.plain,
+    ),
+  );
+
+  Future<XmlDocument> _xml(String method, String path, {String? body}) async {
+    final r = await _send(method, path, body: body);
+    return XmlDocument.parse(r.data ?? '');
+  }
+
+  /// Buckets at this endpoint (OBJ-001).
+  Future<List<({String name, DateTime? created})>> buckets() async => [
+    for (final b in (await _xml('GET', '/')).findAllElements('Bucket'))
+      (name: _text(b, 'Name') ?? '', created: _date(_text(b, 'CreationDate'))),
+  ];
+
+  /// The location constraint of [bucket], e.g. `fsn1`; null when S3 does
+  /// not say.
+  Future<String?> location(String bucket) async {
+    final text = (await _xml(
+      'GET',
+      s3Path(bucket, '', {'location': ''}),
+    )).rootElement.innerText.trim();
+    return text.isEmpty ? null : text;
+  }
+
+  /// Creates [bucket], readable by everyone when [public] (OBJ-002).
+  Future<void> createBucket(String bucket, {bool public = false}) => _send(
+    'PUT',
+    s3Path(bucket),
+    headers: {if (public) 'x-amz-acl': 'public-read'},
+  );
+
+  /// Deletes an empty [bucket] (OBJ-003).
+  Future<void> deleteBucket(String bucket) => _send('DELETE', s3Path(bucket));
+
+  /// `Enabled`, `Suspended`, or null when never turned on (OBJ-004).
+  Future<String?> versioning(String bucket) async => _text(
+    (await _xml('GET', s3Path(bucket, '', {'versioning': ''}))).rootElement,
+    'Status',
+  );
+
+  /// Turns versioning on or suspends it (OBJ-005).
+  Future<void> setVersioning(String bucket, {required bool enabled}) => _send(
+    'PUT',
+    s3Path(bucket, '', {'versioning': ''}),
+    body:
+        '<VersioningConfiguration xmlns="$xmlns"><Status>'
+        '${enabled ? 'Enabled' : 'Suspended'}'
+        '</Status></VersioningConfiguration>',
+  );
+
+  /// Whether everyone may read [bucket] (a READ grant to all users).
+  Future<bool> isPublic(String bucket) async =>
+      (await _xml('GET', s3Path(bucket, '', {'acl': ''})))
+          .findAllElements('Grant')
+          .any(
+            (g) =>
+                (_text(g, 'URI') ?? '').endsWith('/global/AllUsers') &&
+                _text(g, 'Permission') == 'READ',
+          );
+
+  /// Makes [bucket] public (read for everyone) or private.
+  Future<void> setPublic(String bucket, {required bool public}) => _send(
+    'PUT',
+    s3Path(bucket, '', {'acl': ''}),
+    headers: {'x-amz-acl': public ? 'public-read' : 'private'},
+  );
+
+  /// Folders and objects directly below [prefix], every page (OBJ-006).
+  Future<({List<String> folders, List<S3Object> objects})> list(
+    String bucket,
+    String prefix,
+  ) async {
+    final folders = <String>[];
+    final objects = <S3Object>[];
+    String? token;
+    do {
+      final doc = await _xml(
+        'GET',
+        s3Path(bucket, '', {
+          'list-type': '2',
+          'delimiter': '/',
+          'prefix': prefix,
+          'continuation-token': ?token,
+        }),
+      );
+      for (final p in doc.findAllElements('CommonPrefixes')) {
+        folders.add(_text(p, 'Prefix') ?? '');
+      }
+      for (final c in doc.findAllElements('Contents')) {
+        final key = _text(c, 'Key') ?? '';
+        // The folder's own marker object.
+        if (key == prefix) continue;
+        objects.add((
+          key: key,
+          size: int.tryParse(_text(c, 'Size') ?? '') ?? 0,
+          modified: _date(_text(c, 'LastModified')),
+          etag: _text(c, 'ETag'),
+          contentType: null,
+        ));
+      }
+      token = _text(doc.rootElement, 'IsTruncated') == 'true'
+          ? _text(doc.rootElement, 'NextContinuationToken')
+          : null;
+    } while (token != null);
+    return (folders: folders, objects: objects);
+  }
+
+  /// Size, date, type and ETag of [key] (OBJ-010).
+  Future<S3Object> head(String bucket, String key) async {
+    final h = (await _send('HEAD', s3Path(bucket, key))).headers;
+    return (
+      key: key,
+      size: int.tryParse(h.value(Headers.contentLengthHeader) ?? '') ?? 0,
+      modified: switch (h.value('last-modified')) {
+        final s? => HttpDate.parse(s),
+        _ => null,
+      },
+      etag: h.value('etag'),
+      contentType: h.value(Headers.contentTypeHeader),
+    );
+  }
+
+  /// Stores [bytes] at [key]; an empty `name/` key is a folder (OBJ-024).
+  Future<void> put(String bucket, String key, List<int> bytes) =>
+      _dio.request<String>(
+        s3Path(bucket, key),
+        data: bytes,
+        options: Options(
+          method: 'PUT',
+          headers: {Headers.contentLengthHeader: bytes.length},
+          responseType: ResponseType.plain,
+        ),
+      );
+
+  /// Copies an object, or one version of it, to [toBucket]/[toKey]
+  /// (OBJ-013, OBJ-023).
+  Future<void> copy(
+    String bucket,
+    String key,
+    String toBucket,
+    String toKey, {
+    String? versionId,
+  }) => _send(
+    'PUT',
+    s3Path(toBucket, toKey),
+    headers: {
+      'x-amz-copy-source':
+          s3Path(bucket, key) +
+          (versionId == null ? '' : '?versionId=${_encode(versionId)}'),
+    },
+  );
+
+  /// Deletes [key] (OBJ-015).
+  Future<void> delete(String bucket, String key) =>
+      _send('DELETE', s3Path(bucket, key));
+
+  /// Deletes [keys] at once; returns those S3 could not delete (OBJ-017).
+  Future<List<String>> deleteMany(String bucket, List<String> keys) async {
+    final body =
+        '<Delete xmlns="$xmlns"><Quiet>true</Quiet>'
+        '${keys.map((k) => '<Object><Key>${_esc(k)}</Key></Object>').join()}'
+        '</Delete>';
+    final r = await _send(
+      'POST',
+      s3Path(bucket, '', {'delete': ''}),
+      body: body,
+      headers: {
+        'content-md5': base64.encode(md5.convert(utf8.encode(body)).bytes),
+      },
+    );
+    return [
+      for (final e in XmlDocument.parse(
+        r.data ?? '<r/>',
+      ).findAllElements('Error'))
+        _text(e, 'Key') ?? '',
+    ];
+  }
+
+  /// Versions and delete markers of [key], newest first (OBJ-023).
+  Future<List<S3Version>> versions(String bucket, String key) async {
+    final doc = await _xml(
+      'GET',
+      s3Path(bucket, '', {'versions': '', 'prefix': key}),
+    );
+    return [
+      for (final v in doc.rootElement.childElements)
+        if ((v.localName == 'Version' || v.localName == 'DeleteMarker') &&
+            _text(v, 'Key') == key)
+          (
+            versionId: _text(v, 'VersionId') ?? '',
+            latest: _text(v, 'IsLatest') == 'true',
+            deleteMarker: v.localName == 'DeleteMarker',
+            size: int.tryParse(_text(v, 'Size') ?? '') ?? 0,
+            modified: _date(_text(v, 'LastModified')),
+          ),
+    ];
+  }
+
+  /// Starts a multipart upload of [key]; returns its upload id (OBJ-022).
+  Future<String> createMultipart(
+    String bucket,
+    String key,
+    String contentType,
+  ) async {
+    final r = await _send(
+      'POST',
+      s3Path(bucket, key, {'uploads': ''}),
+      headers: {Headers.contentTypeHeader: contentType},
+    );
+    return _text(XmlDocument.parse(r.data ?? '').rootElement, 'UploadId') ?? '';
+  }
+
+  /// Uploaded parts of [uploadId] as (number, ETag), every page.
+  Future<List<(int, String)>> parts(
+    String bucket,
+    String key,
+    String uploadId,
+  ) async {
+    final parts = <(int, String)>[];
+    String? marker;
+    do {
+      final doc = await _xml(
+        'GET',
+        s3Path(bucket, key, {
+          'uploadId': uploadId,
+          'part-number-marker': ?marker,
+        }),
+      );
+      for (final p in doc.findAllElements('Part')) {
+        parts.add((
+          int.tryParse(_text(p, 'PartNumber') ?? '') ?? 0,
+          _text(p, 'ETag') ?? '',
+        ));
+      }
+      marker = _text(doc.rootElement, 'IsTruncated') == 'true'
+          ? _text(doc.rootElement, 'NextPartNumberMarker')
+          : null;
+    } while (marker != null);
+    return parts;
+  }
+
+  /// Joins [parts] into the object.
+  Future<void> completeMultipart(
+    String bucket,
+    String key,
+    String uploadId,
+    List<(int, String)> parts,
+  ) => _send(
+    'POST',
+    s3Path(bucket, key, {'uploadId': uploadId}),
+    body:
+        '<CompleteMultipartUpload>'
+        '${(parts..sort((a, b) => a.$1 - b.$1)).map(_part).join()}'
+        '</CompleteMultipartUpload>',
+  );
+
+  /// Drops an unfinished multipart upload and its parts.
+  Future<void> abortMultipart(String bucket, String key, String uploadId) =>
+      _send('DELETE', s3Path(bucket, key, {'uploadId': uploadId}));
+}
+
+String _part((int, String) p) =>
+    '<Part><PartNumber>${p.$1}</PartNumber><ETag>${_esc(p.$2)}</ETag></Part>';
+
+String _esc(String s) => const HtmlEscape(HtmlEscapeMode.element).convert(s);
+
+String? _text(XmlElement e, String name) =>
+    e.findAllElements(name).firstOrNull?.innerText;
+
+DateTime? _date(String? s) => s == null ? null : DateTime.tryParse(s);

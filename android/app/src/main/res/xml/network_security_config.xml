@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Background transfers run in the platform's HTTP stack, not in Dart, so
+     Object Storage gets its pins here too: the ISRG roots of
+     tool/pins.json (ISRG Root X1 until 2035, X2 until 2040). No expiration,
+     so a foreign CA fails the transfer instead of passing silently. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">your-objectstorage.com</domain>
+        <pin-set>
+            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
+            <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>

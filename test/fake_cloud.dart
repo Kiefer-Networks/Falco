@@ -3,6 +3,7 @@
 // integration tests. Data is made up; no file IO, so it also runs on a
 // device.
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:falco/api/cloud/cloud.dart';
@@ -13,6 +14,8 @@ import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/accounts/checks.dart';
+import 'package:falco/features/storage/object_storage.dart';
+import 'package:falco/features/storage/transfers.dart';
 import 'package:falco/main.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,8 +26,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_http.dart';
 import 'fake_network.dart';
+import 'fake_storage.dart';
 
 export 'fake_network.dart';
+export 'fake_storage.dart';
 
 /// A made up token, never valid anywhere.
 const fakeToken = 'fake-token-for-tests';
@@ -292,7 +297,9 @@ class FakeCloud {
     List<Map<String, Object?>>? certificates,
     List<Map<String, Object?>>? zones,
     Map<int, List<Map<String, Object?>>>? rrsets,
+    FakeStorage? storage,
   }) : actions = actions ?? [],
+       storage = storage ?? FakeStorage(),
        rrsets = rrsets ?? {},
        collections = {
          'servers':
@@ -349,6 +356,9 @@ class FakeCloud {
 
   /// RRSets per zone id.
   final Map<int, List<Map<String, Object?>>> rrsets;
+
+  /// Storage Boxes (api.hetzner.com) and Object Storage (S3).
+  final FakeStorage storage;
 
   /// The last imported zone file.
   String? importedZonefile;
@@ -465,13 +475,12 @@ class FakeCloud {
             );
     }
     if (o.uri.host.endsWith('.your-objectstorage.com')) {
-      return auth0.contains('Credential=$fakeAccessKey/')
-          ? (200, null)
-          : (403, null);
+      return storage.s3(o, auth0, fakeAccessKey);
     }
     if (!validTokens.any((t) => auth0 == 'Bearer $t')) {
       return (401, errorJson('unauthorized'));
     }
+    if (o.uri.host == 'api.hetzner.com') return storage.box(o);
     final path = o.uri.path.replaceFirst('/v1', '');
     final segments = path.split('/').skip(1).map(Uri.decodeComponent).toList();
     final body = o.data is String
@@ -1085,8 +1094,17 @@ class FakeCloud {
 }
 
 /// Seeds the secure storage: [accounts] plus a token for every project.
-void seedSecrets(List<Account> accounts) {
+void seedSecrets(List<Account> accounts, {bool s3 = false}) {
   FlutterSecureStorage.setMockInitialValues({
+    if (s3)
+      for (final a in accounts)
+        for (final p in a.projects)
+          's3.${p.id}': jsonEncode({
+            'accessKey': fakeAccessKey,
+            'secretKey': 'fake-secret',
+            'endpoint': 'https://fsn1.your-objectstorage.com',
+            'region': 'fsn1',
+          }),
     if (accounts.isNotEmpty)
       'accounts': jsonEncode([for (final a in accounts) a.toJson()]),
     for (final a in accounts)
@@ -1106,10 +1124,16 @@ Future<SharedPreferences> testPrefs([
 /// collects saved files by name.
 class FakeTextFiles extends TextFiles {
   PickedText? picked;
+
+  /// What a pick of any file returns (uploads).
+  File? pickedFile;
   final saved = <String, String>{};
 
   @override
   Future<PickedText?> pick({required int maxBytes}) async => picked;
+
+  @override
+  Future<File?> pickFile() async => pickedFile;
 
   @override
   Future<bool> save(String name, String text) async {
@@ -1123,6 +1147,16 @@ List<Override> fakeApis(FakeCloud cloud) => [
   textFilesProvider.overrideWithValue(cloud.files),
   cloudDioProvider.overrideWithValue(
     (auth) => fakeDio(cloud.adapter, auth: auth),
+  ),
+  storageBoxDioProvider.overrideWithValue(
+    (auth) => fakeDio(cloud.adapter, baseUrl: storageBoxBaseUrl, auth: auth),
+  ),
+  transfersProvider.overrideWith(
+    (ref) => FakeTransfers(
+      ref.watch(s3AccessProvider),
+      cloud.storage,
+      onUploaded: () => ref.invalidate(objectsProvider),
+    ),
   ),
   robotDioProvider.overrideWithValue(
     (auth) => fakeDio(cloud.adapter, baseUrl: robotBaseUrl, auth: auth),
@@ -1147,8 +1181,9 @@ Future<ProviderContainer> pumpFalco(
   FalcoVariant variant = FalcoVariant.dark,
   Map<String, Object> prefs = const {},
   List<bool?>? answers,
+  bool s3 = false,
 }) async {
-  seedSecrets(accounts);
+  seedSecrets(accounts, s3: s3);
   final container = ProviderContainer(
     overrides: [
       preferencesProvider.overrideWithValue(
@@ -1172,8 +1207,9 @@ Future<ProviderContainer> pumpFalco(
 Future<ProviderContainer> fakeContainer(
   FakeCloud cloud, {
   List<Account> accounts = const [acme],
+  bool s3 = false,
 }) async {
-  seedSecrets(accounts);
+  seedSecrets(accounts, s3: s3);
   final container = ProviderContainer(
     overrides: [
       preferencesProvider.overrideWithValue(await testPrefs()),

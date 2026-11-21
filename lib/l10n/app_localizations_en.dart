@@ -540,6 +540,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'apply_firewall': 'Apply firewall',
       'remove_firewall': 'Remove firewall',
       'set_firewall_rules': 'Set firewall rules',
+      'create': 'Create',
+      'delete': 'Delete',
+      'change_type': 'Change type',
+      'update_access_settings': 'Change access',
+      'rollback_snapshot': 'Roll back snapshot',
+      'enable_snapshot_plan': 'Enable snapshot plan',
+      'disable_snapshot_plan': 'Disable snapshot plan',
+      'create_snapshot': 'Create snapshot',
+      'delete_snapshot': 'Delete snapshot',
+      'create_subaccount': 'Add subaccount',
+      'delete_subaccount': 'Delete subaccount',
+      'reset_subaccount_password': 'Reset subaccount password',
+      'change_home_directory': 'Change home directory',
       'other': '',
     });
     return '$_temp0';
@@ -2316,4 +2329,414 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get zonefileTooLarge => 'The file is larger than 1 MiB.';
+
+  @override
+  String get accessExternal => 'Reachable externally';
+
+  @override
+  String get accessReadonly => 'Read only';
+
+  @override
+  String get accessSamba => 'Samba (SMB)';
+
+  @override
+  String get accessSsh => 'SSH and SFTP';
+
+  @override
+  String get accessWebdav => 'WebDAV';
+
+  @override
+  String get accessZfs => 'ZFS snapshot folder';
+
+  @override
+  String get boxAccessSettings => 'Access';
+
+  @override
+  String get boxAutomatic => 'Automatic';
+
+  @override
+  String get boxAutomaticSnapshots => 'Automatic snapshots';
+
+  @override
+  String get boxChangeType => 'Change type';
+
+  @override
+  String get boxDeleteConsequence =>
+      'The Storage Box, its snapshots and subaccounts are deleted with all data. This cannot be undone.';
+
+  @override
+  String get boxEveryDay => 'Every day';
+
+  @override
+  String get boxMaxSnapshots => 'Snapshots to keep';
+
+  @override
+  String get boxNewFolder => 'New folder';
+
+  @override
+  String get boxPasswordHint =>
+      '12 to 128 characters with upper and lower case, a digit and a special character.';
+
+  @override
+  String boxPlanDaily(String time) {
+    return 'Daily at $time';
+  }
+
+  @override
+  String get boxPlanHour => 'Hour';
+
+  @override
+  String boxPlanKeeps(String when, int count) {
+    return '$when, keeps $count';
+  }
+
+  @override
+  String get boxPlanMinute => 'Minute';
+
+  @override
+  String get boxPlanMonthday => 'Day of the month';
+
+  @override
+  String boxPlanMonthly(int day, String time) {
+    return 'Monthly on day $day at $time';
+  }
+
+  @override
+  String get boxPlanUtc => 'Times are UTC.';
+
+  @override
+  String get boxPlanWeekday => 'Weekday';
+
+  @override
+  String boxPlanWeekly(String day, String time) {
+    return '${day}s at $time';
+  }
+
+  @override
+  String get boxResetPassword => 'Reset password';
+
+  @override
+  String get boxRollback => 'Roll back';
+
+  @override
+  String get boxRollbackConsequence =>
+      'All data of the Storage Box is replaced with the state of this snapshot. Newer data is lost.';
+
+  @override
+  String boxRollbackTitle(String name) {
+    return 'Roll back to $name?';
+  }
+
+  @override
+  String get boxSnapshotCreate => 'Create snapshot';
+
+  @override
+  String get boxSnapshotDeleteConsequence =>
+      'The snapshot is deleted. This cannot be undone.';
+
+  @override
+  String get boxSnapshotPlan => 'Snapshot plan';
+
+  @override
+  String get boxUsage => 'Usage';
+
+  @override
+  String get boxUsedData => 'Used by data';
+
+  @override
+  String boxUsedOf(String used, String size) {
+    return '$used of $size used';
+  }
+
+  @override
+  String get boxUsedSnapshots => 'Used by snapshots';
+
+  @override
+  String get bucketCreate => 'Create bucket';
+
+  @override
+  String get bucketDelete => 'Delete bucket';
+
+  @override
+  String get bucketDeleteConsequence =>
+      'The bucket is deleted. It must be empty.';
+
+  @override
+  String get bucketNameHint =>
+      '3 to 63 lower case letters, digits, dots and hyphens.';
+
+  @override
+  String get bucketNotEmpty =>
+      'The bucket is not empty. Delete its objects first.';
+
+  @override
+  String get bucketPrivate => 'Private';
+
+  @override
+  String get bucketPublic => 'Public';
+
+  @override
+  String get bucketPublicHint =>
+      'Public: everyone can read the objects without a link.';
+
+  @override
+  String get bucketSettings => 'Bucket settings';
+
+  @override
+  String get bucketVersioning => 'Versioning';
+
+  @override
+  String get bucketVersioningHint =>
+      'Enabled keeps every version of an object. Suspended keeps existing versions but adds no new ones; versioning cannot be turned off again.';
+
+  @override
+  String get bucketVisibility => 'Visibility';
+
+  @override
+  String get commonShare => 'Share';
+
+  @override
+  String days(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String downloadSaved(String name) {
+    return 'Download saved: $name';
+  }
+
+  @override
+  String downloadStarted(String name) {
+    return 'Downloading $name in the background';
+  }
+
+  @override
+  String get emptyBoxSnapshots => 'No snapshots yet.';
+
+  @override
+  String get emptyBuckets => 'No buckets in this project yet.';
+
+  @override
+  String get emptyObjects => 'This folder is empty.';
+
+  @override
+  String get emptyStorageBoxes => 'No Storage Boxes in this project yet.';
+
+  @override
+  String get emptySubaccounts => 'No subaccounts yet.';
+
+  @override
+  String get fieldContentType => 'Content type';
+
+  @override
+  String get fieldEtag => 'ETag';
+
+  @override
+  String get fieldFolderName => 'Folder name';
+
+  @override
+  String get fieldHomeDirectory => 'Home directory';
+
+  @override
+  String get fieldKey => 'Key';
+
+  @override
+  String get fieldModified => 'Last modified';
+
+  @override
+  String get fieldPassword => 'Password';
+
+  @override
+  String get fieldPasswordRepeat => 'Repeat password';
+
+  @override
+  String get fieldServer => 'Server';
+
+  @override
+  String get fieldUsername => 'Username';
+
+  @override
+  String get folderCreate => 'Create folder';
+
+  @override
+  String hours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours',
+      one: '1 hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get objectCopy => 'Copy';
+
+  @override
+  String get objectDeleteConsequence =>
+      'The objects are deleted. With versioning, older versions stay.';
+
+  @override
+  String get objectDownload => 'Download';
+
+  @override
+  String get objectInfo => 'Info';
+
+  @override
+  String get objectKeyInvalid => 'This file cannot be stored under that name.';
+
+  @override
+  String get objectMove => 'Move';
+
+  @override
+  String get objectUpload => 'Upload';
+
+  @override
+  String get objectVersions => 'Versions';
+
+  @override
+  String objectsDeleteTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Delete $count objects?',
+      one: 'Delete 1 object?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String objectsDeleted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count objects deleted',
+      one: '1 object deleted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String objectsDeletedPartly(int deleted, int failed) {
+    return '$deleted deleted, $failed failed and stay selected';
+  }
+
+  @override
+  String get resourceBoxSnapshot => 'Snapshot';
+
+  @override
+  String get resourceBucket => 'Bucket';
+
+  @override
+  String get resourceBuckets => 'Buckets';
+
+  @override
+  String get resourceObjectStorage => 'Object Storage';
+
+  @override
+  String get resourceStorageBox => 'Storage Box';
+
+  @override
+  String get resourceStorageBoxes => 'Storage Boxes';
+
+  @override
+  String get resourceSubaccount => 'Subaccount';
+
+  @override
+  String get s3NoKeysHint =>
+      'This project has no S3 keys. Add them to the project to use Object Storage.';
+
+  @override
+  String get sectionSnapshots => 'Snapshots';
+
+  @override
+  String get sectionSubaccounts => 'Subaccounts';
+
+  @override
+  String get selectionClear => 'Clear selection';
+
+  @override
+  String get shareExpiry => 'Valid for';
+
+  @override
+  String get shareLink => 'Share link';
+
+  @override
+  String get statusActive => 'active';
+
+  @override
+  String get statusLocked => 'locked';
+
+  @override
+  String get storageBoxCreate => 'Create Storage Box';
+
+  @override
+  String get subaccountCreate => 'Add subaccount';
+
+  @override
+  String get subaccountDeleteConsequence =>
+      'The subaccount can no longer log in. Its files stay in the Storage Box.';
+
+  @override
+  String get transferDone => 'Transfer finished';
+
+  @override
+  String get transferFailed => 'Transfer failed';
+
+  @override
+  String transferFailedNamed(String name) {
+    return 'Transfer of $name failed';
+  }
+
+  @override
+  String get transferRunning => 'Transferring';
+
+  @override
+  String uploadDone(String name) {
+    return 'Uploaded: $name';
+  }
+
+  @override
+  String get uploadLink => 'Upload link';
+
+  @override
+  String uploadStarted(String name) {
+    return 'Uploading $name in the background';
+  }
+
+  @override
+  String get versionDeleteMarker => 'deleted';
+
+  @override
+  String get versionLatest => 'current';
+
+  @override
+  String get versionRestore => 'Restore';
+
+  @override
+  String get versionRestoreConsequence =>
+      'This version becomes the current object again; the current one stays as an older version.';
+
+  @override
+  String versionRestoreTitle(String name) {
+    return 'Restore this version of $name?';
+  }
+
+  @override
+  String get versioningEnabled => 'Enabled';
+
+  @override
+  String get versioningNever => 'Never enabled';
+
+  @override
+  String get versioningSuspended => 'Suspended';
+
+  @override
+  String get versionsEmpty => 'No versions.';
 }
