@@ -18,15 +18,13 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.IntentCompat
 import dagger.hilt.android.AndroidEntryPoint
 import de.kiefer_networks.falco.R
-import de.kiefer_networks.falco.data.api.S3Client
-import de.kiefer_networks.falco.data.auth.AccountManager
+import de.kiefer_networks.falco.data.repo.S3Repo
 import de.kiefer_networks.falco.data.util.sanitizeError
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicInteger
@@ -40,7 +38,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class UploadService : Service() {
 
-    @Inject lateinit var accounts: AccountManager
+    @Inject lateinit var s3: S3Repo
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -70,21 +68,12 @@ class UploadService : Service() {
         active++
         scope.launch {
             val result = runCatching {
-                val project = accounts.activeCloudProject.first()
-                    ?: error("No active Cloud project")
-                require(project.hasS3) { "Active Cloud project has no S3 credentials" }
-                val client = S3Client(
-                    endpoint = project.s3Endpoint!!,
-                    region = project.s3Region,
-                    accessKey = project.s3AccessKey!!,
-                    secretKey = project.s3SecretKey!!,
-                )
                 val resolver = applicationContext.contentResolver
                 val size = resolver.openFileDescriptor(source, "r")?.use { it.statSize } ?: -1L
                 val input = requireNotNull(resolver.openInputStream(source)) {
                     "Cannot open input stream for $source"
                 }
-                input.use { client.putObject(bucket, key, mime, size, it) }
+                input.use { s3.putObject(bucket, key, mime, size, it) }
             }
             if (result.isFailure && result.exceptionOrNull() is CancellationException) return@launch
             val name = key.substringAfterLast('/')

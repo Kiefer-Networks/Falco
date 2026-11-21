@@ -46,7 +46,7 @@ class SecurityPreferences @Inject constructor(
 
     /** Theme mode: 0 = follow system, 1 = light, 2 = dark, 3 = OLED black. */
     val themeMode: Flow<Int> =
-        dataStore.data.map { it[KEY_THEME_MODE] ?: THEME_LIGHT }
+        dataStore.data.map { it[KEY_THEME_MODE] ?: THEME_DARK }
 
     suspend fun setThemeMode(value: Int) {
         dataStore.edit { it[KEY_THEME_MODE] = value }

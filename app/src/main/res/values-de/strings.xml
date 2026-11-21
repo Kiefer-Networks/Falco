@@ -44,9 +44,13 @@
     <string name="account_cloud_token">Cloud-API-Token</string>
     <string name="account_robot_user">Robot-Webservice-Benutzer</string>
     <string name="account_robot_pass">Robot-Passwort</string>
-    <string name="account_s3_endpoint">S3-Endpoint (z. B. fsn1.your-objectstorage.com)</string>
     <string name="account_s3_access_key">S3-Access-Key</string>
     <string name="account_s3_secret_key">S3-Secret-Key</string>
+    <string name="s3_locations_hint">Es werden nur Access Key und Secret Key benötigt. Buckets in allen Standorten (Falkenstein, Nürnberg, Helsinki) werden automatisch gefunden.</string>
+    <string name="s3_bucket_location">Standort</string>
+    <string name="s3_location_fsn1">Falkenstein</string>
+    <string name="s3_location_nbg1">Nürnberg</string>
+    <string name="s3_location_hel1">Helsinki</string>
     <string name="account_manage_projects">Projekte verwalten</string>
     <string name="account_remove">Konto entfernen</string>
     <string name="account_remove_confirm">Dieses Konto und alle gespeicherten Zugangsdaten entfernen?</string>
@@ -417,7 +421,6 @@
     <string name="wizard_service_picker_caption">Welche Hetzner-Dienste willst du mit diesem Konto verwalten?</string>
     <string name="wizard_service_required">Mindestens einen Dienst auswählen</string>
     <string name="wizard_done_caption">„%1$s" ist eingerichtet.</string>
-    <string name="account_s3_region_optional">Region (optional)</string>
 
     <string name="server_label_ipv4">Öffentliches IPv4</string>
     <string name="server_label_ipv6">Öffentliches IPv6</string>

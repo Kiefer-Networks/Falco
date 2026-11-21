@@ -355,20 +355,10 @@ private fun ProjectDraftCard(
                 )
             }
             if (draft.s3Enabled) {
-                OutlinedTextField(
-                    value = draft.s3Endpoint,
-                    onValueChange = { v -> onChange { it.copy(s3Endpoint = v) } },
-                    label = { Text(stringResource(R.string.account_s3_endpoint)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = draft.s3Region,
-                    onValueChange = { v -> onChange { it.copy(s3Region = v) } },
-                    label = { Text(stringResource(R.string.account_s3_region_optional)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                Text(
+                    stringResource(R.string.s3_locations_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 SecretField(
                     label = stringResource(R.string.account_s3_access_key),
@@ -448,13 +438,6 @@ private fun StepReview(state: WizardState, viewModel: AccountWizardViewModel) {
                     value = mask(draft.token, revealed),
                 )
                 if (draft.s3Enabled) {
-                    ReviewRow(label = stringResource(R.string.account_s3_endpoint), value = draft.s3Endpoint)
-                    if (draft.s3Region.isNotBlank()) {
-                        ReviewRow(
-                            label = stringResource(R.string.account_s3_region_optional),
-                            value = draft.s3Region,
-                        )
-                    }
                     ReviewRow(
                         label = stringResource(R.string.account_s3_access_key),
                         value = mask(draft.s3AccessKey, revealed),

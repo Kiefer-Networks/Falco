@@ -53,8 +53,9 @@ fun ProjectFormScreen(
     var name by remember { mutableStateOf("") }
     var token by remember { mutableStateOf("") }
     var s3Enabled by remember { mutableStateOf(false) }
-    var endpoint by remember { mutableStateOf("fsn1.your-objectstorage.com") }
-    var region by remember { mutableStateOf("") }
+    // Legacy projects may carry an explicit endpoint; keep it untouched on edit.
+    var endpoint by remember { mutableStateOf<String?>(null) }
+    var region by remember { mutableStateOf<String?>(null) }
     var accessKey by remember { mutableStateOf("") }
     var secretKey by remember { mutableStateOf("") }
     var loadedFor by remember { mutableStateOf<String?>(null) }
@@ -65,8 +66,8 @@ fun ProjectFormScreen(
                 name = p.name
                 token = p.cloudToken
                 s3Enabled = p.hasS3
-                endpoint = p.s3Endpoint ?: "fsn1.your-objectstorage.com"
-                region = p.s3Region.orEmpty()
+                endpoint = p.s3Endpoint
+                region = p.s3Region
                 accessKey = p.s3AccessKey.orEmpty()
                 secretKey = p.s3SecretKey.orEmpty()
                 loadedFor = projectId
@@ -128,20 +129,10 @@ fun ProjectFormScreen(
                 Switch(checked = s3Enabled, onCheckedChange = { s3Enabled = it })
             }
             if (s3Enabled) {
-                OutlinedTextField(
-                    value = endpoint,
-                    onValueChange = { endpoint = it },
-                    label = { Text(stringResource(R.string.account_s3_endpoint)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = region,
-                    onValueChange = { region = it },
-                    label = { Text(stringResource(R.string.account_s3_region_optional)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                Text(
+                    stringResource(R.string.s3_locations_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 OutlinedTextField(
                     value = accessKey,
@@ -169,8 +160,8 @@ fun ProjectFormScreen(
                         id = projectId ?: UUID.randomUUID().toString(),
                         name = name,
                         cloudToken = token,
-                        s3Endpoint = endpoint.takeIf { s3Enabled && it.isNotBlank() },
-                        s3Region = region.takeIf { s3Enabled && it.isNotBlank() },
+                        s3Endpoint = endpoint?.takeIf { s3Enabled && it.isNotBlank() },
+                        s3Region = region?.takeIf { s3Enabled && it.isNotBlank() },
                         s3AccessKey = accessKey.takeIf { s3Enabled && it.isNotBlank() },
                         s3SecretKey = secretKey.takeIf { s3Enabled && it.isNotBlank() },
                     )
@@ -181,7 +172,7 @@ fun ProjectFormScreen(
                     }
                 },
                 enabled = name.isNotBlank() && token.isNotBlank() &&
-                    (!s3Enabled || (endpoint.isNotBlank() && accessKey.isNotBlank() && secretKey.isNotBlank())),
+                    (!s3Enabled || (accessKey.isNotBlank() && secretKey.isNotBlank())),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.project_form_save))

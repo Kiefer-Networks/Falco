@@ -48,9 +48,13 @@
     <string name="account_cloud_token">Cloud API token</string>
     <string name="account_robot_user">Robot webservice user</string>
     <string name="account_robot_pass">Robot password</string>
-    <string name="account_s3_endpoint">S3 endpoint (e.g. fsn1.your-objectstorage.com)</string>
     <string name="account_s3_access_key">S3 access key</string>
     <string name="account_s3_secret_key">S3 secret key</string>
+    <string name="s3_locations_hint">Only the access key and secret key are needed. Buckets in all locations (Falkenstein, Nuremberg, Helsinki) are found automatically.</string>
+    <string name="s3_bucket_location">Location</string>
+    <string name="s3_location_fsn1">Falkenstein</string>
+    <string name="s3_location_nbg1">Nuremberg</string>
+    <string name="s3_location_hel1">Helsinki</string>
     <string name="account_manage_projects">Manage projects</string>
     <string name="account_remove">Remove account</string>
     <string name="account_remove_confirm">Remove this account and all stored credentials?</string>
@@ -389,7 +393,6 @@
     <!-- Bucket management -->
     <string name="s3_bucket_create_title">Create bucket</string>
     <string name="s3_bucket_name">Bucket name</string>
-    <string name="s3_bucket_region_optional">Region (optional)</string>
     <string name="s3_bucket_create">Create</string>
     <string name="s3_bucket_delete_title">Delete bucket?</string>
     <string name="s3_bucket_delete_warning">Permanently delete bucket \"%1$s\". The bucket must be empty. This cannot be undone. Type the bucket name to confirm.</string>
@@ -563,7 +566,6 @@
     <string name="wizard_verify_button">Verify credentials</string>
     <string name="wizard_verify_ok">Credentials valid</string>
     <string name="wizard_verify_failed">Verification failed: %1$s</string>
-    <string name="account_s3_region_optional">Region (optional)</string>
 
     <string name="server_label_ipv4">Public IPv4</string>
     <string name="server_label_ipv6">Public IPv6</string>

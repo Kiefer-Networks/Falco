@@ -44,7 +44,6 @@
     <string name="account_cloud_token">Token de la API Cloud</string>
     <string name="account_robot_user">Usuario del webservice Robot</string>
     <string name="account_robot_pass">Contraseña Robot</string>
-    <string name="account_s3_endpoint">Endpoint S3 (p. ej. fsn1.your-objectstorage.com)</string>
     <string name="account_s3_access_key">Access key S3</string>
     <string name="account_s3_secret_key">Secret key S3</string>
     <string name="account_manage_projects">Gestionar proyectos</string>
@@ -438,7 +437,6 @@
     <string name="wizard_service_picker_caption">¿Qué servicios de Hetzner quieres gestionar con esta cuenta?</string>
     <string name="wizard_service_required">Selecciona al menos un servicio</string>
     <string name="wizard_done_caption">«%1$s» está lista.</string>
-    <string name="account_s3_region_optional">Región (opcional)</string>
 
     <string name="server_label_ipv4">IPv4 pública</string>
     <string name="server_label_ipv6">IPv6 pública</string>

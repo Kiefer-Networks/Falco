@@ -109,7 +109,7 @@ private fun ProjectRow(
             )
             if (project.hasS3) {
                 Text(
-                    text = "S3 · ${project.s3Endpoint}",
+                    text = "S3 · ${project.s3Endpoint ?: "fsn1 · nbg1 · hel1"}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
