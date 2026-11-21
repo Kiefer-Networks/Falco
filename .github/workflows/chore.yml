@@ -2,7 +2,7 @@ name: Chore
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, next]
     types: [opened, reopened, edited, synchronize]
 
 concurrency:

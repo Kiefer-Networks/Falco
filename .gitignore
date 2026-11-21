@@ -1,34 +1,51 @@
-# Build / IDE / OS
-.gradle/
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
 build/
-local.properties
-*.iml
-.idea/
-.DS_Store
-captures/
-.cxx/
-.kotlin/
+coverage/
+*.g.dart.tmp
 
-# Signing / secrets
+# IDE / OS
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+.DS_Store
+
+# Android
+android/local.properties
+android/.gradle/
+android/captures/
+android/app/release/
+android/key.properties
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GeneratedPluginRegistrant.*
+**/xcuserdata/
+*.xcuserstate
+DerivedData/
+
+# Signing / secrets (never commit)
 *.jks
 *.keystore
-keystore.properties
-release-keystore.properties
+*.p12
+*.mobileprovision
+*.p8
+key.properties
 *.env
 secrets/
 
-# Generated / caches
-.kotlin-classes/
-out/
-.externalNativeBuild/
-
-# Coverage
-.coverage/
-**/jacoco/
-
-# Tests
-test-results/
-
-# Hetzner test data (never commit)
+# Local test data
 test-tokens.txt
 .claude-session-state.md
