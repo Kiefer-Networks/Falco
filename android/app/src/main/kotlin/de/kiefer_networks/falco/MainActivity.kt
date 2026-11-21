@@ -3,15 +3,24 @@ package de.kiefer_networks.falco
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import android.view.WindowManager
 
 class MainActivity : FlutterFragmentActivity() {
     private val handler = Handler(Looper.getMainLooper())
+
+    // Screenshots and the recents preview are blocked from the first frame
+    // (SET-014); Dart turns it off when the user disables the setting.
+    override fun onCreate(savedInstanceState: Bundle?) {
+        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        super.onCreate(savedInstanceState)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -25,6 +34,19 @@ class MainActivity : FlutterFragmentActivity() {
                     call.argument<String>("text").orEmpty(),
                     call.argument<Int>("expirySeconds") ?: 60,
                 )
+                result.success(null)
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "falco/screen")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "setSecure") {
+                    result.notImplemented()
+                    return@setMethodCallHandler
+                }
+                if (call.arguments as? Boolean != false) {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                } else {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                }
                 result.success(null)
             }
     }

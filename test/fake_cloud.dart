@@ -6,19 +6,33 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:falco/api/cloud/cloud.dart';
-import 'package:falco/app/theme_settings.dart';
+import 'package:falco/api/robot/robot_client.dart';
+import 'package:falco/api/s3/s3.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/secure/app_lock.dart';
+import 'package:falco/core/settings/settings.dart';
+import 'package:falco/features/accounts/checks.dart';
 import 'package:falco/main.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_http.dart';
 
 /// A made up token, never valid anywhere.
 const fakeToken = 'fake-token-for-tests';
+
+/// Made up Robot webservice login.
+const fakeRobotUser = '#ws+fake';
+
+/// Made up Robot webservice password.
+const fakeRobotPassword = 'fake-robot-password';
+
+/// Made up S3 access key; the secret key is not checked by the fake.
+const fakeAccessKey = 'FAKEACCESSKEY';
 
 /// One account "Acme" with project "prod" (ids a1, p1).
 const acme = Account(
@@ -152,6 +166,9 @@ class FakeCloud {
   /// When set, every request answers with this (status, body).
   (int, Object?)? failWith;
 
+  /// Polls of `GET /actions/{id}` until a running action succeeds.
+  int pollsToFinish = 2;
+
   /// Tokens the API accepts.
   final Set<String> validTokens = {fakeToken};
 
@@ -190,6 +207,39 @@ class FakeCloud {
 
   (int, Object?) _handle(RequestOptions o) {
     if (failWith case final f?) return f;
+    final auth0 = '${o.headers['authorization']}';
+    if (o.uri.host == 'robot-ws.your-server.de') {
+      final login = utf8.encode('$fakeRobotUser:$fakeRobotPassword');
+      final valid = 'Basic ${base64.encode(login)}';
+      return auth0 == valid
+          ? (
+              200,
+              [
+                {
+                  'server': {
+                    'server_number': 321,
+                    'server_name': 'metal-1',
+                    'server_ip': '198.51.100.7',
+                    'product': 'AX41-NVMe',
+                    'dc': 'FSN1-DC14',
+                    'status': 'ready',
+                    'cancelled': false,
+                  },
+                },
+              ],
+            )
+          : (
+              401,
+              {
+                'error': {'status': 401, 'code': 'UNAUTHORIZED', 'message': ''},
+              },
+            );
+    }
+    if (o.uri.host.endsWith('.your-objectstorage.com')) {
+      return auth0.contains('Credential=$fakeAccessKey/')
+          ? (200, null)
+          : (403, null);
+    }
     final auth = '${o.headers['authorization']}';
     if (!validTokens.any((t) => auth == 'Bearer $t')) {
       return (401, errorJson('unauthorized'));
@@ -242,7 +292,7 @@ class FakeCloud {
       case ('GET', ['actions', final id]):
         final a = actions.firstWhere((a) => '${a['id']}' == id);
         final polls = _polls[a['id']! as int] = (_polls[a['id']] ?? 0) + 1;
-        if (polls >= 2 && a['status'] == 'running') _finish(a);
+        if (polls >= pollsToFinish && a['status'] == 'running') _finish(a);
         return (200, {'action': a});
     }
     return (404, errorJson('not_found'));
@@ -271,26 +321,56 @@ void seedSecrets(List<Account> accounts) {
   });
 }
 
+/// Fresh preferences holding [values].
+Future<SharedPreferences> testPrefs([
+  Map<String, Object> values = const {},
+]) async {
+  SharedPreferences.setMockInitialValues(values);
+  return await SharedPreferences.getInstance();
+}
+
+/// Overrides that route every API of the app to [cloud].
+List<Override> fakeApis(FakeCloud cloud) => [
+  cloudDioProvider.overrideWithValue(
+    (auth) => fakeDio(cloud.adapter, auth: auth),
+  ),
+  robotDioProvider.overrideWithValue(
+    (auth) => fakeDio(cloud.adapter, baseUrl: robotBaseUrl, auth: auth),
+  ),
+  s3DioProvider.overrideWithValue(
+    (c) => createS3Dio(
+      endpoint: c.endpoint,
+      region: c.region,
+      accessKey: c.accessKey,
+      secretKey: c.secretKey,
+      userAgent: 'Falco/test',
+    )..httpClientAdapter = cloud.adapter,
+  ),
+];
+
 /// Pumps the whole app against [cloud], unlocked, with [accounts] stored.
+/// Authentication succeeds, or answers from [answers] in order.
 Future<ProviderContainer> pumpFalco(
   WidgetTester tester,
   FakeCloud cloud, {
   List<Account> accounts = const [acme],
   FalcoVariant variant = FalcoVariant.dark,
+  Map<String, Object> prefs = const {},
+  List<bool?>? answers,
 }) async {
   seedSecrets(accounts);
   final container = ProviderContainer(
     overrides: [
-      authenticatorProvider.overrideWithValue((_) async => true),
-      cloudDioProvider.overrideWithValue(
-        (auth) => fakeDio(cloud.adapter, auth: auth),
+      preferencesProvider.overrideWithValue(
+        await testPrefs({'variant': variant.name, ...prefs}),
       ),
+      authenticatorProvider.overrideWithValue(
+        (_) async => answers == null ? true : answers.removeAt(0),
+      ),
+      ...fakeApis(cloud),
     ],
   );
   addTearDown(container.dispose);
-  container
-      .read(themeSettingsProvider.notifier)
-      .set(variant, AccentPreset.amber);
   await tester.pumpWidget(
     UncontrolledProviderScope(container: container, child: const FalcoApp()),
   );

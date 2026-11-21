@@ -66,12 +66,18 @@ class CreateWizard extends StatefulWidget {
   /// Step to open at (showcase and tests).
   final int initialStep;
 
+  /// Jumps the enclosing wizard to [step], e.g. from the summary.
+  static void goTo(BuildContext context, int step) =>
+      context.findAncestorStateOfType<_CreateWizardState>()?._go(step);
+
   @override
   State<CreateWizard> createState() => _CreateWizardState();
 }
 
 class _CreateWizardState extends State<CreateWizard> {
   late int _index = widget.initialStep;
+
+  void _go(int step) => setState(() => _index = step);
 
   @override
   Widget build(BuildContext context) {

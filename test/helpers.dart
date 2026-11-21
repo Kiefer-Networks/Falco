@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/l10n/app_localizations.dart';
+import 'package:falco/main.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,7 +12,7 @@ Widget testApp(Widget child, {FalcoVariant variant = FalcoVariant.dark}) =>
       debugShowCheckedModeBanner: false,
       theme: falcoTheme(variant: variant),
       locale: const Locale('en'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: falcoLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(body: child),
     );

@@ -28,8 +28,8 @@ class DetailSection {
 class DetailPage extends StatelessWidget {
   /// Creates a detail page.
   const new({
-    required this.status,
     required this.name,
+    this.status,
     this.statusDetail,
     this.ids = const [],
     this.actions = const [],
@@ -39,8 +39,8 @@ class DetailPage extends StatelessWidget {
     super.key,
   }) : assert(actions.length <= 4, 'A detail page has at most 4 actions');
 
-  /// Resource status.
-  final ResourceStatus status;
+  /// Resource status; null for things without one (an account).
+  final ResourceStatus? status;
 
   /// Detail after the status word (e.g. "up 41 days").
   final String? statusDetail;
@@ -88,8 +88,10 @@ class DetailPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              StatusBadge(status: status, detail: statusDetail),
-              const SizedBox(height: 6),
+              if (status case final status?) ...[
+                StatusBadge(status: status, detail: statusDetail),
+                const SizedBox(height: 6),
+              ],
               Semantics(
                 header: true,
                 child: Text(

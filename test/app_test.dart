@@ -6,6 +6,7 @@ import 'package:falco/app/router.dart';
 import 'package:falco/core/http/http.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/secure/app_lock.dart';
+import 'package:falco/core/settings/settings.dart';
 import 'package:falco/main.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,8 +15,9 @@ import 'package:material_ui/material_ui.dart';
 
 import 'fake_cloud.dart';
 
-Widget app(List<bool> answers) => ProviderScope(
+Future<Widget> app(List<bool> answers) async => ProviderScope(
   overrides: [
+    preferencesProvider.overrideWithValue(await testPrefs()),
     authenticatorProvider.overrideWithValue((_) async => answers.removeAt(0)),
   ],
   child: const FalcoApp(),
@@ -24,26 +26,25 @@ Widget app(List<bool> answers) => ProviderScope(
 void main() {
   setUp(() => seedSecrets(const []));
 
-  testWidgets('without account the app starts dark in the setup (ONB-006)', (
-    tester,
-  ) async {
-    await tester.pumpWidget(app([true]));
+  testWidgets('without account the app starts dark in the welcome pages '
+      '(ONB-006)', (tester) async {
+    await tester.pumpWidget(await app([true]));
     await tester.pumpAndSettle();
-    expect(find.text('Add account'), findsOneWidget);
+    expect(find.text('Choose your language'), findsOneWidget);
     expect(find.text('Design system'), findsNothing);
-    final context = tester.element(find.text('Add account'));
+    final context = tester.element(find.text('Choose your language'));
     expect(Theme.of(context).brightness, Brightness.dark);
     expect(FalcoColors.of(context).accent, AccentPreset.amber.dark);
   });
 
   testWidgets('stays locked until authentication succeeds', (tester) async {
-    await tester.pumpWidget(app([false, true]));
+    await tester.pumpWidget(await app([false, true]));
     await tester.pumpAndSettle();
     expect(find.text('Falco is locked.'), findsOneWidget);
-    expect(find.text('Add account'), findsNothing);
+    expect(find.text('Choose your language'), findsNothing);
     await tester.tap(find.text('Unlock'));
     await tester.pumpAndSettle();
-    expect(find.text('Add account'), findsOneWidget);
+    expect(find.text('Choose your language'), findsOneWidget);
   });
 
   testWidgets('scope routes carry the scope in the path (QRS-003)', (
@@ -53,18 +54,17 @@ void main() {
     expect(scopeRoute(const AllProjectsScope('a1')).location, '/a/a1/all');
     expect(scopeRoute(const RobotScope('a1')).location, '/a/a1/robot');
 
-    await tester.pumpWidget(app([true]));
-    await tester.pumpAndSettle();
-    scopeRoute(const RobotScope('a1'))
-        .go(tester.element(find.text('Add account')));
+    seedSecrets(const [Account(id: 'a1', name: 'Acme', hasRobot: true)]);
+    await tester.pumpWidget(await app([true]));
     await tester.pumpAndSettle();
     expect(find.text('Nothing to show in this scope yet.'), findsOneWidget);
+    expect(find.text('Robot'), findsWidgets);
   });
 
   testWidgets('showcase stays reachable in debug builds', (tester) async {
-    await tester.pumpWidget(app([true]));
+    await tester.pumpWidget(await app([true]));
     await tester.pumpAndSettle();
-    const ShowcaseRoute().go(tester.element(find.text('Add account')));
+    const ShowcaseRoute().go(tester.element(find.text('Choose your language')));
     await tester.pumpAndSettle();
     expect(find.text('Design system'), findsOneWidget);
   });

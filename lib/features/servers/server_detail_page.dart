@@ -32,7 +32,6 @@ class ServerDetailPage extends ConsumerStatefulWidget {
 
 class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
   final _periods = <ServerMetric, MetricPeriod>{};
-  ({int id, ServerPower power})? _action;
 
   ProjectScope get _scope => widget.scope;
 
@@ -86,7 +85,7 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
         s.id,
         power,
       );
-      if (mounted) setState(() => _action = (id: id, power: power));
+      ref.read(actionTrackerProvider(_scope)).track(id);
     } on FalcoError catch (e) {
       if (mounted) FalcoScaffold.showSnack(context, errorText(e, l10n));
     }
@@ -116,17 +115,13 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
       );
     }
 
-    final action = _action;
-    ActionProgress? progress;
-    if (action != null) {
-      final tracked = trackedActionProvider(_scope, action.id);
-      progress = ref.watch(tracked).value;
-      ref.listen(tracked, (_, next) {
-        if (next.value?.status == ActionStatus.error) {
-          FalcoScaffold.showSnack(context, l10n.actionFailed);
-        }
-      });
-    }
+    final tracked = serverActionProvider(_scope, widget.serverId);
+    final progress = ref.watch(tracked).value;
+    ref.listen(tracked, (_, next) {
+      if (next.value?.status == ActionStatus.error) {
+        FalcoScaffold.showSnack(context, l10n.actionFailed);
+      }
+    });
     final busy = progress != null && !progress.done;
     final running = s.status == ResourceStatus.running && !busy;
     final off = s.status == ResourceStatus.off && !busy;
@@ -153,12 +148,15 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
           Expanded(
             child: DetailPage(
               status: busy
-                  ? switch (action!.power) {
-                      ServerPower.reboot ||
-                      ServerPower.reset => ResourceStatus.rebooting,
-                      ServerPower.powerOn => ResourceStatus.starting,
-                      ServerPower.shutdown ||
-                      ServerPower.powerOff => ResourceStatus.stopping,
+                  ? switch (progress.command) {
+                      'reboot_server' ||
+                      'reset_server' => ResourceStatus.rebooting,
+                      'start_server' ||
+                      'poweron_server' => ResourceStatus.starting,
+                      'shutdown_server' ||
+                      'stop_server' ||
+                      'poweroff_server' => ResourceStatus.stopping,
+                      _ => ResourceStatus.inProgress,
                     }
                   : s.status,
               statusDetail: busy ? '${progress.progress} %' : null,

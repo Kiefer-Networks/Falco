@@ -1,0 +1,294 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/core/errors/falco_error.dart';
+import 'package:falco/l10n/app_localizations.dart';
+import 'package:falco/ui/error_text.dart';
+import 'package:falco/ui/feedback.dart';
+import 'package:falco/ui/sheets.dart';
+import 'package:falco/ui/theme/falco_colors.dart';
+import 'package:falco/ui/theme/tokens.dart';
+import 'package:material_ui/material_ui.dart';
+
+/// One form field: text (optionally secret) or a choice of [options].
+@immutable
+class FieldSpec {
+  /// Creates a field; the widget key is `ValueKey(key)`.
+  const new(
+    this.key,
+    this.label, {
+    this.initial = '',
+    this.secret = false,
+    this.maxLength,
+    this.helper,
+    this.options = const {},
+  });
+
+  /// Value key in the form map and widget key.
+  final String key;
+
+  /// Localized label.
+  final String label;
+
+  /// Initial value; secrets are never prefilled.
+  final String initial;
+
+  /// Obscured, no suggestions.
+  final bool secret;
+
+  /// Maximum length.
+  final int? maxLength;
+
+  /// Helper text below the field.
+  final String? helper;
+
+  /// Value to label; a non empty map makes the field a choice.
+  final Map<String, String> options;
+}
+
+/// Renders [fields] and reports all values on every change. Fields may
+/// come and go between builds; values of a key are kept.
+class FormFields extends StatefulWidget {
+  /// Creates the fields.
+  const new({
+    required this.fields,
+    required this.onChanged,
+    this.values = const {},
+    super.key,
+  });
+
+  /// Fields in display order.
+  final List<FieldSpec> fields;
+
+  /// Values entered before (e.g. when a wizard step is shown again); win
+  /// over [FieldSpec.initial].
+  final Map<String, String> values;
+
+  /// Called with all current values (by key).
+  final ValueChanged<Map<String, String>> onChanged;
+
+  /// Initial values of [fields].
+  static Map<String, String> initialValues(List<FieldSpec> fields) => {
+    for (final f in fields) f.key: f.initial,
+  };
+
+  @override
+  State<FormFields> createState() => _FormFieldsState();
+}
+
+class _FormFieldsState extends State<FormFields> {
+  final _text = <String, TextEditingController>{};
+  late final Map<String, String> _values = {
+    ...FormFields.initialValues(widget.fields),
+    ...widget.values,
+  };
+
+  @override
+  void dispose() {
+    for (final c in _text.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _set(String key, String value) {
+    setState(() => _values[key] = value);
+    widget.onChanged(Map.of(_values));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: FalcoSpacing.l,
+      children: [
+        for (final f in widget.fields)
+          if (f.options.isNotEmpty)
+            InputDecorator(
+              decoration: InputDecoration(
+                labelText: f.label,
+                helperText: f.helper,
+                helperMaxLines: 3,
+              ),
+              child: Wrap(
+                key: ValueKey(f.key),
+                spacing: FalcoSpacing.s,
+                runSpacing: FalcoSpacing.s,
+                children: [
+                  for (final MapEntry(key: value, value: label)
+                      in f.options.entries)
+                    ChoiceChip(
+                      label: Text(label),
+                      selected: (_values[f.key] ?? f.initial) == value,
+                      onSelected: (_) => _set(f.key, value),
+                    ),
+                ],
+              ),
+            )
+          else
+            TextField(
+              key: ValueKey(f.key),
+              controller: _text[f.key] ??= TextEditingController(
+                text: _values[f.key] ??= f.initial,
+              ),
+              obscureText: f.secret,
+              autocorrect: !f.secret,
+              enableSuggestions: !f.secret,
+              maxLength: f.maxLength,
+              onChanged: (v) => _set(f.key, v),
+              decoration: InputDecoration(
+                labelText: f.label,
+                helperText: f.helper,
+                helperMaxLines: 3,
+              ),
+            ),
+      ],
+    );
+  }
+}
+
+/// Edit pattern with a form whose save may fail: runs [onSave] with the
+/// values, shows its [FalcoError] in the sheet, and pops `true` when it
+/// succeeded. Nothing is stored by the sheet itself.
+class FormSheet extends StatefulWidget {
+  /// Creates the sheet.
+  const new({
+    required this.title,
+    required this.fields,
+    required this.valid,
+    required this.onSave,
+    super.key,
+  });
+
+  /// Opens the sheet; resolves to true after a successful save.
+  static Future<bool> show(
+    BuildContext context, {
+    required String title,
+    required List<FieldSpec> Function(Map<String, String> values) fields,
+    required bool Function(Map<String, String> values) valid,
+    required Future<void> Function(Map<String, String> values) onSave,
+  }) async =>
+      await showFalcoSheet<bool>(
+        context,
+        FormSheet(title: title, fields: fields, valid: valid, onSave: onSave),
+      ) ??
+      false;
+
+  /// Localized title.
+  final String title;
+
+  /// Fields for the current values (fields may depend on a choice).
+  final List<FieldSpec> Function(Map<String, String> values) fields;
+
+  /// Enables "Save".
+  final bool Function(Map<String, String> values) valid;
+
+  /// Checks and stores; throws a [FalcoError] to stay open.
+  final Future<void> Function(Map<String, String> values) onSave;
+
+  @override
+  State<FormSheet> createState() => _FormSheetState();
+}
+
+class _FormSheetState extends State<FormSheet> {
+  late Map<String, String> _values = FormFields.initialValues(
+    widget.fields(const {}),
+  );
+  bool _saving = false;
+  String? _error;
+
+  Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await widget.onSave(_values);
+      if (mounted) Navigator.pop(context, true);
+    } on FalcoError catch (e) {
+      if (mounted) setState(() => _error = errorText(e, l10n));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => EditSheet(
+    title: widget.title,
+    saving: _saving,
+    onSave: widget.valid(_values) ? _save : null,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: FalcoSpacing.m,
+      children: [
+        if (_error case final error?) ErrorBanner(message: error),
+        FormFields(
+          fields: widget.fields(_values),
+          onChanged: (v) => setState(() => _values = v),
+        ),
+      ],
+    ),
+  );
+}
+
+/// A single choice as a list: label per value, a check at the selected one.
+class ChoiceList extends StatelessWidget {
+  /// Creates the list.
+  const new({
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+    super.key,
+  });
+
+  /// Shows [options] in a sheet; resolves to the picked value.
+  static Future<String?> show(
+    BuildContext context, {
+    required String title,
+    required Map<String, String> options,
+    required String selected,
+  }) => showFalcoSheet<String>(
+    context,
+    Builder(
+      builder: (context) => SheetFrame(
+        title: title,
+        children: [
+          ChoiceList(
+            options: options,
+            selected: selected,
+            onSelected: (v) => Navigator.pop(context, v),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  /// Value to label.
+  final Map<String, String> options;
+
+  /// Selected value.
+  final String selected;
+
+  /// Called with the tapped value.
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FalcoColors.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final MapEntry(key: value, value: label) in options.entries)
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+            selected: value == selected,
+            selectedColor: c.accent,
+            title: Text(label),
+            trailing: value == selected
+                ? Icon(Icons.check, color: c.accent)
+                : null,
+            onTap: () => onSelected(value),
+          ),
+      ],
+    );
+  }
+}

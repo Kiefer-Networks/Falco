@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/core/scope/scope.dart';
+import 'package:falco/features/activity/activity_page.dart';
+import 'package:falco/l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -135,6 +137,25 @@ void main() {
       expect(find.textContaining('rebooting'), findsNothing);
     });
 
+    testWidgets('progress survives leaving and reopening the detail', (
+      tester,
+    ) async {
+      final cloud = await openDetail(tester);
+      cloud.pollsToFinish = 6;
+      await tester.tap(find.text('Reboot'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Reboot'));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('web-1'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('rebooting'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 30));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('rebooting'), findsNothing);
+    });
+
     testWidgets('cancel sends nothing', (tester) async {
       final cloud = await openDetail(tester);
       await tester.tap(find.text('Shutdown'));
@@ -207,13 +228,27 @@ void main() {
       await tester.tap(find.byTooltip('Activity'));
       await tester.pumpAndSettle();
       expect(find.text('Reboot server'), findsOneWidget);
-      expect(find.text('Start server'), findsOneWidget);
+      expect(find.text('Power on server'), findsOneWidget);
+      expect(
+        actionCommandText(
+          'reboot_server',
+          lookupAppLocalizations(const Locale('de')),
+        ),
+        'Server neu starten',
+      );
+      expect(
+        actionCommandText(
+          'brand_new_thing',
+          lookupAppLocalizations(const Locale('en')),
+        ),
+        'Brand new thing',
+      );
       expect(find.text('server #1 · 5 minutes ago'), findsOneWidget);
       expect(cloud.calls, contains('GET /servers/actions'));
       await tester.tap(find.text('Failed'));
       await tester.pumpAndSettle();
       expect(find.text('Reboot server'), findsNothing);
-      expect(find.text('Start server'), findsOneWidget);
+      expect(find.text('Power on server'), findsOneWidget);
     });
 
     testWidgets('server activity shows only that server', (tester) async {
@@ -223,11 +258,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(find.text('Show all activity'), 200);
       await tester.pumpAndSettle();
-      expect(find.text('Start server'), findsNothing);
+      expect(find.text('Power on server'), findsNothing);
       await tester.tap(find.text('Show all activity'));
       await tester.pumpAndSettle();
       expect(find.text('Reboot server'), findsOneWidget);
-      expect(find.text('Start server'), findsNothing);
+      expect(find.text('Power on server'), findsNothing);
       expect(cloud.calls, contains('GET /servers/1/actions'));
     });
 

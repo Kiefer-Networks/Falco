@@ -967,6 +967,642 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'hidden'**
   String get tokenHidden;
+
+  /// No description provided for @actionCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'{command, select, start_server{Power on server} stop_server{Power off server} poweron_server{Power on server} poweroff_server{Power off server} shutdown_server{Shut down server} reboot_server{Reboot server} reset_server{Reset server} create_server{Create server} delete_server{Delete server} rebuild_server{Rebuild server} change_server_type{Change server type} enable_rescue{Enable rescue mode} disable_rescue{Disable rescue mode} attach_iso{Attach ISO} detach_iso{Detach ISO} create_image{Create image} enable_backup{Enable backups} disable_backup{Disable backups} change_protection{Change protection} change_dns_ptr{Change reverse DNS} reset_password{Reset root password} request_console{Open console} attach_volume{Attach volume} detach_volume{Detach volume} resize_volume{Resize volume} create_volume{Create volume} attach_to_network{Attach to network} detach_from_network{Detach from network} add_to_placement_group{Add to placement group} remove_from_placement_group{Remove from placement group} assign_floating_ip{Assign Floating IP} unassign_floating_ip{Unassign Floating IP} assign_primary_ip{Assign Primary IP} unassign_primary_ip{Unassign Primary IP} apply_firewall{Apply firewall} remove_firewall{Remove firewall} set_firewall_rules{Set firewall rules} other{}}'**
+  String actionCommand(String command);
+
+  /// No description provided for @accountManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage account'**
+  String get accountManage;
+
+  /// No description provided for @lockUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This device has no screen lock. Set up a PIN, Face ID or a fingerprint to protect Falco.'**
+  String get lockUnavailable;
+
+  /// No description provided for @lockContinueWithout.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue without app lock'**
+  String get lockContinueWithout;
+
+  /// No description provided for @fieldS3Location.
+  ///
+  /// In en, this message translates to:
+  /// **'Object Storage location'**
+  String get fieldS3Location;
+
+  /// No description provided for @s3Hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. S3 keys from the Cloud Console under Object Storage, Security credentials. Checked against the chosen location.'**
+  String get s3Hint;
+
+  /// No description provided for @s3None.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get s3None;
+
+  /// No description provided for @fieldAccessKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Access key'**
+  String get fieldAccessKey;
+
+  /// No description provided for @fieldSecretKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Secret key'**
+  String get fieldSecretKey;
+
+  /// No description provided for @fieldRobotUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Webservice user'**
+  String get fieldRobotUser;
+
+  /// No description provided for @fieldRobotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Webservice password'**
+  String get fieldRobotPassword;
+
+  /// No description provided for @robotHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a webservice user in Robot under Settings, Webservice and app settings.'**
+  String get robotHint;
+
+  /// No description provided for @s3Step.
+  ///
+  /// In en, this message translates to:
+  /// **'Object Storage'**
+  String get s3Step;
+
+  /// No description provided for @cloudOpenConsole.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Cloud Console'**
+  String get cloudOpenConsole;
+
+  /// No description provided for @robotOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Robot settings'**
+  String get robotOpenSettings;
+
+  /// No description provided for @accountDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All set. {name} is ready to use.'**
+  String accountDone(String name);
+
+  /// No description provided for @accountOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get accountOpen;
+
+  /// No description provided for @fieldDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get fieldDescription;
+
+  /// No description provided for @servicesStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get servicesStep;
+
+  /// No description provided for @serviceCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud'**
+  String get serviceCloud;
+
+  /// No description provided for @serviceCloudHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud projects with servers, networks, DNS and storage'**
+  String get serviceCloudHint;
+
+  /// No description provided for @serviceRobotHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedicated servers through the Robot webservice'**
+  String get serviceRobotHint;
+
+  /// No description provided for @servicesPickOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick at least one service.'**
+  String get servicesPickOne;
+
+  /// No description provided for @projectsStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud projects'**
+  String get projectsStep;
+
+  /// No description provided for @projectRemoveDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}'**
+  String projectRemoveDraft(String name);
+
+  /// No description provided for @robotStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Robot access'**
+  String get robotStep;
+
+  /// No description provided for @commonEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get commonEdit;
+
+  /// No description provided for @accountsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get accountsTitle;
+
+  /// No description provided for @accountsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No accounts yet.'**
+  String get accountsEmpty;
+
+  /// No description provided for @accountsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 account} other{{count} accounts}}'**
+  String accountsCount(int count);
+
+  /// No description provided for @accountCloudBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Cloud, 1 project} other{Cloud, {count} projects}}'**
+  String accountCloudBadge(int count);
+
+  /// No description provided for @accountActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get accountActive;
+
+  /// No description provided for @accountDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get accountDefault;
+
+  /// No description provided for @accountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountTitle;
+
+  /// No description provided for @accountEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit account'**
+  String get accountEdit;
+
+  /// No description provided for @accountDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get accountDelete;
+
+  /// No description provided for @accountDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String accountDeleteTitle(String name);
+
+  /// No description provided for @accountDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The account is removed from this device with all its tokens, keys and Robot credentials. Nothing changes at Hetzner.'**
+  String get accountDeleteConsequence;
+
+  /// No description provided for @robotAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Webservice access'**
+  String get robotAccess;
+
+  /// No description provided for @robotStored.
+  ///
+  /// In en, this message translates to:
+  /// **'Stored and checked'**
+  String get robotStored;
+
+  /// No description provided for @robotAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Robot access'**
+  String get robotAdd;
+
+  /// No description provided for @robotChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Robot access'**
+  String get robotChange;
+
+  /// No description provided for @robotDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Robot access'**
+  String get robotDelete;
+
+  /// No description provided for @robotDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the Robot access of {name}?'**
+  String robotDeleteTitle(String name);
+
+  /// No description provided for @robotDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'User and password are deleted from this device. The webservice user at Hetzner stays.'**
+  String get robotDeleteConsequence;
+
+  /// No description provided for @projectsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No Cloud projects yet.'**
+  String get projectsEmpty;
+
+  /// No description provided for @projectDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete project'**
+  String get projectDelete;
+
+  /// No description provided for @projectDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String projectDeleteTitle(String name);
+
+  /// No description provided for @projectDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The project is removed from this device with its token and S3 keys. The project and its servers at Hetzner stay.'**
+  String get projectDeleteConsequence;
+
+  /// No description provided for @tokenChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change token'**
+  String get tokenChange;
+
+  /// No description provided for @s3Change.
+  ///
+  /// In en, this message translates to:
+  /// **'Object Storage keys'**
+  String get s3Change;
+
+  /// No description provided for @s3Delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Object Storage keys'**
+  String get s3Delete;
+
+  /// No description provided for @s3DeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the Object Storage keys of {name}?'**
+  String s3DeleteTitle(String name);
+
+  /// No description provided for @s3DeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Access and secret key are deleted from this device. Buckets and keys at Hetzner stay.'**
+  String get s3DeleteConsequence;
+
+  /// No description provided for @s3NoKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'No Object Storage keys'**
+  String get s3NoKeys;
+
+  /// No description provided for @s3Keys.
+  ///
+  /// In en, this message translates to:
+  /// **'Object Storage keys, checked at {location}'**
+  String s3Keys(String location);
+
+  /// No description provided for @savedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get savedMessage;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get settingsGeneral;
+
+  /// No description provided for @settingsTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsTheme;
+
+  /// No description provided for @settingsLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsLanguage;
+
+  /// No description provided for @settingsSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get settingsSystem;
+
+  /// No description provided for @settingsSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get settingsSecurity;
+
+  /// No description provided for @settingsLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock at start'**
+  String get settingsLock;
+
+  /// No description provided for @settingsLockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Face ID, fingerprint or device PIN at start and after the auto lock time'**
+  String get settingsLockHint;
+
+  /// No description provided for @settingsAutoLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto lock'**
+  String get settingsAutoLock;
+
+  /// No description provided for @lockImmediately.
+  ///
+  /// In en, this message translates to:
+  /// **'Immediately'**
+  String get lockImmediately;
+
+  /// No description provided for @lockSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'After {count} s'**
+  String lockSeconds(int count);
+
+  /// No description provided for @lockMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{After 1 minute} other{After {count} minutes}}'**
+  String lockMinutes(int count);
+
+  /// No description provided for @settingsSecureScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Block screenshots'**
+  String get settingsSecureScreen;
+
+  /// No description provided for @settingsSecureScreenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hides Falco in the app switcher and blocks screenshots'**
+  String get settingsSecureScreenHint;
+
+  /// No description provided for @settingsPinning.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate pinning'**
+  String get settingsPinning;
+
+  /// No description provided for @settingsPinningHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Active for all Hetzner endpoints: Cloud, Storage Boxes, Robot and Object Storage.'**
+  String get settingsPinningHint;
+
+  /// No description provided for @accentAmber.
+  ///
+  /// In en, this message translates to:
+  /// **'Amber'**
+  String get accentAmber;
+
+  /// No description provided for @accentBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get accentBlue;
+
+  /// No description provided for @accentGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get accentGreen;
+
+  /// No description provided for @accentRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get accentRed;
+
+  /// No description provided for @accentPurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get accentPurple;
+
+  /// No description provided for @accentOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get accentOrange;
+
+  /// No description provided for @aboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About Falco'**
+  String get aboutTitle;
+
+  /// No description provided for @aboutVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String aboutVersion(String version);
+
+  /// No description provided for @aboutDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Hetzner Cloud, Robot, DNS and Storage from your phone. Free software without tracking.'**
+  String get aboutDescription;
+
+  /// No description provided for @aboutWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get aboutWebsite;
+
+  /// No description provided for @aboutDonate.
+  ///
+  /// In en, this message translates to:
+  /// **'Donate'**
+  String get aboutDonate;
+
+  /// No description provided for @aboutSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source code'**
+  String get aboutSource;
+
+  /// No description provided for @aboutDeveloper.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer'**
+  String get aboutDeveloper;
+
+  /// No description provided for @aboutLicense.
+  ///
+  /// In en, this message translates to:
+  /// **'License'**
+  String get aboutLicense;
+
+  /// No description provided for @aboutLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Open source licenses'**
+  String get aboutLicenses;
+
+  /// No description provided for @welcomeSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get welcomeSkip;
+
+  /// No description provided for @welcomeLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your language'**
+  String get welcomeLanguage;
+
+  /// No description provided for @welcomeFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'What Falco does'**
+  String get welcomeFeatures;
+
+  /// No description provided for @welcomeCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Servers, volumes, networks, firewalls, load balancers and more, across all your projects.'**
+  String get welcomeCloud;
+
+  /// No description provided for @welcomeRobot.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedicated servers: reset, rescue, Wake on LAN, reverse DNS and failover.'**
+  String get welcomeRobot;
+
+  /// No description provided for @welcomeDns.
+  ///
+  /// In en, this message translates to:
+  /// **'Zones and records of your Cloud projects.'**
+  String get welcomeDns;
+
+  /// No description provided for @welcomeObjectStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Object Storage'**
+  String get welcomeObjectStorage;
+
+  /// No description provided for @welcomeObjectStorageText.
+  ///
+  /// In en, this message translates to:
+  /// **'Buckets and files in all locations, with uploads in the background.'**
+  String get welcomeObjectStorageText;
+
+  /// No description provided for @welcomeSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Your access stays safe'**
+  String get welcomeSecurity;
+
+  /// No description provided for @welcomeSecretsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted on the device'**
+  String get welcomeSecretsTitle;
+
+  /// No description provided for @welcomeSecretsIos.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens and passwords live only in the iOS Keychain of this device.'**
+  String get welcomeSecretsIos;
+
+  /// No description provided for @welcomeSecretsAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens and passwords live only in the hardware backed Android Keystore.'**
+  String get welcomeSecretsAndroid;
+
+  /// No description provided for @welcomeLockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock at start'**
+  String get welcomeLockTitle;
+
+  /// No description provided for @welcomeLockIos.
+  ///
+  /// In en, this message translates to:
+  /// **'Falco asks for Face ID, Touch ID or your passcode at start.'**
+  String get welcomeLockIos;
+
+  /// No description provided for @welcomeLockAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Falco asks for your fingerprint or device PIN at start.'**
+  String get welcomeLockAndroid;
+
+  /// No description provided for @welcomePinning.
+  ///
+  /// In en, this message translates to:
+  /// **'TLS 1.2 or newer with certificate pinning for every Hetzner endpoint. No tracking.'**
+  String get welcomePinning;
+
+  /// No description provided for @welcomeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to start'**
+  String get welcomeStart;
+
+  /// No description provided for @welcomeStartText.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an account with a Cloud API token, Robot access, or both. Every access is checked before it is stored.'**
+  String get welcomeStartText;
 }
 
 class _AppLocalizationsDelegate

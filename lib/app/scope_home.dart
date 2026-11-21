@@ -53,19 +53,49 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
       },
     );
     if (choice == null || !mounted) return;
-    scopeRoute(switch (choice.kind) {
-      ScopeKind.project => ProjectScope(choice.accountId, choice.projectId!),
-      ScopeKind.allProjects => AllProjectsScope(choice.accountId),
-      ScopeKind.robot => RobotScope(choice.accountId),
-    }).go(context);
+    switch (choice.kind) {
+      case ScopeKind.addProject:
+        AddProjectRoute(accountId: choice.accountId)
+            .push<void>(context)
+            .ignore();
+      case ScopeKind.manage:
+        AccountRoute(accountId: choice.accountId).push<void>(context).ignore();
+      case ScopeKind.project:
+        ProjectRoute(
+          accountId: choice.accountId,
+          projectId: choice.projectId!,
+        ).go(context);
+      case ScopeKind.allProjects:
+        AllProjectsRoute(accountId: choice.accountId).go(context);
+      case ScopeKind.robot:
+        RobotRoute(accountId: choice.accountId).go(context);
+    }
   }
+
+  bool _exists(Account? account) => switch ((widget.scope, account)) {
+    (_, null) => false,
+    (ProjectScope(:final projectId), final Account a) => a.projects.any(
+      (p) => p.id == projectId,
+    ),
+    (AllProjectsScope(), final Account a) => a.projects.isNotEmpty,
+    (RobotScope(), final Account a) => a.hasRobot,
+  };
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scope = widget.scope;
-    final accounts = ref.watch(accountsProvider).value ?? const [];
+    final async = ref.watch(accountsProvider);
+    final accounts = async.value ?? const <Account>[];
     final account = accounts.where((a) => a.id == scope.accountId).firstOrNull;
+    // A deleted account or project (or a stale deep link) goes back to
+    // the start, which picks a scope that exists.
+    // Not while reloading: a just added project is not in the old list.
+    if (async.hasValue && !async.isLoading && !_exists(account)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) const HomeRoute().go(context);
+      });
+    }
     return FalcoScaffold(
       scopeSwitcher: ScopeSwitcherButton(
         caption: account?.name,
@@ -77,6 +107,12 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
         onTap: () => _switchScope(accounts),
       ),
       actions: [
+        IconButton(
+          tooltip: l10n.settingsTitle,
+          icon: const Icon(Icons.account_circle_outlined),
+          onPressed: () =>
+              SettingsRoute(active: scope.accountId).push<void>(context),
+        ),
         if (scope case ProjectScope(:final accountId, :final projectId))
           IconButton(
             tooltip: l10n.activityTitle,
@@ -87,27 +123,17 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
             ).push<void>(context),
           ),
       ],
-      moreMenu: MoreMenu(
-        items: [
-          MoreMenuItem(
-            label: l10n.projectAdd,
-            icon: Icons.add,
-            onSelected: () =>
-                AddProjectRoute(accountId: scope.accountId).push<void>(context),
-          ),
-          MoreMenuItem(
-            label: l10n.accountAdd,
-            icon: Icons.person_add_alt,
-            onSelected: () => const SetupRoute().push<void>(context),
-          ),
-          if (kDebugMode)
-            MoreMenuItem(
-              label: l10n.showcaseTitle,
-              icon: Icons.palette_outlined,
-              onSelected: () => const ShowcaseRoute().push<void>(context),
-            ),
-        ],
-      ),
+      moreMenu: kDebugMode
+          ? MoreMenu(
+              items: [
+                MoreMenuItem(
+                  label: l10n.showcaseTitle,
+                  icon: Icons.palette_outlined,
+                  onSelected: () => const ShowcaseRoute().push<void>(context),
+                ),
+              ],
+            )
+          : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _area,
         onDestinationSelected: (i) => setState(() => _area = i),

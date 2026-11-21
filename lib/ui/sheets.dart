@@ -5,7 +5,7 @@ import 'package:falco/ui/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Shows [sheet] as a modal bottom sheet that follows the keyboard.
-Future<R?> _showSheet<R>(BuildContext context, Widget sheet) =>
+Future<R?> showFalcoSheet<R>(BuildContext context, Widget sheet) =>
     showModalBottomSheet<R>(
       context: context,
       isScrollControlled: true,
@@ -14,11 +14,15 @@ Future<R?> _showSheet<R>(BuildContext context, Widget sheet) =>
     );
 
 /// Common frame: handle, title, content, buttons; padded above the
-/// keyboard.
-class _SheetFrame extends StatelessWidget {
-  const new({required this.title, required this.children});
+/// keyboard. The frame of every Falco sheet.
+class SheetFrame extends StatelessWidget {
+  /// Creates the frame.
+  const new({required this.title, required this.children, super.key});
 
+  /// Sheet title.
   final String title;
+
+  /// Content below the title.
   final List<Widget> children;
 
   @override
@@ -83,7 +87,7 @@ class EditSheet extends StatelessWidget {
     required String title,
     required Widget child,
     required VoidCallback? onSave,
-  }) => _showSheet<void>(
+  }) => showFalcoSheet<void>(
     context,
     EditSheet(title: title, onSave: onSave, child: child),
   );
@@ -103,7 +107,7 @@ class EditSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return _SheetFrame(
+    return SheetFrame(
       title: title,
       children: [
         child,
@@ -176,7 +180,7 @@ class ConfirmSheet extends StatefulWidget {
     List<ConfirmFact> facts = const [],
     bool destructive = false,
   }) async =>
-      await _showSheet<bool>(
+      await showFalcoSheet<bool>(
         context,
         ConfirmSheet(
           title: title,
@@ -230,7 +234,7 @@ class _ConfirmSheetState extends State<ConfirmSheet> {
     final needsName = widget.level == ConfirmLevel.typeName;
     final enabled =
         !needsName || ConfirmSheet.matches(_input, widget.resourceName);
-    return _SheetFrame(
+    return SheetFrame(
       title: widget.title,
       children: [
         Text(widget.consequence, style: theme.textTheme.bodyLarge),
@@ -357,6 +361,12 @@ enum ScopeKind {
 
   /// The Robot login of the account.
   robot,
+
+  /// Add a Cloud project to the account (not a scope).
+  addProject,
+
+  /// Manage the account and its accesses (not a scope).
+  manage,
 }
 
 /// A selected scope; [projectId] is set for [ScopeKind.project] only.
@@ -396,7 +406,7 @@ class ScopeSwitcherSheet extends StatelessWidget {
     BuildContext context, {
     required List<ScopeAccountItem> accounts,
     required ScopeChoice selected,
-  }) => _showSheet<ScopeChoice>(
+  }) => showFalcoSheet<ScopeChoice>(
     context,
     ScopeSwitcherSheet(accounts: accounts, selected: selected),
   );
@@ -431,7 +441,7 @@ class ScopeSwitcherSheet extends StatelessWidget {
       );
     }
 
-    return _SheetFrame(
+    return SheetFrame(
       title: l10n.scopeSwitch,
       children: [
         for (final a in accounts)
@@ -465,6 +475,16 @@ class ScopeSwitcherSheet extends StatelessWidget {
                   ScopeChoice(a.id, ScopeKind.robot),
                   Icons.dns_outlined,
                 ),
+              entry(
+                l10n.projectAdd,
+                ScopeChoice(a.id, ScopeKind.addProject),
+                Icons.add,
+              ),
+              entry(
+                l10n.accountManage,
+                ScopeChoice(a.id, ScopeKind.manage),
+                Icons.tune,
+              ),
             ],
           ),
       ],
