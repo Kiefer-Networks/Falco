@@ -178,6 +178,28 @@ void main() {
     await settleAction(tester);
   });
 
+  testWidgets('DNS-007 a new TTL for an existing RRSet waits for the added '
+      'value', (tester) async {
+    final cloud = await openZone(tester);
+    await tile(tester, 'Add record');
+    await enter(tester, 'ttl', '7200');
+    await enter(tester, 'values', '203.0.113.2');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(
+      cloud.calls,
+      contains('POST /zones/5/rrsets/@/A/actions/add_records'),
+    );
+    expect(cloud.calls.where((c) => c.contains('change_ttl')), isEmpty);
+    await settleAction(tester);
+    expect(cloud.body('POST /zones/5/rrsets/@/A/actions/change_ttl'), {
+      'ttl': 7200,
+    });
+    await settleAction(tester);
+  });
+
   testWidgets('DNS-012 DNS-013 DNS-014 select, bulk edit, result', (
     tester,
   ) async {
@@ -204,8 +226,8 @@ void main() {
     expect(cloud.body('POST /zones/5/rrsets/@/A/actions/change_ttl'), {
       'ttl': 900,
     });
-    expect(find.text('Records updated'), findsOneWidget);
     await settleAction(tester);
+    expect(find.text('Records updated'), findsOneWidget);
   });
 
   testWidgets('DNS-014 bulk edit counts failures', (tester) async {
@@ -249,8 +271,12 @@ void main() {
     expect(find.text('@ A\nwww CNAME\n@ TXT\nsub NS'), findsOneWidget);
     expect(cloud.calls.where((c) => c.contains('change_ttl')), isEmpty);
     await confirm(tester, 'Save');
+    // A zone runs one action at a time: each waits for the one before.
+    expect(cloud.calls.where((c) => c.contains('change_ttl')), hasLength(1));
+    for (var i = 0; i < 4; i++) {
+      await settleAction(tester);
+    }
     expect(cloud.calls.where((c) => c.contains('change_ttl')), hasLength(4));
-    await settleAction(tester);
   });
 
   testWidgets(

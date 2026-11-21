@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/api/cloud/cloud.dart';
 import 'package:falco/app/router.dart';
+import 'package:falco/core/actions/action_tracker.dart';
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/files/text_files.dart';
 import 'package:falco/core/format/format.dart';
@@ -166,6 +167,7 @@ Future<bool> showRecordSheet(
           : changeRrset(api, zone.id, known, AddRecords(set.records)));
       tracker.track(id);
       if (known != null && set.ttl != null && set.ttl != known.ttl) {
+        if (!await _ended(tracker, id)) return;
         tracker.track(
           await changeRrset(api, zone.id, known, ChangeRRSetTtl(set.ttl)),
         );
@@ -173,6 +175,11 @@ Future<bool> showRecordSheet(
     },
   );
 }
+
+/// Follows zone action [id] to its end; false when it failed. A zone
+/// runs one action at a time, so the next one starts after this.
+Future<bool> _ended(ActionTracker tracker, int id) async =>
+    (await tracker.track(id).last).status == ActionStatus.success;
 
 /// One zone: records with multi selection and bulk edit, primary
 /// nameservers, import and export, edit, protection, delete (DNS-003 to
@@ -392,23 +399,19 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
     final api = ref.read(cloudApiProvider(_scope.projectId));
     final tracker = ref.read(actionTrackerProvider(_scope));
     final container = ProviderScope.containerOf(context, listen: false);
+    Future<bool> run(Future<int> start) async =>
+        await _ended(tracker, await start);
     var failed = 0;
     for (final set in sets) {
       try {
-        if (value.isNotEmpty) {
-          tracker.track(
-            await changeRrset(
-              api,
-              z.id,
-              set,
-              SetRecords([
-                (value: normalizeRecord(set.type, value), comment: ''),
-              ]),
-            ),
-          );
-        }
-        if (ttl != null) {
-          tracker.track(await changeRrset(api, z.id, set, ChangeRRSetTtl(ttl)));
+        final records = [
+          (value: normalizeRecord(set.type, value), comment: ''),
+        ];
+        if ((value.isNotEmpty &&
+                !await run(changeRrset(api, z.id, set, SetRecords(records)))) ||
+            (ttl != null &&
+                !await run(changeRrset(api, z.id, set, ChangeRRSetTtl(ttl))))) {
+          failed++;
         }
       } on FalcoError {
         failed++;
