@@ -8,14 +8,16 @@ part of 'activity.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Actions of a project, newest first: servers, volumes and images. With
-/// [serverId] those of one server. All pages, like every list (BUG-022).
+/// Actions of a project, newest first: every resource type with an
+/// action list. With [serverId] those of one server. All pages, like
+/// every list (BUG-022).
 
 @ProviderFor(activity)
 final activityProvider = ActivityFamily._();
 
-/// Actions of a project, newest first: servers, volumes and images. With
-/// [serverId] those of one server. All pages, like every list (BUG-022).
+/// Actions of a project, newest first: every resource type with an
+/// action list. With [serverId] those of one server. All pages, like
+/// every list (BUG-022).
 
 final class ActivityProvider
     extends
@@ -27,8 +29,9 @@ final class ActivityProvider
     with
         $FutureModifier<List<ActionProgress>>,
         $FutureProvider<List<ActionProgress>> {
-  /// Actions of a project, newest first: servers, volumes and images. With
-  /// [serverId] those of one server. All pages, like every list (BUG-022).
+  /// Actions of a project, newest first: every resource type with an
+  /// action list. With [serverId] those of one server. All pages, like
+  /// every list (BUG-022).
   ActivityProvider._({
     required ActivityFamily super.from,
     required (ProjectScope, int?) super.argument,
@@ -73,10 +76,11 @@ final class ActivityProvider
   }
 }
 
-String _$activityHash() => r'a3ecf92aea42ca6f68c9c900e4f0ac72845b5627';
+String _$activityHash() => r'60d7115cd02f3ca564f45d76a475115fe97435cd';
 
-/// Actions of a project, newest first: servers, volumes and images. With
-/// [serverId] those of one server. All pages, like every list (BUG-022).
+/// Actions of a project, newest first: every resource type with an
+/// action list. With [serverId] those of one server. All pages, like
+/// every list (BUG-022).
 
 final class ActivityFamily extends $Family
     with
@@ -93,8 +97,9 @@ final class ActivityFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Actions of a project, newest first: servers, volumes and images. With
-  /// [serverId] those of one server. All pages, like every list (BUG-022).
+  /// Actions of a project, newest first: every resource type with an
+  /// action list. With [serverId] those of one server. All pages, like
+  /// every list (BUG-022).
 
   ActivityProvider call(ProjectScope scope, int? serverId) =>
       ActivityProvider._(argument: (scope, serverId), from: this);

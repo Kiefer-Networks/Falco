@@ -10,7 +10,14 @@ import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/accounts/account_pages.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/activity/activity_page.dart';
+import 'package:falco/features/dns/zone_pages.dart';
 import 'package:falco/features/images/image_pages.dart';
+import 'package:falco/features/network/certificate_pages.dart';
+import 'package:falco/features/network/firewall_pages.dart';
+import 'package:falco/features/network/ip_pages.dart';
+import 'package:falco/features/network/ips.dart';
+import 'package:falco/features/network/load_balancer_pages.dart';
+import 'package:falco/features/network/network_pages.dart';
 import 'package:falco/features/onboarding/welcome_page.dart';
 import 'package:falco/features/placement_groups/placement_group_pages.dart';
 import 'package:falco/features/servers/create_server_page.dart';
@@ -253,7 +260,19 @@ class RobotRoute extends GoRouteData with $RobotRoute {
 }
 
 /// What a create wizard creates.
-enum CreateKind { server, volume, placementGroup, sshKey }
+enum CreateKind {
+  server,
+  volume,
+  placementGroup,
+  sshKey,
+  network,
+  firewall,
+  floatingIp,
+  primaryIp,
+  loadBalancer,
+  certificate,
+  zone,
+}
 
 /// Create wizard of [kind] for a project, or for "All projects" when
 /// [projectId] is null (the wizard then asks for the project first).
@@ -282,6 +301,16 @@ class CreateRoute extends GoRouteData with $CreateRoute {
       CreateKind.volume => CreateVolumePage(scope: scope),
       CreateKind.placementGroup => CreatePlacementGroupPage(scope: scope),
       CreateKind.sshKey => CreateSshKeyPage(scope: scope),
+      CreateKind.network => CreateNetworkPage(scope: scope),
+      CreateKind.firewall => CreateFirewallPage(scope: scope),
+      CreateKind.floatingIp => CreateIpPage(
+        scope: scope,
+        kind: IpKind.floating,
+      ),
+      CreateKind.primaryIp => CreateIpPage(scope: scope, kind: IpKind.primary),
+      CreateKind.loadBalancer => CreateLoadBalancerPage(scope: scope),
+      CreateKind.certificate => CreateCertificatePage(scope: scope),
+      CreateKind.zone => CreateZonePage(scope: scope),
     };
   }
 }
@@ -365,4 +394,163 @@ class SshKeyRoute extends GoRouteData with $SshKeyRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       SshKeyDetailPage(scope: ProjectScope(accountId, projectId), keyId: keyId);
+}
+
+/// One private network.
+@TypedGoRoute<NetworkRoute>(
+  path: '/a/:accountId/p/:projectId/networks/:networkId',
+)
+class NetworkRoute extends GoRouteData with $NetworkRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.networkId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int networkId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => NetworkDetailPage(
+    scope: ProjectScope(accountId, projectId),
+    networkId: networkId,
+  );
+}
+
+/// One firewall.
+@TypedGoRoute<FirewallRoute>(
+  path: '/a/:accountId/p/:projectId/firewalls/:firewallId',
+)
+class FirewallRoute extends GoRouteData with $FirewallRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.firewallId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int firewallId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => FirewallDetailPage(
+    scope: ProjectScope(accountId, projectId),
+    firewallId: firewallId,
+  );
+}
+
+/// One load balancer.
+@TypedGoRoute<LoadBalancerRoute>(
+  path: '/a/:accountId/p/:projectId/load-balancers/:lbId',
+)
+class LoadBalancerRoute extends GoRouteData with $LoadBalancerRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.lbId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int lbId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      LoadBalancerDetailPage(
+        scope: ProjectScope(accountId, projectId),
+        lbId: lbId,
+      );
+}
+
+/// One certificate.
+@TypedGoRoute<CertificateRoute>(
+  path: '/a/:accountId/p/:projectId/certificates/:certificateId',
+)
+class CertificateRoute extends GoRouteData with $CertificateRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.certificateId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int certificateId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      CertificateDetailPage(
+        scope: ProjectScope(accountId, projectId),
+        certificateId: certificateId,
+      );
+}
+
+/// One DNS zone.
+@TypedGoRoute<ZoneRoute>(path: '/a/:accountId/p/:projectId/zones/:zoneId')
+class ZoneRoute extends GoRouteData with $ZoneRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.zoneId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int zoneId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ZoneDetailPage(scope: ProjectScope(accountId, projectId), zoneId: zoneId);
+}
+
+/// One Floating or Primary IP.
+@TypedGoRoute<IpRoute>(path: '/a/:accountId/p/:projectId/ips/:kind/:ipId')
+class IpRoute extends GoRouteData with $IpRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.kind,
+    required this.ipId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final IpKind kind;
+  final int ipId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => IpDetailPage(
+    scope: ProjectScope(accountId, projectId),
+    kind: kind,
+    ipId: ipId,
+  );
+}
+
+/// One RRSet of a zone: name and type are its key.
+@TypedGoRoute<RRSetRoute>(
+  path: '/a/:accountId/p/:projectId/zones/:zoneId/rrsets/:name/:type',
+)
+class RRSetRoute extends GoRouteData with $RRSetRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.zoneId,
+    required this.name,
+    required this.type,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int zoneId;
+  final String name;
+  final String type;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => RRSetDetailPage(
+    scope: ProjectScope(accountId, projectId),
+    zoneId: zoneId,
+    name: name,
+    type: type,
+  );
 }

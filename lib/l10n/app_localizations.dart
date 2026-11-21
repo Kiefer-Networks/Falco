@@ -2467,6 +2467,1458 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Networking'**
   String get wizardNetworking;
+
+  /// No description provided for @actionRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get actionRemove;
+
+  /// No description provided for @aliasIpsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Further private IPs, separated by commas.'**
+  String get aliasIpsHint;
+
+  /// No description provided for @autoDeleteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted together with the server it is assigned to.'**
+  String get autoDeleteHint;
+
+  /// No description provided for @certificateCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Add certificate'**
+  String get certificateCreate;
+
+  /// No description provided for @certificateDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The certificate is deleted. Load balancers using it lose it from their HTTPS services.'**
+  String get certificateDeleteConsequence;
+
+  /// No description provided for @certificateManaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Managed (Let\'s Encrypt)'**
+  String get certificateManaged;
+
+  /// No description provided for @certificateManagedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hetzner issues and renews it for your domains.'**
+  String get certificateManagedHint;
+
+  /// No description provided for @certificatePemHint.
+  ///
+  /// In en, this message translates to:
+  /// **'PEM, starting with -----BEGIN CERTIFICATE-----, chain included.'**
+  String get certificatePemHint;
+
+  /// No description provided for @certificatePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get certificatePending;
+
+  /// No description provided for @certificateRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get certificateRetry;
+
+  /// No description provided for @certificateUnused.
+  ///
+  /// In en, this message translates to:
+  /// **'Not used by any load balancer.'**
+  String get certificateUnused;
+
+  /// No description provided for @certificateUploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded'**
+  String get certificateUploaded;
+
+  /// No description provided for @certificateUploadedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own certificate and private key.'**
+  String get certificateUploadedHint;
+
+  /// No description provided for @certificateValidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid until {date}'**
+  String certificateValidUntil(String date);
+
+  /// No description provided for @domainsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One or more domains, separated by commas, e.g. example.com, *.example.com.'**
+  String get domainsHint;
+
+  /// No description provided for @emptyCertificates.
+  ///
+  /// In en, this message translates to:
+  /// **'No certificates in this project yet.'**
+  String get emptyCertificates;
+
+  /// No description provided for @emptyFirewalls.
+  ///
+  /// In en, this message translates to:
+  /// **'No firewalls in this project yet.'**
+  String get emptyFirewalls;
+
+  /// No description provided for @emptyFloatingIps.
+  ///
+  /// In en, this message translates to:
+  /// **'No Floating IPs in this project yet.'**
+  String get emptyFloatingIps;
+
+  /// No description provided for @emptyLoadBalancers.
+  ///
+  /// In en, this message translates to:
+  /// **'No load balancers in this project yet.'**
+  String get emptyLoadBalancers;
+
+  /// No description provided for @emptyNetworks.
+  ///
+  /// In en, this message translates to:
+  /// **'No networks in this project yet.'**
+  String get emptyNetworks;
+
+  /// No description provided for @emptyPrimaryIps.
+  ///
+  /// In en, this message translates to:
+  /// **'No Primary IPs in this project yet.'**
+  String get emptyPrimaryIps;
+
+  /// No description provided for @emptyZones.
+  ///
+  /// In en, this message translates to:
+  /// **'No DNS zones in this project yet.'**
+  String get emptyZones;
+
+  /// No description provided for @fieldAliasIps.
+  ///
+  /// In en, this message translates to:
+  /// **'Alias IPs'**
+  String get fieldAliasIps;
+
+  /// No description provided for @fieldAutoDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete with server'**
+  String get fieldAutoDelete;
+
+  /// No description provided for @fieldCertificatePem.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate'**
+  String get fieldCertificatePem;
+
+  /// No description provided for @fieldChangeProtection.
+  ///
+  /// In en, this message translates to:
+  /// **'Change protection'**
+  String get fieldChangeProtection;
+
+  /// No description provided for @fieldComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment'**
+  String get fieldComment;
+
+  /// No description provided for @fieldCookieLifetime.
+  ///
+  /// In en, this message translates to:
+  /// **'Cookie lifetime (s)'**
+  String get fieldCookieLifetime;
+
+  /// No description provided for @fieldCookieName.
+  ///
+  /// In en, this message translates to:
+  /// **'Cookie name'**
+  String get fieldCookieName;
+
+  /// No description provided for @fieldDefaultTtl.
+  ///
+  /// In en, this message translates to:
+  /// **'Default TTL'**
+  String get fieldDefaultTtl;
+
+  /// No description provided for @fieldDestIps.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination IPs'**
+  String get fieldDestIps;
+
+  /// No description provided for @fieldDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination'**
+  String get fieldDestination;
+
+  /// No description provided for @fieldDestinationPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination port'**
+  String get fieldDestinationPort;
+
+  /// No description provided for @fieldDirection.
+  ///
+  /// In en, this message translates to:
+  /// **'Direction'**
+  String get fieldDirection;
+
+  /// No description provided for @fieldDomains.
+  ///
+  /// In en, this message translates to:
+  /// **'Domains'**
+  String get fieldDomains;
+
+  /// No description provided for @fieldGateway.
+  ///
+  /// In en, this message translates to:
+  /// **'Gateway'**
+  String get fieldGateway;
+
+  /// No description provided for @fieldHealthCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Health check'**
+  String get fieldHealthCheck;
+
+  /// No description provided for @fieldHealthDomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Health check domain'**
+  String get fieldHealthDomain;
+
+  /// No description provided for @fieldHealthPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Health check path'**
+  String get fieldHealthPath;
+
+  /// No description provided for @fieldHealthPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Health check port'**
+  String get fieldHealthPort;
+
+  /// No description provided for @fieldHealthTls.
+  ///
+  /// In en, this message translates to:
+  /// **'Health check over TLS'**
+  String get fieldHealthTls;
+
+  /// No description provided for @fieldInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Interval (s)'**
+  String get fieldInterval;
+
+  /// No description provided for @fieldIpRange.
+  ///
+  /// In en, this message translates to:
+  /// **'IP range'**
+  String get fieldIpRange;
+
+  /// No description provided for @fieldIps.
+  ///
+  /// In en, this message translates to:
+  /// **'IPs'**
+  String get fieldIps;
+
+  /// No description provided for @fieldIssuance.
+  ///
+  /// In en, this message translates to:
+  /// **'Issuance'**
+  String get fieldIssuance;
+
+  /// No description provided for @fieldListenPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen port'**
+  String get fieldListenPort;
+
+  /// No description provided for @fieldMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get fieldMode;
+
+  /// No description provided for @fieldNameOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Name (optional)'**
+  String get fieldNameOptional;
+
+  /// No description provided for @fieldNameservers.
+  ///
+  /// In en, this message translates to:
+  /// **'Nameservers'**
+  String get fieldNameservers;
+
+  /// No description provided for @fieldNetworkZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Network zone'**
+  String get fieldNetworkZone;
+
+  /// No description provided for @fieldNewValue.
+  ///
+  /// In en, this message translates to:
+  /// **'New value'**
+  String get fieldNewValue;
+
+  /// No description provided for @fieldPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Port'**
+  String get fieldPort;
+
+  /// No description provided for @fieldPrivateIp.
+  ///
+  /// In en, this message translates to:
+  /// **'Private IP'**
+  String get fieldPrivateIp;
+
+  /// No description provided for @fieldPrivateKeyPem.
+  ///
+  /// In en, this message translates to:
+  /// **'Private key'**
+  String get fieldPrivateKeyPem;
+
+  /// No description provided for @fieldProtocol.
+  ///
+  /// In en, this message translates to:
+  /// **'Protocol'**
+  String get fieldProtocol;
+
+  /// No description provided for @fieldProxyProtocol.
+  ///
+  /// In en, this message translates to:
+  /// **'PROXY protocol'**
+  String get fieldProxyProtocol;
+
+  /// No description provided for @fieldRecordName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get fieldRecordName;
+
+  /// No description provided for @fieldRedirectHttp.
+  ///
+  /// In en, this message translates to:
+  /// **'Redirect HTTP to HTTPS'**
+  String get fieldRedirectHttp;
+
+  /// No description provided for @fieldRenewal.
+  ///
+  /// In en, this message translates to:
+  /// **'Renewal'**
+  String get fieldRenewal;
+
+  /// No description provided for @fieldRetries.
+  ///
+  /// In en, this message translates to:
+  /// **'Retries'**
+  String get fieldRetries;
+
+  /// No description provided for @fieldSourceIps.
+  ///
+  /// In en, this message translates to:
+  /// **'Source IPs'**
+  String get fieldSourceIps;
+
+  /// No description provided for @fieldStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get fieldStatus;
+
+  /// No description provided for @fieldStatusCodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Status codes'**
+  String get fieldStatusCodes;
+
+  /// No description provided for @fieldStickySessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Sticky sessions'**
+  String get fieldStickySessions;
+
+  /// No description provided for @fieldTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeout (s)'**
+  String get fieldTimeout;
+
+  /// No description provided for @fieldTtl.
+  ///
+  /// In en, this message translates to:
+  /// **'TTL'**
+  String get fieldTtl;
+
+  /// No description provided for @fieldUsePrivateIp.
+  ///
+  /// In en, this message translates to:
+  /// **'Route via private network'**
+  String get fieldUsePrivateIp;
+
+  /// No description provided for @fieldValidFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid from'**
+  String get fieldValidFrom;
+
+  /// No description provided for @fieldValidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid until'**
+  String get fieldValidUntil;
+
+  /// No description provided for @fieldValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get fieldValue;
+
+  /// No description provided for @fieldValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Values'**
+  String get fieldValues;
+
+  /// No description provided for @fieldVswitch.
+  ///
+  /// In en, this message translates to:
+  /// **'vSwitch'**
+  String get fieldVswitch;
+
+  /// No description provided for @fieldVswitchId.
+  ///
+  /// In en, this message translates to:
+  /// **'vSwitch ID'**
+  String get fieldVswitchId;
+
+  /// No description provided for @fieldZoneName.
+  ///
+  /// In en, this message translates to:
+  /// **'Domain'**
+  String get fieldZoneName;
+
+  /// No description provided for @filterAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get filterAssigned;
+
+  /// No description provided for @filterUnassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Not assigned'**
+  String get filterUnassigned;
+
+  /// No description provided for @firewallActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get firewallActive;
+
+  /// No description provided for @firewallApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get firewallApply;
+
+  /// No description provided for @firewallCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create firewall'**
+  String get firewallCreate;
+
+  /// No description provided for @firewallDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The firewall is deleted; servers it protects are open to its traffic again.'**
+  String get firewallDeleteConsequence;
+
+  /// No description provided for @firewallNotApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Not applied'**
+  String get firewallNotApplied;
+
+  /// No description provided for @firewallNotAppliedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Not applied to any server or label selector.'**
+  String get firewallNotAppliedHint;
+
+  /// No description provided for @firewallRemoveConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Its rules no longer protect this target.'**
+  String get firewallRemoveConsequence;
+
+  /// No description provided for @firewallRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {firewall} from {target}?'**
+  String firewallRemoveTitle(String firewall, String target);
+
+  /// No description provided for @floatingIpCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Floating IP'**
+  String get floatingIpCreate;
+
+  /// No description provided for @floatingIpUnassignConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic to this IP no longer reaches the server.'**
+  String get floatingIpUnassignConsequence;
+
+  /// No description provided for @gatewayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'An IP inside {range}.'**
+  String gatewayHint(String range);
+
+  /// No description provided for @gatewayValue.
+  ///
+  /// In en, this message translates to:
+  /// **'via {gateway}'**
+  String gatewayValue(String gateway);
+
+  /// No description provided for @healthCheckValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{protocol} check on {port} every {interval} s'**
+  String healthCheckValue(String protocol, String port, String interval);
+
+  /// No description provided for @healthPortHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty uses the destination port.'**
+  String get healthPortHint;
+
+  /// No description provided for @ipAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign'**
+  String get ipAssign;
+
+  /// No description provided for @ipAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get ipAssigned;
+
+  /// No description provided for @ipAssignedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'assigned to {server}'**
+  String ipAssignedTo(String server);
+
+  /// No description provided for @ipBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get ipBlocked;
+
+  /// No description provided for @ipDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The address {ip} is released and may go to someone else. This cannot be undone.'**
+  String ipDeleteConsequence(String ip);
+
+  /// No description provided for @ipNoServers.
+  ///
+  /// In en, this message translates to:
+  /// **'No servers in this project to assign to.'**
+  String get ipNoServers;
+
+  /// No description provided for @ipNotAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Not assigned'**
+  String get ipNotAssigned;
+
+  /// No description provided for @ipOnServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign to {server} ({location})'**
+  String ipOnServer(String server, String location);
+
+  /// No description provided for @ipTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Location or server'**
+  String get ipTarget;
+
+  /// No description provided for @ipUnassign.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassign'**
+  String get ipUnassign;
+
+  /// No description provided for @ipUnassignTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassign {ip} from {server}?'**
+  String ipUnassignTitle(String ip, String server);
+
+  /// No description provided for @ipsAny.
+  ///
+  /// In en, this message translates to:
+  /// **'Any IPv4 and IPv6'**
+  String get ipsAny;
+
+  /// No description provided for @ipsAnyV4.
+  ///
+  /// In en, this message translates to:
+  /// **'Any IPv4'**
+  String get ipsAnyV4;
+
+  /// No description provided for @ipsAnyV6.
+  ///
+  /// In en, this message translates to:
+  /// **'Any IPv6'**
+  String get ipsAnyV6;
+
+  /// No description provided for @ipsCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get ipsCustom;
+
+  /// No description provided for @ipsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'CIDR blocks, one per line or separated by commas, e.g. 203.0.113.0/24.'**
+  String get ipsHint;
+
+  /// No description provided for @keepIfEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty keeps the current one.'**
+  String get keepIfEmpty;
+
+  /// No description provided for @labelSelector.
+  ///
+  /// In en, this message translates to:
+  /// **'Label selector'**
+  String get labelSelector;
+
+  /// No description provided for @lbAlgorithm.
+  ///
+  /// In en, this message translates to:
+  /// **'Algorithm'**
+  String get lbAlgorithm;
+
+  /// No description provided for @lbChangeType.
+  ///
+  /// In en, this message translates to:
+  /// **'Change type'**
+  String get lbChangeType;
+
+  /// No description provided for @lbDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The load balancer and its public IPs are deleted. Targets are kept. This cannot be undone.'**
+  String get lbDeleteConsequence;
+
+  /// No description provided for @lbLeastConnections.
+  ///
+  /// In en, this message translates to:
+  /// **'Least connections'**
+  String get lbLeastConnections;
+
+  /// No description provided for @lbLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'{connections} connections, {services} services, {targets} targets'**
+  String lbLimits(int connections, int services, int targets);
+
+  /// No description provided for @lbNoCertificates.
+  ///
+  /// In en, this message translates to:
+  /// **'No certificates yet. Add one in Certificates.'**
+  String get lbNoCertificates;
+
+  /// No description provided for @lbPublicDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Public interface disabled'**
+  String get lbPublicDisabled;
+
+  /// No description provided for @lbPublicOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable public interface'**
+  String get lbPublicOff;
+
+  /// No description provided for @lbPublicOffConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The load balancer is then reachable from private networks only.'**
+  String get lbPublicOffConsequence;
+
+  /// No description provided for @lbPublicOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable public interface'**
+  String get lbPublicOn;
+
+  /// No description provided for @lbRoundRobin.
+  ///
+  /// In en, this message translates to:
+  /// **'Round robin'**
+  String get lbRoundRobin;
+
+  /// No description provided for @loadBalancerCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create load balancer'**
+  String get loadBalancerCreate;
+
+  /// No description provided for @membersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No servers or load balancers in this network.'**
+  String get membersEmpty;
+
+  /// No description provided for @metricConnectionsPerSecond.
+  ///
+  /// In en, this message translates to:
+  /// **'Connections per second'**
+  String get metricConnectionsPerSecond;
+
+  /// No description provided for @metricOpenConnections.
+  ///
+  /// In en, this message translates to:
+  /// **'Open connections'**
+  String get metricOpenConnections;
+
+  /// No description provided for @metricRequestsPerSecond.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests per second'**
+  String get metricRequestsPerSecond;
+
+  /// No description provided for @networkAttach.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach to network'**
+  String get networkAttach;
+
+  /// No description provided for @networkChangeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change IP range'**
+  String get networkChangeRange;
+
+  /// No description provided for @networkCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create network'**
+  String get networkCreate;
+
+  /// No description provided for @networkDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The network and all its subnets and routes are deleted. This cannot be undone.'**
+  String get networkDeleteConsequence;
+
+  /// No description provided for @networkDetachConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Its private IP in this network is released.'**
+  String get networkDetachConsequence;
+
+  /// No description provided for @networkDetachTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name} from {network}?'**
+  String networkDetachTitle(String name, String network);
+
+  /// No description provided for @networkExpose.
+  ///
+  /// In en, this message translates to:
+  /// **'Routes to vSwitch'**
+  String get networkExpose;
+
+  /// No description provided for @networkExposeConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Decides whether the routes of this network are announced to the coupled vSwitch.'**
+  String get networkExposeConsequence;
+
+  /// No description provided for @networkExposeOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop exposing routes to vSwitch'**
+  String get networkExposeOff;
+
+  /// No description provided for @networkExposeOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Expose routes to vSwitch'**
+  String get networkExposeOn;
+
+  /// No description provided for @networkRangeCreateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A private range, e.g. 10.0.0.0/16.'**
+  String get networkRangeCreateHint;
+
+  /// No description provided for @networkRangeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only larger, containing the current range. This cannot be undone.'**
+  String get networkRangeHint;
+
+  /// No description provided for @portHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One port or a range, e.g. 22 or 8000-9000.'**
+  String get portHint;
+
+  /// No description provided for @primariesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No primary nameservers yet.'**
+  String get primariesEmpty;
+
+  /// No description provided for @primariesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One per line: address or address:port, port 53 by default.'**
+  String get primariesHint;
+
+  /// No description provided for @primaryAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add primary nameserver'**
+  String get primaryAdd;
+
+  /// No description provided for @primaryEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit primary nameserver'**
+  String get primaryEdit;
+
+  /// No description provided for @primaryIpCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Primary IP'**
+  String get primaryIpCreate;
+
+  /// No description provided for @primaryIpNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New Primary IP'**
+  String get primaryIpNew;
+
+  /// No description provided for @primaryIpNoServers.
+  ///
+  /// In en, this message translates to:
+  /// **'No servers that are off in {location}. A Primary IP moves only to a server that is off.'**
+  String primaryIpNoServers(String location);
+
+  /// No description provided for @primaryIpUnassignConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The server loses this public address. It must be off.'**
+  String get primaryIpUnassignConsequence;
+
+  /// No description provided for @primaryRemoveConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The zone is no longer transferred from this nameserver.'**
+  String get primaryRemoveConsequence;
+
+  /// No description provided for @primaryRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {address}?'**
+  String primaryRemoveTitle(String address);
+
+  /// No description provided for @privateIpHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Empty picks the next free one.'**
+  String get privateIpHint;
+
+  /// No description provided for @privateKeyPemHint.
+  ///
+  /// In en, this message translates to:
+  /// **'PEM, starting with -----BEGIN PRIVATE KEY-----. Sent once to Hetzner, never stored in Falco.'**
+  String get privateKeyPemHint;
+
+  /// No description provided for @recordAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add record'**
+  String get recordAdd;
+
+  /// No description provided for @recordCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 record} other{{count} records}}'**
+  String recordCount(int count);
+
+  /// No description provided for @recordEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit value'**
+  String get recordEdit;
+
+  /// No description provided for @recordNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'@ for the zone itself, e.g. www or mail.'**
+  String get recordNameHint;
+
+  /// No description provided for @recordsBulkEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {count, plural, =1{1 record set} other{{count} record sets}}'**
+  String recordsBulkEdit(int count);
+
+  /// No description provided for @recordsEditSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit selected'**
+  String get recordsEditSelected;
+
+  /// No description provided for @recordsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No records yet.'**
+  String get recordsEmpty;
+
+  /// No description provided for @recordsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 record set failed} other{{count} record sets failed}}'**
+  String recordsFailed(int count);
+
+  /// No description provided for @recordsSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select records'**
+  String get recordsSelect;
+
+  /// No description provided for @recordsUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Records updated'**
+  String get recordsUpdated;
+
+  /// No description provided for @resourceCertificate.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate'**
+  String get resourceCertificate;
+
+  /// No description provided for @resourceCertificates.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificates'**
+  String get resourceCertificates;
+
+  /// No description provided for @resourceFirewall.
+  ///
+  /// In en, this message translates to:
+  /// **'Firewall'**
+  String get resourceFirewall;
+
+  /// No description provided for @resourceFloatingIp.
+  ///
+  /// In en, this message translates to:
+  /// **'Floating IP'**
+  String get resourceFloatingIp;
+
+  /// No description provided for @resourceFloatingIps.
+  ///
+  /// In en, this message translates to:
+  /// **'Floating IPs'**
+  String get resourceFloatingIps;
+
+  /// No description provided for @resourceLoadBalancers.
+  ///
+  /// In en, this message translates to:
+  /// **'Load balancers'**
+  String get resourceLoadBalancers;
+
+  /// No description provided for @resourceNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get resourceNetwork;
+
+  /// No description provided for @resourcePrimaryIp.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary IP'**
+  String get resourcePrimaryIp;
+
+  /// No description provided for @resourcePrimaryIps.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary IPs'**
+  String get resourcePrimaryIps;
+
+  /// No description provided for @resourceRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Record set'**
+  String get resourceRecord;
+
+  /// No description provided for @resourceZone.
+  ///
+  /// In en, this message translates to:
+  /// **'DNS zone'**
+  String get resourceZone;
+
+  /// No description provided for @resourceZones.
+  ///
+  /// In en, this message translates to:
+  /// **'DNS'**
+  String get resourceZones;
+
+  /// No description provided for @routeAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add route'**
+  String get routeAdd;
+
+  /// No description provided for @routeDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic via {gateway} for this destination stops.'**
+  String routeDeleteConsequence(String gateway);
+
+  /// No description provided for @routeDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete route to {destination}?'**
+  String routeDeleteTitle(String destination);
+
+  /// No description provided for @routesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No routes.'**
+  String get routesEmpty;
+
+  /// No description provided for @rrsetDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'All values of this record set are deleted.'**
+  String get rrsetDeleteConsequence;
+
+  /// No description provided for @rrsetProtectOffConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Its values can be changed and deleted again.'**
+  String get rrsetProtectOffConsequence;
+
+  /// No description provided for @rrsetProtectOnConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Its values cannot be changed or deleted until the protection is removed.'**
+  String get rrsetProtectOnConsequence;
+
+  /// No description provided for @ruleAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add rule'**
+  String get ruleAdd;
+
+  /// No description provided for @ruleCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 rule} other{{count} rules}}'**
+  String ruleCount(int count);
+
+  /// No description provided for @ruleDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic this rule allowed is blocked on every server of the firewall.'**
+  String get ruleDeleteConsequence;
+
+  /// No description provided for @ruleDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete rule {rule}?'**
+  String ruleDeleteTitle(String rule);
+
+  /// No description provided for @ruleEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit rule'**
+  String get ruleEdit;
+
+  /// No description provided for @ruleInbound.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbound'**
+  String get ruleInbound;
+
+  /// No description provided for @ruleOutbound.
+  ///
+  /// In en, this message translates to:
+  /// **'Outbound'**
+  String get ruleOutbound;
+
+  /// No description provided for @rulesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No rules.'**
+  String get rulesEmpty;
+
+  /// No description provided for @secondsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'{min} to {max} seconds'**
+  String secondsHint(int min, int max);
+
+  /// No description provided for @sectionAppliedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied to'**
+  String get sectionAppliedTo;
+
+  /// No description provided for @sectionMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get sectionMembers;
+
+  /// No description provided for @sectionPrimaries.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary nameservers'**
+  String get sectionPrimaries;
+
+  /// No description provided for @sectionRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'Records'**
+  String get sectionRecords;
+
+  /// No description provided for @sectionRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Routes'**
+  String get sectionRoutes;
+
+  /// No description provided for @sectionRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules'**
+  String get sectionRules;
+
+  /// No description provided for @sectionServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get sectionServices;
+
+  /// No description provided for @sectionSubnets.
+  ///
+  /// In en, this message translates to:
+  /// **'Subnets'**
+  String get sectionSubnets;
+
+  /// No description provided for @sectionTargets.
+  ///
+  /// In en, this message translates to:
+  /// **'Targets'**
+  String get sectionTargets;
+
+  /// No description provided for @sectionUsedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Used by'**
+  String get sectionUsedBy;
+
+  /// No description provided for @selectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get selectAll;
+
+  /// No description provided for @selectClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get selectClear;
+
+  /// No description provided for @selectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String selectedCount(int count);
+
+  /// No description provided for @selectorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. role=web,env=prod'**
+  String get selectorHint;
+
+  /// No description provided for @serverNoNetworks.
+  ///
+  /// In en, this message translates to:
+  /// **'No networks left to attach to. Create one under Network.'**
+  String get serverNoNetworks;
+
+  /// No description provided for @serviceAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add service'**
+  String get serviceAdd;
+
+  /// No description provided for @serviceCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 service} other{{count} services}}'**
+  String serviceCount(int count);
+
+  /// No description provided for @serviceDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The load balancer stops listening on this port.'**
+  String get serviceDeleteConsequence;
+
+  /// No description provided for @serviceDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete service {service}?'**
+  String serviceDeleteTitle(String service);
+
+  /// No description provided for @serviceEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit service'**
+  String get serviceEdit;
+
+  /// No description provided for @servicesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No services.'**
+  String get servicesEmpty;
+
+  /// No description provided for @sortExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry'**
+  String get sortExpiry;
+
+  /// No description provided for @subnetAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add subnet'**
+  String get subnetAdd;
+
+  /// No description provided for @subnetCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 subnet} other{{count} subnets}}'**
+  String subnetCount(int count);
+
+  /// No description provided for @subnetDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Servers in this subnet lose their private IPs in it.'**
+  String get subnetDeleteConsequence;
+
+  /// No description provided for @subnetDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete subnet {range}?'**
+  String subnetDeleteTitle(String range);
+
+  /// No description provided for @subnetRangeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, inside {range}. Empty picks the next free range.'**
+  String subnetRangeHint(String range);
+
+  /// No description provided for @subnetsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No subnets.'**
+  String get subnetsEmpty;
+
+  /// No description provided for @targetAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add target'**
+  String get targetAdd;
+
+  /// No description provided for @targetCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 target} other{{count} targets}}'**
+  String targetCount(int count);
+
+  /// No description provided for @targetIpHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A public IP of a dedicated server, e.g. 203.0.113.7.'**
+  String get targetIpHint;
+
+  /// No description provided for @targetRemoveConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The load balancer no longer sends traffic to it.'**
+  String get targetRemoveConsequence;
+
+  /// No description provided for @targetRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove target {target}?'**
+  String targetRemoveTitle(String target);
+
+  /// No description provided for @targetsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No targets.'**
+  String get targetsEmpty;
+
+  /// No description provided for @ttlCreateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, 60 seconds or more. Empty uses 3600.'**
+  String get ttlCreateHint;
+
+  /// No description provided for @ttlDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Zone default ({ttl} s)'**
+  String ttlDefault(int ttl);
+
+  /// No description provided for @ttlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, 60 seconds or more. Empty uses the zone default of {ttl} s.'**
+  String ttlHint(int ttl);
+
+  /// No description provided for @ttlLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'60 seconds or more.'**
+  String get ttlLimits;
+
+  /// No description provided for @ttlValue.
+  ///
+  /// In en, this message translates to:
+  /// **'TTL {ttl} s'**
+  String ttlValue(int ttl);
+
+  /// No description provided for @valueAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add value'**
+  String get valueAdd;
+
+  /// No description provided for @valueRemoveConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'This value is removed from the record set.'**
+  String get valueRemoveConsequence;
+
+  /// No description provided for @valueRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {value}?'**
+  String valueRemoveTitle(String value);
+
+  /// No description provided for @valuesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One value per line. TXT gets quotes, host names a trailing dot.'**
+  String get valuesHint;
+
+  /// No description provided for @zoneCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create zone'**
+  String get zoneCreate;
+
+  /// No description provided for @zoneDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The zone and all its records are deleted. This cannot be undone.'**
+  String get zoneDeleteConsequence;
+
+  /// No description provided for @zoneExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get zoneExport;
+
+  /// No description provided for @zoneExported.
+  ///
+  /// In en, this message translates to:
+  /// **'Zone file saved'**
+  String get zoneExported;
+
+  /// No description provided for @zoneImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import zone file'**
+  String get zoneImport;
+
+  /// No description provided for @zoneImportConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Every record of the zone is replaced by those of the file.'**
+  String get zoneImportConsequence;
+
+  /// No description provided for @zoneImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace all records of {name}?'**
+  String zoneImportTitle(String name);
+
+  /// No description provided for @zonePrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary'**
+  String get zonePrimary;
+
+  /// No description provided for @zonePrimaryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hetzner holds the records; you edit them here.'**
+  String get zonePrimaryHint;
+
+  /// No description provided for @zoneSecondary.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary'**
+  String get zoneSecondary;
+
+  /// No description provided for @zoneSecondaryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hetzner copies the zone from your primary nameservers.'**
+  String get zoneSecondaryHint;
+
+  /// No description provided for @zonefileTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is larger than 1 MiB.'**
+  String get zonefileTooLarge;
 }
 
 class _AppLocalizationsDelegate

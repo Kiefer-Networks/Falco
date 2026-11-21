@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 /// What a project offers for creating and changing resources: locations,
-/// server types with prices, ISOs, networks, firewalls and pricing
+/// server types with prices, ISOs and pricing
 /// (CMP-009, CMP-078, CMP-079). Locations only: Hetzner drops
 /// `datacenter` in 2026 (CMP-080, CMP-092, BUG-011).
 library;
@@ -16,7 +16,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'catalog.g.dart';
 
-/// A resource known by id and name (networks, firewalls, locations, ISOs).
+/// A resource known by id and name (locations, ISOs).
 @immutable
 class Named {
   const new(this.id, this.name, [this.detail = '']);
@@ -147,37 +147,6 @@ Future<List<({Named iso, bool deprecated, String? architecture})>> isos(
     nextPage: r.body.meta.pagination.nextPage,
   );
 });
-
-/// Private networks of the project (CMP-081).
-@riverpod
-Future<List<Named>> networks(Ref ref, ProjectScope scope) => fetchAll((
-  page,
-) async {
-  final r = await unwrap(
-    cloud.NetworksApi(ref.watch(cloudApiProvider(scope.projectId)))
-        .listNetworks(page: page, perPage: maxPerPage),
-  );
-  if (r is! cloud.ListNetworksResponse200) throw const Server();
-  return (
-    items: [for (final n in r.body.networks) Named(n.id, n.name, n.ipRange)],
-    nextPage: r.body.meta.pagination.nextPage,
-  );
-});
-
-/// Firewalls of the project (CMP-082).
-@riverpod
-Future<List<Named>> firewalls(Ref ref, ProjectScope scope) =>
-    fetchAll((page) async {
-      final r = await unwrap(
-        cloud.FirewallsApi(ref.watch(cloudApiProvider(scope.projectId)))
-            .listFirewalls(page: page, perPage: maxPerPage),
-      );
-      if (r is! cloud.ListFirewallsResponse200) throw const Server();
-      return (
-        items: [for (final f in r.body.firewalls) Named(f.id, f.name)],
-        nextPage: r.body.meta.pagination.nextPage,
-      );
-    });
 
 /// Currency and volume prices of the project (CMP-078).
 @riverpod

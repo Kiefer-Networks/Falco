@@ -45,6 +45,28 @@ final _cloud = <(String, String), Parser>{
   ('/load_balancers', '200'): cloud.LoadBalancersGet200BodyModel.fromJson,
   ('/zones/{id_or_name}/rrsets', '200'):
       cloud.ZonesIdOrNameRrsetsGet200BodyModel.fromJson,
+  ('/networks/{id}', '200'): cloud.NetworksIdGet200BodyModel.fromJson,
+  ('/networks/{id}/members', '200'):
+      cloud.NetworksIdMembersGet200BodyModel.fromJson,
+  ('/firewalls/{id}', '200'): cloud.FirewallsIdGet200BodyModel.fromJson,
+  ('/floating_ips', '200'): cloud.FloatingIpsGet200BodyModel.fromJson,
+  ('/floating_ips/{id}', '200'): cloud.FloatingIpsIdGet200BodyModel.fromJson,
+  ('/primary_ips/{id}', '200'): cloud.PrimaryIpsIdGet200BodyModel.fromJson,
+  ('/load_balancers/{id}', '200'):
+      cloud.LoadBalancersIdGet200BodyModel.fromJson,
+  ('/load_balancers/{id}/metrics', '200'):
+      cloud.LoadBalancersIdMetricsGet200BodyModel.fromJson,
+  ('/load_balancer_types', '200'):
+      cloud.LoadBalancerTypesGet200BodyModel.fromJson,
+  ('/certificates', '200'): cloud.CertificatesGet200BodyModel.fromJson,
+  ('/certificates/{id}', '200'): cloud.CertificatesIdGet200BodyModel.fromJson,
+  ('/zones', '200'): cloud.ZonesGet200BodyModel.fromJson,
+  ('/zones/{id_or_name}', '200'): cloud.ZonesIdOrNameGet200BodyModel.fromJson,
+  ('/zones/{id_or_name}/rrsets/{rr_name}/{rr_type}', '200'):
+      cloud.ZonesIdOrNameRrsetsRrNameRrTypeGet200BodyModel.fromJson,
+  ('/zones/{id_or_name}/zonefile', '200'):
+      cloud.ZonesIdOrNameZonefileGet200BodyModel.fromJson,
+  ('/zones/actions', '200'): cloud.ZonesActionsGet200BodyModel.fromJson,
   ('/actions/{id}', '4xx'): cloud.ActionsIdGet4xxBodyModel.fromJson,
 };
 

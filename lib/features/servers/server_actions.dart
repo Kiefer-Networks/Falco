@@ -8,6 +8,8 @@ import 'package:falco/features/activity/activity.dart';
 import 'package:falco/features/compute/catalog.dart';
 import 'package:falco/features/compute/compute_ui.dart';
 import 'package:falco/features/images/images.dart';
+import 'package:falco/features/network/firewalls.dart';
+import 'package:falco/features/network/networks.dart';
 import 'package:falco/features/placement_groups/placement_groups.dart';
 import 'package:falco/features/servers/create_server_page.dart';
 import 'package:falco/features/servers/servers.dart';
@@ -452,6 +454,82 @@ class ServerOps {
         ref.read(cloudApiProvider(scope.projectId)),
         server.id,
         ChangeDnsPtr(v['ip']!.trim(), v['ptr'] ?? ''),
+      );
+      ref.read(actionTrackerProvider(scope)).track(id);
+    },
+  );
+
+  /// Attaches the server to a network of its project, with an optional
+  /// IP; a hint when there is none to pick (CMP-040).
+  Future<void> attachNetwork() async {
+    final networks = [
+      for (final n in await ref.read(networksProvider(scope).future))
+        if (!server.networks.any((m) => m.id == n.id)) n,
+    ];
+    if (!context.mounted) return;
+    if (networks.isEmpty) {
+      FalcoScaffold.showSnack(context, l10n.serverNoNetworks);
+      return;
+    }
+    await FormSheet.show(
+      context,
+      title: l10n.networkAttach,
+      fields: (_) => [
+        FieldSpec(
+          'network',
+          l10n.resourceNetwork,
+          options: {for (final n in networks) '${n.id}': n.name},
+        ),
+        FieldSpec('ip', l10n.fieldPrivateIp, helper: l10n.privateIpHint),
+        FieldSpec('alias', l10n.fieldAliasIps, helper: l10n.aliasIpsHint),
+      ],
+      valid: (v) => (v['network'] ?? '').isNotEmpty,
+      onSave: (v) async {
+        final id = await changeServer(
+          ref.read(cloudApiProvider(scope.projectId)),
+          server.id,
+          AttachToNetwork(
+            int.parse(v['network']!),
+            ip: v['ip'] ?? '',
+            aliasIps: splitIps(v['alias'] ?? ''),
+          ),
+        );
+        ref.read(actionTrackerProvider(scope)).track(id);
+      },
+    );
+  }
+
+  /// Removes the server from [network], level 1 with its name (CMP-041).
+  Future<void> detachNetwork(int network, String name) async {
+    final ok = await ConfirmSheet.show(
+      context,
+      title: l10n.networkDetachTitle(server.name, name),
+      consequence: l10n.networkDetachConsequence,
+      confirmLabel: l10n.actionRemove,
+      resourceName: server.name,
+      facts: [ConfirmFact(l10n.resourceNetwork, name)],
+    );
+    if (ok && context.mounted) await _change(DetachFromNetwork(network));
+  }
+
+  /// Alias IPs of the server in [network] (NET-086).
+  Future<void> aliasIps(int network, List<String> current) => FormSheet.show(
+    context,
+    title: l10n.fieldAliasIps,
+    fields: (_) => [
+      FieldSpec(
+        'alias',
+        l10n.fieldAliasIps,
+        initial: current.join(', '),
+        helper: l10n.aliasIpsHint,
+      ),
+    ],
+    valid: (_) => true,
+    onSave: (v) async {
+      final id = await changeServer(
+        ref.read(cloudApiProvider(scope.projectId)),
+        server.id,
+        ChangeAliasIps(network, splitIps(v['alias'] ?? '')),
       );
       ref.read(actionTrackerProvider(scope)).track(id);
     },

@@ -20,6 +20,8 @@ class FieldSpec {
     this.maxLength,
     this.helper,
     this.options = const {},
+    this.multiple = false,
+    this.multiline = false,
   });
 
   /// Value key in the form map and widget key.
@@ -42,6 +44,13 @@ class FieldSpec {
 
   /// Value to label; a non empty map makes the field a choice.
   final Map<String, String> options;
+
+  /// A choice of several [options]; the value joins them with commas.
+  final bool multiple;
+
+  /// Several lines of text (PEM, zone files). Never obscured, since
+  /// Flutter obscures single lines only; suggestions stay off for secrets.
+  final bool multiline;
 }
 
 /// Renders [fields] and reports all values on every change. Fields may
@@ -89,6 +98,9 @@ class _FormFieldsState extends State<FormFields> {
     super.dispose();
   }
 
+  Set<String> _picked(FieldSpec f) =>
+      (_values[f.key] ?? f.initial).split(',').toSet();
+
   void _set(String key, String value) {
     setState(() => _values[key] = value);
     widget.onChanged(Map.of(_values));
@@ -115,11 +127,24 @@ class _FormFieldsState extends State<FormFields> {
                 children: [
                   for (final MapEntry(key: value, value: label)
                       in f.options.entries)
-                    ChoiceChip(
-                      label: Text(label),
-                      selected: (_values[f.key] ?? f.initial) == value,
-                      onSelected: (_) => _set(f.key, value),
-                    ),
+                    if (f.multiple)
+                      FilterChip(
+                        label: Text(label),
+                        selected: _picked(f).contains(value),
+                        onSelected: (on) => _set(
+                          f.key,
+                          [
+                            for (final o in f.options.keys)
+                              if (o == value ? on : _picked(f).contains(o)) o,
+                          ].join(','),
+                        ),
+                      )
+                    else
+                      ChoiceChip(
+                        label: Text(label),
+                        selected: (_values[f.key] ?? f.initial) == value,
+                        onSelected: (_) => _set(f.key, value),
+                      ),
                 ],
               ),
             )
@@ -129,7 +154,10 @@ class _FormFieldsState extends State<FormFields> {
               controller: _text[f.key] ??= TextEditingController(
                 text: _values[f.key] ??= f.initial,
               ),
-              obscureText: f.secret,
+              obscureText: f.secret && !f.multiline,
+              minLines: f.multiline ? 3 : null,
+              maxLines: f.multiline ? 8 : 1,
+              keyboardType: f.multiline ? TextInputType.multiline : null,
               autocorrect: !f.secret,
               enableSuggestions: !f.secret,
               maxLength: f.maxLength,

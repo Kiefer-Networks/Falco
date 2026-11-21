@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:falco/api/cloud/cloud.dart';
 import 'package:falco/api/robot/robot_client.dart';
 import 'package:falco/api/s3/s3.dart';
+import 'package:falco/core/files/text_files.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/core/settings/settings.dart';
@@ -21,6 +22,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_http.dart';
+import 'fake_network.dart';
+
+export 'fake_network.dart';
 
 /// A made up token, never valid anywhere.
 const fakeToken = 'fake-token-for-tests';
@@ -259,9 +263,16 @@ const _singular = {
   'server_types': 'server_type',
   'networks': 'network',
   'firewalls': 'firewall',
+  'floating_ips': 'floating_ip',
+  'primary_ips': 'primary_ip',
+  'load_balancers': 'load_balancer',
+  'load_balancer_types': 'load_balancer_type',
+  'certificates': 'certificate',
+  'zones': 'zone',
 };
 
-/// In memory Cloud API: every Compute resource, their actions, metrics.
+/// In memory Cloud API: every Compute, Network and DNS resource, their
+/// actions, metrics.
 ///
 /// An action starts `running` and ends `success` on its second poll;
 /// power actions then change the server status.
@@ -273,7 +284,16 @@ class FakeCloud {
     List<Map<String, Object?>>? images,
     List<Map<String, Object?>>? placementGroups,
     List<Map<String, Object?>>? sshKeys,
+    List<Map<String, Object?>>? networks,
+    List<Map<String, Object?>>? firewalls,
+    List<Map<String, Object?>>? floatingIps,
+    List<Map<String, Object?>>? primaryIps,
+    List<Map<String, Object?>>? loadBalancers,
+    List<Map<String, Object?>>? certificates,
+    List<Map<String, Object?>>? zones,
+    Map<int, List<Map<String, Object?>>>? rrsets,
   }) : actions = actions ?? [],
+       rrsets = rrsets ?? {},
        collections = {
          'servers':
              servers ??
@@ -309,9 +329,32 @@ class FakeCloud {
              price: '7.4900000000',
            ),
          ],
-         'networks': [],
-         'firewalls': [],
+         'networks': networks ?? [],
+         'firewalls': firewalls ?? [],
+         'floating_ips': floatingIps ?? [],
+         'primary_ips': primaryIps ?? [],
+         'load_balancers': loadBalancers ?? [],
+         'load_balancer_types': [
+           lbTypeJson(),
+           lbTypeJson(
+             id: 2,
+             name: 'lb21',
+             services: 15,
+             price: '16.4000000000',
+           ),
+         ],
+         'certificates': certificates ?? [],
+         'zones': zones ?? [],
        };
+
+  /// RRSets per zone id.
+  final Map<int, List<Map<String, Object?>>> rrsets;
+
+  /// The last imported zone file.
+  String? importedZonefile;
+
+  /// The file dialogs: what a pick returns, what was saved.
+  final files = FakeTextFiles();
 
   /// Objects per collection, e.g. `collections['volumes']`.
   final Map<String, List<Map<String, Object?>>> collections;
@@ -337,13 +380,15 @@ class FakeCloud {
   /// Paths of all requests as `METHOD /path`.
   List<String> get calls => [
     for (final r in adapter.requests)
-      '${r.method} ${r.uri.path.replaceFirst('/v1', '')}',
+      '${r.method} ${Uri.decodeFull(r.uri.path).replaceFirst('/v1', '')}',
   ];
 
   /// JSON body of the last request to `METHOD /path`.
   Map<String, Object?> body(String call) {
     final r = adapter.requests.lastWhere(
-      (r) => '${r.method} ${r.uri.path.replaceFirst('/v1', '')}' == call,
+      (r) =>
+          '${r.method} ${Uri.decodeFull(r.uri.path).replaceFirst('/v1', '')}' ==
+          call,
     );
     return (jsonDecode(r.data as String) as Map).cast<String, Object?>();
   }
@@ -425,7 +470,7 @@ class FakeCloud {
       return (401, errorJson('unauthorized'));
     }
     final path = o.uri.path.replaceFirst('/v1', '');
-    final segments = path.split('/').skip(1).toList();
+    final segments = path.split('/').skip(1).map(Uri.decodeComponent).toList();
     final body = o.data is String
         ? (jsonDecode(o.data as String) as Map).cast<String, Object?>()
         : const <String, Object?>{};
@@ -440,6 +485,7 @@ class FakeCloud {
           a,
     ];
 
+    if (_network(o.method, segments, body) case final r?) return r;
     switch ((o.method, segments)) {
       case ('GET', ['pricing']):
         return (200, {'pricing': pricingJson});
@@ -489,11 +535,14 @@ class FakeCloud {
         final s = find(coll, id);
         if (s == null) return (404, errorJson('not_found'));
         collections[coll]!.remove(s);
-        if (coll != 'servers') return (204, null);
-        return (
-          200,
-          {'action': _start('delete_server', s['id']! as int, 'server')},
-        );
+        if (coll case 'servers' || 'zones') {
+          final type = _singular[coll]!;
+          return (
+            coll == 'zones' ? 201 : 200,
+            {'action': _start('delete_$type', s['id']! as int, type)},
+          );
+        }
+        return (204, null);
       case ('POST', ['servers']):
         final id = _nextId++;
         final type = collections['server_types']!.firstWhere(
@@ -593,6 +642,423 @@ class FakeCloud {
     return (404, errorJson('not_found'));
   }
 
+  /// Network and DNS requests; null for everything else.
+  (int, Object?)? _network(
+    String method,
+    List<String> segments,
+    Map<String, Object?> body,
+  ) {
+    const colls = {
+      'networks',
+      'firewalls',
+      'floating_ips',
+      'primary_ips',
+      'load_balancers',
+      'certificates',
+      'zones',
+    };
+    Map<String, Object?>? find(String coll, String id) =>
+        collections[coll]?.where((s) => '${s['id']}' == id).firstOrNull;
+    List<Map<String, Object?>> list(Map<String, Object?> o, String key) {
+      final l = [...?(o[key] as List?)?.cast<Map<String, Object?>>()];
+      o[key] = l;
+      return l;
+    }
+
+    final now = DateTime.now().toUtc();
+    switch ((method, segments)) {
+      case ('GET', ['networks', final id, 'members']):
+        final members = [
+          for (final s in servers)
+            for (final n
+                in (s['private_net']! as List).cast<Map<String, Object?>>())
+              if ('${n['network']}' == id)
+                {
+                  'type': 'server',
+                  'id': s['id'],
+                  'ip': n['ip'],
+                  'status': 'ok',
+                  'alias_ips': n['alias_ips'] ?? <String>[],
+                  'subnet': '10.0.1.0/24',
+                },
+          for (final lb in collections['load_balancers']!)
+            for (final n
+                in (lb['private_net']! as List).cast<Map<String, Object?>>())
+              if ('${n['network']}' == id)
+                {
+                  'type': 'load_balancer',
+                  'id': lb['id'],
+                  'ip': n['ip'],
+                  'status': 'ok',
+                  'alias_ips': <String>[],
+                  'subnet': '10.0.1.0/24',
+                },
+        ];
+        return (200, {'members': members, 'meta': _meta(members.length)});
+      case ('GET', ['load_balancers', _, 'metrics']):
+        final t = now.millisecondsSinceEpoch / 1000;
+        List<List<Object>> values(String v) => [
+          [t - 60, v],
+          [t, v],
+        ];
+        return (
+          200,
+          {
+            'metrics': {
+              'start': now.toIso8601String(),
+              'end': now.toIso8601String(),
+              'step': 60,
+              'time_series': {
+                'open_connections': {'values': values('12')},
+                'connections_per_second': {'values': values('3')},
+                'requests_per_second': {'values': values('7')},
+                'bandwidth.in': {'values': values('2048')},
+                'bandwidth.out': {'values': values('4096')},
+              },
+            },
+          },
+        );
+      case ('GET', ['zones', final z, 'rrsets']):
+        final sets = rrsets[int.parse(z)] ?? [];
+        return (200, {'rrsets': sets, 'meta': _meta(sets.length)});
+      case ('GET', ['zones', final z, 'zonefile']):
+        final zone = find('zones', z)!;
+        return (
+          200,
+          {
+            'zonefile': [
+              '\$ORIGIN ${zone['name']}.',
+              for (final r in rrsets[int.parse(z)] ?? <Map<String, Object?>>[])
+                for (final v
+                    in (r['records']! as List).cast<Map<String, Object?>>())
+                  '${r['name']} IN ${r['type']} ${v['value']}',
+            ].join('\n'),
+          },
+        );
+      case ('GET', ['zones', final z, 'rrsets', final n, final t]):
+        final set = (rrsets[int.parse(z)] ?? [])
+            .where((r) => r['name'] == n && r['type'] == t)
+            .firstOrNull;
+        return set == null
+            ? (404, errorJson('not_found'))
+            : (200, {'rrset': set});
+      case ('POST', ['zones', final z, 'rrsets']):
+        final zone = int.parse(z);
+        final set = rrsetJson(
+          zone: zone,
+          name: body['name']! as String,
+          type: body['type']! as String,
+          ttl: body['ttl'] as int?,
+          values: [
+            for (final r
+                in (body['records']! as List).cast<Map<String, Object?>>())
+              '${r['value']}',
+          ],
+        );
+        (rrsets[zone] ??= []).add(set);
+        return (
+          201,
+          {'rrset': set, 'action': _start('create_rrset', zone, 'zone')},
+        );
+      case ('PUT', ['zones', final z, 'rrsets', final n, final t]):
+        final set = rrsets[int.parse(z)]!.firstWhere(
+          (r) => r['name'] == n && r['type'] == t,
+        );
+        set['labels'] = body['labels'];
+        return (200, {'rrset': set});
+      case ('DELETE', ['zones', final z, 'rrsets', final n, final t]):
+        rrsets[int.parse(z)]!.removeWhere(
+          (r) => r['name'] == n && r['type'] == t,
+        );
+        return (201, {'action': _start('delete_rrset', int.parse(z), 'zone')});
+      case (
+        'POST',
+        ['zones', final z, 'rrsets', final n, final t, 'actions', final cmd],
+      ):
+        final set = rrsets[int.parse(z)]!.firstWhere(
+          (r) => r['name'] == n && r['type'] == t,
+        );
+        final records = list(set, 'records');
+        final given = [
+          for (final r
+              in (body['records'] as List? ?? const [])
+                  .cast<Map<String, Object?>>())
+            <String, Object?>{
+              'value': r['value'],
+              'comment': r['comment'] ?? '',
+            },
+        ];
+        switch (cmd) {
+          case 'add_records':
+            records.addAll(given);
+            if (body['ttl'] case final int ttl) set['ttl'] = ttl;
+          case 'set_records':
+            set['records'] = given;
+          case 'remove_records':
+            records.removeWhere(
+              (r) => given.any((g) => g['value'] == r['value']),
+            );
+          case 'update_records':
+            for (final r in records) {
+              for (final g in given) {
+                if (g['value'] == r['value']) r['comment'] = g['comment'];
+              }
+            }
+          case 'change_ttl':
+            set['ttl'] = body['ttl'];
+          case 'change_protection':
+            set['protection'] = body;
+        }
+        return (201, {'action': _start('${cmd}_rrset', int.parse(z), 'zone')});
+      case ('POST', [final coll]) when colls.contains(coll):
+        final id = _nextId++;
+        final name = '${body['name'] ?? 'ip-$id'}';
+        final type = _singular[coll]!;
+        List<Map<String, Object?>> items(String key) =>
+            (body[key] as List? ?? const []).cast();
+        final created = switch (coll) {
+          'networks' => networkJson(
+            id: id,
+            name: name,
+            ipRange: body['ip_range']! as String,
+            subnets: [
+              for (final sn in items('subnets'))
+                networkSubnetJson(
+                  ipRange: '${sn['ip_range'] ?? '10.0.1.0/24'}',
+                  type: '${sn['type']}',
+                ),
+            ],
+          ),
+          'firewalls' => firewallJson(
+            id: id,
+            name: name,
+            rules: [for (final r in items('rules')) _rule(r)],
+            servers: [
+              for (final a in items('apply_to'))
+                if (a['server'] case final Map<String, Object?> s)
+                  s['id']! as int,
+            ],
+          ),
+          'floating_ips' => floatingIpJson(
+            id: id,
+            name: name,
+            server: body['server'] as int?,
+            ipv6: body['type'] == 'ipv6',
+          ),
+          'primary_ips' => primaryIpJson(
+            id: id,
+            name: name,
+            server: body['assignee_id'] as int?,
+            ipv6: body['type'] == 'ipv6',
+          ),
+          'load_balancers' => loadBalancerJson(
+            id: id,
+            name: name,
+            services: [
+              for (final sv in items('services')) sv.cast<String, Object?>(),
+            ],
+            targets: [
+              for (final t in items('targets'))
+                lbTargetFromBody(t.cast<String, Object?>()),
+            ],
+            networks: [?body['network'] as int?],
+          ),
+          'certificates' => certificateJson(
+            id: id,
+            name: name,
+            managed: body['type'] == 'managed',
+            domains: [...?(body['domain_names'] as List?)?.cast<String>()],
+          ),
+          _ => zoneJson(
+            id: id,
+            name: name,
+            ttl: body['ttl'] as int? ?? 3600,
+            primaries: body['mode'] == 'secondary'
+                ? [
+                    for (final p in items('primary_nameservers'))
+                      p.cast<String, Object?>(),
+                  ]
+                : null,
+          ),
+        };
+        collections[coll]!.add(created);
+        return (
+          201,
+          {
+            type: created,
+            if (coll == 'firewalls')
+              'actions': <Object?>[]
+            else if (coll != 'networks' &&
+                (coll != 'certificates' || body['type'] == 'managed'))
+              'action': _start('create_$type', id, type),
+          },
+        );
+      case ('POST', [final coll, final id, 'actions', final command])
+          when colls.contains(coll) ||
+              (coll == 'servers' &&
+                  (command.contains('network') ||
+                      command == 'change_alias_ips')):
+        final type = _singular[coll]!;
+        final o = find(coll, id)!;
+        final a = _start('${command}_$type', int.parse(id), type);
+        List<Map<String, Object?>> given(String key) =>
+            (body[key]! as List).cast();
+        switch ((coll, command)) {
+          case (_, 'change_protection'):
+            o['protection'] = {
+              ...(o['protection']! as Map).cast<String, Object?>(),
+              ...body,
+            };
+          case ('networks', 'add_subnet'):
+            list(o, 'subnets').add(
+              networkSubnetJson(
+                ipRange: '${body['ip_range'] ?? '10.0.2.0/24'}',
+                type: '${body['type']}',
+                vswitch: body['vswitch_id'] as int?,
+              ),
+            );
+          case ('networks', 'delete_subnet'):
+            list(
+              o,
+              'subnets',
+            ).removeWhere((sn) => sn['ip_range'] == body['ip_range']);
+          case ('networks', 'add_route'):
+            list(o, 'routes').add(body);
+          case ('networks', 'delete_route'):
+            list(
+              o,
+              'routes',
+            ).removeWhere((r) => r['destination'] == body['destination']);
+          case ('networks', 'change_ip_range'):
+            o['ip_range'] = body['ip_range'];
+          case ('firewalls', 'set_rules'):
+            o['rules'] = [for (final r in given('rules')) _rule(r)];
+          case ('firewalls', 'apply_to_resources'):
+            list(o, 'applied_to').addAll(given('apply_to'));
+          case ('firewalls', 'remove_from_resources'):
+            final gone = {for (final r in given('remove_from')) jsonEncode(r)};
+            list(
+              o,
+              'applied_to',
+            ).removeWhere((t) => gone.contains(jsonEncode(t)));
+          case ('floating_ips', 'assign'):
+            o['server'] = body['server'];
+          case ('floating_ips', 'unassign'):
+            o['server'] = null;
+          case ('primary_ips', 'assign'):
+            o['assignee_id'] = body['assignee_id'];
+          case ('primary_ips', 'unassign'):
+            o['assignee_id'] = null;
+          case ('floating_ips' || 'primary_ips', 'change_dns_ptr'):
+            o['dns_ptr'] = [
+              if (body['dns_ptr'] != null)
+                {'ip': body['ip'], 'dns_ptr': body['dns_ptr']},
+            ];
+          case ('load_balancers', 'change_dns_ptr'):
+            ((o['public_net']! as Map)['ipv4']! as Map)['dns_ptr'] =
+                body['dns_ptr'];
+          case ('load_balancers', 'add_service'):
+            list(o, 'services').add(body);
+          case ('load_balancers', 'update_service'):
+            final services = list(o, 'services');
+            final i = services.indexWhere(
+              (sv) => sv['listen_port'] == body['listen_port'],
+            );
+            services[i] = {...services[i], ...body};
+          case ('load_balancers', 'delete_service'):
+            list(
+              o,
+              'services',
+            ).removeWhere((sv) => sv['listen_port'] == body['listen_port']);
+          case ('load_balancers', 'add_target'):
+            list(o, 'targets').add(lbTargetFromBody(body));
+          case ('load_balancers', 'remove_target'):
+            final key = '${body['type']}';
+            list(o, 'targets').removeWhere(
+              (t) =>
+                  t['type'] == key &&
+                  jsonEncode(t[key]) == jsonEncode(body[key]),
+            );
+          case ('load_balancers', 'change_algorithm'):
+            o['algorithm'] = body;
+          case ('load_balancers', 'change_type'):
+            o['load_balancer_type'] = collections['load_balancer_types']!
+                .firstWhere((t) => t['name'] == body['load_balancer_type']);
+          case ('load_balancers', 'enable_public_interface'):
+            (o['public_net']! as Map)['enabled'] = true;
+          case ('load_balancers', 'disable_public_interface'):
+            (o['public_net']! as Map)['enabled'] = false;
+          case ('load_balancers' || 'servers', 'attach_to_network'):
+            list(o, 'private_net').add({
+              'network': body['network'],
+              'ip': body['ip'] ?? '10.0.1.${o['id']}',
+              if (coll == 'servers') ...{
+                'alias_ips': body['alias_ips'] ?? <String>[],
+                'mac_address': '86:00:00:2a:7d:e0',
+              },
+            });
+          case ('load_balancers' || 'servers', 'detach_from_network'):
+            list(
+              o,
+              'private_net',
+            ).removeWhere((n) => n['network'] == body['network']);
+          case ('servers', 'change_alias_ips'):
+            for (final n in list(o, 'private_net')) {
+              if (n['network'] == body['network']) {
+                n['alias_ips'] = body['alias_ips'];
+              }
+            }
+          case ('certificates', 'retry'):
+            o['status'] = {
+              'issuance': 'pending',
+              'renewal': 'unavailable',
+              'error': null,
+            };
+          case ('zones', 'change_ttl'):
+            o['ttl'] = body['ttl'];
+          case ('zones', 'change_primary_nameservers'):
+            o['primary_nameservers'] = body['primary_nameservers'];
+          case ('zones', 'import_zonefile'):
+            final zone = int.parse(id);
+            final text = importedZonefile = body['zonefile']! as String;
+            rrsets[zone] = [
+              for (final line in text.split('\n'))
+                if (line.trim().split(RegExp(r'\s+')) case [
+                  final n,
+                  'IN',
+                  final t,
+                  ...final v,
+                ])
+                  rrsetJson(
+                    zone: zone,
+                    name: n,
+                    type: t,
+                    values: [v.join(' ')],
+                  ),
+            ];
+        }
+        return (
+          201,
+          coll == 'firewalls'
+              ? {
+                  'actions': [a],
+                }
+              : {'action': a},
+        );
+    }
+    return null;
+  }
+
+  static Map<String, Object?> _rule(Map<Object?, Object?> r) => ruleJson(
+    direction: '${r['direction']}',
+    protocol: '${r['protocol']}',
+    port: r['port'] as String?,
+    ips: [
+      ...?((r['source_ips'] ?? r['destination_ips']) as List?)?.cast<String>(),
+    ],
+    description: r['description'] as String?,
+  );
+
   void _finish(Map<String, Object?> a) {
     a
       ..['status'] = 'success'
@@ -630,8 +1096,25 @@ Future<SharedPreferences> testPrefs([
   return await SharedPreferences.getInstance();
 }
 
+/// File dialogs without dialogs: [picked] is what the user picks, [saved]
+/// collects saved files by name.
+class FakeTextFiles extends TextFiles {
+  PickedText? picked;
+  final saved = <String, String>{};
+
+  @override
+  Future<PickedText?> pick({required int maxBytes}) async => picked;
+
+  @override
+  Future<bool> save(String name, String text) async {
+    saved[name] = text;
+    return true;
+  }
+}
+
 /// Overrides that route every API of the app to [cloud].
 List<Override> fakeApis(FakeCloud cloud) => [
+  textFilesProvider.overrideWithValue(cloud.files),
   cloudDioProvider.overrideWithValue(
     (auth) => fakeDio(cloud.adapter, auth: auth),
   ),

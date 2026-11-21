@@ -5,8 +5,10 @@ import 'package:falco/core/format/format.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/activity/activity.dart';
 import 'package:falco/features/activity/activity_page.dart';
-import 'package:falco/features/compute/catalog.dart';
 import 'package:falco/features/compute/compute_ui.dart';
+import 'package:falco/features/network/firewalls.dart';
+import 'package:falco/features/network/load_balancers.dart';
+import 'package:falco/features/network/networks.dart';
 import 'package:falco/features/servers/server_actions.dart';
 import 'package:falco/features/servers/servers.dart';
 import 'package:falco/features/volumes/volumes.dart';
@@ -32,8 +34,6 @@ class ServerDetailPage extends ConsumerStatefulWidget {
 }
 
 class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
-  final _periods = <ServerMetric, MetricPeriod>{};
-
   ProjectScope get _scope => widget.scope;
 
   @override
@@ -101,6 +101,7 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
           ),
           item(l10n.fieldProtection, Icons.lock_outline, ops.protection),
           item(l10n.reverseDns, Icons.dns_outlined, ops.reverseDns),
+          item(l10n.networkAttach, Icons.hub_outlined, ops.attachNetwork),
           MoreMenuItem(
             label: l10n.actionReset,
             icon: Icons.restart_alt,
@@ -197,7 +198,7 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
           ),
           DetailSection(
             title: l10n.sectionNetwork,
-            child: _Network(scope: _scope, server: s),
+            child: _Network(ops: ops),
           ),
           DetailSection(
             title: l10n.sectionAttached,
@@ -245,58 +246,15 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
     );
   }
 
-  Widget _chart(ServerMetric metric, String title, List<String> labels) {
-    final l10n = AppLocalizations.of(context);
-    final period = _periods[metric] ?? MetricPeriod.day;
-    final data =
-        ref
-            .watch(
-              serverMetricsProvider(_scope, widget.serverId, metric, period),
-            )
-            .value ??
-        const [];
-    final max = data
-        .expand((s) => s)
-        .fold<double>(0, (m, p) => p.$2 > m ? p.$2 : m);
-    final (unit, factor) = metric == ServerMetric.cpu ? ('%', 1.0) : _rate(max);
-    String value(double v) =>
-        '${(v / factor).toStringAsFixed(v / factor < 10 ? 1 : 0)} $unit';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        MetricChart(
-          title: title,
-          unit: unit,
-          period: period,
-          onPeriodChanged: (p) => setState(() => _periods[metric] = p),
-          series: [
-            for (final (i, points) in data.indexed)
-              if (i < labels.length)
-                MetricSeries(
-                  label: labels[i],
-                  points: [for (final (t, v) in points) (t, v / factor)],
-                ),
-          ],
-        ),
-        // Min, max, average per series (CMP-029).
-        for (final (i, points) in data.indexed)
-          if (i < labels.length)
-            if (seriesStats(points) case final st?)
-              Padding(
-                padding: const EdgeInsets.only(top: FalcoSpacing.xs),
-                child: Text(
-                  l10n.metricStats(
-                    labels[i],
-                    value(st.min),
-                    value(st.max),
-                    value(st.avg),
-                  ),
-                  style: FalcoText.of(context).monoSmall,
-                ),
-              ),
-      ],
-    );
-  }
+  Widget _chart(ServerMetric metric, String title, List<String> labels) =>
+      MetricPanel(
+        title: title,
+        labels: labels,
+        unit: '%',
+        rate: metric != ServerMetric.cpu,
+        data: (period) =>
+            serverMetricsProvider(_scope, widget.serverId, metric, period),
+      );
 
   Widget _activity(AppLocalizations l10n) {
     final actions =
@@ -321,25 +279,33 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
   }
 }
 
-/// Public IPs with reverse DNS, private networks, firewalls (CMP-018).
+/// Public IPs with reverse DNS, private networks with remove and alias
+/// IPs, firewalls (CMP-018, CMP-041, NET-086).
 class _Network extends ConsumerWidget {
-  const new({required this.scope, required this.server});
+  const new({required this.ops});
 
-  final ProjectScope scope;
-  final CloudServer server;
+  final ServerOps ops;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final s = server;
-    String name(List<Named>? all, int id) =>
-        all?.where((n) => n.id == id).firstOrNull?.name ?? '#$id';
-    final networks = s.networks.isEmpty
-        ? null
-        : ref.watch(networksProvider(scope)).value;
-    final firewalls = s.firewalls.isEmpty
-        ? null
-        : ref.watch(firewallsProvider(scope)).value;
+    final s = ops.server;
+    final scope = ops.scope;
+    final networks = {
+      for (final n
+          in s.networks.isEmpty
+              ? const <CloudNetwork>[]
+              : ref.watch(networksProvider(scope)).value ??
+                    const <CloudNetwork>[])
+        n.id: n.name,
+    };
+    final firewalls = {
+      for (final f
+          in s.firewalls.isEmpty
+              ? const <Firewall>[]
+              : ref.watch(firewallsProvider(scope)).value ?? const <Firewall>[])
+        f.id: f.name,
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -356,14 +322,47 @@ class _Network extends ConsumerWidget {
         if (s.networks.isNotEmpty) ...[
           Text(l10n.resourceNetworks, style: _label(context)),
           for (final n in s.networks)
-            CopyableValue(
-              '${name(networks, n.id)} · ${formatIp(n.ip)}',
-              copyText: n.ip,
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(networks[n.id] ?? '#${n.id}'),
+              subtitle: Mono([formatIp(n.ip), ...n.aliasIps].join(' · ')),
+              onTap: () => NetworkRoute(
+                accountId: scope.accountId,
+                projectId: scope.projectId,
+                networkId: n.id,
+              ).push<void>(context),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: l10n.fieldAliasIps,
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => ops.aliasIps(n.id, n.aliasIps),
+                  ),
+                  IconButton(
+                    tooltip: l10n.actionRemove,
+                    icon: const Icon(Icons.link_off),
+                    onPressed: () =>
+                        ops.detachNetwork(n.id, networks[n.id] ?? '#${n.id}'),
+                  ),
+                ],
+              ),
             ),
         ],
         if (s.firewalls.isNotEmpty) ...[
           Text(l10n.resourceFirewalls, style: _label(context)),
-          Text([for (final f in s.firewalls) name(firewalls, f)].join(', ')),
+          for (final f in s.firewalls)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.shield_outlined),
+              title: Text(firewalls[f] ?? '#$f'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => FirewallRoute(
+                accountId: scope.accountId,
+                projectId: scope.projectId,
+                firewallId: f,
+              ).push<void>(context),
+            ),
         ],
       ],
     );
@@ -389,6 +388,14 @@ class _Attached extends ConsumerWidget {
       for (final v
           in ref.watch(volumesProvider(scope)).value ?? const <Volume>[])
         v.id: v,
+    };
+    final lbs = {
+      for (final lb
+          in s.loadBalancers.isEmpty
+              ? const <LoadBalancer>[]
+              : ref.watch(loadBalancersProvider(scope)).value ??
+                    const <LoadBalancer>[])
+        lb.id: lb.name,
     };
     Widget link(IconData icon, String title, String? sub, VoidCallback? tap) =>
         ListTile(
@@ -432,25 +439,20 @@ class _Attached extends ConsumerWidget {
               groupId: g.id,
             ).push<void>(context),
           ),
-        // Load balancer details follow with the Network area (Phase 5).
         for (final id in s.loadBalancers)
-          link(Icons.balance, '#$id', l10n.resourceLoadBalancer, null),
+          link(
+            Icons.balance,
+            lbs[id] ?? '#$id',
+            l10n.resourceLoadBalancer,
+            () => LoadBalancerRoute(
+              accountId: scope.accountId,
+              projectId: scope.projectId,
+              lbId: id,
+            ).push<void>(context),
+          ),
       ],
     );
   }
-}
-
-/// Unit and divisor for a byte rate whose largest sample is [max]
-/// (CMP-029).
-(String, double) _rate(double max) {
-  const units = ['B/s', 'KiB/s', 'MiB/s', 'GiB/s'];
-  var factor = 1.0;
-  var i = 0;
-  while (max / factor >= 1024 && i < units.length - 1) {
-    factor *= 1024;
-    i++;
-  }
-  return (units[i], factor);
 }
 
 extension on String {

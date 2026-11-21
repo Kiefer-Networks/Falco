@@ -8,6 +8,9 @@ import 'package:falco/features/activity/activity.dart';
 import 'package:falco/features/compute/catalog.dart';
 import 'package:falco/features/compute/compute_ui.dart';
 import 'package:falco/features/images/images.dart';
+import 'package:falco/features/network/firewalls.dart';
+import 'package:falco/features/network/ips.dart';
+import 'package:falco/features/network/networks.dart';
 import 'package:falco/features/placement_groups/placement_groups.dart';
 import 'package:falco/features/servers/servers.dart';
 import 'package:falco/features/ssh_keys/ssh_keys.dart';
@@ -78,6 +81,10 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
   Set<String> _volumes = {};
   bool _ipv4 = true;
   bool _ipv6 = true;
+
+  /// Existing Primary IP ids; empty creates new ones (CMP-085).
+  String _ipv4Id = '';
+  String _ipv6Id = '';
   bool _automount = true;
   bool _start = true;
   String _group = '';
@@ -108,6 +115,8 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
           placementGroup: int.tryParse(_group),
           ipv4: _ipv4,
           ipv6: _ipv6,
+          ipv4Id: int.tryParse(_ipv4Id),
+          ipv6Id: int.tryParse(_ipv6Id),
           userData: _userData,
           labels: parseLabels(_values['labels'] ?? '') ?? const {},
           startAfterCreate: _start,
@@ -173,6 +182,19 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
         if (v.server == null && v.location == _location) v,
     ];
     final groups = load(placementGroupsProvider.call);
+    // Free Primary IPs in the location, to use instead of new ones.
+    Map<String, String> freeIps({required bool v6}) => {
+      '': l10n.primaryIpNew,
+      for (final ip
+          in scope == null
+              ? const <PublicIp>[]
+              : ref.watch(publicIpsProvider(scope, IpKind.primary)).value ??
+                    const <PublicIp>[])
+        if (ip.server == null && ip.ipv6 == v6 && ip.location == _location)
+          '${ip.id}': '${ip.name} · ${formatIp(ip.ip)}',
+    };
+    final free4 = freeIps(v6: false);
+    final free6 = freeIps(v6: true);
     String names(Map<String, String> options, Set<String> picked) =>
         picked.isEmpty
         ? l10n.commonNone
@@ -215,7 +237,7 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
             selected: _location,
             onSelected: (v) => setState(() {
               _location = v;
-              _type = '';
+              _type = _ipv4Id = _ipv6Id = '';
               _volumes = {};
             }),
           ),
@@ -270,17 +292,29 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
                 value: _ipv4,
                 onChanged: (v) => setState(() => _ipv4 = v),
               ),
+              if (_ipv4 && free4.length > 1)
+                ChoiceList(
+                  options: free4,
+                  selected: _ipv4Id,
+                  onSelected: (v) => setState(() => _ipv4Id = v),
+                ),
               SwitchListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                 title: Text(l10n.publicIpv6),
                 value: _ipv6,
                 onChanged: (v) => setState(() => _ipv6 = v),
               ),
+              if (_ipv6 && free6.length > 1)
+                ChoiceList(
+                  options: free6,
+                  selected: _ipv6Id,
+                  onSelected: (v) => setState(() => _ipv6Id = v),
+                ),
               _Heading(l10n.resourceNetworks),
               if (networks.isEmpty) Text(l10n.commonNone),
               MultiChoiceList(
                 options: netNames,
-                details: {for (final n in networks) '${n.id}': n.detail},
+                details: {for (final n in networks) '${n.id}': n.ipRange},
                 selected: _networks,
                 onChanged: (v) => setState(() => _networks = v),
               ),
@@ -374,8 +408,16 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
         ConfirmFact(
           l10n.wizardNetworking,
           [
-            if (_ipv4) l10n.publicIpv4,
-            if (_ipv6) l10n.publicIpv6,
+            if (_ipv4)
+              if (_ipv4Id.isEmpty)
+                l10n.publicIpv4
+              else
+                '${l10n.publicIpv4} (${free4[_ipv4Id]})',
+            if (_ipv6)
+              if (_ipv6Id.isEmpty)
+                l10n.publicIpv6
+              else
+                '${l10n.publicIpv6} (${free6[_ipv6Id]})',
             ..._networks.map((n) => netNames[n] ?? n),
           ].join(', '),
         ),

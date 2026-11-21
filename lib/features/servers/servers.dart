@@ -97,7 +97,8 @@ class CloudServer {
     volumes: s.volumes ?? const [],
     networks: [
       for (final n in s.privateNet)
-        if (n.network case final id?) (id: id, ip: n.ip ?? ''),
+        if (n.network case final id?)
+          (id: id, ip: n.ip ?? '', aliasIps: n.aliasIps ?? const []),
     ],
     firewalls: [
       for (final f in s.publicNet.firewalls ?? const <Never>[]) ?f.id,
@@ -143,8 +144,8 @@ class CloudServer {
   final Map<String, String> labels;
   final List<int> volumes;
 
-  /// Private networks with the server's IP in each.
-  final List<({int id, String ip})> networks;
+  /// Private networks with the server's IP and alias IPs in each.
+  final List<({int id, String ip, List<String> aliasIps})> networks;
   final List<int> firewalls;
   final List<int> loadBalancers;
   final DateTime created;
@@ -286,22 +287,6 @@ Future<int> startPower(
   return id ?? (throw const Server());
 }
 
-/// Min, max and average of [points] (CMP-029); null without samples.
-({double min, double max, double avg})? seriesStats(
-  List<(DateTime, double)> points,
-) {
-  if (points.isEmpty) return null;
-  var min = points.first.$2;
-  var max = min;
-  var sum = 0.0;
-  for (final (_, v) in points) {
-    if (v < min) min = v;
-    if (v > max) max = v;
-    sum += v;
-  }
-  return (min: min, max: max, avg: sum / points.length);
-}
-
 /// Everything to create a server (CMP-008, CMP-012, CMP-081 to CMP-086).
 @immutable
 class ServerDraft {
@@ -318,6 +303,8 @@ class ServerDraft {
     this.placementGroup,
     this.ipv4 = true,
     this.ipv6 = true,
+    this.ipv4Id,
+    this.ipv6Id,
     this.userData = '',
     this.labels = const {},
     this.startAfterCreate = true,
@@ -337,6 +324,10 @@ class ServerDraft {
   final int? placementGroup;
   final bool ipv4;
   final bool ipv6;
+
+  /// Existing Primary IPs to use instead of new ones (CMP-085).
+  final int? ipv4Id;
+  final int? ipv6Id;
   final String userData;
   final Map<String, String> labels;
   final bool startAfterCreate;
@@ -364,7 +355,12 @@ Future<({int id, int action, String? rootPassword})> createServer(
         'volumes': d.volumes,
         if (d.volumes.isNotEmpty) 'automount': d.automount,
         'placement_group': ?d.placementGroup,
-        'public_net': {'enable_ipv4': d.ipv4, 'enable_ipv6': d.ipv6},
+        'public_net': {
+          'enable_ipv4': d.ipv4,
+          'enable_ipv6': d.ipv6,
+          if (d.ipv4) 'ipv4': ?d.ipv4Id,
+          if (d.ipv6) 'ipv6': ?d.ipv6Id,
+        },
         if (d.userData.trim().isNotEmpty) 'user_data': d.userData,
         'labels': d.labels,
       }),
@@ -531,6 +527,31 @@ final class RemoveFromPlacementGroup extends ServerChange {
   const new();
 }
 
+/// Attaches the server to a network, with an IP or the next free one
+/// (CMP-040).
+final class AttachToNetwork extends ServerChange {
+  const new(this.network, {this.ip = '', this.aliasIps = const []});
+
+  final int network;
+  final String ip;
+  final List<String> aliasIps;
+}
+
+/// Removes the server from a network (CMP-041).
+final class DetachFromNetwork extends ServerChange {
+  const new(this.network);
+
+  final int network;
+}
+
+/// Replaces the alias IPs in a network (NET-086).
+final class ChangeAliasIps extends ServerChange {
+  const new(this.network, this.aliasIps);
+
+  final int network;
+  final List<String> aliasIps;
+}
+
 final class ChangeDnsPtr extends ServerChange {
   const new(this.ip, this.ptr);
 
@@ -541,7 +562,7 @@ final class ChangeDnsPtr extends ServerChange {
 }
 
 /// Starts [change] on server [id] and returns the action id
-/// (CMP-025, CMP-033 to CMP-039, CMP-042 to CMP-046, CMP-089).
+/// (CMP-025, CMP-033 to CMP-046, CMP-089, NET-086).
 Future<int> changeServer(cloud.Server api, int id, ServerChange change) {
   final a = cloud.ServerActionsApi(api);
   return switch (change) {
@@ -622,6 +643,33 @@ Future<int> changeServer(cloud.Server api, int id, ServerChange change) {
       (r) => r is cloud.RemoveServerFromPlacementGroupResponse201
           ? r.body.action.id
           : null,
+    ),
+    AttachToNetwork(:final network, :final ip, :final aliasIps) => cloudAction(
+      a.attachServerToNetwork(
+        id: id,
+        body: cloud.ServersIdActionsAttachToNetworkPostBodyBodyModel.fromJson({
+          'network': network,
+          if (ip.trim().isNotEmpty) 'ip': ip.trim(),
+          if (aliasIps.isNotEmpty) 'alias_ips': aliasIps,
+        }),
+      ),
+    ),
+    DetachFromNetwork(:final network) => cloudAction(
+      a.detachServerFromNetwork(
+        id: id,
+        body: cloud.ServersIdActionsDetachFromNetworkPostBodyBodyModel.fromJson(
+          {'network': network},
+        ),
+      ),
+    ),
+    ChangeAliasIps(:final network, :final aliasIps) => cloudAction(
+      a.changeServerAliasIps(
+        id: id,
+        body: cloud.ServersIdActionsChangeAliasIpsPostBodyBodyModel.fromJson({
+          'network': network,
+          'alias_ips': aliasIps,
+        }),
+      ),
     ),
     ChangeDnsPtr(:final ip, :final ptr) => actionOf(
       a.changeServerDnsPtr(

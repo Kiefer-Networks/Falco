@@ -29,6 +29,14 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> network(WidgetTester tester, String tab) async {
+    await tap(tester, 'Network');
+    await tester.ensureVisible(find.widgetWithText(Tab, tab));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(Tab, tab));
+    await tester.pumpAndSettle();
+  }
+
   Future<void> settings(WidgetTester tester) async {
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
@@ -153,6 +161,53 @@ void main() {
       await tap(tester, 'SSH keys');
       await tap(tester, 'laptop');
     },
+    'networks': (tester) => network(tester, 'Networks'),
+    'network_detail': (tester) async {
+      await network(tester, 'Networks');
+      await tap(tester, 'backend');
+    },
+    'create_network_subnet': (tester) async {
+      await network(tester, 'Networks');
+      await tap(tester, 'Create network');
+      await tester.enterText(find.byKey(const ValueKey('name')), 'lan');
+      await tester.pump();
+      await tap(tester, 'Next');
+    },
+    'firewalls': (tester) => network(tester, 'Firewalls'),
+    'firewall_detail': (tester) async {
+      await network(tester, 'Firewalls');
+      await tap(tester, 'web');
+    },
+    'floating_ips': (tester) => network(tester, 'Floating IPs'),
+    'primary_ip_detail': (tester) async {
+      await network(tester, 'Primary IPs');
+      await tap(tester, 'web-v4');
+    },
+    'load_balancers': (tester) => network(tester, 'Load balancers'),
+    'load_balancer_detail': (tester) async {
+      await network(tester, 'Load balancers');
+      await tap(tester, 'front');
+    },
+    'load_balancer_services': (tester) async {
+      await network(tester, 'Load balancers');
+      await tap(tester, 'front');
+      await scrollTo(tester, 'SERVICES');
+    },
+    'certificates': (tester) => network(tester, 'Certificates'),
+    'certificate_detail': (tester) async {
+      await network(tester, 'Certificates');
+      await tap(tester, 'site');
+    },
+    'zones': (tester) => network(tester, 'DNS'),
+    'zone_detail': (tester) async {
+      await network(tester, 'DNS');
+      await tap(tester, 'example.com');
+    },
+    'rrset_detail': (tester) async {
+      await network(tester, 'DNS');
+      await tap(tester, 'example.com');
+      await tap(tester, 'www CNAME');
+    },
   };
 
   // PARITY rows each golden covers.
@@ -175,6 +230,20 @@ void main() {
     'images': 'CMP-090',
     'placement_groups': 'CMP-065',
     'ssh_keys': 'CMP-070',
+    'networks': 'NET-039',
+    'network_detail': 'NET-043 NET-044 NET-045 NET-048',
+    'firewalls': 'NET-001',
+    'firewall_detail': 'NET-004 NET-013',
+    'floating_ips': 'NET-018',
+    'primary_ip_detail': 'NET-031 NET-034',
+    'load_balancers': 'NET-056',
+    'load_balancer_detail': 'NET-057 NET-058',
+    'load_balancer_services': 'NET-059 NET-063 NET-078',
+    'certificates': 'NET-079',
+    'certificate_detail': 'NET-082',
+    'zones': 'DNS-001',
+    'zone_detail': 'DNS-005 DNS-006 DNS-017',
+    'rrset_detail': 'DNS-023 DNS-027',
   };
 
   for (final variant in [FalcoVariant.dark, FalcoVariant.light]) {
@@ -218,6 +287,90 @@ void main() {
                 placementGroupJson(id: 41, name: 'spread-1', servers: [1]),
               ],
               sshKeys: [sshKeyJson(id: 61, name: 'laptop')],
+              networks: [
+                networkJson(
+                  id: 21,
+                  name: 'backend',
+                  routes: [
+                    {'destination': '10.100.1.0/24', 'gateway': '10.0.1.1'},
+                  ],
+                ),
+              ],
+              firewalls: [
+                firewallJson(
+                  id: 51,
+                  name: 'web',
+                  servers: [1],
+                  rules: [
+                    ruleJson(description: 'ssh'),
+                    ruleJson(port: '443'),
+                    ruleJson(direction: 'out', protocol: 'icmp', port: null),
+                  ],
+                ),
+                firewallJson(id: 52, name: 'spare', rules: []),
+              ],
+              floatingIps: [
+                floatingIpJson(id: 61, name: 'vip', server: 1),
+                floatingIpJson(id: 62, name: 'spare-ip', ip: '198.51.100.11'),
+              ],
+              primaryIps: [primaryIpJson(id: 71, name: 'web-v4', server: 1)],
+              loadBalancers: [
+                loadBalancerJson(
+                  id: 81,
+                  name: 'front',
+                  networks: [21],
+                  services: [
+                    lbServiceJson(),
+                    lbServiceJson(
+                      protocol: 'https',
+                      listen: 443,
+                      certificates: [91],
+                    ),
+                  ],
+                ),
+              ],
+              certificates: [
+                certificateJson(id: 91, name: 'site', usedBy: [81]),
+                certificateJson(
+                  id: 92,
+                  name: 'auto',
+                  managed: true,
+                  failed: true,
+                ),
+              ],
+              zones: [
+                zoneJson(id: 5, name: 'example.com', records: 3),
+                zoneJson(
+                  id: 6,
+                  name: 'example.org',
+                  primaries: [
+                    {'address': '192.0.2.53', 'port': 53},
+                  ],
+                ),
+              ],
+              rrsets: {
+                5: [
+                  rrsetJson(
+                    zone: 5,
+                    name: '@',
+                    type: 'A',
+                    values: ['203.0.113.1'],
+                  ),
+                  rrsetJson(
+                    zone: 5,
+                    name: 'www',
+                    type: 'CNAME',
+                    values: ['example.com.'],
+                    ttl: 600,
+                  ),
+                  rrsetJson(
+                    zone: 5,
+                    name: '@',
+                    type: 'MX',
+                    values: ['10 mail.example.com.'],
+                  ),
+                ],
+              },
             ),
             accounts: name.startsWith('welcome') || name.startsWith('account_')
                 ? const []
