@@ -1,0 +1,58 @@
+name: Flutter SDK update
+
+# Opens a PR when a newer stable Flutter release exists than the one pinned in
+# pubspec.yaml (environment.flutter). PRs created with GITHUB_TOKEN start no
+# workflows: re-run CI on the PR (close and reopen it) before merging.
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: flutter-sdk-update
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  update:
+    name: Check stable Flutter
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # push the update branch
+      pull-requests: write # open the PR
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: next # runs from main until Falco 3 replaces it
+          persist-credentials: true # the step below pushes a branch
+
+      - name: Compare and open PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: next
+        run: |
+          set -euo pipefail
+          latest=$(curl -fsSL https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json \
+            | jq -r '.current_release.stable as $h | .releases[] | select(.hash == $h) | .version')
+          current=$(sed -n 's/^  flutter: *//p' pubspec.yaml)
+          echo "current=$current latest=$latest"
+          if [ -z "$latest" ] || [ "$latest" = "$current" ]; then
+            exit 0
+          fi
+          branch="deps/flutter-$latest"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            echo "Branch $branch exists already"
+            exit 0
+          fi
+          sed -i "s/^  flutter: .*/  flutter: $latest/" pubspec.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -am "build(deps): Update Flutter to $latest"
+          git push origin "$branch"
+          gh pr create --base "$BASE" --head "$branch" \
+            --title "build(deps): Update Flutter to $latest" \
+            --body "Flutter $current to $latest. Close and reopen this PR to run CI."

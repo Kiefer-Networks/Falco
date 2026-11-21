@@ -1,0 +1,85 @@
+name: Certificate pins
+
+# Recomputes the SPKI pins of all API hosts (tool/pins.dart) and opens a PR
+# when a chain changed. Pins no longer served stay 90 days as overlap.
+# PRs created with GITHUB_TOKEN start no workflows: re-run CI on the PR
+# (close and reopen it) before merging.
+
+on:
+  schedule:
+    - cron: "41 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: pins-update
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  update:
+    name: Recompute pins
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write # push the update branch
+      pull-requests: write # open the PR
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: next # runs from main until Falco 3 replaces it
+          persist-credentials: true # the last step pushes a branch
+
+      # Same installation as ci.yml: the official repo at the pinned version.
+      - name: Install Flutter
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^  flutter: *//p' pubspec.yaml)
+          git clone --quiet --depth 1 --branch "$version" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/flutter/bin/flutter" --disable-analytics
+          "$RUNNER_TEMP/flutter/bin/flutter" --version
+
+      - name: Compute pins
+        run: |
+          set -euo pipefail
+          flutter pub get --enforce-lockfile
+          dart run tool/pins.dart | tee "$RUNNER_TEMP/chains.txt"
+
+      - name: Open PR on change
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: next
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- tool/pins.json lib/core/pins/pins.g.dart; then
+            echo "Pins unchanged"
+            exit 0
+          fi
+          branch="pins/update-$(date -u +%Y-%m-%d)"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            echo "Branch $branch exists already"
+            exit 0
+          fi
+          {
+            echo "The certificate chain of at least one API host changed."
+            echo "Retired pins stay 90 days so released versions keep working."
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/chains.txt"
+            echo '```'
+            echo
+            echo '```diff'
+            git diff -- tool/pins.json | grep -v '"der"'
+            echo '```'
+            echo
+            echo "Close and reopen this PR to run CI."
+          } > "$RUNNER_TEMP/body.md"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -m "chore: Update certificate pins" -- tool/pins.json lib/core/pins/pins.g.dart
+          git push origin "$branch"
+          gh pr create --base "$BASE" --head "$branch" \
+            --title "chore: Update certificate pins" \
+            --body-file "$RUNNER_TEMP/body.md"
