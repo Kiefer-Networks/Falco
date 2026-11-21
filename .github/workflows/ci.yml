@@ -34,7 +34,9 @@ jobs:
         with:
           channel: stable
           flutter-version-file: pubspec.yaml
-          cache: true
+          # Its built-in cache calls actions/cache by tag, which the repo's
+          # SHA pinning rule rejects.
+          cache: false
 
       - name: Dependencies
         run: flutter pub get --enforce-lockfile
@@ -69,7 +71,9 @@ jobs:
         with:
           channel: stable
           flutter-version-file: pubspec.yaml
-          cache: true
+          # Its built-in cache calls actions/cache by tag, which the repo's
+          # SHA pinning rule rejects.
+          cache: false
 
       - name: Build debug APK
         run: |
@@ -99,7 +103,9 @@ jobs:
         with:
           channel: stable
           flutter-version-file: pubspec.yaml
-          cache: true
+          # Its built-in cache calls actions/cache by tag, which the repo's
+          # SHA pinning rule rejects.
+          cache: false
 
       - name: Build iOS without code signing
         run: |
@@ -119,8 +125,9 @@ jobs:
         with:
           fail-on-severity: low
           comment-summary-in-pr: on-failure
-          # GPL-3.0-or-later app: block licences that cannot be combined with it.
-          deny-licenses: SSPL-1.0, BUSL-1.1, CC-BY-NC-4.0, CC-BY-NC-SA-4.0
+          # pub reports lower-case SPDX ids (apache-2.0), which this action
+          # rejects as invalid; licences are checked by a dedicated job later.
+          license-check: false
 
   zizmor:
     name: Workflow Security (zizmor)
