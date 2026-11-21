@@ -2,7 +2,7 @@
 import 'package:falco/app/router.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/accounts/accounts.dart';
-import 'package:falco/features/servers/server_list.dart';
+import 'package:falco/features/compute/compute_page.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/foundation.dart';
@@ -158,7 +158,7 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
       ),
       // Network, Storage and Robot follow in Phases 5 to 7.
       body: _area == 0 && scope is! RobotScope
-          ? ServerList(scope: scope)
+          ? ComputePage(scope: scope)
           : EmptyHint(message: l10n.scopeEmpty),
     );
   }

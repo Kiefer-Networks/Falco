@@ -3,6 +3,7 @@ import 'package:falco/core/clipboard/sensitive_clipboard.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/falco_scaffold.dart';
 import 'package:falco/ui/mono.dart';
+import 'package:falco/ui/sheets.dart';
 import 'package:falco/ui/theme/falco_colors.dart';
 import 'package:falco/ui/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -104,3 +105,28 @@ class _SecretRevealState extends State<SecretReveal> {
     );
   }
 }
+
+/// Shows one time secrets (a root password, a console login) in a sheet:
+/// [note] explains them, each entry is a [SecretReveal].
+Future<void> showSecretSheet(
+  BuildContext context, {
+  required String title,
+  required String note,
+  required Map<String, String> secrets,
+}) => showFalcoSheet<void>(
+  context,
+  Builder(
+    builder: (context) => SheetFrame(
+      title: title,
+      children: [
+        Text(note, style: Theme.of(context).textTheme.bodyLarge),
+        for (final MapEntry(key: label, value: secret) in secrets.entries)
+          SecretReveal(label: label, secret: secret),
+        FilledButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(AppLocalizations.of(context).commonClose),
+        ),
+      ],
+    ),
+  ),
+);

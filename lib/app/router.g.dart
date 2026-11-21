@@ -21,6 +21,11 @@ List<RouteBase> get $appRoutes => [
   $activityRoute,
   $allProjectsRoute,
   $robotRoute,
+  $createRoute,
+  $volumeRoute,
+  $imageRoute,
+  $placementGroupRoute,
+  $sshKeyRoute,
 ];
 
 RouteBase get $homeRoute => GoRouteData.$route(
@@ -441,6 +446,190 @@ mixin $RobotRoute on GoRouteData {
   @override
   String get location =>
       GoRouteData.$location('/a/${Uri.encodeComponent(_self.accountId)}/robot');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $createRoute => GoRouteData.$route(
+  path: '/a/:accountId/create/:kind',
+  hasOverriddenOnExit: false,
+  factory: $CreateRoute._fromState,
+);
+
+mixin $CreateRoute on GoRouteData {
+  static CreateRoute _fromState(GoRouterState state) => CreateRoute(
+    accountId: state.pathParameters['accountId']!,
+    kind: _$CreateKindEnumMap._$fromName(state.pathParameters['kind']!)!,
+    projectId: state.uri.queryParameters['project-id'],
+  );
+
+  CreateRoute get _self => this as CreateRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/create/${Uri.encodeComponent(_$CreateKindEnumMap[_self.kind]!)}',
+    queryParams: {if (_self.projectId != null) 'project-id': _self.projectId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+const _$CreateKindEnumMap = {
+  CreateKind.server: 'server',
+  CreateKind.volume: 'volume',
+  CreateKind.placementGroup: 'placement-group',
+  CreateKind.sshKey: 'ssh-key',
+};
+
+extension<T extends Enum> on Map<T, String> {
+  T? _$fromName(String? value) =>
+      entries.where((element) => element.value == value).firstOrNull?.key;
+}
+
+RouteBase get $volumeRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/volumes/:volumeId',
+  hasOverriddenOnExit: false,
+  factory: $VolumeRoute._fromState,
+);
+
+mixin $VolumeRoute on GoRouteData {
+  static VolumeRoute _fromState(GoRouterState state) => VolumeRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    volumeId: int.parse(state.pathParameters['volumeId']!),
+  );
+
+  VolumeRoute get _self => this as VolumeRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/volumes/${Uri.encodeComponent(_self.volumeId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $imageRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/images/:imageId',
+  hasOverriddenOnExit: false,
+  factory: $ImageRoute._fromState,
+);
+
+mixin $ImageRoute on GoRouteData {
+  static ImageRoute _fromState(GoRouterState state) => ImageRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    imageId: int.parse(state.pathParameters['imageId']!),
+  );
+
+  ImageRoute get _self => this as ImageRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/images/${Uri.encodeComponent(_self.imageId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $placementGroupRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/placement-groups/:groupId',
+  hasOverriddenOnExit: false,
+  factory: $PlacementGroupRoute._fromState,
+);
+
+mixin $PlacementGroupRoute on GoRouteData {
+  static PlacementGroupRoute _fromState(GoRouterState state) =>
+      PlacementGroupRoute(
+        accountId: state.pathParameters['accountId']!,
+        projectId: state.pathParameters['projectId']!,
+        groupId: int.parse(state.pathParameters['groupId']!),
+      );
+
+  PlacementGroupRoute get _self => this as PlacementGroupRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/placement-groups/${Uri.encodeComponent(_self.groupId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $sshKeyRoute => GoRouteData.$route(
+  path: '/a/:accountId/p/:projectId/ssh-keys/:keyId',
+  hasOverriddenOnExit: false,
+  factory: $SshKeyRoute._fromState,
+);
+
+mixin $SshKeyRoute on GoRouteData {
+  static SshKeyRoute _fromState(GoRouterState state) => SshKeyRoute(
+    accountId: state.pathParameters['accountId']!,
+    projectId: state.pathParameters['projectId']!,
+    keyId: int.parse(state.pathParameters['keyId']!),
+  );
+
+  SshKeyRoute get _self => this as SshKeyRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/a/${Uri.encodeComponent(_self.accountId)}/p/${Uri.encodeComponent(_self.projectId)}/ssh-keys/${Uri.encodeComponent(_self.keyId.toString())}',
+  );
 
   @override
   void go(BuildContext context) => context.go(location);

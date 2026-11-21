@@ -10,9 +10,14 @@ import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/accounts/account_pages.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/activity/activity_page.dart';
+import 'package:falco/features/images/image_pages.dart';
 import 'package:falco/features/onboarding/welcome_page.dart';
+import 'package:falco/features/placement_groups/placement_group_pages.dart';
+import 'package:falco/features/servers/create_server_page.dart';
 import 'package:falco/features/servers/server_detail_page.dart';
 import 'package:falco/features/settings/settings_page.dart';
+import 'package:falco/features/ssh_keys/ssh_key_pages.dart';
+import 'package:falco/features/volumes/volume_pages.dart';
 import 'package:falco/ui/showcase/showcase_page.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/foundation.dart';
@@ -245,4 +250,119 @@ class RobotRoute extends GoRouteData with $RobotRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       ScopeHomePage(scope: RobotScope(accountId));
+}
+
+/// What a create wizard creates.
+enum CreateKind { server, volume, placementGroup, sshKey }
+
+/// Create wizard of [kind] for a project, or for "All projects" when
+/// [projectId] is null (the wizard then asks for the project first).
+@TypedGoRoute<CreateRoute>(path: '/a/:accountId/create/:kind')
+class CreateRoute extends GoRouteData with $CreateRoute {
+  const new({required this.accountId, required this.kind, this.projectId});
+
+  /// The route creating [kind] in [scope].
+  factory of(Scope scope, CreateKind kind) => CreateRoute(
+    accountId: scope.accountId,
+    kind: kind,
+    projectId: scope is ProjectScope ? scope.projectId : null,
+  );
+
+  final String accountId;
+  final CreateKind kind;
+  final String? projectId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    final scope = projectId == null
+        ? AllProjectsScope(accountId)
+        : ProjectScope(accountId, projectId!);
+    return switch (kind) {
+      CreateKind.server => CreateServerPage(scope: scope),
+      CreateKind.volume => CreateVolumePage(scope: scope),
+      CreateKind.placementGroup => CreatePlacementGroupPage(scope: scope),
+      CreateKind.sshKey => CreateSshKeyPage(scope: scope),
+    };
+  }
+}
+
+/// One volume.
+@TypedGoRoute<VolumeRoute>(path: '/a/:accountId/p/:projectId/volumes/:volumeId')
+class VolumeRoute extends GoRouteData with $VolumeRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.volumeId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int volumeId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => VolumeDetailPage(
+    scope: ProjectScope(accountId, projectId),
+    volumeId: volumeId,
+  );
+}
+
+/// One snapshot or backup.
+@TypedGoRoute<ImageRoute>(path: '/a/:accountId/p/:projectId/images/:imageId')
+class ImageRoute extends GoRouteData with $ImageRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.imageId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int imageId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => ImageDetailPage(
+    scope: ProjectScope(accountId, projectId),
+    imageId: imageId,
+  );
+}
+
+/// One placement group.
+@TypedGoRoute<PlacementGroupRoute>(
+  path: '/a/:accountId/p/:projectId/placement-groups/:groupId',
+)
+class PlacementGroupRoute extends GoRouteData with $PlacementGroupRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.groupId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int groupId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      PlacementGroupDetailPage(
+        scope: ProjectScope(accountId, projectId),
+        groupId: groupId,
+      );
+}
+
+/// One SSH key.
+@TypedGoRoute<SshKeyRoute>(path: '/a/:accountId/p/:projectId/ssh-keys/:keyId')
+class SshKeyRoute extends GoRouteData with $SshKeyRoute {
+  const new({
+    required this.accountId,
+    required this.projectId,
+    required this.keyId,
+  });
+
+  final String accountId;
+  final String projectId;
+  final int keyId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      SshKeyDetailPage(scope: ProjectScope(accountId, projectId), keyId: keyId);
 }
