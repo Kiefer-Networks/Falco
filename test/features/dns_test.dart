@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:convert' show utf8;
+
 import 'package:falco/api/cloud/cloud.dart';
+import 'package:falco/core/files/text_files.dart' show decodeText;
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/dns/zone_pages.dart';
 import 'package:falco/features/dns/zones.dart';
@@ -118,6 +121,32 @@ void main() {
     await settleAction(tester);
   });
 
+  testWidgets('DNS-022 a secondary zone loads no records and edits only '
+      'labels', (tester) async {
+    final cloud = await openZone(tester, 'example.org');
+    expect(cloud.calls, isNot(contains('GET /zones/6/rrsets')));
+    expect(
+      find.text(
+        'The records of a secondary zone come from its primary nameservers.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byTooltip('More actions'));
+    await tester.pumpAndSettle();
+    expect(find.text('Export'), findsNothing);
+    expect(find.text('Select records'), findsNothing);
+    await tester.tapAt(Offset.zero);
+    await tester.pumpAndSettle();
+    await tile(tester, 'Edit');
+    expect(find.byKey(const ValueKey('ttl')), findsNothing);
+    await enter(tester, 'labels', 'team=dns');
+    await tap(tester, 'Save');
+    expect(cloud.calls.where((c) => c.contains('change_ttl')), isEmpty);
+    expect(cloud.body('PUT /zones/6'), {
+      'labels': {'team': 'dns'},
+    });
+  });
+
   testWidgets('DNS-004 delete needs the zone name', (tester) async {
     final cloud = await openZone(tester);
     await tap(tester, 'Delete');
@@ -175,6 +204,28 @@ void main() {
     await settleAction(tester);
   });
 
+  testWidgets('DNS-007 a new TTL for an existing RRSet waits for the added '
+      'value', (tester) async {
+    final cloud = await openZone(tester);
+    await tile(tester, 'Add record');
+    await enter(tester, 'ttl', '7200');
+    await enter(tester, 'values', '203.0.113.2');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(
+      cloud.calls,
+      contains('POST /zones/5/rrsets/@/A/actions/add_records'),
+    );
+    expect(cloud.calls.where((c) => c.contains('change_ttl')), isEmpty);
+    await settleAction(tester);
+    expect(cloud.body('POST /zones/5/rrsets/@/A/actions/change_ttl'), {
+      'ttl': 7200,
+    });
+    await settleAction(tester);
+  });
+
   testWidgets('DNS-012 DNS-013 DNS-014 select, bulk edit, result', (
     tester,
   ) async {
@@ -201,8 +252,8 @@ void main() {
     expect(cloud.body('POST /zones/5/rrsets/@/A/actions/change_ttl'), {
       'ttl': 900,
     });
-    expect(find.text('Records updated'), findsOneWidget);
     await settleAction(tester);
+    expect(find.text('Records updated'), findsOneWidget);
   });
 
   testWidgets('DNS-014 bulk edit counts failures', (tester) async {
@@ -246,8 +297,12 @@ void main() {
     expect(find.text('@ A\nwww CNAME\n@ TXT\nsub NS'), findsOneWidget);
     expect(cloud.calls.where((c) => c.contains('change_ttl')), isEmpty);
     await confirm(tester, 'Save');
+    // A zone runs one action at a time: each waits for the one before.
+    expect(cloud.calls.where((c) => c.contains('change_ttl')), hasLength(1));
+    for (var i = 0; i < 4; i++) {
+      await settleAction(tester);
+    }
     expect(cloud.calls.where((c) => c.contains('change_ttl')), hasLength(4));
-    await settleAction(tester);
   });
 
   testWidgets(
@@ -268,6 +323,15 @@ void main() {
       expect(find.text('The file is larger than 1 MiB.'), findsOneWidget);
     },
   );
+
+  testWidgets('DNS-015 a file that is not UTF-8 text says so', (tester) async {
+    expect(decodeText([0xff, 0xfe]), isNull);
+    expect(decodeText(utf8.encode('www IN A 203.0.113.5')), isNotNull);
+    final cloud = await openZone(tester);
+    cloud.files.picked = (text: null, tooLarge: false);
+    await more(tester, 'Import zone file');
+    expect(find.text('The file is not UTF-8 text.'), findsOneWidget);
+  });
 
   testWidgets('DNS-016 export saves the BIND file', (tester) async {
     final cloud = await openZone(tester);

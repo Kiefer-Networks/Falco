@@ -8,11 +8,13 @@ import 'dart:convert' show utf8;
 import 'dart:math' show Random;
 
 import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart' show InterceptorsWrapper;
+import 'package:dio/dio.dart'
+    show DioException, InterceptorsWrapper, RequestOptions;
 import 'package:falco/api/robot/robot_client.dart';
 import 'package:falco/core/actions/action_tracker.dart';
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/http/http.dart';
+import 'package:falco/core/scope/scope_repository.dart' show accountsProvider;
 import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/features/accounts/checks.dart';
 import 'package:falco/l10n/app_localizations.dart';
@@ -25,36 +27,61 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'robot.g.dart';
 
 /// The Robot webservice of an account; the login is read per request.
-/// Once Robot refuses a login, requests with that login fail at once as
-/// [Unauthorized] until it changes, so a wrong password is not sent
-/// again for every list.
+/// Once Robot refuses a login on a path, requests to that path with
+/// that login fail at once as [Unauthorized] until it changes or any
+/// request succeeds. So a wrong password is not sent again for every
+/// list, and a section the login may not use blocks no other. Saving or
+/// deleting the login and removing the account rebuild the client.
 @Riverpod(keepAlive: true)
 RobotClient robotApi(Ref ref, String accountId) {
   final secrets = ref.watch(secretStoreProvider);
+  // Every login change and account removal reloads the accounts; their
+  // first load is no change.
+  ref.listen(accountsProvider, (previous, next) {
+    if ((previous?.hasValue ?? false) && !next.isLoading) ref.invalidateSelf();
+  });
   // Logins are compared by a keyed hash; the key lives only here.
   final key = [for (var i = 0; i < 32; i++) Random.secure().nextInt(256)];
   Digest fingerprint(RobotCredentials c) =>
       Hmac(sha256, key).convert(utf8.encode('${c.user}\n${c.password}'));
-  Digest? sent;
-  Digest? refused;
+  const login = 'falco.robotLogin';
+  final refused = <String, Digest>{};
   final dio = ref.watch(robotDioProvider)(
-    storedBasicAuth(() async {
-      final c = await secrets.robot(accountId);
-      if (c == null) return null;
-      sent = fingerprint(c);
-      return sent == refused ? null : (c.user, c.password);
-    }),
+    InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final c = await secrets.robot(accountId);
+        final sent = c == null ? null : fingerprint(c);
+        if (c == null || sent == refused[options.path]) {
+          return handler.reject(
+            DioException(requestOptions: options, error: const Unauthorized()),
+          );
+        }
+        options.extra[login] = sent;
+        basicAuth(c.user, c.password).onRequest(options, handler);
+      },
+    ),
   );
+  // The login a request carried, not the one stored meanwhile.
+  void answered(RequestOptions options, int? status) {
+    final sent = options.extra[login];
+    if (sent is! Digest || status == null) return;
+    if (status == 401) {
+      refused[options.path] = sent;
+    } else if (status < 400) {
+      refused.clear();
+    }
+  }
+
   // First, so it sees the answer before errors are mapped.
   dio.interceptors.insert(
     0,
     InterceptorsWrapper(
       onResponse: (r, handler) {
-        if (r.statusCode == 401) refused = sent;
+        answered(r.requestOptions, r.statusCode);
         handler.next(r);
       },
       onError: (e, handler) {
-        if (e.response?.statusCode == 401) refused = sent;
+        answered(e.requestOptions, e.response?.statusCode);
         handler.next(e);
       },
     ),

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/api/cloud/cloud.dart';
 import 'package:falco/app/router.dart';
+import 'package:falco/core/actions/action_tracker.dart';
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/files/text_files.dart';
 import 'package:falco/core/format/format.dart';
@@ -166,6 +167,7 @@ Future<bool> showRecordSheet(
           : changeRrset(api, zone.id, known, AddRecords(set.records)));
       tracker.track(id);
       if (known != null && set.ttl != null && set.ttl != known.ttl) {
+        if (!await _ended(tracker, id)) return;
         tracker.track(
           await changeRrset(api, zone.id, known, ChangeRRSetTtl(set.ttl)),
         );
@@ -173,6 +175,11 @@ Future<bool> showRecordSheet(
     },
   );
 }
+
+/// Follows zone action [id] to its end; false when it failed. A zone
+/// runs one action at a time, so the next one starts after this.
+Future<bool> _ended(ActionTracker tracker, int id) async =>
+    (await tracker.track(id).last).status == ActionStatus.success;
 
 /// One zone: records with multi selection and bulk edit, primary
 /// nameservers, import and export, edit, protection, delete (DNS-003 to
@@ -219,7 +226,10 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
     if (picked == null || !mounted) return;
     final text = picked.text;
     if (text == null) {
-      FalcoScaffold.showSnack(context, l10n.zonefileTooLarge);
+      FalcoScaffold.showSnack(
+        context,
+        picked.tooLarge ? l10n.zonefileTooLarge : l10n.fileNotText,
+      );
       return;
     }
     // Replacing every record is destructive: level 2 (DNS-015, BUG-002).
@@ -250,18 +260,22 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
     return FormSheet.show(
       context,
       title: l10n.commonEdit,
+      // A secondary zone has no TTL of its own; only labels change.
       fields: (_) => [
-        FieldSpec(
-          'ttl',
-          l10n.fieldDefaultTtl,
-          initial: '${z.ttl}',
-          helper: l10n.ttlLimits,
-        ),
+        if (!z.secondary)
+          FieldSpec(
+            'ttl',
+            l10n.fieldDefaultTtl,
+            initial: '${z.ttl}',
+            helper: l10n.ttlLimits,
+          ),
         labelsField(l10n, z.labels),
       ],
-      valid: (v) => validTtl(v['ttl'], optional: false) && validLabels(v),
+      valid: (v) =>
+          (z.secondary || validTtl(v['ttl'], optional: false)) &&
+          validLabels(v),
       onSave: (v) async {
-        final ttl = int.parse(v['ttl']!.trim());
+        final ttl = z.secondary ? z.ttl : int.parse(v['ttl']!.trim());
         final labels = parseLabels(v['labels'] ?? '')!;
         final api = ref.read(cloudApiProvider(_scope.projectId));
         final tracker = ref.read(actionTrackerProvider(_scope));
@@ -389,23 +403,19 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
     final api = ref.read(cloudApiProvider(_scope.projectId));
     final tracker = ref.read(actionTrackerProvider(_scope));
     final container = ProviderScope.containerOf(context, listen: false);
+    Future<bool> run(Future<int> start) async =>
+        await _ended(tracker, await start);
     var failed = 0;
     for (final set in sets) {
       try {
-        if (value.isNotEmpty) {
-          tracker.track(
-            await changeRrset(
-              api,
-              z.id,
-              set,
-              SetRecords([
-                (value: normalizeRecord(set.type, value), comment: ''),
-              ]),
-            ),
-          );
-        }
-        if (ttl != null) {
-          tracker.track(await changeRrset(api, z.id, set, ChangeRRSetTtl(ttl)));
+        final records = [
+          (value: normalizeRecord(set.type, value), comment: ''),
+        ];
+        if ((value.isNotEmpty &&
+                !await run(changeRrset(api, z.id, set, SetRecords(records)))) ||
+            (ttl != null &&
+                !await run(changeRrset(api, z.id, set, ChangeRRSetTtl(ttl))))) {
+          failed++;
         }
       } on FalcoError {
         failed++;
@@ -435,7 +445,10 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
     }
     final t = (scope: _scope, type: CloudType.zone, id: z.id, name: z.name);
     final setsProvider = rrsetsProvider(_scope, z.id);
-    final setsAsync = ref.watch(setsProvider);
+    // A secondary zone's records come from its primaries (AXFR).
+    final setsAsync = z.secondary
+        ? const AsyncData(<RRSet>[])
+        : ref.watch(setsProvider);
     final sets = setsAsync.value ?? const <RRSet>[];
     final progress = ref
         .watch(trackedActionProvider(_scope, CloudType.zone, z.id))
@@ -458,7 +471,7 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
         ids: [l10n.ttlValue(z.ttl), ...z.nameservers],
         onRefresh: () => Future.wait([
           refreshQuietly(ref, provider.future),
-          refreshQuietly(ref, setsProvider.future),
+          if (!z.secondary) refreshQuietly(ref, setsProvider.future),
         ]),
         actions: [
           DetailAction(
@@ -488,22 +501,23 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
                         changeZone(api, z.id, ProtectZone(delete: p)),
                   ),
           ),
-          DetailAction(
-            icon: Icons.download,
-            label: l10n.zoneExport,
-            onTap: () => _export(z),
-          ),
-          DetailAction(
-            label: l10n.recordsSelect,
-            icon: Icons.checklist,
-            onTap: () => setState(() => _selected = {}),
-          ),
-          if (!z.secondary)
+          if (!z.secondary) ...[
+            DetailAction(
+              icon: Icons.download,
+              label: l10n.zoneExport,
+              onTap: () => _export(z),
+            ),
+            DetailAction(
+              label: l10n.recordsSelect,
+              icon: Icons.checklist,
+              onTap: () => setState(() => _selected = {}),
+            ),
             DetailAction(
               label: l10n.zoneImport,
               icon: Icons.upload_file,
               onTap: () => _import(z),
             ),
+          ],
           if (z.secondary)
             DetailAction(
               label: l10n.primaryAdd,
@@ -615,6 +629,8 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
                   )
                 else if (!setsAsync.hasValue)
                   const LinearProgressIndicator()
+                else if (z.secondary)
+                  Text(l10n.recordsFromPrimaries)
                 else if (sets.isEmpty)
                   Text(l10n.recordsEmpty),
                 for (final s in sets)

@@ -12,8 +12,17 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'text_files.g.dart';
 
 /// A picked text file: its content, or `tooLarge` when it exceeds the
-/// limit (then `text` is null).
+/// limit. `text` is null then, and when the file is not UTF-8 text.
 typedef PickedText = ({String? text, bool tooLarge});
+
+/// [bytes] as UTF-8 text; null when they are not.
+String? decodeText(List<int> bytes) {
+  try {
+    return utf8.decode(bytes);
+  } on FormatException {
+    return null;
+  }
+}
 
 /// The system file dialogs for text.
 class TextFiles {
@@ -26,7 +35,7 @@ class TextFiles {
     if ((await file.length() ?? 0) > maxBytes) {
       return (text: null, tooLarge: true);
     }
-    return (text: await file.xFile.readAsString(), tooLarge: false);
+    return (text: decodeText(await file.xFile.readAsBytes()), tooLarge: false);
   }
 
   /// Lets the user pick any file to upload (OBJ-007); null when

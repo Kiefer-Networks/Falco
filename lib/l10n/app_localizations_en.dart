@@ -1983,7 +1983,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String primaryIpNoServers(String location) {
-    return 'No servers that are off in $location. A Primary IP moves only to a server that is off.';
+    return 'No servers in $location that are off and have no Primary IP of this type. A Primary IP moves only to such a server.';
   }
 
   @override
@@ -2053,6 +2053,10 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get recordsFromPrimaries =>
+      'The records of a secondary zone come from its primary nameservers.';
 
   @override
   String get recordsBulkTtlOnly => 'Different types: only the TTL can change.';
@@ -2964,6 +2968,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get failoverUnrouted => 'Not routed';
 
   @override
+  String get fileNotText => 'The file is not UTF-8 text.';
+
+  @override
   String get fileTooLarge => 'The file is too large.';
 
   @override
@@ -2993,6 +3000,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get firewallRules => 'Rules';
+
+  @override
+  String get firewallTemplateApplyConsequence =>
+      'All rules of the server firewall are replaced by the rules of the template.';
+
+  @override
+  String firewallTemplateApplyTitle(String name) {
+    return 'Apply template $name?';
+  }
 
   @override
   String get firewallUnsaved => 'not applied yet';

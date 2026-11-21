@@ -9,25 +9,31 @@ part of 'robot.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// The Robot webservice of an account; the login is read per request.
-/// Once Robot refuses a login, requests with that login fail at once as
-/// [Unauthorized] until it changes, so a wrong password is not sent
-/// again for every list.
+/// Once Robot refuses a login on a path, requests to that path with
+/// that login fail at once as [Unauthorized] until it changes or any
+/// request succeeds. So a wrong password is not sent again for every
+/// list, and a section the login may not use blocks no other. Saving or
+/// deleting the login and removing the account rebuild the client.
 
 @ProviderFor(robotApi)
 final robotApiProvider = RobotApiFamily._();
 
 /// The Robot webservice of an account; the login is read per request.
-/// Once Robot refuses a login, requests with that login fail at once as
-/// [Unauthorized] until it changes, so a wrong password is not sent
-/// again for every list.
+/// Once Robot refuses a login on a path, requests to that path with
+/// that login fail at once as [Unauthorized] until it changes or any
+/// request succeeds. So a wrong password is not sent again for every
+/// list, and a section the login may not use blocks no other. Saving or
+/// deleting the login and removing the account rebuild the client.
 
 final class RobotApiProvider
     extends $FunctionalProvider<RobotClient, RobotClient, RobotClient>
     with $Provider<RobotClient> {
   /// The Robot webservice of an account; the login is read per request.
-  /// Once Robot refuses a login, requests with that login fail at once as
-  /// [Unauthorized] until it changes, so a wrong password is not sent
-  /// again for every list.
+  /// Once Robot refuses a login on a path, requests to that path with
+  /// that login fail at once as [Unauthorized] until it changes or any
+  /// request succeeds. So a wrong password is not sent again for every
+  /// list, and a section the login may not use blocks no other. Saving or
+  /// deleting the login and removing the account rebuild the client.
   RobotApiProvider._({
     required RobotApiFamily super.from,
     required String super.argument,
@@ -79,12 +85,14 @@ final class RobotApiProvider
   }
 }
 
-String _$robotApiHash() => r'd293fe78a2989e89ed344952014e914a691eadc1';
+String _$robotApiHash() => r'd0dadab0da51e10595fad6d8e57420c6900d14c8';
 
 /// The Robot webservice of an account; the login is read per request.
-/// Once Robot refuses a login, requests with that login fail at once as
-/// [Unauthorized] until it changes, so a wrong password is not sent
-/// again for every list.
+/// Once Robot refuses a login on a path, requests to that path with
+/// that login fail at once as [Unauthorized] until it changes or any
+/// request succeeds. So a wrong password is not sent again for every
+/// list, and a section the login may not use blocks no other. Saving or
+/// deleting the login and removing the account rebuild the client.
 
 final class RobotApiFamily extends $Family
     with $FunctionalFamilyOverride<RobotClient, String> {
@@ -98,9 +106,11 @@ final class RobotApiFamily extends $Family
       );
 
   /// The Robot webservice of an account; the login is read per request.
-  /// Once Robot refuses a login, requests with that login fail at once as
-  /// [Unauthorized] until it changes, so a wrong password is not sent
-  /// again for every list.
+  /// Once Robot refuses a login on a path, requests to that path with
+  /// that login fail at once as [Unauthorized] until it changes or any
+  /// request succeeds. So a wrong password is not sent again for every
+  /// list, and a section the login may not use blocks no other. Saving or
+  /// deleting the login and removing the account rebuild the client.
 
   RobotApiProvider call(String accountId) =>
       RobotApiProvider._(argument: accountId, from: this);

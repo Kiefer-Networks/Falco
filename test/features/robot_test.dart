@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:falco/api/robot/robot_client.dart';
 import 'package:falco/core/errors/falco_error.dart';
+import 'package:falco/core/scope/scope_repository.dart' show accountsProvider;
 import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/features/robot/robot.dart';
 import 'package:falco/features/robot/robot_ui.dart';
@@ -640,8 +641,15 @@ void main() {
       ]);
       expect(sent, contains(('rules[input][1][dst_port]', '443')));
       expect(sent, contains(('rules[input][1][protocol]', 'tcp')));
+      int applied() =>
+          cloud.calls.where((c) => c == 'POST /firewall/321').length;
+      final before = applied();
       await more(tester, 'Apply template');
       await tap(tester, 'web');
+      expect(find.text('Apply template web?'), findsOneWidget);
+      expect(applied(), before);
+      await typeName(tester, 'web');
+      await confirm(tester, 'Apply template');
       expect(
         sentForm(cloud, 'POST /firewall/321'),
         contains(('template_id', '1')),
@@ -774,6 +782,33 @@ void main() {
       );
       await api.servers();
       expect(sent(), 2);
+    });
+
+    test('a refused path blocks only itself until a request succeeds or '
+        'the login is saved', () async {
+      final cloud = FakeCloud();
+      final c = await fakeContainer(cloud, accounts: const [acmeRobot]);
+      cloud.robot.failures['failover'] = (
+        401,
+        {
+          'error': {'status': 401, 'code': 'UNAUTHORIZED', 'message': ''},
+        },
+      );
+      int sent(String path) => cloud.adapter.requests
+          .where((r) => r.uri.host == 'robot-ws.your-server.de')
+          .where((r) => r.uri.path == path)
+          .length;
+      final api = c.read(robotApiProvider('a1'));
+      final refused = throwsA(isA<Unauthorized>());
+      await expectLater(api.failovers(), refused);
+      await expectLater(api.failovers(), refused);
+      expect(sent('/failover'), 1);
+      await api.servers();
+      await expectLater(api.failovers(), refused);
+      expect(sent('/failover'), 2);
+      c.invalidate(accountsProvider);
+      await c.read(accountsProvider.future);
+      expect(c.read(robotApiProvider('a1')), isNot(same(api)));
     });
   });
 }

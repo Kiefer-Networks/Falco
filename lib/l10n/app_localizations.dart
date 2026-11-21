@@ -3395,7 +3395,7 @@ abstract class AppLocalizations {
   /// No description provided for @primaryIpNoServers.
   ///
   /// In en, this message translates to:
-  /// **'No servers that are off in {location}. A Primary IP moves only to a server that is off.'**
+  /// **'No servers in {location} that are off and have no Primary IP of this type. A Primary IP moves only to such a server.'**
   String primaryIpNoServers(String location);
 
   /// No description provided for @primaryIpUnassignConsequence.
@@ -3475,6 +3475,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 record set failed} other{{count} record sets failed}}'**
   String recordsFailed(int count);
+
+  /// No description provided for @recordsFromPrimaries.
+  ///
+  /// In en, this message translates to:
+  /// **'The records of a secondary zone come from its primary nameservers.'**
+  String get recordsFromPrimaries;
 
   /// No description provided for @recordsBulkTtlOnly.
   ///
@@ -4952,6 +4958,12 @@ abstract class AppLocalizations {
   /// **'Not routed'**
   String get failoverUnrouted;
 
+  /// No description provided for @fileNotText.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is not UTF-8 text.'**
+  String get fileNotText;
+
   /// No description provided for @fileTooLarge.
   ///
   /// In en, this message translates to:
@@ -5011,6 +5023,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rules'**
   String get firewallRules;
+
+  /// No description provided for @firewallTemplateApplyConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'All rules of the server firewall are replaced by the rules of the template.'**
+  String get firewallTemplateApplyConsequence;
+
+  /// No description provided for @firewallTemplateApplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply template {name}?'**
+  String firewallTemplateApplyTitle(String name);
 
   /// No description provided for @firewallUnsaved.
   ///
