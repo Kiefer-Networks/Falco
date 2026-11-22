@@ -122,6 +122,12 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get commonSave;
 
+  /// No description provided for @commonSaveToFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to file'**
+  String get commonSaveToFile;
+
   /// No description provided for @commonCreate.
   ///
   /// In en, this message translates to:
@@ -524,18 +530,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 day ago} other{{count} days ago}}'**
   String relativeDays(int count);
 
-  /// No description provided for @showcaseTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Design system'**
-  String get showcaseTitle;
-
-  /// No description provided for @showcaseTheme.
-  ///
-  /// In en, this message translates to:
-  /// **'Theme'**
-  String get showcaseTheme;
-
   /// No description provided for @showcaseDark.
   ///
   /// In en, this message translates to:
@@ -559,12 +553,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Accent'**
   String get showcaseAccent;
-
-  /// No description provided for @showcaseOpen.
-  ///
-  /// In en, this message translates to:
-  /// **'Open'**
-  String get showcaseOpen;
 
   /// No description provided for @resourceServers.
   ///
@@ -1718,6 +1706,36 @@ abstract class AppLocalizations {
   /// **'Add an account with a Cloud API token, Robot access, or both. Every access is checked before it is stored.'**
   String get welcomeStartText;
 
+  /// No description provided for @welcomePermissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get welcomePermissions;
+
+  /// No description provided for @welcomeNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get welcomeNotificationsTitle;
+
+  /// No description provided for @welcomeNotificationsText.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploads and downloads keep running in the background and show their progress as a notification. Falco asks for this when you continue; transfers also work without it.'**
+  String get welcomeNotificationsText;
+
+  /// No description provided for @welcomeBiometricsIos.
+  ///
+  /// In en, this message translates to:
+  /// **'iOS asks once whether Falco may use Face ID, when you save your first account.'**
+  String get welcomeBiometricsIos;
+
+  /// No description provided for @welcomeBiometricsAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingerprint and device PIN need no extra permission.'**
+  String get welcomeBiometricsAndroid;
+
   /// No description provided for @backupWindow.
   ///
   /// In en, this message translates to:
@@ -2477,8 +2495,38 @@ abstract class AppLocalizations {
   /// No description provided for @sshKeyUnknown.
   ///
   /// In en, this message translates to:
-  /// **'Unknown key type. Use ssh-ed25519, ssh-rsa, ecdsa or a security key.'**
+  /// **'Not a valid public key. Use ssh-ed25519, ssh-rsa, ecdsa or a security key.'**
   String get sshKeyUnknown;
+
+  /// No description provided for @sshKeyGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate key pair'**
+  String get sshKeyGenerate;
+
+  /// No description provided for @sshKeyGenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'Ed25519 key pair generated'**
+  String get sshKeyGenerated;
+
+  /// No description provided for @sshKeyPrivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private key'**
+  String get sshKeyPrivateTitle;
+
+  /// No description provided for @sshKeyPrivateAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown once after the key is added'**
+  String get sshKeyPrivateAfter;
+
+  /// No description provided for @sshKeyPrivateNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Save or copy the private key now. Falco does not keep it and cannot show it again. It is not encrypted: store it safely, for example in ~/.ssh with access for you only, and add a passphrase with ssh-keygen -p.'**
+  String get sshKeyPrivateNote;
 
   /// No description provided for @startAfterCreate.
   ///
@@ -4699,6 +4747,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transfer failed'**
   String get transferFailed;
+
+  /// No description provided for @transferNoNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off: the transfer runs anyway, its progress shows only in Falco.'**
+  String get transferNoNotifications;
 
   /// No description provided for @transferFailedNamed.
   ///

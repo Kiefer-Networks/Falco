@@ -4,8 +4,8 @@ import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// A named component state, rendered by [ShowcasePage] and by the golden
-/// tests (one golden per case and theme).
+/// A named component state, rendered by the golden tests (one golden per
+/// case and theme).
 typedef ShowcaseCase = ({String id, double height, WidgetBuilder builder});
 
 /// Demo server used by the list cases.
@@ -640,111 +640,3 @@ List<ShowcaseCase> showcaseCases() => [
     builder: (context) => _wizard(context, step: 2),
   ),
 ];
-
-/// Renders every design system component in all its states. Home screen
-/// until the first feature lands.
-class ShowcasePage extends StatelessWidget {
-  /// Creates the showcase.
-  const new({
-    required this.variant,
-    required this.accent,
-    required this.onThemeChanged,
-    super.key,
-  });
-
-  /// Current surface variant.
-  final FalcoVariant variant;
-
-  /// Current accent.
-  final AccentPreset accent;
-
-  /// Switches the app theme.
-  final void Function(FalcoVariant variant, AccentPreset accent) onThemeChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final c = FalcoColors.of(context);
-    final cases = showcaseCases();
-    return FalcoScaffold(
-      title: l10n.showcaseTitle,
-      body: ListView(
-        padding: const EdgeInsets.all(FalcoSpacing.l),
-        children: [
-          SegmentedButton<FalcoVariant>(
-            segments: [
-              ButtonSegment(
-                value: FalcoVariant.dark,
-                label: Text(l10n.showcaseDark),
-              ),
-              ButtonSegment(
-                value: FalcoVariant.light,
-                label: Text(l10n.showcaseLight),
-              ),
-              ButtonSegment(
-                value: FalcoVariant.oled,
-                label: Text(l10n.showcaseOled),
-              ),
-            ],
-            selected: {variant},
-            onSelectionChanged: (s) => onThemeChanged(s.first, accent),
-          ),
-          const SizedBox(height: FalcoSpacing.s),
-          Wrap(
-            children: [
-              for (final a in AccentPreset.values)
-                IconButton(
-                  tooltip: '${l10n.showcaseAccent} ${a.index + 1}',
-                  onPressed: () => onThemeChanged(variant, a),
-                  icon: Icon(
-                    a == accent ? Icons.radio_button_checked : Icons.circle,
-                    color: a.tone(variant.brightness),
-                  ),
-                ),
-            ],
-          ),
-          for (final sc in cases) ...[
-            const SizedBox(height: FalcoSpacing.l),
-            Text(sc.id, style: FalcoText.of(context).monoSmall),
-            const SizedBox(height: FalcoSpacing.xs),
-            Container(
-              height: sc.height,
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                border: Border.all(color: c.hairline),
-                borderRadius: BorderRadius.circular(FalcoRadius.small),
-              ),
-              child: Builder(builder: sc.builder),
-            ),
-          ],
-          const SizedBox(height: FalcoSpacing.l),
-          Wrap(
-            spacing: FalcoSpacing.s,
-            children: [
-              OutlinedButton(
-                onPressed: () => ConfirmSheet.show(
-                  context,
-                  title: l10n.deleteTitle('db-primary'),
-                  consequence: l10n.deleteConsequence,
-                  confirmLabel: l10n.actionDelete,
-                  resourceName: 'db-primary',
-                  level: ConfirmLevel.typeName,
-                  destructive: true,
-                ),
-                child: Text('${l10n.showcaseOpen}: ${l10n.actionDelete}'),
-              ),
-              OutlinedButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (context) => _wizard(context, project: true),
-                  ),
-                ),
-                child: Text('${l10n.showcaseOpen}: ${l10n.actionCreateServer}'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}

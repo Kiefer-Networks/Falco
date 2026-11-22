@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/app/router.dart';
+import 'package:falco/core/permissions/notifications.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/settings/settings_page.dart';
 import 'package:falco/l10n/app_localizations.dart';
@@ -9,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// First start without an account: language, what Falco does, security,
-/// start (ONB-001 to ONB-006).
+/// permissions, start (ONB-001 to ONB-006, SET-024).
 class WelcomePage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -18,10 +19,20 @@ class WelcomePage extends ConsumerStatefulWidget {
 }
 
 class _WelcomePageState extends ConsumerState<WelcomePage> {
-  static const _pages = 4;
+  static const _pages = 5;
+  static const _permissions = 3;
   int _page = 0;
 
   void _addAccount() => const SetupRoute().push<void>(context);
+
+  /// Leaving the permissions page asks for what it explained (SET-024).
+  Future<void> _next() async {
+    if (_page == _permissions) {
+      await ref.read(notificationPermissionProvider).request();
+      if (!mounted) return;
+    }
+    setState(() => _page++);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +107,18 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             l10n.welcomePinning,
           ),
         ]),
+        _permissions => page(l10n.welcomePermissions, [
+          point(
+            Icons.notifications_outlined,
+            l10n.welcomeNotificationsTitle,
+            l10n.welcomeNotificationsText,
+          ),
+          point(
+            ios ? Icons.face : Icons.fingerprint,
+            l10n.welcomeLockTitle,
+            ios ? l10n.welcomeBiometricsIos : l10n.welcomeBiometricsAndroid,
+          ),
+        ]),
         _ => page(l10n.welcomeStart, [
           Text(l10n.welcomeStartText, style: theme.textTheme.bodyLarge),
         ]),
@@ -138,9 +161,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                   Expanded(
                     flex: 2,
                     child: FilledButton(
-                      onPressed: last
-                          ? _addAccount
-                          : () => setState(() => _page++),
+                      onPressed: last ? _addAccount : _next,
                       child: Text(last ? l10n.accountAdd : l10n.commonNext),
                     ),
                   ),

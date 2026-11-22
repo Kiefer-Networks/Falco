@@ -10,6 +10,7 @@ import 'package:falco/api/cloud/cloud.dart';
 import 'package:falco/api/robot/robot_client.dart';
 import 'package:falco/api/s3/s3.dart';
 import 'package:falco/core/files/text_files.dart';
+import 'package:falco/core/permissions/notifications.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/core/settings/settings.dart';
@@ -413,6 +414,7 @@ class FakeCloud {
 
   /// The file dialogs: what a pick returns, what was saved.
   final files = FakeTextFiles();
+  final notifications = FakeNotifications();
 
   /// Whether load balancer metrics have samples.
   bool lbMetrics = true;
@@ -1184,9 +1186,22 @@ class FakeTextFiles extends TextFiles {
   }
 }
 
+/// The notification permission: answers [granted], counts requests.
+class FakeNotifications extends NotificationPermission {
+  bool granted = true;
+  int requests = 0;
+
+  @override
+  Future<bool> request() async {
+    requests++;
+    return granted;
+  }
+}
+
 /// Overrides that route every API of the app to [cloud].
 List<Override> fakeApis(FakeCloud cloud) => [
   textFilesProvider.overrideWithValue(cloud.files),
+  notificationPermissionProvider.overrideWithValue(cloud.notifications),
   cloudDioProvider.overrideWithValue(
     (auth) => fakeDio(cloud.adapter, auth: auth),
   ),

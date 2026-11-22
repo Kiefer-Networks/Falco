@@ -8,6 +8,7 @@ import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/http/http.dart';
 import 'package:falco/core/http/pagination.dart';
 import 'package:falco/core/scope/scope.dart';
+import 'package:falco/features/ssh_keys/openssh.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hetzner_cloud_api/hetzner_cloud_api.dart' as cloud;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -58,24 +59,13 @@ const _privateMarkers = [
   '-cert-v01@openssh.com',
 ];
 
-// Public key types the Cloud accepts (CMP-073).
-const _publicPrefixes = [
-  'ssh-rsa ',
-  'ssh-ed25519 ',
-  'ssh-dss ',
-  'ecdsa-sha2-nistp256 ',
-  'ecdsa-sha2-nistp384 ',
-  'ecdsa-sha2-nistp521 ',
-  'sk-ecdsa-sha2-nistp256@openssh.com ',
-  'sk-ssh-ed25519@openssh.com ',
-];
-
 /// Checks a pasted public key; null when it can be added.
 SshKeyProblem? sshKeyProblem(String key) {
   final k = key.trim();
   if (k.isEmpty) return SshKeyProblem.empty;
   if (_privateMarkers.any(k.contains)) return SshKeyProblem.privateKey;
-  if (!_publicPrefixes.any(k.startsWith)) return SshKeyProblem.unknownType;
+  // A known type with a blob of that type (CMP-073).
+  if (publicKeyBlob(k) == null) return SshKeyProblem.unknownType;
   return null;
 }
 

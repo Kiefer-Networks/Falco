@@ -510,18 +510,33 @@ void main() {
       await enter(tester, 'name', 'ci');
       await enter(tester, 'key', '-----BEGIN OPENSSH PRIVATE KEY-----');
       expect(find.textContaining('private key'), findsOneWidget);
-      cloud.files.picked = (
-        text: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFake ci\n',
-        tooLarge: false,
-      );
+      cloud.files.picked = (text: '$_ciKey\n', tooLarge: false);
       await tap(tester, 'From file');
       await tap(tester, 'Next');
       await tap(tester, 'Create');
-      expect(sentForm(cloud, 'POST /key'), [
-        ('name', 'ci'),
-        ('data', 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFake ci'),
-      ]);
+      expect(sentForm(cloud, 'POST /key'), [('name', 'ci'), ('data', _ciKey)]);
       expect(find.text('ci'), findsOneWidget);
+    });
+
+    testWidgets('ROB-061 a generated key pair: public key added, private '
+        'key handed over once', (tester) async {
+      final cloud = await openRobot(tester, tab: 'SSH keys');
+      await tap(tester, 'Add SSH key');
+      await enter(tester, 'name', 'ci');
+      await tap(tester, 'Generate key pair');
+      await tap(tester, 'Next');
+      await tap(tester, 'Create');
+      final sent = Map.fromEntries([
+        for (final (k, v) in sentForm(cloud, 'POST /key')) MapEntry(k, v),
+      ]);
+      expect(sent['data'], startsWith('ssh-ed25519 '));
+      expect(find.text('Private key'), findsWidgets);
+      await tap(tester, 'Save to file');
+      expect(
+        cloud.files.saved['id_ed25519'],
+        startsWith('-----BEGIN OPENSSH PRIVATE KEY-----'),
+      );
+      await tap(tester, 'Close');
     });
 
     testWidgets('ROB-047 ROB-048 ROB-034 detail, rename, delete', (
@@ -824,3 +839,7 @@ Future<void> chipOf(WidgetTester tester, String key, String label) async {
   await tester.tap(f);
   await tester.pumpAndSettle();
 }
+
+const _ciKey =
+    'ssh-ed25519 '
+    'AAAAC3NzaC1lZDI1NTE5AAAAINdamAGCsQq31Uv+08lkBzoO4XLz2qYjJa8CGmj3B1Ea ci';

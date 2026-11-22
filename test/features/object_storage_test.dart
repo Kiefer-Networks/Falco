@@ -309,6 +309,26 @@ void main() {
       expect(find.text('Download saved: logo.png'), findsOneWidget);
     });
 
+    testWidgets('SET-025 without notifications a transfer still runs and '
+        'says so', (tester) async {
+      final cloud = storageCloud();
+      cloud.notifications.granted = false;
+      await openBucket(tester, cloud);
+      final c = ProviderScope.containerOf(tester.element(find.text('docs')));
+      (c.read(transfersProvider) as FakeTransfers).hold = true;
+      await objectMenu(tester, 'logo.png', 'Download');
+      expect(cloud.notifications.requests, 1);
+      expect(cloud.storage.downloads.single.path, '/media/logo.png');
+      expect(
+        find.text(
+          'Downloading logo.png in the background\n'
+          'Notifications are off: the transfer runs anyway, its progress '
+          'shows only in Falco.',
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('a finished transfer is shown once, by the folder on top', (
       tester,
     ) async {

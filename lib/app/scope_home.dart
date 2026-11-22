@@ -5,7 +5,6 @@ import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -190,18 +189,6 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
                     .push<void>(context),
           ),
       ],
-      moreMenu: kDebugMode
-          ? MoreMenu(
-              actions: [
-                DetailAction(
-                  label: l10n.showcaseTitle,
-                  icon: Icons.palette_outlined,
-                  group: ActionGroup.manage,
-                  onTap: () => const ShowcaseRoute().push<void>(context),
-                ),
-              ],
-            )
-          : null,
       bottomNavigationBar: rail
           ? null
           : NavigationBar(

@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:falco/app/areas.dart';
 import 'package:falco/core/format/format.dart';
 import 'package:falco/core/scope/scope.dart';
@@ -10,6 +13,7 @@ import 'package:falco/features/placement_groups/placement_groups.dart';
 import 'package:falco/features/servers/create_server_page.dart';
 import 'package:falco/features/servers/server_actions.dart';
 import 'package:falco/features/servers/servers.dart';
+import 'package:falco/features/ssh_keys/openssh.dart';
 import 'package:falco/features/ssh_keys/ssh_keys.dart';
 import 'package:falco/features/storage/object_storage.dart';
 import 'package:falco/features/storage/storage_boxes.dart';
@@ -358,17 +362,11 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.textContaining('This is a private key'), findsOneWidget);
-      await tester.enterText(
-        find.byKey(const ValueKey('key')),
-        'ssh-ed25519 AAAAFAKE me@laptop',
-      );
+      await tester.enterText(find.byKey(const ValueKey('key')), _rfcKey);
       await tester.pumpAndSettle();
       await tap(tester, 'Next');
       await tap(tester, 'Create');
-      expect(
-        cloud.body('POST /ssh_keys')['public_key'],
-        'ssh-ed25519 AAAAFAKE me@laptop',
-      );
+      expect(cloud.body('POST /ssh_keys')['public_key'], _rfcKey);
     });
 
     testWidgets('CMP-074 with all projects the project comes first', (
@@ -420,20 +418,115 @@ void main() {
       ]) {
         expect(sshKeyProblem(private), SshKeyProblem.privateKey);
       }
-      for (final ok in [
-        'ssh-rsa AAAA',
-        'ssh-ed25519 AAAA',
-        'ssh-dss AAAA',
-        'ecdsa-sha2-nistp256 AAAA',
-        'ecdsa-sha2-nistp384 AAAA',
-        'ecdsa-sha2-nistp521 AAAA',
-        'sk-ecdsa-sha2-nistp256@openssh.com AAAA',
-        'sk-ssh-ed25519@openssh.com AAAA',
-      ]) {
-        expect(sshKeyProblem(ok), isNull);
+      for (final type in sshKeyTypes) {
+        expect(
+          sshKeyProblem('${_keyOf(type)} me@laptop'),
+          isNull,
+          reason: type,
+        );
       }
-      expect(sshKeyProblem('rsa AAAA'), SshKeyProblem.unknownType);
+      for (final bad in [
+        'rsa AAAA',
+        // Unknown type, broken base64, a blob of another type.
+        'ssh-ed25519 AAAA',
+        'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFake',
+        _keyOf('ssh-rsa').replaceFirst('ssh-rsa', 'ssh-ed25519'),
+      ]) {
+        expect(sshKeyProblem(bad), SshKeyProblem.unknownType, reason: bad);
+      }
       expect(sshKeyProblem('  '), SshKeyProblem.empty);
+    });
+
+    test('CMP-073 the MD5 fingerprint matches ssh-keygen and Hetzner', () {
+      // ssh-keygen -l -E md5 of the RFC 8032 test 1 key.
+      expect(
+        md5Fingerprint(_rfcKey),
+        'cf:07:be:9d:68:ae:65:54:6d:a0:93:c3:6f:bd:0d:82',
+      );
+      expect(md5Fingerprint('ssh-ed25519 AAAA'), isNull);
+    });
+
+    test('CMP-100 a generated key round trips: public key, fingerprint and '
+        'OpenSSH private key', () async {
+      final seed = [
+        for (var i = 0; i < 64; i += 2)
+          int.parse(_rfcSeed.substring(i, i + 2), radix: 16),
+      ];
+      final pair = await generateEd25519(comment: 'rfc8032', seed: seed);
+      expect(pair.publicKey, _rfcKey);
+      expect(sshKeyProblem(pair.publicKey), isNull);
+      expect(
+        md5Fingerprint(pair.publicKey),
+        matches(RegExp(r'^([0-9a-f]{2}:){15}[0-9a-f]{2}$')),
+      );
+
+      final pem = pair.privateKey.split('\n');
+      expect(pem.first, '-----BEGIN OPENSSH PRIVATE KEY-----');
+      expect(pem[pem.length - 2], '-----END OPENSSH PRIVATE KEY-----');
+      expect(pem.last, isEmpty);
+      final body = pem.sublist(1, pem.length - 2);
+      expect(body.every((l) => l.length <= 70), isTrue);
+      final bytes = base64.decode(body.join());
+      final r = _Reader(bytes);
+      expect(utf8.decode(r.take(15)), 'openssh-key-v1\x00');
+      expect(utf8.decode(r.string()), 'none');
+      expect(utf8.decode(r.string()), 'none');
+      expect(r.string(), isEmpty);
+      expect(r.uint32(), 1);
+      final pubBlob = r.string();
+      expect(base64.encode(pubBlob), _rfcKey.split(' ')[1]);
+      final secret = _Reader(r.string());
+      expect(r.done, isTrue);
+      expect(secret.bytes.length % 8, 0);
+      expect(secret.uint32(), secret.uint32());
+      expect(utf8.decode(secret.string()), 'ssh-ed25519');
+      final pub = secret.string();
+      expect(secret.string(), [...seed, ...pub]);
+      expect(utf8.decode(secret.string()), 'rfc8032');
+      // Padding 1, 2, 3 …
+      final pad = secret.rest();
+      expect(pad, [for (var i = 1; i <= pad.length; i++) i]);
+
+      // Every new pair differs.
+      final a = await generateEd25519(comment: '');
+      final b = await generateEd25519(comment: '');
+      expect(a.publicKey, isNot(b.publicKey));
+      expect(a.publicKey, startsWith('ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI'));
+    });
+
+    testWidgets('CMP-071 a key from a .pub file', (tester) async {
+      final cloud = await openTab(tester, 'SSH keys');
+      await tap(tester, 'Add SSH key');
+      await tester.enterText(find.byKey(const ValueKey('name')), 'laptop');
+      cloud.files.picked = (text: 'not a key', tooLarge: false);
+      await tap(tester, 'From file');
+      expect(find.textContaining('Not a valid public key'), findsOneWidget);
+      cloud.files.picked = (text: '$_rfcKey\n', tooLarge: false);
+      await tap(tester, 'From file');
+      await tap(tester, 'Next');
+      await tap(tester, 'Create');
+      expect(cloud.body('POST /ssh_keys')['public_key'], _rfcKey);
+    });
+
+    testWidgets('CMP-100 generate: the public key is added, the private key '
+        'is handed over once', (tester) async {
+      final cloud = await openTab(tester, 'SSH keys');
+      await tap(tester, 'Add SSH key');
+      await tester.enterText(find.byKey(const ValueKey('name')), 'laptop');
+      await tester.pumpAndSettle();
+      await tap(tester, 'Generate key pair');
+      await tap(tester, 'Next');
+      expect(find.text('Shown once after the key is added'), findsOneWidget);
+      await tap(tester, 'Create');
+      final public = cloud.body('POST /ssh_keys')['public_key']! as String;
+      expect(public, startsWith('ssh-ed25519 '));
+      expect(public, endsWith(' laptop'));
+      expect(find.text('Private key'), findsWidgets);
+      await tap(tester, 'Save to file');
+      final private = cloud.files.saved['id_ed25519']!;
+      expect(private, startsWith('-----BEGIN OPENSSH PRIVATE KEY-----\n'));
+      await tap(tester, 'Close');
+      expect(find.text('Private key'), findsNothing);
     });
   });
 
@@ -603,4 +696,43 @@ void main() {
       expect(parseLabels('example.com/role=web'), {'example.com/role': 'web'});
     });
   });
+}
+
+// RFC 8032 test 1: seed and its public key as OpenSSH line.
+const _rfcSeed =
+    '9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60';
+const _rfcKey =
+    'ssh-ed25519 '
+    'AAAAC3NzaC1lZDI1NTE5AAAAINdamAGCsQq31Uv+08lkBzoO4XLz2qYjJa8CGmj3B1Ea '
+    'rfc8032';
+
+/// A public key line of [type] with a blob naming it.
+String _keyOf(String type) {
+  final t = utf8.encode(type);
+  final blob = [
+    ...(ByteData(4)..setUint32(0, t.length)).buffer.asUint8List(),
+    ...t,
+    0,
+    0,
+    0,
+    1,
+    7,
+  ];
+  return '$type ${base64.encode(blob)}';
+}
+
+/// Reads the SSH wire format.
+class _Reader {
+  new(this.bytes);
+
+  final List<int> bytes;
+  var _at = 0;
+
+  bool get done => _at == bytes.length;
+
+  List<int> take(int n) => bytes.sublist(_at, _at += n);
+  int uint32() =>
+      ByteData.sublistView(Uint8List.fromList(take(4))).getUint32(0);
+  List<int> string() => take(uint32());
+  List<int> rest() => take(bytes.length - _at);
 }

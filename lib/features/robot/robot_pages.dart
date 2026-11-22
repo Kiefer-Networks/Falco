@@ -3,7 +3,6 @@ import 'package:falco/api/robot/robot_client.dart';
 import 'package:falco/app/router.dart';
 import 'package:falco/core/actions/action_tracker.dart';
 import 'package:falco/core/errors/falco_error.dart';
-import 'package:falco/core/files/text_files.dart';
 import 'package:falco/core/format/format.dart';
 import 'package:falco/features/activity/activity_page.dart';
 import 'package:falco/features/compute/compute_ui.dart';
@@ -1321,8 +1320,11 @@ class _RobotCreatePageState extends ConsumerState<RobotCreatePage> {
   };
   bool _creating = false;
 
-  /// Counts files read, so the key field shows a picked file.
+  /// Counts filled keys, so the key field shows them.
   int _files = 0;
+
+  /// Private key of a generated pair until it is handed over (ROB-061).
+  String? _private;
 
   String _v(String key) => (_values[key] ?? '').trim();
 
@@ -1380,27 +1382,12 @@ class _RobotCreatePageState extends ConsumerState<RobotCreatePage> {
     );
     if (!mounted) return;
     setState(() => _creating = false);
-    if (ok) Navigator.pop(context);
-  }
-
-  /// Fills the key from a file (ROB-033).
-  Future<void> _fromFile() async {
-    final l10n = AppLocalizations.of(context);
-    final picked = await ref.read(textFilesProvider).pick(maxBytes: 16 * 1024);
-    if (picked == null || !mounted) return;
-    if (picked.tooLarge) {
-      FalcoScaffold.showSnack(context, l10n.fileTooLarge);
-      return;
+    if (!ok) return;
+    if (_private case final private?) {
+      _private = null;
+      await showPrivateKey(context, ref, private);
     }
-    final text = picked.text;
-    if (text == null) {
-      FalcoScaffold.showSnack(context, l10n.fileNotText);
-      return;
-    }
-    setState(() {
-      _values = {..._values, 'key': text.trim()};
-      _files++;
-    });
+    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -1464,16 +1451,20 @@ class _RobotCreatePageState extends ConsumerState<RobotCreatePage> {
                 key: ValueKey(_files),
                 fields: prefill(fields, _values),
                 values: _values,
-                onChanged: (v) => setState(() => _values = {..._values, ...v}),
+                onChanged: (v) => setState(() {
+                  // An edited key no longer matches the generated one.
+                  if (v['key'] != _values['key']) _private = null;
+                  _values = {..._values, ...v};
+                }),
               ),
               if (widget.kind == RobotCreateKind.key)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: _fromFile,
-                    icon: const Icon(Icons.file_open_outlined),
-                    label: Text(l10n.keyFromFile),
-                  ),
+                SshKeySources(
+                  comment: _v('name'),
+                  onKey: (public, private) => setState(() {
+                    _values = {..._values, 'key': public};
+                    _private = private;
+                    _files++;
+                  }),
                 ),
             ],
           ),
@@ -1486,6 +1477,8 @@ class _RobotCreatePageState extends ConsumerState<RobotCreatePage> {
             f.options[_values[f.key] ?? ''] ?? _values[f.key] ?? '',
             mono: f.key == 'key' || f.key == 'ip',
           ),
+        if (_private != null)
+          ConfirmFact(l10n.sshKeyPrivateTitle, l10n.sshKeyPrivateAfter),
       ]),
     );
   }

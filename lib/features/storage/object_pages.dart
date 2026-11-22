@@ -5,6 +5,7 @@ import 'package:falco/core/clipboard/sensitive_clipboard.dart';
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/files/text_files.dart';
 import 'package:falco/core/format/format.dart';
+import 'package:falco/core/permissions/notifications.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/accounts/checks.dart';
@@ -418,6 +419,8 @@ class _BucketPageState extends ConsumerState<BucketPage> {
       FalcoScaffold.showSnack(context, l10n.objectKeyInvalid);
       return;
     }
+    final hint = await notificationHint(ref, l10n);
+    if (!mounted) return;
     try {
       await ref
           .read(transfersProvider)
@@ -429,7 +432,9 @@ class _BucketPageState extends ConsumerState<BucketPage> {
             file: file,
             contentType: mime,
           );
-      if (mounted) FalcoScaffold.showSnack(context, l10n.uploadStarted(name));
+      if (mounted) {
+        FalcoScaffold.showSnack(context, '${l10n.uploadStarted(name)}$hint');
+      }
     } on Object catch (e) {
       if (mounted) {
         FalcoScaffold.showSnack(context, errorText(toFalcoError(e), l10n));
@@ -532,6 +537,8 @@ class _BucketPageState extends ConsumerState<BucketPage> {
 
   Future<void> _download(String key, [String? versionId]) async {
     final l10n = AppLocalizations.of(context);
+    final hint = await notificationHint(ref, l10n);
+    if (!mounted) return;
     await runS3(
       context,
       () => ref
@@ -543,7 +550,7 @@ class _BucketPageState extends ConsumerState<BucketPage> {
             key: key,
             versionId: versionId,
           ),
-      done: l10n.downloadStarted(baseName(key)),
+      done: '${l10n.downloadStarted(baseName(key))}$hint',
     );
   }
 

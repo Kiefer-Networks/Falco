@@ -46,6 +46,11 @@ void main() {
       await tap(tester, 'Next');
       await tap(tester, 'Next');
     },
+    'welcome_permissions': (tester) async {
+      await tap(tester, 'Next');
+      await tap(tester, 'Next');
+      await tap(tester, 'Next');
+    },
     'account_wizard_summary': (tester) async {
       await tap(tester, 'Skip');
       await tester.enterText(find.byKey(const ValueKey('name')), 'Acme');
@@ -220,6 +225,7 @@ void main() {
     'welcome': 'ONB-001',
     'welcome_features': 'ONB-004 BUG-019',
     'welcome_security': 'ONB-005',
+    'welcome_permissions': 'SET-024',
     'account_wizard_summary': 'ONB-016',
     'settings': 'SET-001 SET-002 SET-003',
     'accounts': 'ONB-021 ONB-022 ONB-023 BUG-004',

@@ -27,7 +27,7 @@ class SecretReveal extends StatefulWidget {
   /// The secret.
   final String secret;
 
-  /// Starts revealed (showcase and tests).
+  /// Starts revealed (tests).
   final bool initiallyVisible;
 
   @override
@@ -62,7 +62,8 @@ class _SecretRevealState extends State<SecretReveal> {
                 if (_visible)
                   Mono(
                     widget.secret,
-                    maxLines: 3,
+                    // A private key (PEM) is several lines long.
+                    maxLines: 30,
                     style: TextStyle(fontSize: 15, color: c.text),
                   )
                 else
@@ -108,12 +109,14 @@ class _SecretRevealState extends State<SecretReveal> {
 }
 
 /// Shows one time secrets (a root password, a console login) in a sheet:
-/// [note] explains them, each entry is a [SecretReveal].
+/// [note] explains them, each entry is a [SecretReveal]. [onSave] adds
+/// "Save to file" (a generated private key).
 Future<void> showSecretSheet(
   BuildContext context, {
   required String title,
   required String note,
   required Map<String, String> secrets,
+  Future<void> Function()? onSave,
 }) => showFalcoSheet<void>(
   context,
   Builder(
@@ -123,6 +126,12 @@ Future<void> showSecretSheet(
         Text(note, style: Theme.of(context).textTheme.bodyLarge),
         for (final MapEntry(key: label, value: secret) in secrets.entries)
           SecretReveal(label: label, secret: secret),
+        if (onSave != null)
+          OutlinedButton.icon(
+            onPressed: onSave,
+            icon: const Icon(Icons.save_alt),
+            label: Text(AppLocalizations.of(context).commonSaveToFile),
+          ),
         FilledButton(
           onPressed: () => Navigator.pop(context),
           child: Text(AppLocalizations.of(context).commonClose),
