@@ -354,11 +354,12 @@ class AreaOverviewPage extends ConsumerWidget {
         if (s.async.hasError && !s.async.hasValue) s.async.error!,
     ];
     // Some loaded: projects missing from "All projects" or a failed
-    // refresh over old data as a banner, as a list shows them.
+    // refresh over old data as a banner, as a list shows them. By name:
+    // Object Storage names each failed location of one project.
     final projects = {
       for (final s in sources)
         if (s.async.value case PartialList<Object>(:final failed))
-          for (final p in failed) p.id: p.name,
+          for (final p in failed) p.name,
     };
     return AreaOverview(
       onRefresh: () => Future.wait([
@@ -371,7 +372,7 @@ class AreaOverviewPage extends ConsumerWidget {
             }
           : null,
       banner: projects.isNotEmpty
-          ? l10n.listProjectsFailed(projects.values.join(', '))
+          ? l10n.listProjectsFailed(projects.join(', '))
           : sources.any((s) => s.async.hasError && s.async.hasValue)
           ? l10n.listStaleBanner
           : null,

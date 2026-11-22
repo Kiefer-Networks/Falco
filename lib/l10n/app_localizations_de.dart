@@ -429,6 +429,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Zugangsdaten bleiben gesperrt: die Prüfung des Systems wurde abgebrochen. Nichts wurde geändert.';
 
   @override
+  String get errorLocalStorage =>
+      'Die Datei konnte auf diesem Gerät nicht gelesen oder geschrieben werden. Prüfe den freien Speicherplatz.';
+
+  @override
   String get statusInProgress => 'läuft';
 
   @override

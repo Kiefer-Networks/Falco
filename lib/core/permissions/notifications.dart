@@ -18,12 +18,19 @@ class NotificationPermission {
   const new();
 
   /// Requests the permission (Android 13+, iOS); true when granted.
-  /// Older Android grants it with the install.
-  Future<bool> request() async => switch (await FileDownloader().permissions
-      .request(PermissionType.notifications)) {
-    PermissionStatus.granted || PermissionStatus.partial => true,
-    _ => false,
-  };
+  /// Older Android grants it with the install; asking there fails, so the
+  /// status comes first.
+  Future<bool> request() async {
+    final permissions = FileDownloader().permissions;
+    if (await permissions.status(PermissionType.notifications) ==
+        PermissionStatus.granted) {
+      return true;
+    }
+    return switch (await permissions.request(PermissionType.notifications)) {
+      PermissionStatus.granted || PermissionStatus.partial => true,
+      _ => false,
+    };
+  }
 }
 
 /// Asks before a transfer starts (SET-025): empty when notifications are

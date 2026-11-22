@@ -18,10 +18,13 @@ import 'dart:io';
 
 import 'package:background_downloader/background_downloader.dart';
 import 'package:falco/core/errors/falco_error.dart';
+import 'package:falco/core/secure/app_lock.dart';
+import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/storage/object_storage.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'transfers.g.dart';
@@ -77,6 +80,40 @@ class ObjectTransfers {
   /// Finished transfers.
   Stream<TransferEvent> get events => _events.stream;
 
+  /// The last finished transfer no screen showed yet: the object browser
+  /// on top takes it, a sheet over it defers it. Kept only while a screen
+  /// listens to [events].
+  TransferEvent? unseen;
+
+  void _report(TransferEvent e) {
+    if (_events.hasListener) unseen = e;
+    _events.add(e);
+  }
+
+  /// The app's language for the notifications; null follows the system.
+  String? get language => _language;
+  String? _language;
+  set language(String? value) {
+    _language = value;
+    if (_started != null) _notifications();
+  }
+
+  void _notifications() {
+    final code = _language ?? PlatformDispatcher.instance.locale.languageCode;
+    final l10n = lookupAppLocalizations(
+      AppLocalizations.supportedLocales.firstWhere(
+        (l) => l.languageCode == code,
+        orElse: () => const Locale('en'),
+      ),
+    );
+    FileDownloader().configureNotification(
+      running: TaskNotification(l10n.transferRunning, '{displayName}'),
+      complete: TaskNotification(l10n.transferDone, '{displayName}'),
+      error: TaskNotification(l10n.transferFailed, '{displayName}'),
+      progressBar: true,
+    );
+  }
+
   /// Folder of the multipart jobs (`<name>.json`) until they are joined
   /// or aborted. Application support, not temporary space: the system
   /// clears that, and a job lost there leaves billed parts behind.
@@ -90,20 +127,8 @@ class ObjectTransfers {
   Future<void> start() => _started ??= _start();
 
   Future<void> _start() async {
-    final l10n = lookupAppLocalizations(
-      AppLocalizations.supportedLocales.firstWhere(
-        (l) =>
-            l.languageCode == PlatformDispatcher.instance.locale.languageCode,
-        orElse: () => const Locale('en'),
-      ),
-    );
-    final d = FileDownloader()
-      ..configureNotification(
-        running: TaskNotification(l10n.transferRunning, '{displayName}'),
-        complete: TaskNotification(l10n.transferDone, '{displayName}'),
-        error: TaskNotification(l10n.transferFailed, '{displayName}'),
-        progressBar: true,
-      );
+    _notifications();
+    final d = FileDownloader();
     d.updates.listen((u) {
       if (u is TaskStatusUpdate) unawaited(onStatus(u));
     });
@@ -183,7 +208,7 @@ class ObjectTransfers {
       // Without the enqueued mark retryJoins aborts it: Falco was closed
       // before the parts were handed over.
       await jobFile.parent.create(recursive: true);
-      await jobFile.writeAsString(jsonEncode(job));
+      await _write(jobFile, job);
       final dir = await Directory('$partsRoot/$name').create(recursive: true);
       // ponytail: parts are copies, so a large upload needs its size again
       // in temporary space until it is joined.
@@ -197,7 +222,7 @@ class ObjectTransfers {
       // In line with the part events: a job already joined stays gone.
       await _queue(uploadId, () async {
         if (jobFile.existsSync()) {
-          await jobFile.writeAsString(jsonEncode({...job, 'e': true}));
+          await _write(jobFile, {...job, 'e': true});
         }
       });
     } on Object {
@@ -236,6 +261,14 @@ class ObjectTransfers {
 
   Future<File> _jobFile(String name) async =>
       File('${await jobsRoot()}/$name.json');
+
+  /// Writes job [m] to [file] whole or not at all: a job cut short by the
+  /// app ending would stop every later retry.
+  Future<void> _write(File file, Map<String, Object?> m) async {
+    final tmp = File('${file.path}.tmp');
+    await tmp.writeAsString(jsonEncode(m), flush: true);
+    await tmp.rename(file.path);
+  }
 
   /// Downloads [key] (or one version of it) in the background (OBJ-012,
   /// OBJ-021, OBJ-023).
@@ -291,7 +324,7 @@ class ObjectTransfers {
     final task = u.task;
     if (task is DownloadTask) {
       final kept = ok && await keep(task);
-      _events.add((upload: false, ok: kept, name: name));
+      _report((upload: false, ok: kept, name: name));
       return;
     }
     if (meta['u'] case final String uploadId) {
@@ -299,7 +332,7 @@ class ObjectTransfers {
       return;
     }
     if (ok) onUploaded?.call();
-    _events.add((upload: true, ok: ok, name: name));
+    _report((upload: true, ok: ok, name: name));
   }
 
   Future<void> _queue(String uploadId, Future<void> Function() f) {
@@ -316,12 +349,17 @@ class ObjectTransfers {
     if (!root.existsSync()) return;
     await for (final file in root.list()) {
       if (file is! File || !file.path.endsWith('.json')) continue;
-      final job = (jsonDecode(await file.readAsString()) as Map)
-          .cast<String, Object?>();
-      final id = job['u']! as String;
-      if (_starting.contains(id)) continue;
-      final abort = job['abort'] == true || job['e'] != true;
-      await _queue(id, () => _joinParts(job, id, ok: !abort, report: !abort));
+      // One unreadable job must not hold up the others.
+      try {
+        final job = (jsonDecode(await file.readAsString()) as Map)
+            .cast<String, Object?>();
+        final id = job['u']! as String;
+        if (_starting.contains(id)) continue;
+        final abort = job['abort'] == true || job['e'] != true;
+        await _queue(id, () => _joinParts(job, id, ok: !abort, report: !abort));
+      } on Object catch (_) {
+        continue;
+      }
     }
   }
 
@@ -358,22 +396,24 @@ class ObjectTransfers {
       }
     } on Object catch (e) {
       // Kept for retryJoins: offline, locked, a server error. Without
-      // keys (Unauthorized) the job waits silently until they are back.
+      // keys (Unauthorized) or while the app is locked (Locked) the job
+      // waits silently until they are back.
       // ponytail: a server error that never ends keeps the parts in
       // temporary space; add a retry limit if that shows up.
       _completing.remove(uploadId);
       final file = await _jobFile(m['d']! as String);
       if (aborting && file.existsSync()) {
-        await file.writeAsString(jsonEncode({...m, 'abort': true}));
+        await _write(file, {...m, 'abort': true});
       }
-      if (report && e is! Unauthorized) {
-        _events.add((upload: true, ok: false, name: baseName(k)));
+      final error = toFalcoError(e);
+      if (report && error is! Unauthorized && error is! Locked) {
+        _report((upload: true, ok: false, name: baseName(k)));
       }
       return;
     }
     await _remove(m['d']! as String);
     if (joined) onUploaded?.call();
-    if (report) _events.add((upload: true, ok: joined, name: baseName(k)));
+    if (report) _report((upload: true, ok: joined, name: baseName(k)));
   }
 
   /// Joins the parts of [m]: true once joined, null while parts are
@@ -402,11 +442,16 @@ class ObjectTransfers {
       return true;
     } on NotFound catch (_) {
       // Gone: joined by a join whose answer was lost, or dropped. The
-      // object tells: a multipart ETag (`"…-n"`) or written after the job.
+      // object tells: written after the job started (a minute of clock
+      // skew) with the multipart ETag of its part count (`"…-n"`). An
+      // older object at the key fails one of them.
       try {
         final o = await _s3.run(p, l, (c) => c.head(b, k));
-        return (o.etag ?? '').contains('-') ||
-            (created != null && (o.modified?.isAfter(created) ?? false));
+        final count = RegExp(r'-(\d+)"?$').firstMatch(o.etag ?? '')?[1];
+        final since = created?.subtract(const Duration(minutes: 1));
+        return since != null &&
+            count == '${m['n']}' &&
+            (o.modified?.isAfter(since) ?? false);
       } on NotFound catch (_) {
         return false;
       }
@@ -432,16 +477,19 @@ class ObjectTransfers {
 }
 
 /// [name] as a file or folder name: no `\` (a path separator to
-/// background_downloader) and at most 255 bytes, the extension kept.
-String _safeName(String name) {
+/// background_downloader) and at most 255 bytes, the extension and [tag]
+/// (put before the extension) kept.
+String _safeName(String name, [String tag = '']) {
   final s = name.replaceAll(r'\', '_');
   final dot = s.lastIndexOf('.');
   final ext = dot > 0 && s.length - dot <= 16 ? s.substring(dot) : '';
   final base = s.substring(0, s.length - ext.length).runes.toList();
-  while (utf8.encode(String.fromCharCodes(base) + ext).length > 255) {
+  final end = tag.replaceAll(r'\', '_') + ext;
+  while (base.isNotEmpty &&
+      utf8.encode(String.fromCharCodes(base) + end).length > 255) {
     base.removeLast();
   }
-  return String.fromCharCodes(base) + ext;
+  return String.fromCharCodes(base) + end;
 }
 
 /// Folder of a download below Falco's documents: one per bucket and
@@ -455,28 +503,35 @@ String downloadDirectory(String bucket, String key) => [
 /// replace the current one.
 String downloadName(String key, String? versionId) {
   final name = baseName(key);
-  if (versionId == null) return _safeName(name);
-  final dot = name.lastIndexOf('.');
-  return _safeName(
-    dot <= 0
-        ? '$name ($versionId)'
-        : '${name.substring(0, dot)} ($versionId)${name.substring(dot)}',
-  );
+  return _safeName(name, versionId == null ? '' : ' ($versionId)');
 }
 
 /// The app's transfers; finished uploads refresh the listings.
 @Riverpod(keepAlive: true)
-ObjectTransfers transfers(Ref ref) => ObjectTransfers(
-  ref.watch(s3AccessProvider),
-  onUploaded: () => ref.invalidate(objectsProvider),
+ObjectTransfers transfers(Ref ref) => connectTransfers(
+  ref,
+  ObjectTransfers(
+    ref.watch(s3AccessProvider),
+    onUploaded: () => ref.invalidate(objectsProvider),
+  ),
 );
 
-/// Finished transfers, for the snackbar of the object browser.
-/// Watching them (the object browser, after the unlock) also retries
-/// pending joins.
-@riverpod
-Stream<TransferEvent> transferEvents(Ref ref) {
-  final transfers = ref.watch(transfersProvider);
-  unawaited(transfers.retryJoins().catchError((Object _) {}));
-  return transfers.events;
+/// Ties [transfers] to the app: notifications in the app's language, and
+/// parked joins retried whenever the app is unlocked: at start, after each
+/// unlock and on each return to the foreground. Fakes in tests use it too.
+ObjectTransfers connectTransfers(Ref ref, ObjectTransfers transfers) {
+  ref.listen(
+    appSettingsProvider.select((s) => s.language),
+    (_, language) => transfers.language = language,
+    fireImmediately: true,
+  );
+  void retry() {
+    if (ref.read(appLockProvider) != AppLockState.unlocked) return;
+    unawaited(transfers.retryJoins().catchError((Object _) {}));
+  }
+
+  ref.listen(appLockProvider, (_, _) => retry(), fireImmediately: true);
+  final lifecycle = AppLifecycleListener(onResume: retry);
+  ref.onDispose(lifecycle.dispose);
+  return transfers;
 }

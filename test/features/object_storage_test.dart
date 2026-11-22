@@ -7,6 +7,8 @@ import 'package:background_downloader/background_downloader.dart';
 import 'package:falco/api/s3/s3.dart';
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/scope/scope.dart';
+import 'package:falco/core/secure/app_lock.dart';
+import 'package:falco/features/storage/object_pages.dart';
 import 'package:falco/features/storage/object_storage.dart';
 import 'package:falco/features/storage/transfers.dart';
 import 'package:flutter/services.dart';
@@ -262,6 +264,45 @@ void main() {
       );
       expect(find.text('Uploaded: new.txt'), findsOneWidget);
       expect(find.text('new.txt'), findsOneWidget);
+    });
+
+    testWidgets('each finished transfer shows, a sheet defers it', (
+      tester,
+    ) async {
+      await openBucket(tester);
+      final page = tester.element(find.byType(BucketPage));
+      final transfers = ProviderScope.containerOf(page).read(transfersProvider);
+      final messenger = ScaffoldMessenger.of(page);
+      Future<void> finish() async {
+        await transfers.onStatus(
+          TaskStatusUpdate(
+            UploadTask(
+              url: 'https://fsn1.your-objectstorage.com/media/a.txt',
+              filename: 'a.txt',
+              metaData: jsonEncode({'k': 'a.txt'}),
+            ),
+            TaskStatus.complete,
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      await finish();
+      expect(find.text('Uploaded: a.txt'), findsOneWidget);
+      messenger.hideCurrentSnackBar();
+      await tester.pumpAndSettle();
+      // The same event again still shows.
+      await finish();
+      expect(find.text('Uploaded: a.txt'), findsOneWidget);
+      messenger.hideCurrentSnackBar();
+      await tester.pumpAndSettle();
+      // Under a sheet it waits until the sheet closes.
+      await tap(tester, 'notes.txt');
+      await finish();
+      expect(find.text('Uploaded: a.txt'), findsNothing);
+      Navigator.of(page).pop();
+      await tester.pumpAndSettle();
+      expect(find.text('Uploaded: a.txt'), findsOneWidget);
     });
 
     testWidgets('OBJ-011 QRS-024 share link with expiry', (tester) async {
@@ -689,12 +730,70 @@ void main() {
       expect(Directory(await transfers.jobsRoot()).listSync(), isEmpty);
     });
 
+    test('an older multipart object does not pass for a lost join', () async {
+      final cloud = storageCloud();
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider);
+      final events = <TransferEvent>[];
+      transfers.events.listen(events.add);
+      await job(c, 'x1', {
+        'e': true,
+        't': DateTime.now().millisecondsSinceEpoch,
+      });
+      // The upload is gone; at the key is an object of an earlier one.
+      cloud.storage.uploads.clear();
+      cloud.storage.buckets['fsn1']!['media']!.objects['x'] = FakeObject(1)
+        ..etag = '"old-2"';
+      await transfers.retryJoins();
+      expect(events, [(upload: true, ok: false, name: 'x')]);
+    });
+
+    test('an unreadable job does not hold up the others', () async {
+      final cloud = storageCloud();
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider);
+      final root = await transfers.jobsRoot();
+      File('$root/a.json')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('{"u":');
+      await job(c, 'x1', {});
+      await transfers.retryJoins();
+      expect(cloud.storage.uploads, isEmpty);
+      expect(File('$root/a.json').existsSync(), isTrue);
+    });
+
+    test('a parked join is retried after the unlock', () async {
+      final cloud = storageCloud()..storage.failJoin = 1;
+      final c = await fakeContainer(
+        cloud,
+        s3: true,
+        overrides: [authenticatorProvider.overrideWithValue((_) async => true)],
+      );
+      final transfers = c.read(transfersProvider);
+      var event = transfers.events.first;
+      await transfers.upload(
+        projectId: 'p1',
+        location: 'fsn1',
+        bucket: 'media',
+        key: 'big.bin',
+        file: tempFile('big.bin', 'x' * 20),
+        contentType: 'application/octet-stream',
+      );
+      expect(await event, (upload: true, ok: false, name: 'big.bin'));
+      event = transfers.events.first;
+      await c.read(appLockProvider.notifier).unlock('test');
+      expect(await event, (upload: true, ok: true, name: 'big.bin'));
+    });
+
     test('download names have no backslash and fit the file system', () {
       expect(downloadName(r'a\b.txt', null), 'a_b.txt');
       expect(downloadDirectory('media', r'x\y/a.txt'), 'media/x_y');
       final long = downloadName('${'ä' * 300}.txt', 'v1');
       expect(utf8.encode(long).length, lessThanOrEqualTo(255));
       expect(long, endsWith('.txt'));
+      final tagged = downloadName('${'a' * 300}.txt', 'v1');
+      expect(tagged, endsWith(' (v1).txt'));
+      expect(utf8.encode(tagged).length, 255);
     });
 
     test('downloads of the same name do not replace each other', () async {

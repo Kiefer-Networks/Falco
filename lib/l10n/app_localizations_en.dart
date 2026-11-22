@@ -425,6 +425,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Access data stays locked: the system check was cancelled. Nothing was changed.';
 
   @override
+  String get errorLocalStorage =>
+      'The file could not be read or written on this device. Check the free storage space.';
+
+  @override
   String get statusInProgress => 'in progress';
 
   @override

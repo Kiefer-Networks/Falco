@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:async';
+import 'dart:io';
+
 import 'package:falco/api/s3/s3.dart';
 import 'package:falco/app/router.dart';
 import 'package:falco/core/clipboard/sensitive_clipboard.dart';
@@ -41,18 +44,22 @@ Future<bool> runS3(
     }
     return true;
   } on Object catch (error) {
-    // Not only S3 answers: the platform refuses a transfer too.
-    final e = toFalcoError(error);
     if (context.mounted) {
-      FalcoScaffold.showSnack(
-        context,
-        e is Invalid && e.code == dotSegmentKey
-            ? l10n.objectKeyDotSegment
-            : errorText(e, l10n),
-      );
+      FalcoScaffold.showSnack(context, s3ErrorText(error, l10n));
     }
     return false;
   }
+}
+
+/// Text of a failed S3 change or transfer. Not only S3 answers: the
+/// platform refuses a transfer, and the device's own storage fails (full)
+/// while parts are copied.
+String s3ErrorText(Object error, AppLocalizations l10n) {
+  if (error is FileSystemException) return l10n.errorLocalStorage;
+  final e = toFalcoError(error);
+  return e is Invalid && e.code == dotSegmentKey
+      ? l10n.objectKeyDotSegment
+      : errorText(e, l10n);
 }
 
 /// Buckets of a scope at all locations (OBJ-001, OBJ-020).
@@ -272,6 +279,39 @@ class _BucketPageState extends ConsumerState<BucketPage> {
     prefix: folder,
   ).push<void>(context);
 
+  StreamSubscription<TransferEvent>? _transfers;
+
+  @override
+  void initState() {
+    super.initState();
+    _transfers = ref
+        .read(transfersProvider)
+        .events
+        .listen((_) => _showTransfer());
+  }
+
+  @override
+  void dispose() {
+    unawaited(_transfers?.cancel());
+    super.dispose();
+  }
+
+  /// Shows a finished transfer. Every folder level listens; only the one
+  /// on top shows it, and a sheet over it defers it until it closes.
+  void _showTransfer() {
+    if (!mounted || ModalRoute.isCurrentOf(context) == false) return;
+    final transfers = ref.read(transfersProvider);
+    final e = transfers.unseen;
+    if (e == null) return;
+    transfers.unseen = null;
+    final l10n = AppLocalizations.of(context);
+    FalcoScaffold.showSnack(context, switch (e) {
+      (upload: true, ok: true, :final name) => l10n.uploadDone(name),
+      (upload: false, ok: true, :final name) => l10n.downloadSaved(name),
+      (:final name, ok: false, upload: _) => l10n.transferFailedNamed(name),
+    });
+  }
+
   void _toggle(String key) => setState(
     () => _selected.contains(key) ? _selected.remove(key) : _selected.add(key),
   );
@@ -281,17 +321,11 @@ class _BucketPageState extends ConsumerState<BucketPage> {
     final l10n = AppLocalizations.of(context);
     final provider = objectsProvider(_p, _l, _b, widget.prefix);
     final async = ref.watch(provider);
-    ref.listen(transferEventsProvider, (_, next) {
-      // Every folder level listens; only the one on top shows it.
-      if (ModalRoute.of(context)?.isCurrent == false) return;
-      if (next.value case final e?) {
-        FalcoScaffold.showSnack(context, switch (e) {
-          (upload: true, ok: true, :final name) => l10n.uploadDone(name),
-          (upload: false, ok: true, :final name) => l10n.downloadSaved(name),
-          (:final name, ok: false, upload: _) => l10n.transferFailedNamed(name),
-        });
-      }
-    });
+    // Rebuilt when a sheet over it closes: shows what finished meanwhile.
+    if ((ModalRoute.isCurrentOf(context) ?? true) &&
+        ref.read(transfersProvider).unseen != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showTransfer());
+    }
     final listing = async.value;
     final items = listing == null
         ? null
@@ -436,9 +470,7 @@ class _BucketPageState extends ConsumerState<BucketPage> {
         FalcoScaffold.showSnack(context, '${l10n.uploadStarted(name)}$hint');
       }
     } on Object catch (e) {
-      if (mounted) {
-        FalcoScaffold.showSnack(context, errorText(toFalcoError(e), l10n));
-      }
+      if (mounted) FalcoScaffold.showSnack(context, s3ErrorText(e, l10n));
     }
   }
 
@@ -688,10 +720,12 @@ class _BucketPageState extends ConsumerState<BucketPage> {
     if (!ok || !mounted) return;
     if (sheet.mounted) Navigator.pop(sheet);
     if (await runS3(
-      context,
-      () => _run((c) => c.copy(_b, o.key, _b, o.key, versionId: v.versionId)),
-      done: l10n.savedMessage,
-    )) {
+          context,
+          () =>
+              _run((c) => c.copy(_b, o.key, _b, o.key, versionId: v.versionId)),
+          done: l10n.savedMessage,
+        ) &&
+        mounted) {
       _refresh();
       ref.invalidate(objectVersionsProvider);
     }
@@ -748,10 +782,11 @@ class _BucketPageState extends ConsumerState<BucketPage> {
       return;
     }
     if (await runS3(
-      context,
-      () => _run((c) => c.delete(_b, o.key)),
-      done: l10n.deletedMessage(name),
-    )) {
+          context,
+          () => _run((c) => c.delete(_b, o.key)),
+          done: l10n.deletedMessage(name),
+        ) &&
+        mounted) {
       _refresh();
     }
   }
@@ -769,28 +804,28 @@ class _BucketPageState extends ConsumerState<BucketPage> {
     );
     if (!ok || !mounted) return;
     var failed = <String>[];
-    if (await runS3(
-      context,
-      () async => failed = await _run((c) => c.deleteMany(_b, keys)),
-    )) {
-      if (mounted) {
-        FalcoScaffold.showSnack(
+    if (!await runS3(
           context,
-          failed.isEmpty
-              ? l10n.objectsDeleted(keys.length)
-              : l10n.objectsDeletedPartly(
-                  keys.length - failed.length,
-                  failed.length,
-                ),
-        );
-      }
-      setState(
-        () => _selected
-          ..clear()
-          ..addAll(failed),
-      );
-      _refresh();
+          () async => failed = await _run((c) => c.deleteMany(_b, keys)),
+        ) ||
+        !mounted) {
+      return;
     }
+    FalcoScaffold.showSnack(
+      context,
+      failed.isEmpty
+          ? l10n.objectsDeleted(keys.length)
+          : l10n.objectsDeletedPartly(
+              keys.length - failed.length,
+              failed.length,
+            ),
+    );
+    setState(
+      () => _selected
+        ..clear()
+        ..addAll(failed),
+    );
+    _refresh();
   }
 
   Future<void> _createFolder() {
