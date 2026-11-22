@@ -264,6 +264,105 @@ void main() {
       expect(await fresh.cloudToken('p2'), 't2');
     });
 
+    test('a weak vault moves to an asking key with the next write or the '
+        'first read, also with the lock off (R5 Q23)', () async {
+      const plain = FlutterSecureStorage();
+      device = (sdk: 36, secure: false);
+      await secrets.setCloudToken('p1', 't1');
+      device = (sdk: 36, secure: true);
+      await secrets.setCloudToken('p2', 't2');
+      expect(await plain.read(key: 'vault.ns'), '1');
+      expect(await plain.read(key: 'vault.weak'), isNull);
+      // A new process that only reads.
+      device = (sdk: 36, secure: false);
+      await plain.write(key: 'vault.weak', value: '1');
+      final fresh = SecretStore(
+        null,
+        bound,
+        () async => deviceLock,
+        () async => device,
+      );
+      device = (sdk: 36, secure: true);
+      expect(await fresh.cloudToken('p1'), 't1');
+      await pumpEventQueue();
+      expect(await plain.read(key: 'vault.ns'), '2');
+      expect(await plain.read(key: 'vault.weak'), isNull);
+    });
+
+    test('a check of a weak vault publishes nothing before the re-key '
+        'write (R5 Q24)', () async {
+      device = (sdk: 36, secure: false);
+      await secrets.setCloudToken('p1', 't1');
+      device = (sdk: 36, secure: true);
+      secrets.close();
+      bound.writeGate = Completer();
+      final verified = secrets.verify();
+      await pumpEventQueue();
+      await expectLater(secrets.cloudToken('p1'), throwsA(isA<Locked>()));
+      bound.writeGate!.complete();
+      bound.writeGate = null;
+      expect(await verified, isTrue);
+      expect(await secrets.cloudToken('p1'), 't1');
+    });
+
+    test('readers of an open vault do not wait for a check (R5 Q25)', () async {
+      await secrets.setCloudToken('p1', 't1');
+      bound.gate = Completer();
+      final verified = secrets.verify();
+      await pumpEventQueue();
+      expect(await secrets.cloudToken('p1'), 't1');
+      bound.readError = PlatformException(code: 'cancel');
+      bound.gate!.complete();
+      bound.gate = null;
+      await expectLater(verified, throwsA(isA<Locked>()));
+      bound.readError = null;
+      expect(await secrets.cloudToken('p1'), 't1');
+    });
+
+    test('an invalidated key during a re-key moves past its target and '
+        'stores no generation before a write succeeded (R5 Q26)', () async {
+      const plain = FlutterSecureStorage();
+      final invalidated = PlatformException(
+        code: 'Exception encountered',
+        details: 'KeyPermanentlyInvalidatedException: Key invalidated',
+      );
+      device = (sdk: 36, secure: false);
+      await secrets.setCloudToken('p1', 't1');
+      device = (sdk: 36, secure: true);
+      // Invalidated, then the retry is cancelled: nothing stored.
+      bound
+        ..writeError = invalidated
+        ..fail = true;
+      await expectLater(secrets.verify(), throwsA(isA<Locked>()));
+      expect(await plain.read(key: 'vault.ns'), isNull);
+      expect(await plain.read(key: 'vault.weak'), '1');
+      bound
+        ..fail = false
+        ..writeError = invalidated;
+      expect(await secrets.verify(), isTrue);
+      expect(await plain.read(key: 'vault.ns'), '2');
+      final fresh = SecretStore(
+        null,
+        bound,
+        () async => deviceLock,
+        () async => device,
+      );
+      expect(await fresh.cloudToken('p1'), 't1');
+    });
+
+    test('a write finishing after close does not reopen the vault '
+        '(R5 Q28)', () async {
+      await secrets.setCloudToken('p1', 't1');
+      bound.writeGate = Completer();
+      final write = secrets.setCloudToken('p2', 't2');
+      await pumpEventQueue();
+      secrets.close();
+      bound.writeGate!.complete();
+      bound.writeGate = null;
+      await write;
+      await expectLater(secrets.cloudToken('p1'), throwsA(isA<Locked>()));
+    });
+
     test('with the lock on the vault starts closed (L8), an unlock without '
         'a vault read still opens it (L2)', () async {
       await secrets.setCloudToken('p1', 't1');

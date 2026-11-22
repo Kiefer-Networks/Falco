@@ -20,13 +20,21 @@ import 'package:material_ui/material_ui.dart';
 
 import 'fake_cloud.dart';
 
-Future<Widget> app(List<bool> answers) async => ProviderScope(
-  overrides: [
-    preferencesProvider.overrideWithValue(await testPrefs()),
-    authenticatorProvider.overrideWithValue((_) async => answers.removeAt(0)),
-  ],
-  child: const FalcoApp(),
-);
+/// The app as `main` builds it: the lock closes the vault at launch.
+Future<Widget> app(List<bool> answers) async {
+  final container = ProviderContainer(
+    overrides: [
+      preferencesProvider.overrideWithValue(await testPrefs()),
+      authenticatorProvider.overrideWithValue((_) async => answers.removeAt(0)),
+    ],
+  );
+  addTearDown(container.dispose);
+  closeVaultAtStart(container);
+  return UncontrolledProviderScope(
+    container: container,
+    child: const FalcoApp(),
+  );
+}
 
 void main() {
   setUp(() => seedSecrets(const []));

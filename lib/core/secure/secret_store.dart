@@ -179,15 +179,16 @@ class SecretStore {
   /// vault bound before stays there.
   Future<bool> get _keystore async => await _keystoreUsable || await bound;
 
-  Future<AndroidOptions> _android() async => AndroidOptions.biometric(
-    storageNamespace: await (_namespace ??= _firstUse()),
-    requireBiometricsPerOperation: true,
-    biometricPromptTitle: prompt,
-  );
+  Future<AndroidOptions> _android([String? namespace]) async =>
+      AndroidOptions.biometric(
+        storageNamespace: namespace ?? await (_namespace ??= _firstUse()),
+        requireBiometricsPerOperation: true,
+        biometricPromptTitle: prompt,
+      );
 
   /// The namespace of the current generation. The plugin makes a missing
   /// key on the first use in a process; without a screen lock that key is
-  /// not authentication bound, which [verify] repairs later.
+  /// not authentication bound, which [_moveKey] repairs later.
   Future<String> _firstUse() async {
     final generation = await _plain.read(key: _generation);
     if (_isAndroid && !(await _device()).secure) {
@@ -201,6 +202,9 @@ class SecretStore {
     return '${(int.tryParse(current ?? '') ?? 0) + 1}';
   }
 
+  static int _generationOf(String namespace) =>
+      int.tryParse(namespace.replaceFirst('vault.', '')) ?? 0;
+
   /// Drops the vault of an invalidated key and moves to a fresh namespace,
   /// else the plugin would keep the dead key and fail every write.
   Future<void> _dropInvalidated() async {
@@ -208,6 +212,13 @@ class SecretStore {
     await _plain.write(key: _generation, value: await _nextGeneration());
     _namespace = null;
   }
+
+  /// Whether the vault key was made without a screen lock and the device
+  /// has one now, so [_moveKey] can replace it.
+  Future<bool> get _weakNow async =>
+      await _plain.read(key: _weak) != null &&
+      await _keystoreUsable &&
+      (await _device()).secure;
 
   /// Reads the vault; the system asks for Face ID, fingerprint or the
   /// device PIN when it is bound. Throws [Locked] when the user cancels.
@@ -231,50 +242,60 @@ class SecretStore {
 
   /// Reads the vault again even when it is open, so the system asks the
   /// user now; a failed check keeps the vault as it was, closed included.
+  /// The check reads on its own: readers of an open vault never wait for
+  /// it, and nothing is published before it (and the re-key of a weak key)
+  /// succeeded.
   Future<bool> verify() async {
+    final epoch = _epoch;
     final before = _open;
-    final closed = _closed;
-    _open = null;
-    try {
-      await open();
-    } on Object {
-      _open ??= before;
-      rethrow;
+    var secrets = await _load();
+    void publish() {
+      if (epoch != _epoch) return;
+      // A write since the read published newer secrets: keep those.
+      if (identical(_open, before)) _open = secrets;
+      _closed = false;
     }
-    if (await _plain.read(key: _weak) != null && (await _device()).secure) {
-      try {
-        await _rekey();
-      } on Object {
-        if (closed) close();
-        rethrow;
+
+    if (!await _weakNow) {
+      publish();
+      return true;
+    }
+    // In line with the writes, so the latest secrets move and a write
+    // queued behind the re-key finds the vault open.
+    await _serial(() async {
+      if (await _weakNow) {
+        if (!identical(_open, before)) secrets = _open ?? secrets;
+        await _moveKey(secrets, _epoch);
       }
-    }
+      publish();
+    });
     return true;
   }
 
+  /// Re-keys a weak vault after its first read with the lock off; a
+  /// cancelled prompt keeps the old key until the next write or check.
+  void _rekey(Map<String, String> loaded) => _serial(() async {
+    if (await _weakNow) await _moveKey(_open ?? loaded, _epoch);
+  }).ignore();
+
   /// Moves the vault to a new key now that the device has a screen lock:
   /// the old key opened without asking, the write under the new one asks,
-  /// and that is the check. The new namespace is used only after that
+  /// and that is the check. The new generation is stored only after that
   /// write succeeded, so a cancelled prompt or the process ending in it
-  /// keeps the old vault. Runs in line with the other writes, on the
-  /// latest secrets.
-  Future<void> _rekey() => _serial(() async {
-    if (await _plain.read(key: _weak) == null) return;
-    final secrets = await _secrets();
-    final old = _namespace;
+  /// keeps the old vault; until then reads stay on the old namespace.
+  /// Call in line with the other writes.
+  Future<void> _moveKey(Map<String, String> secrets, int epoch) async {
     final oldOptions = await _android();
-    final next = await _nextGeneration();
-    _namespace = Future.value('vault.$next');
-    try {
-      await _save(secrets);
-    } on Object {
-      _namespace = old;
-      rethrow;
-    }
-    await _plain.write(key: _generation, value: next);
+    final target = await _save(
+      secrets,
+      epoch,
+      target: 'vault.${await _nextGeneration()}',
+    );
+    await _plain.write(key: _generation, value: '${_generationOf(target!)}');
+    _namespace = Future.value(target);
     await _plain.delete(key: _weak);
     await _bound.deleteAll(aOptions: oldOptions);
-  });
+  }
 
   /// Ends the closed state without reading the vault, when the app opens
   /// without a check: no account yet, or the lock turned off.
@@ -302,8 +323,12 @@ class SecretStore {
   Future<Map<String, String>> _read() async {
     final epoch = _epoch;
     try {
+      if (_closed && await bound) throw const Locked();
       final secrets = await _load();
-      if (epoch == _epoch) _open = secrets;
+      if (epoch == _epoch) {
+        _open = secrets;
+        if (await _weakNow) _rekey(secrets);
+      }
       return secrets;
     } finally {
       if (epoch == _epoch) _opening = null;
@@ -311,7 +336,6 @@ class SecretStore {
   }
 
   Future<Map<String, String>> _load() async {
-    if (_closed && await bound) throw const Locked();
     String? raw;
     if (await _keystore) {
       try {
@@ -341,18 +365,41 @@ class SecretStore {
     await _plain.delete(key: _keys);
   }
 
-  Future<void> _save(Map<String, String> secrets, {bool retry = true}) async {
+  /// Saves [secrets]; they become the open vault only when no [close]
+  /// came since [epoch]. A re-key passes its [target] namespace and gets
+  /// back the one written.
+  Future<String?> _save(
+    Map<String, String> secrets,
+    int epoch, {
+    bool retry = true,
+    String? target,
+  }) async {
     final raw = jsonEncode(secrets);
     if (!await _keystore) {
       await _plain.write(key: _unbound, value: raw);
     } else {
       try {
-        await _bound.write(key: _vault, value: raw, aOptions: await _android());
+        await _bound.write(
+          key: _vault,
+          value: raw,
+          aOptions: await _android(target),
+        );
         await _plain.delete(key: _unbound);
       } on PlatformException catch (e) {
         if (retry && _invalidated(e)) {
-          await _dropInvalidated();
-          return await _save(secrets, retry: false);
+          if (target == null) {
+            await _dropInvalidated();
+            return await _save(secrets, epoch, retry: false);
+          }
+          // The re-key target is invalidated: move past it, still storing
+          // no generation before a write succeeded.
+          await _bound.deleteAll(aOptions: await _android(target));
+          return await _save(
+            secrets,
+            epoch,
+            retry: false,
+            target: 'vault.${_generationOf(target) + 1}',
+          );
         }
         // Android stores unbound by itself without a screen lock, and with
         // a screen lock an error is a cancelled prompt: nothing changed.
@@ -363,16 +410,27 @@ class SecretStore {
         await _bound.delete(key: _vault);
       }
     }
-    _open = secrets;
+    // Every close counts up the epoch: a write that ends after one does
+    // not reopen the vault. A closed but unbound vault reads without a
+    // check, so a write there publishes like a read does.
+    if (epoch == _epoch) _open = secrets;
     await _plain.write(key: _keys, value: jsonEncode(secrets.keys.toList()));
+    return target;
   }
 
   /// Applies [change] to the latest vault and saves it if [change] returns
-  /// true. Writes run one after another, so none overwrites another.
+  /// true. Writes run one after another, so none overwrites another. A
+  /// weak vault moves to an asking key with that write.
   Future<void> _update(bool Function(Map<String, String> secrets) change) =>
       _serial(() async {
+        final epoch = _epoch;
         final secrets = {...await _secrets()};
-        if (change(secrets)) await _save(secrets);
+        if (!change(secrets)) return;
+        if (await _weakNow) {
+          await _moveKey(secrets, epoch);
+        } else {
+          await _save(secrets, epoch);
+        }
       });
 
   /// Runs [work] after all earlier writes; a failed one does not stop the
