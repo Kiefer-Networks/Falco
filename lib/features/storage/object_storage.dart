@@ -149,7 +149,10 @@ Future<List<Bucket>> _projectBuckets(
     for (final MapEntry(key: name, value: at) in seen.entries)
       (at.length == 1
               ? Future.value(at.single)
-              : s3.run(projectId, at.first, (c) => c.location(name)))
+              : s3
+                    .run(projectId, at.first, (c) => c.location(name))
+                    // One unanswered bucket keeps the project standing.
+                    .catchError((Object _) => at.first))
           .then(
             (l) => (
               name: name,

@@ -156,8 +156,9 @@ class _Index {
       loading = true;
     }
     if (source.value case PartialList<T>(failed: final projects)) {
+      // By name: Object Storage names each failed location of a project.
       for (final p in projects) {
-        failedProjects[p.id] = p;
+        failedProjects[p.name] = p;
       }
     }
     hits.addAll((source.value ?? const []).map(hit).nonNulls);

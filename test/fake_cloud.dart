@@ -1209,10 +1209,13 @@ List<Override> fakeApis(FakeCloud cloud) => [
     (auth) => fakeDio(cloud.adapter, baseUrl: storageBoxBaseUrl, auth: auth),
   ),
   transfersProvider.overrideWith(
-    (ref) => FakeTransfers(
-      ref.watch(s3AccessProvider),
-      cloud.storage,
-      onUploaded: () => ref.invalidate(objectsProvider),
+    (ref) => connectTransfers(
+      ref,
+      FakeTransfers(
+        ref.watch(s3AccessProvider),
+        cloud.storage,
+        onUploaded: () => ref.invalidate(objectsProvider),
+      ),
     ),
   ),
   robotDioProvider.overrideWithValue(

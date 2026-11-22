@@ -818,6 +818,12 @@ abstract class AppLocalizations {
   /// **'Access data stays locked: the system check was cancelled. Nothing was changed.'**
   String get errorLocked;
 
+  /// No description provided for @errorLocalStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'The file could not be read or written on this device. Check the free storage space.'**
+  String get errorLocalStorage;
+
   /// No description provided for @statusInProgress.
   ///
   /// In en, this message translates to:

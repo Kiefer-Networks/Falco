@@ -142,7 +142,7 @@ class FakeObject {
 
   /// ETag when not the default, e.g. `"j-2"` of a joined upload.
   String? etag;
-  final DateTime modified = DateTime.utc(2026, 2, 3, 10);
+  DateTime modified = DateTime.utc(2026, 2, 3, 10);
 
   /// Older versions as (id, size).
   final older = <(String, int)>[];
@@ -579,7 +579,9 @@ class FakeStorage {
           return (200, '<Error><Code>InternalError</Code></Error>');
         }
         _store(b, key, u.$3.values.fold(0, (a, s) => a + s));
-        b.objects[key]!.etag = '"j-${u.$3.length}"';
+        b.objects[key]!
+          ..etag = '"j-${u.$3.length}"'
+          ..modified = DateTime.now().toUtc();
         if (loseJoin > 0) {
           loseJoin--;
           return (500, '<Error><Code>InternalError</Code></Error>');
@@ -601,7 +603,7 @@ class FakeStorage {
           200,
           FakeResponse('', {
             'content-length': ['${obj.size}'],
-            'last-modified': ['Tue, 03 Feb 2026 10:00:00 GMT'],
+            'last-modified': [HttpDate.format(obj.modified)],
             'etag': [obj.etag ?? '"e$key"'],
             'content-type': ['text/plain'],
           }),
