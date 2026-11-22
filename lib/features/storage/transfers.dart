@@ -80,13 +80,31 @@ class ObjectTransfers {
   /// Finished transfers.
   Stream<TransferEvent> get events => _events.stream;
 
-  /// The last finished transfer no screen showed yet: the object browser
-  /// on top takes it, a sheet over it defers it. Kept only while a screen
-  /// listens to [events].
-  TransferEvent? unseen;
+  /// Finished transfers no screen showed yet, oldest first, with their
+  /// bucket: the object browser of that bucket on top takes them, a sheet
+  /// over it defers them. One that finished while no screen listened has
+  /// no bucket, so the next object browser shows it: a failed upload
+  /// joined in the background is never silent.
+  final _unseen = <({String? bucket, TransferEvent event})>[];
 
-  void _report(TransferEvent e) {
-    if (_events.hasListener) unseen = e;
+  /// Whether [bucket]'s object browser has transfers to show.
+  bool hasUnseen(String bucket) =>
+      _unseen.any((u) => u.bucket == null || u.bucket == bucket);
+
+  /// Takes the transfers [bucket]'s object browser shows.
+  List<TransferEvent> takeUnseen(String bucket) {
+    final taken = [
+      for (final u in _unseen)
+        if (u.bucket == null || u.bucket == bucket) u.event,
+    ];
+    _unseen.removeWhere((u) => u.bucket == null || u.bucket == bucket);
+    return taken;
+  }
+
+  void _report(TransferEvent e, String? bucket) {
+    _unseen.add((bucket: _events.hasListener ? bucket : null, event: e));
+    // ponytail: bounded, the oldest go first; nobody reads more.
+    if (_unseen.length > 20) _unseen.removeAt(0);
     _events.add(e);
   }
 
@@ -304,7 +322,7 @@ class ObjectTransfers {
         group: 'download',
         updates: Updates.statusAndProgress,
         retries: 3,
-        metaData: jsonEncode({'k': key}),
+        metaData: jsonEncode({'b': bucket, 'k': key}),
         transferHints: const {
           TransferHint.userInitiated,
           TransferHint.largeFile,
@@ -324,7 +342,7 @@ class ObjectTransfers {
     final task = u.task;
     if (task is DownloadTask) {
       final kept = ok && await keep(task);
-      _report((upload: false, ok: kept, name: name));
+      _report((upload: false, ok: kept, name: name), meta['b'] as String?);
       return;
     }
     if (meta['u'] case final String uploadId) {
@@ -332,12 +350,18 @@ class ObjectTransfers {
       return;
     }
     if (ok) onUploaded?.call();
-    _report((upload: true, ok: ok, name: name));
+    _report((upload: true, ok: ok, name: name), meta['b'] as String?);
   }
 
+  /// Runs [f] after the work queued for [uploadId] before it; one that
+  /// failed does not stop the next.
   Future<void> _queue(String uploadId, Future<void> Function() f) {
     final next = (_joins[uploadId] ?? Future<void>.value()).then((_) => f());
-    _joins[uploadId] = next;
+    final tail = next.catchError((Object _) {});
+    _joins[uploadId] = tail;
+    unawaited(
+      tail.then((_) => _joins.removeWhere((_, v) => identical(v, tail))),
+    );
     return next;
   }
 
@@ -351,23 +375,40 @@ class ObjectTransfers {
       if (file is! File || !file.path.endsWith('.json')) continue;
       // One unreadable job must not hold up the others.
       try {
-        final job = (jsonDecode(await file.readAsString()) as Map)
-            .cast<String, Object?>();
-        final id = job['u']! as String;
+        final id = (await _readJob(file))['u']! as String;
         if (_starting.contains(id)) continue;
-        final abort = job['abort'] == true || job['e'] != true;
-        await _queue(id, () => _joinParts(job, id, ok: !abort, report: !abort));
+        // Read again in line with the upload: it may have handed its parts
+        // over (or been joined) since.
+        await _queue(id, () async {
+          if (_starting.contains(id) || !file.existsSync()) return;
+          final job = await _readJob(file);
+          final abort = job['abort'] == true || job['e'] != true;
+          await _joinParts(
+            job,
+            id,
+            ok: !abort,
+            report: !abort,
+            reportKept: false,
+          );
+        });
       } on Object catch (_) {
         continue;
       }
     }
   }
 
+  Future<Map<String, Object?>> _readJob(File file) async =>
+      (jsonDecode(await file.readAsString()) as Map).cast<String, Object?>();
+
+  /// Joins or aborts upload [m]. [report] tells its outcome; a failure
+  /// that keeps the job for a retry only when [reportKept] too, so a
+  /// parked join does not report a failure on each retry.
   Future<void> _joinParts(
     Map<String, Object?> m,
     String uploadId, {
     required bool ok,
     bool report = true,
+    bool reportKept = true,
   }) async {
     if (_completing.contains(uploadId)) return;
     final (p, l, b, k) = (
@@ -395,9 +436,10 @@ class ObjectTransfers {
         } on NotFound catch (_) {}
       }
     } on Object catch (e) {
-      // Kept for retryJoins: offline, locked, a server error. Without
-      // keys (Unauthorized) or while the app is locked (Locked) the job
-      // waits silently until they are back.
+      // Kept for retryJoins: offline, locked, refused (rotated keys, a
+      // wrong clock), a server error. Without keys (Unauthorized) or while
+      // the app is locked (Locked) the job waits silently until they are
+      // back.
       // ponytail: a server error that never ends keeps the parts in
       // temporary space; add a retry limit if that shows up.
       _completing.remove(uploadId);
@@ -406,14 +448,14 @@ class ObjectTransfers {
         await _write(file, {...m, 'abort': true});
       }
       final error = toFalcoError(e);
-      if (report && error is! Unauthorized && error is! Locked) {
-        _report((upload: true, ok: false, name: baseName(k)));
+      if (report && reportKept && error is! Unauthorized && error is! Locked) {
+        _report((upload: true, ok: false, name: baseName(k)), b);
       }
       return;
     }
     await _remove(m['d']! as String);
     if (joined) onUploaded?.call();
-    if (report) _report((upload: true, ok: joined, name: baseName(k)));
+    if (report) _report((upload: true, ok: joined, name: baseName(k)), b);
   }
 
   /// Joins the parts of [m]: true once joined, null while parts are
@@ -442,13 +484,14 @@ class ObjectTransfers {
       return true;
     } on NotFound catch (_) {
       // Gone: joined by a join whose answer was lost, or dropped. The
-      // object tells: written after the job started (a minute of clock
-      // skew) with the multipart ETag of its part count (`"…-n"`). An
-      // older object at the key fails one of them.
+      // object tells: the multipart ETag of its part count (`"…-n"`),
+      // written after the job started. The day of slack takes a device
+      // clock ahead of the server's; an older object at the key fails one
+      // of them.
       try {
         final o = await _s3.run(p, l, (c) => c.head(b, k));
         final count = RegExp(r'-(\d+)"?$').firstMatch(o.etag ?? '')?[1];
-        final since = created?.subtract(const Duration(minutes: 1));
+        final since = created?.subtract(const Duration(days: 1));
         return since != null &&
             count == '${m['n']}' &&
             (o.modified?.isAfter(since) ?? false);
@@ -456,8 +499,6 @@ class ObjectTransfers {
         return false;
       }
     } on Invalid catch (_) {
-      return false;
-    } on Forbidden catch (_) {
       return false;
     } on Conflict catch (_) {
       return false;

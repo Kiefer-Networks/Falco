@@ -116,7 +116,7 @@ Future<List<Bucket>?> buckets(Ref ref, Scope scope) async {
 }
 
 /// Buckets of [project]; adds locations that fail to [failed], unless
-/// all fail.
+/// all fail, and buckets whose location stays unknown.
 Future<List<Bucket>> _projectBuckets(
   S3Access s3,
   Project project,
@@ -145,23 +145,31 @@ Future<List<Bucket>> _projectBuckets(
     }
   }
   // An endpoint listing buckets of other locations too: ask the bucket.
-  return await Future.wait([
+  final located = await Future.wait([
     for (final MapEntry(key: name, value: at) in seen.entries)
-      (at.length == 1
-              ? Future.value(at.single)
-              : s3
-                    .run(projectId, at.first, (c) => c.location(name))
-                    // One unanswered bucket keeps the project standing.
-                    .catchError((Object _) => at.first))
-          .then(
-            (l) => (
-              name: name,
-              location: s3Locations.contains(l) ? l! : at.first,
-              projectId: projectId,
-              created: created[name],
-            ),
-          ),
+      if (at.length == 1)
+        Future.value(at.single)
+      else
+        s3
+            .run(projectId, at.first, (c) => c.location(name))
+            // One unanswered bucket keeps the project standing.
+            .catchError((Object _) => null),
   ]);
+  final buckets = <Bucket>[];
+  for (final (i, name) in seen.keys.indexed) {
+    // Not guessed: a wrong location sends every call to another endpoint.
+    if (located[i] case final l? when s3Locations.contains(l)) {
+      buckets.add((
+        name: name,
+        location: l,
+        projectId: projectId,
+        created: created[name],
+      ));
+    } else {
+      failed.add(Project(id: projectId, name: '${project.name} $name'));
+    }
+  }
+  return buckets;
 }
 
 /// Versioning (`Enabled`, `Suspended` or null) and visibility of a bucket

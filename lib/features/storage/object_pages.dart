@@ -10,6 +10,7 @@ import 'package:falco/core/files/text_files.dart';
 import 'package:falco/core/format/format.dart';
 import 'package:falco/core/permissions/notifications.dart';
 import 'package:falco/core/scope/scope.dart';
+import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/accounts/checks.dart';
 import 'package:falco/features/compute/compute_ui.dart';
@@ -296,20 +297,29 @@ class _BucketPageState extends ConsumerState<BucketPage> {
     super.dispose();
   }
 
-  /// Shows a finished transfer. Every folder level listens; only the one
-  /// on top shows it, and a sheet over it defers it until it closes.
+  /// Shows finished transfers, one after the other. Every folder level
+  /// listens; only the one on top shows them, and a sheet over it or the
+  /// lock defers them until it closes.
   void _showTransfer() {
     if (!mounted || ModalRoute.isCurrentOf(context) == false) return;
-    final transfers = ref.read(transfersProvider);
-    final e = transfers.unseen;
-    if (e == null) return;
-    transfers.unseen = null;
+    if (ref.read(appLockProvider) != AppLockState.unlocked) return;
+    final events = ref.read(transfersProvider).takeUnseen(_b);
+    if (events.isEmpty) return;
     final l10n = AppLocalizations.of(context);
-    FalcoScaffold.showSnack(context, switch (e) {
-      (upload: true, ok: true, :final name) => l10n.uploadDone(name),
-      (upload: false, ok: true, :final name) => l10n.downloadSaved(name),
-      (:final name, ok: false, upload: _) => l10n.transferFailedNamed(name),
-    });
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    for (final e in events) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(switch (e) {
+            (upload: true, ok: true, :final name) => l10n.uploadDone(name),
+            (upload: false, ok: true, :final name) => l10n.downloadSaved(name),
+            (:final name, ok: false, upload: _) => l10n.transferFailedNamed(
+              name,
+            ),
+          }),
+        ),
+      );
+    }
   }
 
   void _toggle(String key) => setState(
@@ -321,9 +331,10 @@ class _BucketPageState extends ConsumerState<BucketPage> {
     final l10n = AppLocalizations.of(context);
     final provider = objectsProvider(_p, _l, _b, widget.prefix);
     final async = ref.watch(provider);
+    ref.listen(appLockProvider, (_, _) => _showTransfer());
     // Rebuilt when a sheet over it closes: shows what finished meanwhile.
     if ((ModalRoute.isCurrentOf(context) ?? true) &&
-        ref.read(transfersProvider).unseen != null) {
+        ref.read(transfersProvider).hasUnseen(_b)) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showTransfer());
     }
     final listing = async.value;
