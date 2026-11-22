@@ -10,15 +10,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../fake_cloud.dart';
-import '../../helpers.dart';
 import '../../steps.dart' hide setSurface;
 import '../../storage_steps.dart';
 
 const _tablet = Size(1280, 800);
 
 void main() {
-  useTolerantGoldens('tablet_golden_test.dart');
-
   Future<void> area(WidgetTester tester, String name, [String? tab]) async {
     await tester.tap(find.text(name).last);
     await tester.pumpAndSettle();

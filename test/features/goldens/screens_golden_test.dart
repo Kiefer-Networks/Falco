@@ -11,8 +11,6 @@ import '../../fake_cloud.dart';
 import '../../helpers.dart';
 
 void main() {
-  useTolerantGoldens('screens_golden_test.dart');
-
   Future<void> tap(WidgetTester tester, String text) async {
     await tester.ensureVisible(find.text(text).last);
     await tester.pumpAndSettle();

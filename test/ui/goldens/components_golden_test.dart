@@ -26,8 +26,6 @@ const _parity = {
 };
 
 void main() {
-  useTolerantGoldens('components_golden_test.dart');
-
   Future<void> pumpCase(
     WidgetTester tester,
     ShowcaseCase c,

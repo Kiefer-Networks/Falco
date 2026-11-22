@@ -13,8 +13,6 @@ import '../../steps.dart' hide setSurface;
 import '../../storage_steps.dart';
 
 void main() {
-  useTolerantGoldens('storage_golden_test.dart');
-
   Future<void> storage(WidgetTester tester, String tab) async {
     await tap(tester, 'Storage');
     await openList(tester, tab);

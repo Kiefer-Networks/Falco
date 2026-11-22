@@ -16,8 +16,6 @@ import '../../robot_steps.dart';
 import '../../steps.dart' hide setSurface;
 
 void main() {
-  useTolerantGoldens('robot_golden_test.dart');
-
   final screens = <String, Future<void> Function(WidgetTester)>{
     'robot_servers': (_) async {},
     'robot_server_detail': (tester) => tap(tester, 'server1'),

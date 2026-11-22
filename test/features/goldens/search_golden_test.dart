@@ -13,8 +13,6 @@ import '../../helpers.dart';
 import '../../search_steps.dart';
 
 void main() {
-  useTolerantGoldens('search_golden_test.dart');
-
   final day = DateTime(2026, 3, 1, 14, 5);
   String at(int minutes) =>
       day.add(Duration(minutes: minutes)).toUtc().toIso8601String();
