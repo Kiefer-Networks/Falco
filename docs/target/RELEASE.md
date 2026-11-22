@@ -119,6 +119,13 @@ Secrets ersetzen.
 - Exportkonformität ist über `ITSAppUsesNonExemptEncryption = false` in der
   `Info.plist` beantwortet (nur HTTPS).
 - Screenshots für iPhone 6,9" und iPad 13" hochladen.
+- Inhaltsrechte (App Informationen → Content Rights): **Enthält keine
+  Inhalte Dritter**. Der Workflow beantwortet das zusätzlich bei jeder
+  Einreichung (`submission_information` in `fastlane/Fastfile`), ohne
+  Antwort lehnt App Store Connect die erste Einreichung ab.
+- Preise und Verfügbarkeit: Preis **Kostenlos**, Verfügbarkeit in allen
+  Ländern und Regionen. Ohne Preisstufe lässt sich keine Version zur
+  Prüfung einreichen.
 
 ### Screenshots
 
@@ -154,6 +161,27 @@ Noch nicht ausgeführt. Empfohlen vor dem Tag `v3.0.0`, damit Links auf
 2. Pull Request `next` → `main` mit **Merge Commit** (kein Squash, die
    Historie von `next` bleibt erhalten). `next` stammt von `main` ab, der
    Kotlin Code wird dabei entfernt.
+
+   Das Ruleset `main` erlaubt nur Squash (`allowed_merge_methods:
+   ["squash"]`) und verlangt lineare Historie (`required_linear_history`),
+   in den Repository Einstellungen ist „Allow merge commits“ aus. Für
+   diesen einen Merge stellt der Maintainer von Hand um und danach zurück:
+
+   1. Settings → General → Pull Requests: **Allow merge commits**
+      einschalten.
+   2. Settings → Rules → Rulesets → `main`: unter „Require a pull
+      request before merging“ bei „Allowed merge methods“ **Merge**
+      ergänzen und **Require linear history** abwählen. Speichern.
+   3. Den Pull Request mit „Create a merge commit“ mergen. Der Merge
+      Commit muss signiert sein (`required_signatures`): über die GitHub
+      Oberfläche signiert GitHub selbst, lokal mit `git merge -S`.
+   4. Sofort zurückstellen: Allowed merge methods wieder nur **Squash**,
+      **Require linear history** wieder an, **Allow merge commits** aus.
+
+   Ohne diese Umstellung ist ein Squash Merge zulässig: der Stand von
+   `main` ist danach derselbe, nur die einzelnen Commits von `next`
+   fehlen in der Historie von `main` (sie bleiben im Tag oder Branch
+   `next` erhalten, solange er nicht gelöscht ist).
 3. Auf `main` umstellen: `target-branch: next` in
    `.github/dependabot.yml` entfernen, `ci.yml` Trigger auf `main`
    beschränken, Hinweise auf `next` in Workflows und Dokumenten anpassen.

@@ -23,6 +23,7 @@ Future<void> main() async {
   );
   // The lock closes the vault before any background read; then pick up
   // transfers that went on while Falco was closed.
+  localizeVaultPrompt(container);
   closeVaultAtStart(container);
   unawaited(container.read(transfersProvider).start());
   unawaited(

@@ -384,6 +384,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockReason => 'Unlock Falco to access your servers';
 
   @override
+  String get lockPromptSubtitle => 'Use your fingerprint, face or device PIN';
+
+  @override
   String get vaultLostTitle => 'Access data deleted';
 
   @override

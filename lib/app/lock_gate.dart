@@ -122,7 +122,6 @@ class _LockGateState extends ConsumerState<LockGate>
   void _unlock() {
     if (!mounted) return;
     final reason = AppLocalizations.of(context).lockReason;
-    _secrets.prompt = reason;
     setState(() => _unlocking = true);
     ref.read(appLockProvider.notifier).unlock(reason).whenComplete(() {
       if (mounted) setState(() => _unlocking = false);

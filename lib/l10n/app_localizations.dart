@@ -752,6 +752,12 @@ abstract class AppLocalizations {
   /// **'Unlock Falco to access your servers'**
   String get lockReason;
 
+  /// No description provided for @lockPromptSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your fingerprint, face or device PIN'**
+  String get lockPromptSubtitle;
+
   /// No description provided for @vaultLostTitle.
   ///
   /// In en, this message translates to:

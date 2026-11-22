@@ -386,6 +386,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lockReason => 'Entsperre Falco, um auf deine Server zuzugreifen';
 
   @override
+  String get lockPromptSubtitle =>
+      'Nutze Fingerabdruck, Gesicht oder Geräte-PIN';
+
+  @override
   String get vaultLostTitle => 'Zugangsdaten gelöscht';
 
   @override

@@ -122,6 +122,7 @@
   "lockTitle": "Falco is locked.",
   "lockUnlock": "Unlock",
   "lockReason": "Unlock Falco to access your servers",
+  "lockPromptSubtitle": "Use your fingerprint, face or device PIN",
   "vaultLostTitle": "Access data deleted",
   "vaultLostMessage": "The system deleted the stored access data, for example after a change to the fingerprints or the face. Enter the tokens and credentials again for: {accounts}.",
   "@vaultLostMessage": {"placeholders": {"accounts": {"type": "String"}}},
