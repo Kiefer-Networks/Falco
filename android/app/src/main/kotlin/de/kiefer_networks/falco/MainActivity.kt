@@ -80,24 +80,15 @@ class MainActivity : FlutterFragmentActivity() {
         }
         clipboard.setPrimaryClip(clip)
         // Read back in the foreground: the system's copy time tells this
-        // clip apart from a later one with the same label.
+        // clip apart from a later one with the same label. Without focus the
+        // read back is null; then the label alone has to match.
         copiedAt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            clipboard.primaryClipDescription?.timestamp ?: 0L
+            clipboard.primaryClipDescription?.timestamp
         } else {
-            0L
+            null
         }
-        pending = false
         handler.removeCallbacksAndMessages(null)
         handler.postDelayed({ clearIfOurs(clipboard) }, expirySeconds * 1000L)
-    }
-
-    // A clip that was unreadable at its expiry (background) is checked
-    // again as soon as Falco is in front.
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus && pending) {
-            clearIfOurs(applicationContext.getSystemService(ClipboardManager::class.java))
-        }
     }
 
     // Process wide, so a recreated or finished activity still clears.
@@ -105,23 +96,24 @@ class MainActivity : FlutterFragmentActivity() {
         const val LABEL = "falco-secret"
         val handler = Handler(Looper.getMainLooper())
 
-        // Copy time of our clip on Android 8+ (0 below).
-        var copiedAt = 0L
+        // Copy time of our clip on Android 8+; null matches by label only.
+        var copiedAt: Long? = null
 
-        // The expiry passed while the clip was unreadable.
-        var pending = false
-
-        // In background Android 10+ hides the clip (null description): it
-        // may be a foreign clip copied meanwhile, so it stays and is checked
-        // on the next focus. Only a clip proven ours is cleared.
+        // In background Android 10+ hides the clip (null description). Like
+        // Falco 2 (SET-019) an unreadable clip is cleared anyway: a foreign
+        // clip copied meanwhile may be wiped, but a secret must not outlive
+        // its expiry because Falco was not in front. A readable clip is
+        // cleared only when label and copy time prove it ours.
         fun clearIfOurs(clipboard: ClipboardManager) {
             val description = clipboard.primaryClipDescription
-            pending = description == null
-            if (description == null || description.label != LABEL) return
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-                description.timestamp != copiedAt
-            ) {
-                return
+            if (description != null) {
+                if (description.label != LABEL) return
+                val at = copiedAt
+                if (at != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                    description.timestamp != at
+                ) {
+                    return
+                }
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 clipboard.clearPrimaryClip()

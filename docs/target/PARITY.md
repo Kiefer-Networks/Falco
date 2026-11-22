@@ -99,7 +99,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | SET-016 | TLS Pinning Info | Anzeige, dass Pinning für alle Hetzner Endpunkte aktiv ist | `S/settings/SettingsScreen.kt:302` |  | 3 | Widget |
 | SET-017 | Geheimnisspeicher | AEAD (Tink) mit Keystore Master Key; Neu: flutter_secure_storage Keychain/Keystore | `D/auth/CredentialStore.kt:257` |  | 2 | Unit |
 | SET-018 | Geheimnisfelder pro Account | Cloud Token pro Projekt, S3 Endpoint, Region, Keys, Robot Benutzer und Passwort | `D/auth/AccountManager.kt:200` |  | 2 | Unit |
-| SET-019 | Zwischenablage mit Ablauf | Kopierte Geheimnisse nach 60 s löschen | `ui/util/Clipboard.kt:23` |  | 2 | Unit |
+| SET-019 | Zwischenablage mit Ablauf | Kopierte Geheimnisse nach 60 s löschen. Android: ein im Hintergrund unlesbarer Clip wird trotzdem gelöscht (wie Falco 2, ein inzwischen kopierter fremder Clip kann dabei verloren gehen); ein lesbarer Clip nur bei passendem Label und Kopierzeitpunkt | `ui/util/Clipboard.kt:23` |  | 2 | Unit |
 | SET-020 | Zwischenablage sensibel markieren | Als sensibel markieren; Hinweis wenn System das nicht kann | `C/dialog/SecureRevealDialog.kt:50` |  | 2 | Widget |
 | SET-021 | Geheimnis anzeigen Sheet | Einmalige Anzeige von Passwörtern mit Kopieren und Schließen | `C/dialog/SecureRevealDialog.kt:77` |  | 2 | Widget |
 | SET-022 | Fehlertexte bereinigt | Keine Tokens oder URLs mit Geheimnissen in Fehlermeldungen | `D/util/Errors.kt:20` |  | 2 | Unit |
