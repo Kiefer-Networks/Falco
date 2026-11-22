@@ -623,7 +623,8 @@ Future<int> changeServer(cloud.Server api, int id, ServerChange change) {
         id: id,
         body: cloud.ServersIdActionsCreateImagePostBodyBodyModel.fromJson({
           'type': 'snapshot',
-          'description': description,
+          // An empty description makes an image without a name.
+          if (description.isNotEmpty) 'description': description,
           'labels': labels,
         }),
       ),

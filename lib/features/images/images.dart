@@ -72,6 +72,10 @@ class CloudImage {
   /// Set for system and app images.
   final String? name;
   final String description;
+
+  /// [description], or `#id` when it is empty (a snapshot may have none).
+  String get label => description.trim().isEmpty ? '#$id' : description;
+
   final ResourceStatus status;
 
   /// `x86` or `arm`.

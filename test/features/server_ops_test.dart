@@ -239,6 +239,19 @@ void main() {
       await settleAction(tester);
     });
 
+    testWidgets('CMP-025 a cleared description is not sent', (tester) async {
+      final cloud = await openServer(tester);
+      await more(tester, 'Snapshot');
+      await tester.enterText(find.byKey(const ValueKey('description')), ' ');
+      await tester.pumpAndSettle();
+      await tap(tester, 'Save');
+      expect(cloud.body('POST /servers/1/actions/create_image'), {
+        'labels': <String, Object?>{},
+        'type': 'snapshot',
+      });
+      await settleAction(tester);
+    });
+
     testWidgets('CMP-030 reset root password shows it once', (tester) async {
       final cloud = await openServer(tester);
       await more(tester, 'Reset root password');

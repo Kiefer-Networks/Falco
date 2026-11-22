@@ -64,15 +64,17 @@ const _privateMarkers = [
 /// space. Check and send this form.
 String normalizeSshKey(String key) {
   var line = '';
-  for (final part in key.trim().split(RegExp(r'[\r\n]+'))) {
+  for (final raw in key.trim().split(RegExp(r'[\r\n]+'))) {
+    final part = raw.trim();
+    if (part.isEmpty) continue;
     final tokens = line.split(RegExp(r'\s+'));
-    // Type and an unfinished blob: the next line continues the blob.
+    // Type and an unfinished blob: the next line continues the blob,
+    // indented or not.
     final inBlob =
         tokens.length == 2 &&
         sshKeyTypes.contains(tokens[0]) &&
-        publicKeyBlob(line) == null &&
-        !part.startsWith(RegExp(r'\s'));
-    line = line.isEmpty || inBlob ? '$line$part' : '$line ${part.trim()}';
+        publicKeyBlob(line) == null;
+    line = line.isEmpty || inBlob ? '$line$part' : '$line $part';
   }
   return line.trim();
 }

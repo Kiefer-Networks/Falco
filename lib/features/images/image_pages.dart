@@ -68,7 +68,7 @@ class ImageList extends ConsumerWidget {
       ],
       itemBuilder: (context, i) => ResourceRow(
         status: i.status,
-        name: i.description,
+        name: i.label,
         monoLine: [
           imageKindText(i.kind, l10n),
           if (i.sizeGb case final size?) gb(size, l10n.localeName),
@@ -110,12 +110,7 @@ class ImageDetailPage extends ConsumerWidget {
         onRetry: () => ref.invalidate(provider),
       );
     }
-    final t = (
-      scope: scope,
-      type: CloudType.image,
-      id: i.id,
-      name: i.description,
-    );
+    final t = (scope: scope, type: CloudType.image, id: i.id, name: i.label);
     final progress = ref
         .watch(trackedActionProvider(scope, CloudType.image, i.id))
         .value;
@@ -135,10 +130,10 @@ class ImageDetailPage extends ConsumerWidget {
     Future<void> convert() async {
       final confirmed = await ConfirmSheet.show(
         context,
-        title: l10n.imageConvertTitle(i.description),
+        title: l10n.imageConvertTitle(i.label),
         consequence: l10n.imageConvertConsequence,
         confirmLabel: l10n.imageConvert,
-        resourceName: i.description,
+        resourceName: i.label,
       );
       if (confirmed && context.mounted) {
         await runChange(
@@ -154,7 +149,7 @@ class ImageDetailPage extends ConsumerWidget {
       title: l10n.resourceImage,
       body: DetailPage(
         status: busy ? ResourceStatus.inProgress : i.status,
-        name: i.description,
+        name: i.label,
         ids: [
           DetailId(imageKindText(i.kind, l10n), icon: Icons.album_outlined),
           DetailId(i.architecture, icon: Icons.memory),
@@ -175,7 +170,13 @@ class ImageDetailPage extends ConsumerWidget {
             onTap: () => editNameAndLabels(
               context,
               ref,
-              t,
+              // The real description, not the `#id` fallback.
+              (
+                scope: scope,
+                type: CloudType.image,
+                id: i.id,
+                name: i.description,
+              ),
               i.labels,
               (api, name, labels) =>
                   updateImage(api, i.id, description: name, labels: labels),
@@ -219,7 +220,7 @@ class ImageDetailPage extends ConsumerWidget {
                 ref,
                 t,
                 (api) => deleteImage(api, i.id),
-                done: l10n.deletedMessage(i.description),
+                done: l10n.deletedMessage(i.label),
               );
               if (deleted && context.mounted) Navigator.pop(context);
             },

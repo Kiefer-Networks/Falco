@@ -678,7 +678,7 @@ class FakeCloud {
             if (command == 'create_image')
               'image': imageJson(
                 id: _nextId++,
-                description: '${body['description']}',
+                description: body['description'] as String? ?? '',
                 type: 'snapshot',
               ),
           },

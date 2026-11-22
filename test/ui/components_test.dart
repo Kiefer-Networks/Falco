@@ -22,6 +22,9 @@ void main() {
       expect(ConfirmSheet.matches('', 'db-primary'), isFalse);
       expect(ConfirmSheet.matches('', ''), isFalse);
       expect(ConfirmSheet.matches('  ', ''), isFalse);
+      // A name with blanks around it is typed without them.
+      expect(ConfirmSheet.matches('notes', 'notes '), isTrue);
+      expect(ConfirmSheet.matches(' ', ' '), isFalse);
     });
 
     testWidgets('QRS-010 confirm stays disabled until the name matches', (
