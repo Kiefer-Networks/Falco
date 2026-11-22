@@ -593,14 +593,32 @@ String normalizeRecord(String type, String value) {
   return [...parts.take(parts.length - 1), '$host.'].join(' ');
 }
 
+/// Where the hex data starts in types whose last fields are one hex
+/// string that may be split by spaces and written in any case.
+const _hexFrom = {'DS': 3, 'CDS': 3, 'TLSA': 3, 'SSHFP': 2};
+
+/// [v] with runs of whitespace outside quoted strings as one space.
+String _collapse(String v) => v.replaceAllMapped(
+  RegExp(r'"(?:[^"\\]|\\.)*"|\s+'),
+  (m) => m[0]!.startsWith('"') ? m[0]! : ' ',
+);
+
 /// What tells two values of [type] apart for the API: an address by its
-/// bytes (`2001:DB8::1` is `2001:db8:0:0:0:0:0:1`), host names in any
-/// case, runs of spaces as one. Compares values the user typed with
-/// those the server sends back.
+/// bytes (`2001:DB8::1` is `2001:db8:0:0:0:0:0:1`), host names and hex
+/// digests in any case, runs of spaces outside quotes as one, a digest
+/// split by spaces as one. Compares values the user typed with those
+/// the server sends back.
 String recordKey(String type, String value) {
   final v = value.trim();
   if (type == 'TXT') return v;
-  final spaced = v.replaceAll(RegExp(r'\s+'), ' ');
+  final spaced = _collapse(v);
+  final hex = _hexFrom[type];
+  if (hex != null) {
+    final f = spaced.split(' ');
+    if (f.length > hex) {
+      return [...f.take(hex), f.skip(hex).join().toLowerCase()].join(' ');
+    }
+  }
   try {
     if (type == 'A') return Uri.parseIPv4Address(spaced).join('.');
     if (type == 'AAAA') return Uri.parseIPv6Address(spaced).join('.');
