@@ -371,7 +371,8 @@ void main() {
     testWidgets('SET-025 without notifications a transfer still runs and '
         'says so', (tester) async {
       final cloud = storageCloud();
-      cloud.notifications.granted = false;
+      // A failing request counts as not granted.
+      cloud.notifications.error = PlatformException(code: 'busy');
       await openBucket(tester, cloud);
       final c = ProviderScope.containerOf(tester.element(find.text('docs')));
       (c.read(transfersProvider) as FakeTransfers).hold = true;

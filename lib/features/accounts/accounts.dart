@@ -313,6 +313,7 @@ class _AccountWizardPageState extends ConsumerState<AccountWizardPage> {
       valid: validProject,
       onSave: (v) async => added = v,
     );
+    if (!mounted) return;
     if (added case final p?) setState(() => _projects.add(p));
   }
 

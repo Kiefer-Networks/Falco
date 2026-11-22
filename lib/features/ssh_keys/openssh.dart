@@ -38,8 +38,9 @@ Uint8List? publicKeyBlob(String line) {
   } on FormatException {
     return null;
   }
-  // Length prefixed fields that fill the blob exactly: the type and at
-  // least one more, so a cut blob does not pass.
+  // Length prefixed fields that fill the blob exactly, at least as many as
+  // the type has, so a blob cut after a whole field does not pass and a
+  // wrapped paste keeps joining (normalizeSshKey).
   final data = ByteData.sublistView(blob);
   final fields = <Uint8List>[];
   for (var at = 0; at < blob.length;) {
@@ -49,11 +50,29 @@ Uint8List? publicKeyBlob(String line) {
     fields.add(blob.sublist(at + 4, at + 4 + n));
     at += 4 + n;
   }
-  return fields.length >= 2 &&
-          utf8.decode(fields.first, allowMalformed: true) == parts[0]
-      ? blob
-      : null;
+  final type = parts[0];
+  if (fields.length < (_minFields[type] ?? 2) ||
+      utf8.decode(fields.first, allowMalformed: true) != type) {
+    return null;
+  }
+  // The Ed25519 key is 32 bytes (RFC 8709).
+  if (type.contains('ed25519') && fields[1].length != 32) return null;
+  return blob;
 }
+
+/// Fields of a public key blob, type included (RFC 4253, RFC 5656,
+/// RFC 8709, OpenSSH PROTOCOL.u2f): rsa e n, dss p q g y, ecdsa curve
+/// point, sk keys add the application.
+const _minFields = {
+  'ssh-ed25519': 2,
+  'ssh-rsa': 3,
+  'ssh-dss': 5,
+  'ecdsa-sha2-nistp256': 3,
+  'ecdsa-sha2-nistp384': 3,
+  'ecdsa-sha2-nistp521': 3,
+  'sk-ssh-ed25519@openssh.com': 3,
+  'sk-ecdsa-sha2-nistp256@openssh.com': 4,
+};
 
 /// The MD5 fingerprint of a public key as Hetzner shows it
 /// (`aa:bb:…`, 16 bytes); null when the line is no public key.

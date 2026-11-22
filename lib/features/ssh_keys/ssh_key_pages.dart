@@ -12,6 +12,7 @@ import 'package:falco/features/ssh_keys/ssh_keys.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/error_text.dart';
 import 'package:falco/ui/ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -229,9 +230,12 @@ Future<void> showPrivateKey(
     secrets: {l10n.sshKeyPrivateTitle: privateKey},
     dismissible: false,
     onSave: () async {
-      final saved = await ref
-          .read(textFilesProvider)
-          .save('id_ed25519', privateKey);
+      // Android's picker appends '.bin' to a name without an extension;
+      // the iOS picker keeps the name as given.
+      final name = defaultTargetPlatform == TargetPlatform.android
+          ? 'id_ed25519.pem'
+          : 'id_ed25519';
+      final saved = await ref.read(textFilesProvider).save(name, privateKey);
       if (saved && context.mounted) {
         FalcoScaffold.showSnack(context, l10n.savedMessage);
       }

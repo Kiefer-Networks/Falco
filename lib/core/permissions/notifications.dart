@@ -35,11 +35,21 @@ class NotificationPermission {
 
 /// Asks before a transfer starts (SET-025): empty when notifications are
 /// on, otherwise a second line for the start message saying the transfer
-/// runs anyway.
-Future<String> notificationHint(WidgetRef ref, AppLocalizations l10n) async =>
-    await ref.read(notificationPermissionProvider).request()
-    ? ''
-    : '\n${l10n.transferNoNotifications}';
+/// runs anyway. A failing or hanging request counts as not granted, so
+/// the transfer always starts.
+Future<String> notificationHint(WidgetRef ref, AppLocalizations l10n) async {
+  try {
+    if (await ref
+        .read(notificationPermissionProvider)
+        .request()
+        .timeout(const Duration(seconds: 30))) {
+      return '';
+    }
+  } on Object {
+    // Not granted.
+  }
+  return '\n${l10n.transferNoNotifications}';
+}
 
 @Riverpod(keepAlive: true)
 NotificationPermission notificationPermission(Ref ref) =>
