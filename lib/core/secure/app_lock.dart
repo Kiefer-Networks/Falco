@@ -42,6 +42,15 @@ Future<bool?> Function(String reason) authenticator(Ref ref) {
   };
 }
 
+/// Closes the vault once at launch while the lock is on, before anything
+/// reads it, so background work at launch fails as [Locked] instead of
+/// raising the system prompt over the cover.
+void closeVaultAtStart(ProviderContainer container) {
+  if (container.read(appLockProvider) != AppLockState.unlocked) {
+    container.read(secretStoreProvider).close();
+  }
+}
+
 /// State of the app lock. Held in memory only, never persisted (SET-011).
 enum AppLockState {
   /// Content visible.
@@ -76,15 +85,13 @@ class AppLock extends _$AppLock {
 
   static final _uptime = Stopwatch()..start();
 
-  /// With the lock on the vault starts closed, so background work at
-  /// launch fails as [Locked] instead of raising the system prompt over
-  /// the cover.
+  /// Locked at start while the lock is on. No side effect here: a first
+  /// read of the lock after the vault opened must not close it again;
+  /// [closeVaultAtStart] closes it once at launch.
   @override
-  AppLockState build() {
-    if (!ref.read(appSettingsProvider).lock) return AppLockState.unlocked;
-    ref.read(secretStoreProvider).close();
-    return AppLockState.locked;
-  }
+  AppLockState build() => ref.read(appSettingsProvider).lock
+      ? AppLockState.locked
+      : AppLockState.unlocked;
 
   Future<void>? _pending;
 

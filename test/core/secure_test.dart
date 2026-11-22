@@ -235,7 +235,7 @@ void main() {
       );
       addTearDown(c.dispose);
       final reads = bound.reads;
-      c.read(appLockProvider);
+      closeVaultAtStart(c);
       await expectLater(secrets.cloudToken('p1'), throwsA(isA<Locked>()));
       expect(bound.reads, reads, reason: 'no prompt over the cover');
       await c.read(appLockProvider.notifier).unlock('why');

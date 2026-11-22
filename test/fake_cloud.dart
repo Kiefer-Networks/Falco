@@ -1265,6 +1265,7 @@ Future<ProviderContainer> pumpFalco(
     ],
   );
   addTearDown(container.dispose);
+  closeVaultAtStart(container);
   await tester.pumpWidget(
     UncontrolledProviderScope(container: container, child: const FalcoApp()),
   );
@@ -1288,5 +1289,7 @@ Future<ProviderContainer> fakeContainer(
     ],
   );
   addTearDown(container.dispose);
+  // Like main: the vault closes once at start, before any read.
+  closeVaultAtStart(container);
   return container;
 }
