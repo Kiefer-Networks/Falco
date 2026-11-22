@@ -16,12 +16,16 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:android_file_picker/android_file_picker.dart'
+    show FilePickerAndroid;
 import 'package:background_downloader/background_downloader.dart';
 import 'package:falco/core/errors/falco_error.dart';
+import 'package:falco/core/files/text_files.dart';
 import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/storage/object_storage.dart';
 import 'package:falco/l10n/app_localizations.dart';
+import 'package:file_picker/file_picker.dart' show FilePickerPlatform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,6 +38,11 @@ const int defaultPartSize = 64 * 1024 * 1024;
 
 /// Validity of the links native transfers use; a queued task may wait.
 const transferLinkExpiry = Duration(hours: 24);
+
+/// Time past [transferLinkExpiry] after which a join S3 keeps refusing
+/// (rotated or removed keys) is given up: the parts stay with S3 until
+/// its lifecycle drops them, the local copies and the job go.
+const refusedJoinLimit = Duration(days: 4);
 
 /// A finished transfer for the screen's snackbar.
 typedef TransferEvent = ({bool upload, bool ok, String name});
@@ -71,6 +80,12 @@ class ObjectTransfers {
   /// Multipart uploads still being handed to the platform.
   final _starting = <String>{};
 
+  /// Multipart uploads whose kept join failure was reported already.
+  final _keptReported = <String>{};
+
+  /// Buckets with an object browser open, with their count.
+  final _open = <String, int>{};
+
   /// Part events per upload, handled one after the other so two parts
   /// finishing together neither join twice nor both see the other
   /// missing.
@@ -82,9 +97,9 @@ class ObjectTransfers {
 
   /// Finished transfers no screen showed yet, oldest first, with their
   /// bucket: the object browser of that bucket on top takes them, a sheet
-  /// over it defers them. One that finished while no screen listened has
-  /// no bucket, so the next object browser shows it: a failed upload
-  /// joined in the background is never silent.
+  /// over it defers them. One that finished while no browser of its bucket
+  /// was open has no bucket, so the next object browser shows it: a failed
+  /// upload joined in the background is never silent.
   final _unseen = <({String? bucket, TransferEvent event})>[];
 
   /// Whether [bucket]'s object browser has transfers to show.
@@ -101,8 +116,22 @@ class ObjectTransfers {
     return taken;
   }
 
+  /// Marks an object browser of [bucket] as open until [closeBucket].
+  void openBucket(String bucket) => _open[bucket] = (_open[bucket] ?? 0) + 1;
+
+  /// Marks one object browser of [bucket] as closed.
+  void closeBucket(String bucket) {
+    final n = (_open[bucket] ?? 1) - 1;
+    if (n > 0) {
+      _open[bucket] = n;
+    } else {
+      _open.remove(bucket);
+    }
+  }
+
   void _report(TransferEvent e, String? bucket) {
-    _unseen.add((bucket: _events.hasListener ? bucket : null, event: e));
+    final shown = _open.containsKey(bucket);
+    _unseen.add((bucket: shown ? bucket : null, event: e));
     // ponytail: bounded, the oldest go first; nobody reads more.
     if (_unseen.length > 20) _unseen.removeAt(0);
     _events.add(e);
@@ -207,10 +236,24 @@ class ObjectTransfers {
       },
     );
     if (size <= partSize) {
-      await enqueue([await task(file, null, meta)]);
+      // With its source, to drop the picker's copy once it finished.
+      await enqueue([
+        await task(file, null, {...meta, 's': file.path}),
+      ]);
       return;
     }
     final created = DateTime.now().millisecondsSinceEpoch;
+    // The object at the key before: a vanished upload counts as joined
+    // only when the key holds another one since.
+    final before = <String, Object?>{};
+    try {
+      final o = await _s3.run(projectId, location, (c) => c.head(bucket, key));
+      before['pe'] = o.etag;
+    } on NotFound catch (_) {
+      before['pe'] = null;
+    } on Object catch (_) {
+      // Unknown: a vanished upload then counts as failed.
+    }
     final uploadId = await _s3.run(
       projectId,
       location,
@@ -218,7 +261,14 @@ class ObjectTransfers {
     );
     final name = '${uploadId.hashCode}';
     final parts = (size / partSize).ceil();
-    final job = {...meta, 'u': uploadId, 'n': parts, 'd': name, 't': created};
+    final job = {
+      ...meta,
+      ...before,
+      'u': uploadId,
+      'n': parts,
+      'd': name,
+      't': created,
+    };
     final jobFile = await _jobFile(name);
     _starting.add(uploadId);
     try {
@@ -237,6 +287,8 @@ class ObjectTransfers {
             'uploadId': uploadId,
           }, job),
       ]);
+      // The parts are copies: the picked file is no longer needed.
+      await dropUploadCopy(file.path);
       // In line with the part events: a job already joined stays gone.
       await _queue(uploadId, () async {
         if (jobFile.existsSync()) {
@@ -345,10 +397,20 @@ class ObjectTransfers {
       _report((upload: false, ok: kept, name: name), meta['b'] as String?);
       return;
     }
+    // The file a finished upload sent is no longer needed: a part copy,
+    // or the picker's copy of the picked file.
     if (meta['u'] case final String uploadId) {
+      final part = Uri.parse(task.url).queryParameters['partNumber'];
+      final dir = meta['d'];
+      if (part != null && dir is String) {
+        try {
+          await File('$partsRoot/$dir/$part').delete();
+        } on FileSystemException catch (_) {}
+      }
       await _queue(uploadId, () => _joinParts(meta, uploadId, ok: ok));
       return;
     }
+    await dropUploadCopy(meta['s'] as String?);
     if (ok) onUploaded?.call();
     _report((upload: true, ok: ok, name: name), meta['b'] as String?);
   }
@@ -448,7 +510,19 @@ class ObjectTransfers {
         await _write(file, {...m, 'abort': true});
       }
       final error = toFalcoError(e);
-      if (report && reportKept && error is! Unauthorized && error is! Locked) {
+      if ((error is Unauthorized || error is Forbidden) && _refusedTooLong(m)) {
+        // Refused for good: give up once, the local copies go.
+        _completing.add(uploadId);
+        await _remove(m['d']! as String);
+        if (report) _report((upload: true, ok: false, name: baseName(k)), b);
+        return;
+      }
+      // A parked join reports once, not on each part event.
+      if (report &&
+          reportKept &&
+          error is! Unauthorized &&
+          error is! Locked &&
+          _keptReported.add(uploadId)) {
         _report((upload: true, ok: false, name: baseName(k)), b);
       }
       return;
@@ -484,17 +558,13 @@ class ObjectTransfers {
       return true;
     } on NotFound catch (_) {
       // Gone: joined by a join whose answer was lost, or dropped. The
-      // object tells: the multipart ETag of its part count (`"…-n"`),
-      // written after the job started. The day of slack takes a device
-      // clock ahead of the server's; an older object at the key fails one
-      // of them.
+      // object tells: the multipart ETag of its part count (`"…-n"`) and
+      // not the ETag the key held before the upload. Without that one
+      // known it counts as failed.
       try {
         final o = await _s3.run(p, l, (c) => c.head(b, k));
         final count = RegExp(r'-(\d+)"?$').firstMatch(o.etag ?? '')?[1];
-        final since = created?.subtract(const Duration(days: 1));
-        return since != null &&
-            count == '${m['n']}' &&
-            (o.modified?.isAfter(since) ?? false);
+        return m.containsKey('pe') && o.etag != m['pe'] && count == '${m['n']}';
       } on NotFound catch (_) {
         return false;
       }
@@ -503,6 +573,48 @@ class ObjectTransfers {
     } on Conflict catch (_) {
       return false;
     }
+  }
+
+  /// Whether job [m] started longer ago than its links last plus
+  /// [refusedJoinLimit].
+  bool _refusedTooLong(Map<String, Object?> m) => switch (m['t']) {
+    final int t =>
+      DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(t)) >
+          transferLinkExpiry + refusedJoinLimit,
+    _ => false,
+  };
+
+  /// Deletes picker copies an ended process left behind (a pick or save
+  /// cut short, an upload source of a finished transfer), except those a
+  /// transfer still sends. Run once at start.
+  Future<void> dropStaleCopies() async {
+    await start();
+    if (Platform.isAndroid) {
+      // Takes a pick cut short by the process end out of the plugin's
+      // store, so nothing hands out its deleted copy later.
+      try {
+        if (FilePickerPlatform.instance case final FilePickerAndroid a) {
+          await a.retrieveLostData();
+        }
+      } on Object catch (_) {}
+    }
+    final inUse = <String>{
+      for (final t in await FileDownloader().allTasks(allGroups: true))
+        if (t is UploadTask) await t.filePath(),
+    };
+    await dropUnusedCopies([
+      Directory('${Directory.systemTemp.path}/flutter_file_picker'),
+      if (Platform.isAndroid)
+        Directory(
+          '${await Task.baseDirectoryPath(BaseDirectory.temporary)}'
+          '/file_picker',
+        ),
+    ], inUse);
+    await dropUnusedCopies(
+      [Directory.systemTemp],
+      inUse,
+      prefix: uploadCopyPrefix,
+    );
   }
 
   Future<void> _remove(String name) async {

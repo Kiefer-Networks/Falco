@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'dart:async';
+import 'dart:io';
 
 import 'package:falco/core/actions/action_tracker.dart';
 import 'package:falco/core/errors/falco_error.dart';
@@ -35,6 +36,30 @@ void main() {
     ]) {
       expect(pickerCopyDir(other), isNull, reason: other);
     }
+  });
+
+  test('copies of picked files go, other files stay', () async {
+    final copy = Directory.systemTemp.createTempSync(uploadCopyPrefix);
+    final own = File('${copy.path}/a.bin')..createSync();
+    final other = Directory.systemTemp.createTempSync('falco-test');
+    final kept = File('${other.path}/a.bin')..createSync();
+    expect(uploadCopyDir(own.path), copy.path);
+    expect(uploadCopyDir(kept.path), isNull);
+    await dropUploadCopy(kept.path);
+    await dropUploadCopy(own.path);
+    expect(kept.existsSync(), isTrue);
+    expect(copy.existsSync(), isFalse);
+
+    // Left behind by an ended process: only folders no transfer sends go.
+    final root = Directory('${other.path}/file_picker');
+    final used = File('${root.path}/U1/a.bin')..createSync(recursive: true);
+    final stale = File('${root.path}/U2/b.bin')..createSync(recursive: true);
+    await dropUnusedCopies(
+      [root, Directory('${other.path}/none')],
+      {'/private${used.path}'},
+    );
+    expect(used.existsSync(), isTrue);
+    expect(stale.parent.existsSync(), isFalse);
   });
 
   group('fetchAll (QRS-016)', () {

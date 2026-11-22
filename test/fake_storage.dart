@@ -211,6 +211,9 @@ class FakeStorage {
   /// Whether asking a bucket for its location fails with a server error.
   bool failLocation = false;
 
+  /// Whether asking a bucket for its location is refused with 403.
+  bool forbidLocation = false;
+
   /// Locations whose every S3 request fails with a server error.
   final failing = <String>{};
 
@@ -479,6 +482,9 @@ class FakeStorage {
         case 'GET' when q.containsKey('location'):
           if (failLocation) {
             return (500, '<Error><Code>InternalError</Code></Error>');
+          }
+          if (forbidLocation) {
+            return (403, '<Error><Code>AccessDenied</Code></Error>');
           }
           return (200, '<LocationConstraint>$location</LocationConstraint>');
         case 'PUT':

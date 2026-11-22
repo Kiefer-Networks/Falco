@@ -145,15 +145,22 @@ Future<List<Bucket>> _projectBuckets(
     }
   }
   // An endpoint listing buckets of other locations too: ask the bucket.
+  // One seen by a single endpoint is there only when every endpoint
+  // answered; a failed one may be its own.
   final located = await Future.wait([
     for (final MapEntry(key: name, value: at) in seen.entries)
-      if (at.length == 1)
+      if (at.length == 1 && errors.isEmpty)
         Future.value(at.single)
       else
         s3
             .run(projectId, at.first, (c) => c.location(name))
-            // One unanswered bucket keeps the project standing.
-            .catchError((Object _) => null),
+            // No answer for good (refused, or none given): where it was
+            // listed, as before. A transient error names it as failed
+            // and keeps the project standing.
+            .then<String?>((l) => l ?? at.first)
+            .catchError(
+              (Object e) => toFalcoError(e) is Forbidden ? at.first : null,
+            ),
   ]);
   final buckets = <Bucket>[];
   for (final (i, name) in seen.keys.indexed) {

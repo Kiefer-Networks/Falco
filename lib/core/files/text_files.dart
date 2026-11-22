@@ -61,7 +61,7 @@ class TextFiles {
     final f = (await FilePicker.pickFiles()).firstOrNull;
     if (f == null) return null;
     if (f.path case final path?) return File(path);
-    final dir = await Directory.systemTemp.createTemp('falco-upload');
+    final dir = await Directory.systemTemp.createTemp(uploadCopyPrefix);
     final copy = '${dir.path}/${f.name}';
     await f.xFile.saveTo(copy);
     return File(copy);
@@ -129,6 +129,67 @@ String? pickerCopyDir(String? path) {
     return uuid == '.' || uuid == '..' ? null : path.substring(0, end);
   }
   return null;
+}
+
+/// Name start of the temporary folders [TextFiles.pickFile] copies a
+/// picked document without a path into.
+const uploadCopyPrefix = 'falco-upload';
+
+/// The folder holding the copy of a file picked for upload at [path]: the
+/// picker's ([pickerCopyDir]) or the temporary one of
+/// [TextFiles.pickFile]. Null for any other path, which is not ours.
+String? uploadCopyDir(String? path) {
+  if (pickerCopyDir(path) case final dir?) return dir;
+  if (path == null) return null;
+  final dir = File(path).parent;
+  // Compared by name: the platform may spell the temporary folder through
+  // another link (`/private/var` on iOS).
+  return _name(dir).startsWith(uploadCopyPrefix) &&
+          _name(dir.parent) == _name(Directory.systemTemp)
+      ? dir.path
+      : null;
+}
+
+String _name(FileSystemEntity e) =>
+    e.uri.pathSegments.lastWhere((s) => s.isNotEmpty, orElse: () => '');
+
+/// Deletes the copy of a file picked for upload at [path] (see
+/// [uploadCopyDir]); any other path stays.
+Future<void> dropUploadCopy(String? path) async {
+  if (uploadCopyDir(path) case final dir?) {
+    try {
+      await Directory(dir).delete(recursive: true);
+    } on FileSystemException {
+      // Already gone.
+    }
+  }
+}
+
+/// Deletes the folders in [roots] (whose names start with [prefix])
+/// holding none of the files [inUse]: copies of picked files left behind.
+Future<void> dropUnusedCopies(
+  Iterable<Directory> roots,
+  Set<String> inUse, {
+  String prefix = '',
+}) async {
+  for (final root in roots) {
+    try {
+      await for (final dir in root.list()) {
+        final name = _name(dir);
+        if (dir is! Directory || !name.startsWith(prefix)) continue;
+        // By the folder's unique name: the platform may spell the path
+        // through another link (`/private/var` on iOS).
+        if (inUse.any((p) => p.contains('/$name/'))) continue;
+        try {
+          await dir.delete(recursive: true);
+        } on FileSystemException {
+          // In use by the system, or gone.
+        }
+      }
+    } on FileSystemException {
+      // No such root.
+    }
+  }
 }
 
 @Riverpod(keepAlive: true)
