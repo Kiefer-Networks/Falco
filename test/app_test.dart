@@ -13,6 +13,7 @@ import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/main.dart';
 import 'package:falco/ui/ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -93,9 +94,70 @@ void main() {
   testWidgets('SET-011 while locked back stays on the cover and snackbars '
       'stay below it (K10, K11)', (tester) async {
     seedSecrets(const [Account(id: 'a1', name: 'Acme')]);
+    final answers = [true, false];
+    await tester.pumpWidget(await app(answers));
+    await tester.pumpAndSettle();
+    final page = tester.element(find.byType(ProjectSetupPage));
+    final lock = ProviderScope.containerOf(page).read(appLockProvider.notifier);
+    var now = DateTime(2026);
+    lock.now = () => now;
+    [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+    ].forEach(tester.binding.handleAppLifecycleStateChanged);
+    now = now.add(const Duration(hours: 1));
+    // Android passes inactive on the way back: already covered (L5), the
+    // prompt waits for resumed.
+    [
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+    ].forEach(tester.binding.handleAppLifecycleStateChanged);
+    await tester.pump();
+    expect(find.text('Falco is locked.'), findsOneWidget);
+    expect(answers, [false]);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(answers, isEmpty);
+    expect(find.text('Falco is locked.'), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(tester.element(find.byType(ProjectSetupPage)), same(page));
+
+    FalcoScaffold.showSnack(page, 'Saved');
+    await tester.pumpAndSettle();
+    expect(find.text('Saved'), findsOneWidget, reason: 'not on the cover');
+    expect(find.text('Saved').hitTestable(), findsNothing);
+  });
+
+  testWidgets('L9 while locked the system handles back, so a predictive '
+      'back gesture never reaches the pages', (tester) async {
+    seedSecrets(const [Account(id: 'a1', name: 'Acme')]);
     await tester.pumpWidget(await app([true, false]));
     await tester.pumpAndSettle();
     final page = tester.element(find.byType(ProjectSetupPage));
+    final frameworkBack = <Object?>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'SystemNavigator.setFrameworkHandlesBack') {
+          frameworkBack.add(call.arguments);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    Navigator.of(page)
+        .push(MaterialPageRoute<void>(builder: (_) => const Scaffold()));
+    await tester.pumpAndSettle();
+    expect(frameworkBack.last, isTrue);
     final lock = ProviderScope.containerOf(page).read(appLockProvider.notifier);
     var now = DateTime(2026);
     lock.now = () => now;
@@ -112,15 +174,7 @@ void main() {
     ].forEach(tester.binding.handleAppLifecycleStateChanged);
     await tester.pumpAndSettle();
     expect(find.text('Falco is locked.'), findsOneWidget);
-
-    expect(await tester.binding.handlePopRoute(), isTrue);
-    await tester.pumpAndSettle();
-    expect(tester.element(find.byType(ProjectSetupPage)), same(page));
-
-    FalcoScaffold.showSnack(page, 'Saved');
-    await tester.pumpAndSettle();
-    expect(find.text('Saved'), findsOneWidget, reason: 'not on the cover');
-    expect(find.text('Saved').hitTestable(), findsNothing);
+    expect(frameworkBack.last, isFalse);
   });
 
   testWidgets('L6 names the accounts whose access data the system deleted', (

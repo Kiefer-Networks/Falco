@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:falco/app/lock_gate.dart';
 import 'package:falco/app/router.dart';
 import 'package:falco/core/errors/falco_error.dart';
+import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/storage/transfers.dart';
 import 'package:falco/l10n/app_localizations.dart';
@@ -20,8 +21,10 @@ Future<void> main() async {
     retry: retryDelay,
     overrides: [preferencesProvider.overrideWithValue(prefs)],
   );
-  // Picks up transfers that went on while Falco was closed.
-  unawaited(container.read(transfersProvider).start());
+  // The lock closes the vault before any background read; then pick up
+  // transfers that went on while Falco was closed.
+  final transfers = (container..read(appLockProvider)).read(transfersProvider);
+  unawaited(transfers.start());
   runApp(
     UncontrolledProviderScope(container: container, child: const FalcoApp()),
   );

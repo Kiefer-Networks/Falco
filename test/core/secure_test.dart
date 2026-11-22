@@ -143,12 +143,103 @@ void main() {
     late _Bound bound;
     late SecretStore secrets;
     late bool deviceLock;
+    late AndroidDevice device;
 
     setUp(() {
       FlutterSecureStorage.setMockInitialValues({});
       bound = _Bound();
       deviceLock = true;
-      secrets = SecretStore(null, bound, () async => deviceLock);
+      device = (sdk: 36, secure: true);
+      secrets = SecretStore(
+        null,
+        bound,
+        () async => deviceLock,
+        () async => device,
+      );
+    });
+
+    String? namespace() => bound.android?.toMap()['storageNamespace'];
+
+    test('a read started while closed does not fail the unlock (L3)', () async {
+      await secrets.setCloudToken('p1', 't1');
+      secrets.close();
+      final background = expectLater(
+        secrets.cloudToken('p1'),
+        throwsA(isA<Locked>()),
+      );
+      expect(await secrets.open(), isTrue);
+      await background;
+      expect(await secrets.cloudToken('p1'), 't1');
+    });
+
+    test('Android 7 to 10 keeps the vault unbound (L4)', () async {
+      device = (sdk: 29, secure: true);
+      bound.fail = true;
+      await secrets.setCloudToken('p1', 't1');
+      expect(await secrets.bound, isFalse);
+      expect(bound.data, isEmpty);
+      secrets.close();
+      expect(await secrets.cloudToken('p1'), 't1');
+    });
+
+    test('an invalidated key moves the vault to a new key, also on a '
+        'write (L6)', () async {
+      await secrets.setCloudToken('p1', 't1');
+      expect(namespace(), 'vault');
+      bound.writeError = PlatformException(
+        code: 'Exception encountered',
+        details: 'KeyPermanentlyInvalidatedException: Key invalidated',
+      );
+      await secrets.setCloudToken('p2', 't2');
+      expect(namespace(), 'vault.1');
+      secrets.close();
+      await secrets.open();
+      expect(await secrets.cloudToken('p2'), 't2');
+    });
+
+    test('a vault key made without a screen lock is replaced by an asking '
+        'one once there is a lock (L7)', () async {
+      device = (sdk: 36, secure: false);
+      await secrets.setCloudToken('p1', 't1');
+      device = (sdk: 36, secure: true);
+      final writes = bound.writes;
+      expect(await secrets.verify(), isTrue);
+      expect(bound.writes, writes + 1, reason: 'the new key asks');
+      expect(namespace(), 'vault.1');
+      expect(await secrets.cloudToken('p1'), 't1');
+      // A cancelled replacement fails the check and keeps the old vault.
+      bound.fail = true;
+      device = (sdk: 36, secure: false);
+      final other = SecretStore(
+        null,
+        bound,
+        () async => deviceLock,
+        () async => device,
+      );
+      await other.cloudToken('p1');
+      device = (sdk: 36, secure: true);
+      await expectLater(other.verify(), throwsA(isA<Locked>()));
+      bound.fail = false;
+      expect(await other.verify(), isTrue);
+    });
+
+    test('with the lock on the vault starts closed (L8), an unlock without '
+        'a vault read still opens it (L2)', () async {
+      await secrets.setCloudToken('p1', 't1');
+      final c = ProviderContainer(
+        overrides: [
+          preferencesProvider.overrideWithValue(await testPrefs()),
+          secretStoreProvider.overrideWithValue(secrets),
+          authenticatorProvider.overrideWithValue((_) async => true),
+        ],
+      );
+      addTearDown(c.dispose);
+      final reads = bound.reads;
+      c.read(appLockProvider);
+      await expectLater(secrets.cloudToken('p1'), throwsA(isA<Locked>()));
+      expect(bound.reads, reads, reason: 'no prompt over the cover');
+      await c.read(appLockProvider.notifier).unlock('why');
+      expect(await secrets.cloudToken('p1'), 't1');
     });
 
     test('one system check per unlock, again after close', () async {
@@ -574,6 +665,9 @@ class _Bound extends FlutterSecureStorage {
   /// Thrown by the next reads, like a cancelled or invalidated key.
   PlatformException? readError;
 
+  /// Thrown once by the next write.
+  PlatformException? writeError;
+
   /// Holds reads until completed.
   Completer<void>? gate;
 
@@ -626,6 +720,11 @@ class _Bound extends FlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
+    android = aOptions;
+    if (writeError case final e?) {
+      writeError = null;
+      throw e;
+    }
     if (fail) throw PlatformException(code: 'no_passcode');
     writes++;
     data[key] = value!;

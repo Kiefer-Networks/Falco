@@ -18,7 +18,8 @@ import 'package:material_ui/material_ui.dart';
 /// on iOS already when inactive, so the app switcher shows no data; on
 /// Android FLAG_SECURE hides it there and only hidden or paused cover, so
 /// a system dialog does not flash the cover (SET-014). While locked, back
-/// does nothing. After the first unlock
+/// (also the predictive gesture) never pops the pages below; the system
+/// handles it. After the first unlock
 /// [child] stays mounted below the cover: pages, forms and sheets survive.
 class LockGate extends ConsumerStatefulWidget {
   /// Creates the gate.
@@ -59,32 +60,64 @@ class _LockGateState extends ConsumerState<LockGate>
     super.dispose();
   }
 
+  /// The app was hidden or paused and has not returned yet.
+  bool _away = false;
+
+  /// The return locked; the prompt waits for resumed.
+  bool _askOnResume = false;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final lock = ref.read(appLockProvider.notifier);
     setState(
       () => _inactive = switch (state) {
         AppLifecycleState.resumed => false,
+        // Android passes inactive on the way back: covered until resumed.
         AppLifecycleState.inactive =>
-          defaultTargetPlatform == TargetPlatform.iOS,
+          defaultTargetPlatform == TargetPlatform.iOS || _away,
         _ => true,
       },
     );
     switch (state) {
       case AppLifecycleState.paused || AppLifecycleState.hidden:
+        _away = true;
         lock.paused();
-      // Only a return that locked asks again: the resume that ends a
-      // cancelled prompt leaves the Unlock button instead.
-      case AppLifecycleState.resumed:
-        if (lock.resumed()) _unlock();
+      case AppLifecycleState.inactive || AppLifecycleState.resumed:
+        // The first state of the return decides, so the first frame
+        // after the auto lock time already shows the cover. Only a return
+        // that locked asks again: the resume that ends a cancelled prompt
+        // leaves the Unlock button instead.
+        if (_away) {
+          _away = false;
+          _askOnResume = lock.resumed();
+        }
+        if (state == AppLifecycleState.resumed && _askOnResume) {
+          _askOnResume = false;
+          _unlock();
+        }
       case _:
     }
   }
 
   /// Back stays on the cover: the pages below must not pop while locked.
   @override
-  Future<bool> didPopRoute() async =>
-      ref.read(appLockProvider) != AppLockState.unlocked;
+  Future<bool> didPopRoute() async => _locked;
+
+  bool get _locked => ref.read(appLockProvider) != AppLockState.unlocked;
+
+  /// What the navigator last reported about handling back.
+  bool _canHandlePop = false;
+
+  /// While locked the system handles back (Android leaves the app), so a
+  /// predictive back gesture never reaches the pages below the cover.
+  bool _onNavigation(NavigationNotification notification) {
+    _canHandlePop = notification.canHandlePop;
+    return _locked;
+  }
+
+  void _reportBack(bool locked) =>
+      NavigationNotification(canHandlePop: !locked && _canHandlePop)
+          .dispatch(context);
 
   void _unlock() {
     if (!mounted) return;
@@ -139,6 +172,10 @@ class _LockGateState extends ConsumerState<LockGate>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(appLockProvider);
+    ref.listen(
+      appLockProvider.select((s) => s != AppLockState.unlocked),
+      (_, locked) => _reportBack(locked),
+    );
     final secure = ref.watch(appSettingsProvider.select((s) => s.secureScreen));
     final locked = state != AppLockState.unlocked;
     final covered = locked || (secure && _inactive);
@@ -155,7 +192,13 @@ class _LockGateState extends ConsumerState<LockGate>
             child: IgnorePointer(
               ignoring: covered,
               // Keyboard input stays with the page only while unlocked.
-              child: ExcludeFocus(excluding: locked, child: widget.child),
+              child: ExcludeFocus(
+                excluding: locked,
+                child: NotificationListener<NavigationNotification>(
+                  onNotification: _onNavigation,
+                  child: widget.child,
+                ),
+              ),
             ),
           ),
         ),

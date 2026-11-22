@@ -8,7 +8,13 @@ import 'package:flutter_test/flutter_test.dart';
 /// Loads every bundled font (IBM Plex, Material Icons) so widget and
 /// golden tests render real glyphs instead of the test font.
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  // A current Android with a screen lock; an unanswered channel would
+  // never complete in fake time.
+  TestWidgetsFlutterBinding.ensureInitialized().defaultBinaryMessenger
+      .setMockMethodCallHandler(
+        const MethodChannel('falco/device'),
+        (_) async => {'sdk': 36, 'secure': true},
+      );
   final manifest = jsonDecode(
     await rootBundle.loadString('FontManifest.json'),
   ) as List<dynamic>;

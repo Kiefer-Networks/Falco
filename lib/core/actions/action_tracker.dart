@@ -116,6 +116,13 @@ class ActionTracker {
         try {
           action = await _fetch(id);
           failures = 0;
+        } on Locked {
+          // The app locked and closed the vault: the action still runs,
+          // so wait for the unlock instead of ending the tracking.
+          // ponytail: polls every maxInterval while locked, a vault open
+          // event would end the wait sooner.
+          await Future<void>.delayed(maxInterval);
+          continue;
         } on FalcoError catch (e) {
           // Hiccups (network, rate limit, 5xx) must not end the tracking
           // while the action still runs; gone, forbidden or unauthorized do,
