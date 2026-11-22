@@ -1019,6 +1019,7 @@
   "robotKeysEmpty": "No SSH keys in Robot yet.",
   "robotLocked": "Locked",
   "robotLoginRejected": "Robot rejected the login. Update it under Accounts.",
+  "robotLoginMissing": "No Robot login is stored for this account. Enter it under Accounts.",
   "robotMac": "Separate MAC",
   "robotNetmask": "Netmask",
   "robotNoAccess": "This account has no Robot access.",

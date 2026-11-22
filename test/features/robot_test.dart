@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'dart:async';
+import 'dart:io' show SocketException;
 
 import 'package:falco/api/robot/robot_client.dart';
 import 'package:falco/core/errors/falco_error.dart';
@@ -8,6 +9,7 @@ import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/features/robot/robot.dart';
 import 'package:falco/features/robot/robot_ui.dart';
 import 'package:falco/l10n/app_localizations.dart';
+import 'package:falco/ui/error_text.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -971,6 +973,134 @@ void main() {
         expectLater(api.servers(), login),
       ]);
       expect(sent('/server'), before + 1);
+    });
+
+    test('without an answer the held requests fail together', () async {
+      final cloud = FakeCloud();
+      final c = await fakeContainer(cloud, accounts: const [acmeRobot]);
+      int sent() => cloud.adapter.requests
+          .where((r) => r.uri.host == 'robot-ws.your-server.de')
+          .length;
+      final api = c.read(robotApiProvider('a1'));
+      cloud.robot.unreachable = const SocketException('down');
+      final network = throwsA(
+        predicate<Object>((e) => toFalcoError(e) is Network),
+      );
+      await Future.wait([
+        expectLater(api.servers(), network),
+        expectLater(api.failovers(), network),
+        expectLater(api.keys(), network),
+      ]);
+      expect(sent(), 1);
+      cloud.robot.unreachable = null;
+      await api.keys();
+    });
+
+    test('an answer that did not check the login holds the next ones '
+        'again', () async {
+      final cloud = FakeCloud();
+      final c = await fakeContainer(cloud, accounts: const [acmeRobot]);
+      int sent() => cloud.adapter.requests
+          .where((r) => r.uri.host == 'robot-ws.your-server.de')
+          .length;
+      final api = c.read(robotApiProvider('a1'));
+      cloud.robot.failures['server'] = (503, null);
+      await expectLater(api.servers(), throwsA(anything));
+      cloud.robot.failures.clear();
+      final gate = Completer<void>();
+      cloud.adapter.gate = gate.future;
+      final all = Future.wait([api.servers(), api.failovers(), api.keys()]);
+      await pumpEventQueue();
+      expect(sent(), 2);
+      cloud.adapter.gate = null;
+      gate.complete();
+      await all;
+      expect(sent(), 4);
+    });
+
+    test('a refusal of an answered login holds the next requests until '
+        'the probe tells', () async {
+      const unauthorized = (
+        401,
+        {
+          'error': {'status': 401, 'code': 'UNAUTHORIZED', 'message': ''},
+        },
+      );
+      final cloud = FakeCloud();
+      final c = await fakeContainer(cloud, accounts: const [acmeRobot]);
+      int sent(String path) => cloud.adapter.requests
+          .where((r) => r.uri.host == 'robot-ws.your-server.de')
+          .where((r) => r.uri.path == path)
+          .length;
+      final api = c.read(robotApiProvider('a1'));
+      await api.servers();
+      // The password changed in Robot.
+      for (final p in ['server', 'vswitch', 'key', 'failover']) {
+        cloud.robot.failures[p] = unauthorized;
+      }
+      final login = throwsA(same(robotLoginRejected));
+      final first = Completer<void>();
+      cloud.adapter.gate = first.future;
+      final vswitches = expectLater(api.vswitches(), login);
+      await pumpEventQueue();
+      final probe = Completer<void>();
+      cloud.adapter.gate = probe.future;
+      first.complete();
+      await pumpEventQueue();
+      expect(sent('/server'), 2);
+      final later = Future.wait([
+        expectLater(api.keys(), login),
+        expectLater(api.failovers(), login),
+      ]);
+      await pumpEventQueue();
+      expect(sent('/key') + sent('/failover'), 0);
+      cloud.adapter.gate = null;
+      probe.complete();
+      await vswitches;
+      await later;
+      expect(sent('/key') + sent('/failover'), 0);
+    });
+
+    test('in the background the answered logins are forgotten', () async {
+      final cloud = FakeCloud();
+      final c = await fakeContainer(cloud, accounts: const [acmeRobot]);
+      int sent() => cloud.adapter.requests
+          .where((r) => r.uri.host == 'robot-ws.your-server.de')
+          .length;
+      final api = c.read(robotApiProvider('a1'));
+      await api.servers();
+      TestWidgetsFlutterBinding.instance
+        ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+        ..handleAppLifecycleStateChanged(AppLifecycleState.hidden)
+        ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+        ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      final gate = Completer<void>();
+      cloud.adapter.gate = gate.future;
+      final all = Future.wait([api.servers(), api.failovers(), api.keys()]);
+      await pumpEventQueue();
+      expect(sent(), 2);
+      cloud.adapter.gate = null;
+      gate.complete();
+      await all;
+    });
+
+    test('a login missing from the vault and a rejected one point to '
+        'Accounts, also outside Robot screens', () async {
+      final cloud = FakeCloud();
+      final c = await fakeContainer(cloud, accounts: const [acmeRobot]);
+      await c.read(secretStoreProvider).deleteRobot('a1');
+      await expectLater(
+        c.read(robotApiProvider('a1')).servers(),
+        throwsA(
+          predicate<Object>(
+            (e) => identical(toFalcoError(e), robotLoginMissing),
+          ),
+        ),
+      );
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(robotErrorText(robotLoginMissing, l10n), l10n.robotLoginMissing);
+      expect(errorText(robotLoginMissing, l10n), l10n.robotLoginMissing);
+      expect(errorText(robotLoginRejected, l10n), l10n.robotLoginRejected);
     });
 
     test('a template without a name fails; the loaded list is used', () async {

@@ -31,10 +31,19 @@ part 'robot.g.dart';
 /// A Robot login that Robot refused on `GET /server` too (ROB-002).
 const robotLoginRejected = Unauthorized(code: 'ROBOT_LOGIN');
 
+/// An account with Robot access whose login is not in the vault (a reset
+/// vault, for example).
+const robotLoginMissing = Unauthorized(code: 'ROBOT_NO_LOGIN');
+
 /// The Robot webservice of an account; the login is read per request.
 /// Until Robot answered a login, one request with it goes out and the
 /// others wait for that answer: Robot blocks the address after three
 /// failed logins, so a changed password must not fail once per open list.
+/// Without an answer (no connection) the waiting requests fail with that
+/// request's error. Only an answer that checked the login (2xx, or 4xx
+/// other than 401 and 429) makes it answered; a refusal of an answered
+/// login holds the following requests again until the probe below tells,
+/// and the app going to the background forgets every answer.
 /// When Robot refuses a request, `GET /server` is asked once with the
 /// same login (one already in flight counts): refused there too, the
 /// login is wrong and every request with it fails at once as
@@ -59,8 +68,12 @@ RobotClient robotApi(Ref ref, String accountId) {
   // One probe per login at a time; refusals meanwhile share it.
   final probes = <Digest, Future<int?>>{};
   // Logins Robot answered, and the one request asking for the others.
+  // The asking request completes with the error the others fail with
+  // when Robot did not answer, null otherwise.
   final known = <Digest>{};
-  final asking = <Digest, Future<void>>{};
+  final asking = <Digest, Future<FalcoError?>>{};
+  final lifecycle = AppLifecycleListener(onHide: known.clear);
+  ref.onDispose(lifecycle.dispose);
   Digest? wrong;
   Digest? last;
   // Every login change and account removal reloads the accounts, and so
@@ -92,11 +105,15 @@ RobotClient robotApi(Ref ref, String accountId) {
         while (sent != null && !known.contains(sent)) {
           final ahead = asking[sent];
           if (ahead == null) break;
-          await ahead;
+          if (await ahead case final failed?) {
+            return handler.reject(
+              DioException(requestOptions: options, error: failed),
+            );
+          }
         }
         if (c == null || sent == null) {
           return handler.reject(
-            DioException(requestOptions: options, error: const Unauthorized()),
+            DioException(requestOptions: options, error: robotLoginMissing),
           );
         }
         if (sent == wrong || sent == refused[options.path]) {
@@ -108,7 +125,7 @@ RobotClient robotApi(Ref ref, String accountId) {
           );
         }
         if (!known.contains(sent)) {
-          final done = Completer<void>();
+          final done = Completer<FalcoError?>();
           asking[sent] = done.future;
           options.extra[first] = done;
         }
@@ -147,17 +164,36 @@ RobotClient robotApi(Ref ref, String accountId) {
         }
       }();
 
-  // The login a request carried, not the one stored meanwhile.
-  Future<void> answered(RequestOptions options, int? status) async {
+  // Robot checked the login: not a proxy error, throttling or refusal.
+  bool proves(int? status) =>
+      status != null &&
+      (status >= 200 && status < 300 ||
+          status >= 400 && status < 500 && status != 401 && status != 429);
+
+  // The login a request carried, not the one stored meanwhile; [failure]
+  // is the error of a request Robot did not answer.
+  Future<void> answered(
+    RequestOptions options,
+    int? status, [
+    FalcoError? failure,
+  ]) async {
     final sent = options.extra[login];
     if (options.extra.remove(serving) case final Completer<int?> c) {
       probes.removeWhere((_, f) => f == c.future);
       c.complete(status);
     }
+    var held = options.extra.remove(first);
     try {
       if (sent is! Digest || status == null) return;
       if (status == 401) {
         if (sent == wrong) return;
+        // An answered login refused: hold the next requests until the
+        // probe tells whether it is still right.
+        if (held == null && known.remove(sent)) {
+          final done = Completer<FalcoError?>();
+          asking[sent] = done.future;
+          held = done;
+        }
         final path = options.path;
         final check = path == server ? 401 : await probe(options, sent);
         if (check == 401) {
@@ -165,17 +201,18 @@ RobotClient robotApi(Ref ref, String accountId) {
           known.remove(sent);
         } else {
           refused[path] = sent;
-          if (check != null) known.add(sent);
+          if (proves(check)) known.add(sent);
         }
-      } else {
+      } else if (proves(status)) {
         known.add(sent);
         if (status < 400 && wrong == sent) wrong = null;
       }
     } finally {
-      // Waiting requests go now: with the answer, or one of them asks.
-      if (options.extra.remove(first) case final Completer<void> done) {
+      // Waiting requests go now: with the answer, all failing without
+      // one, or one of them asks again.
+      if (held case final Completer<FalcoError?> done) {
         asking.removeWhere((_, f) => f == done.future);
-        done.complete();
+        done.complete(status == null ? failure : null);
       }
     }
   }
@@ -203,7 +240,7 @@ RobotClient robotApi(Ref ref, String accountId) {
       },
       onError: (e, handler) async {
         final status = e.response?.statusCode;
-        await answered(e.requestOptions, status);
+        await answered(e.requestOptions, status, toFalcoError(e));
         if (rejectsLogin(e.requestOptions, status)) {
           return handler.reject(e.copyWith(error: robotLoginRejected));
         }
@@ -434,6 +471,7 @@ abstract final class RobotCommand {
 /// not use say so (ROB-002); throttling stays throttling (ROB-003).
 String robotErrorText(FalcoError e, AppLocalizations l10n) => switch (e) {
   Unauthorized(code: 'ROBOT_LOGIN') => l10n.robotLoginRejected,
+  Unauthorized(code: 'ROBOT_NO_LOGIN') => l10n.robotLoginMissing,
   Unauthorized() || Forbidden() => l10n.robotSectionDisabled,
   _ => errorText(e, l10n),
 };
@@ -467,7 +505,10 @@ Future<bool> runRobot(
     return true;
   } on FalcoError catch (e) {
     if (context.mounted) {
-      FalcoScaffold.showSnack(context, l10n.robotFailed(errorText(e, l10n)));
+      FalcoScaffold.showSnack(
+        context,
+        l10n.robotFailed(robotErrorText(e, l10n)),
+      );
     }
     return false;
   }

@@ -3275,6 +3275,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Robot hat die Zugangsdaten abgelehnt. Aktualisiere sie unter Accounts.';
 
   @override
+  String get robotLoginMissing =>
+      'Für diesen Account sind keine Robot Zugangsdaten gespeichert. Trage sie unter Accounts ein.';
+
+  @override
   String get robotMac => 'Eigene MAC';
 
   @override

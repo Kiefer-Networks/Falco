@@ -264,8 +264,12 @@ class FakeRobot {
   static (int, Object?) rateLimited() =>
       (403, _error(403, 'RATE_LIMIT_EXCEEDED'));
 
+  /// Thrown instead of an answer, like a lost connection.
+  Exception? unreachable;
+
   /// Answers a request that passed authentication.
   (int, Object?) handle(RequestOptions o) {
+    if (unreachable case final e?) throw e;
     final segments = o.uri.pathSegments.map(Uri.decodeComponent).toList();
     if (failures[segments.first] case final f?) return f;
     final f = {for (final (k, v) in form(o)) k: v};

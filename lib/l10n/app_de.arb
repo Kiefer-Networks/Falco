@@ -896,6 +896,7 @@
   "robotKeysEmpty": "Noch keine SSH Keys in Robot.",
   "robotLocked": "Gesperrt",
   "robotLoginRejected": "Robot hat die Zugangsdaten abgelehnt. Aktualisiere sie unter Accounts.",
+  "robotLoginMissing": "Für diesen Account sind keine Robot Zugangsdaten gespeichert. Trage sie unter Accounts ein.",
   "robotMac": "Eigene MAC",
   "robotNetmask": "Netzmaske",
   "robotNoAccess": "Dieser Account hat keinen Robot Zugang.",
