@@ -459,7 +459,8 @@ class _BucketPageState extends ConsumerState<BucketPage> {
     final File? picked;
     try {
       picked = await ref.read(textFilesProvider).pickFile();
-    } on Exception catch (_) {
+    } on Exception catch (e) {
+      if (pickerBusy(e)) return;
       if (mounted) FalcoScaffold.showSnack(context, l10n.actionFailed);
       return;
     }
@@ -479,7 +480,7 @@ class _BucketPageState extends ConsumerState<BucketPage> {
     final hint = await notificationHint(ref, l10n);
     if (!mounted) return drop();
     try {
-      await ref
+      final done = await ref
           .read(transfersProvider)
           .upload(
             projectId: _p,
@@ -489,7 +490,8 @@ class _BucketPageState extends ConsumerState<BucketPage> {
             file: file,
             contentType: mime,
           );
-      if (mounted) {
+      // Done at once (an empty file): its result shows already.
+      if (mounted && !done) {
         FalcoScaffold.showSnack(context, '${l10n.uploadStarted(name)}$hint');
       }
     } on Object catch (e) {

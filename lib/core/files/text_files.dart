@@ -9,7 +9,7 @@ import 'dart:io';
 import 'package:background_downloader/background_downloader.dart'
     show BaseDirectory, Task;
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/services.dart' show PlatformException;
+import 'package:flutter/services.dart' show MethodChannel, PlatformException;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'text_files.g.dart';
@@ -76,6 +76,7 @@ class TextFiles {
     if (f.path case final path?) return File(path);
     final root = await uploadCopyRoot();
     await root.create(recursive: true);
+    await excludeFromBackup(root);
     final dir = await root.createTemp(uploadCopyPrefix);
     final copy = '${dir.path}/${f.name}';
     try {
@@ -168,6 +169,20 @@ Future<Directory> uploadCopyRoot() async => Directory(
   '${await Task.baseDirectoryPath(BaseDirectory.applicationSupport)}'
   '/$_copyRootName',
 );
+
+/// Keeps folder [dir] of copies out of iCloud and Finder backups, which
+/// take application support on iOS (AppDelegate). Elsewhere nothing:
+/// Android does not back the app up (`allowBackup`). A failure leaves it
+/// in the backup, the copy still works.
+Future<void> excludeFromBackup(Directory dir) async {
+  if (!Platform.isIOS) return;
+  try {
+    await const MethodChannel('falco/files')
+        .invokeMethod<void>('excludeFromBackup', dir.path);
+  } on Exception catch (_) {
+    // Backed up then.
+  }
+}
 
 /// The folder holding the copy of a file picked for upload at [path]: the
 /// picker's ([pickerCopyDir]) or the one of [TextFiles.pickFile] (in

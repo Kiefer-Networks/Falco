@@ -21,12 +21,11 @@ import 'package:android_file_picker/android_file_picker.dart'
 import 'package:background_downloader/background_downloader.dart';
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/files/text_files.dart';
+import 'package:falco/core/scope/scope_repository.dart';
 import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/storage/object_storage.dart';
-import 'package:falco/l10n/app_localizations.dart';
 import 'package:file_picker/file_picker.dart' show FilePickerPlatform;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -40,9 +39,12 @@ const int defaultPartSize = 64 * 1024 * 1024;
 const transferLinkExpiry = Duration(hours: 24);
 
 /// Time after the first refusal after which a join S3 keeps refusing
-/// (rotated or removed keys) is given up: an abort is tried, the parts
-/// that stay go with S3's lifecycle, the local copies and the job go.
+/// (rotated or removed keys) is given up: the local copies go and the
+/// failure is told once; the job stays, silent, until an abort succeeds.
 const refusedJoinLimit = Duration(days: 4);
+
+/// How far off S3 takes the device clock in signed requests.
+const s3ClockSkew = Duration(minutes: 15);
 
 /// A finished transfer for the screen's snackbar.
 typedef TransferEvent = ({bool upload, bool ok, String name});
@@ -53,12 +55,14 @@ class ObjectTransfers {
     S3Access s3, {
     this.onUploaded,
     this.partSize = defaultPartSize,
-    this._partsRoot,
-    this._jobsRoot,
+    this._supportRoot,
   }) : _s3 = s3;
 
-  final String? _partsRoot;
-  final String? _jobsRoot;
+  final String? _supportRoot;
+
+  /// Ids of the projects of all accounts; jobs of any other project are
+  /// dropped by [retryJoins]. Null skips that check.
+  Future<Set<String>> Function()? projects;
 
   /// Size of upload parts; larger files upload in parts (OBJ-022).
   final int partSize;
@@ -142,13 +146,8 @@ class ObjectTransfers {
   }
 
   void _notifications() {
-    final code = _language ?? PlatformDispatcher.instance.locale.languageCode;
-    final l10n = lookupAppLocalizations(
-      AppLocalizations.supportedLocales.firstWhere(
-        (l) => l.languageCode == code,
-        orElse: () => const Locale('en'),
-      ),
-    );
+    // Like the vault prompt: the app language, else the system's.
+    final l10n = promptL10n(_language);
     FileDownloader().configureNotification(
       running: TaskNotification(l10n.transferRunning, '{displayName}'),
       complete: TaskNotification(l10n.transferDone, '{displayName}'),
@@ -157,21 +156,49 @@ class ObjectTransfers {
     );
   }
 
+  /// The app's application support folder, where jobs, part copies and
+  /// picked copies live. Not temporary space: the system clears that (on
+  /// Android on each app update), and a job lost there leaves billed parts
+  /// behind. Kept out of backups ([excludeFromBackup]).
+  Future<String> supportRoot() async =>
+      _supportRoot ??
+      await Task.baseDirectoryPath(BaseDirectory.applicationSupport);
+
   /// Folder of the multipart jobs (`<name>.json`) until they are joined
-  /// or aborted. Application support, not temporary space: the system
-  /// clears that, and a job lost there leaves billed parts behind.
-  Future<String> jobsRoot() async =>
-      _jobsRoot ??
-      '${await Task.baseDirectoryPath(BaseDirectory.applicationSupport)}'
-          '/falco-uploads';
+  /// or aborted.
+  Future<String> jobsRoot() async => '${await supportRoot()}/falco-uploads';
 
   /// Folder of the part copies, one folder per multipart upload until it
-  /// is joined or aborted. Application support too: Android empties
-  /// temporary space on each app update, while parts still upload.
-  Future<String> partsRoot() async =>
-      _partsRoot ??
-      '${await Task.baseDirectoryPath(BaseDirectory.applicationSupport)}'
-          '/falco-parts';
+  /// is joined or aborted.
+  Future<String> partsRoot() async => '${await supportRoot()}/falco-parts';
+
+  /// [path] relative to [supportRoot] when below it, else null.
+  Future<String?> _belowSupport(String path) async {
+    final support = await supportRoot();
+    return path.startsWith('$support/')
+        ? path.substring(support.length + 1)
+        : null;
+  }
+
+  /// A file path a task or job keeps, in the current app container: one
+  /// relative to [supportRoot] below it; an absolute one of an earlier
+  /// version below application support (iOS moves the app's container on
+  /// each update) by its part below that.
+  Future<String> _resolve(String path) async {
+    const marker = '/Application Support/';
+    final i = path.indexOf(marker);
+    if (path.startsWith('/') && i < 0) return path;
+    final rest = path.startsWith('/')
+        ? path.substring(i + marker.length)
+        : path;
+    return '${await supportRoot()}/$rest';
+  }
+
+  /// The file upload [task] sends, in the current app container.
+  Future<String> taskFile(UploadTask task) async =>
+      task.baseDirectory == BaseDirectory.applicationSupport
+      ? '${await supportRoot()}/${task.directory}/${task.filename}'
+      : await _resolve(await task.filePath());
 
   /// Connects to the platform's transfers, including those that finished
   /// while Falco was closed. Safe to call more than once.
@@ -207,8 +234,9 @@ class ObjectTransfers {
           ) !=
           null;
 
-  /// Uploads [file] to [key] in the background (OBJ-007, OBJ-022).
-  Future<void> upload({
+  /// Uploads [file] to [key] in the background (OBJ-007, OBJ-022). True
+  /// when it finished at once (an empty file), its event is out then.
+  Future<bool> upload({
     required String projectId,
     required String location,
     required String bucket,
@@ -222,23 +250,36 @@ class ObjectTransfers {
       File f,
       Map<String, String>? query,
       Object m,
-    ) async => UploadTask.fromFile(
-      file: f,
-      url: '${await _link(projectId, location, bucket, key, query)}',
-      httpRequestMethod: 'PUT',
-      mimeType: contentType,
-      // An empty Content-Disposition keeps background_downloader from
-      // sending `attachment`, which S3 would store with the object.
-      headers: {'Content-Type': contentType, 'Content-Disposition': ''},
-      displayName: baseName(key),
-      metaData: jsonEncode(m),
-      group: 'upload',
-      retries: 3,
-      transferHints: const {
-        TransferHint.binaryUpload,
-        TransferHint.userInitiated,
-      },
-    );
+    ) async {
+      // Below application support relative to it: the platform resolves it
+      // in the current app container, which iOS moves on each app update,
+      // also for a task it enqueues again after an update.
+      final below = await _belowSupport(f.absolute.path);
+      final path = below ?? f.absolute.path;
+      final cut = path.lastIndexOf('/');
+      return UploadTask(
+        baseDirectory: below == null
+            ? BaseDirectory.root
+            : BaseDirectory.applicationSupport,
+        directory: cut < 0 ? '' : path.substring(0, cut),
+        filename: path.substring(cut + 1),
+        url: '${await _link(projectId, location, bucket, key, query)}',
+        httpRequestMethod: 'PUT',
+        mimeType: contentType,
+        // An empty Content-Disposition keeps background_downloader from
+        // sending `attachment`, which S3 would store with the object.
+        headers: {'Content-Type': contentType, 'Content-Disposition': ''},
+        displayName: baseName(key),
+        metaData: jsonEncode(m),
+        group: 'upload',
+        retries: 3,
+        transferHints: const {
+          TransferHint.binaryUpload,
+          TransferHint.userInitiated,
+        },
+      );
+    }
+
     if (size == 0) {
       // The platform refuses to send an empty file: put directly.
       await _s3.run(
@@ -249,14 +290,15 @@ class ObjectTransfers {
       await dropUploadCopy(file.path);
       onUploaded?.call();
       _report((upload: true, ok: true, name: baseName(key)), bucket);
-      return;
+      return true;
     }
     if (size <= partSize) {
       // With its source, to drop the picker's copy once it finished.
+      final source = await _belowSupport(file.path) ?? file.path;
       await enqueue([
-        await task(file, null, {...meta, 's': file.path}),
+        await task(file, null, {...meta, 's': source}),
       ]);
-      return;
+      return false;
     }
     final created = DateTime.now().millisecondsSinceEpoch;
     // The object at the key before: a vanished upload counts as joined
@@ -295,9 +337,11 @@ class ObjectTransfers {
       // Without the enqueued mark retryJoins aborts it: Falco was closed
       // before the parts were handed over.
       await jobFile.parent.create(recursive: true);
+      await excludeFromBackup(jobFile.parent);
       await _write(jobFile, job);
-      final dir = await Directory('${await partsRoot()}/$name')
-          .create(recursive: true);
+      final root = Directory(await partsRoot());
+      final dir = await Directory('${root.path}/$name').create(recursive: true);
+      await excludeFromBackup(root);
       // ponytail: parts are copies, so a large upload needs its size again
       // in app storage until it is joined.
       await enqueue([
@@ -324,6 +368,7 @@ class ObjectTransfers {
     } finally {
       _starting.remove(uploadId);
     }
+    return false;
   }
 
   Future<Uri> _link(
@@ -430,7 +475,9 @@ class ObjectTransfers {
       await _queue(uploadId, () => _joinParts(meta, uploadId, ok: ok));
       return;
     }
-    await dropUploadCopy(meta['s'] as String?);
+    if (meta['s'] case final String source) {
+      await dropUploadCopy(await _resolve(source));
+    }
     if (ok) onUploaded?.call();
     _report((upload: true, ok: ok, name: name), meta['b'] as String?);
   }
@@ -453,6 +500,14 @@ class ObjectTransfers {
   Future<void> retryJoins() async {
     final root = Directory(await jobsRoot());
     if (!root.existsSync()) return;
+    // A job of a removed project or account can never be joined or
+    // aborted: it and its part copies go.
+    Set<String>? known;
+    try {
+      known = await projects?.call();
+    } on Object catch (_) {
+      // Unknown now: kept.
+    }
     await for (final file in root.list()) {
       if (file is! File || !file.path.endsWith('.json')) continue;
       // One unreadable job must not hold up the others.
@@ -464,6 +519,9 @@ class ObjectTransfers {
         await _queue(id, () async {
           if (_starting.contains(id) || !file.existsSync()) return;
           final job = await _readJob(file);
+          if (known != null && !known.contains(job['p'])) {
+            return await _remove(job['d']! as String);
+          }
           final abort = job['abort'] == true || job['e'] != true;
           await _joinParts(
             job,
@@ -523,27 +581,21 @@ class ObjectTransfers {
       // Kept for retryJoins: offline, locked, refused (rotated keys, a
       // wrong clock), a server error. Without keys (Unauthorized) or while
       // the app is locked (Locked) the job waits silently until they are
-      // back.
+      // back; refusals (also without keys) give up after
+      // [refusedJoinLimit].
       // ponytail: a server error that never ends keeps the parts in app
       // storage; add a retry limit if that shows up.
       _completing.remove(uploadId);
       final file = await _jobFile(m['d']! as String);
-      if (aborting && file.existsSync()) {
-        await _write(file, {...m, 'abort': true});
-      }
       final error = toFalcoError(e);
-      if (error is Forbidden && await _refusedTooLong(file, error)) {
-        // Refused for good: give up once, the local copies go.
-        _completing.add(uploadId);
-        try {
-          await _s3.run(p, l, (c) => c.abortMultipart(b, k, uploadId));
-        } on Object catch (_) {
-          // Refused too, most likely: S3's lifecycle drops the parts.
-        }
-        await _remove(m['d']! as String);
-        _keptReported.remove(uploadId);
-        if (report) _report((upload: true, ok: false, name: baseName(k)), b);
+      if ((error is Forbidden || error is Unauthorized) &&
+          await _refusedTooLong(file, error)) {
+        await _giveUp(m, uploadId, aborted: aborting, report: report);
         return;
+      }
+      if (aborting && file.existsSync()) {
+        // From the file: it keeps the first refusal.
+        await _write(file, {...await _readJob(file), 'abort': true});
       }
       // A parked join reports once, not on each part event, and only once
       // the upload could be complete: a part listing failing while other
@@ -612,11 +664,13 @@ class ObjectTransfers {
                   m['pm'] is int &&
                   modified > (m['pm']! as int));
         }
-        // Last-Modified has whole seconds.
+        // Last-Modified has whole seconds and the server's clock, which the
+        // device clock may be off from by up to [s3ClockSkew].
         return m['pu'] == true &&
             modified != null &&
             created != null &&
-            modified ~/ 1000 >= created.millisecondsSinceEpoch ~/ 1000;
+            modified ~/ 1000 >=
+                created.subtract(s3ClockSkew).millisecondsSinceEpoch ~/ 1000;
       } on NotFound catch (_) {
         return false;
       }
@@ -631,7 +685,7 @@ class ObjectTransfers {
   /// measured from the first refusal, which the job keeps, so a device
   /// clock off by days does not count. A refusal for the device clock
   /// itself (`RequestTimeTooSkewed`) never gives up: the clock gets fixed.
-  Future<bool> _refusedTooLong(File file, Forbidden error) async {
+  Future<bool> _refusedTooLong(File file, FalcoError error) async {
     if (error.code == 'RequestTimeTooSkewed' || !file.existsSync()) {
       return false;
     }
@@ -642,6 +696,51 @@ class ObjectTransfers {
     }
     await _write(file, {...job, 'r': now});
     return false;
+  }
+
+  /// Gives up upload [m], refused for [refusedJoinLimit]: the local copies
+  /// go and the failure is told once. The job stays, silent, while S3
+  /// refuses the abort too (a later key may still abort it); it goes once
+  /// S3 dropped the upload. [aborted] when the abort was just refused.
+  Future<void> _giveUp(
+    Map<String, Object?> m,
+    String uploadId, {
+    required bool aborted,
+    required bool report,
+  }) async {
+    final name = m['d']! as String;
+    final file = await _jobFile(name);
+    final job = await _readJob(file);
+    if (!aborted && await _abort(m, uploadId)) {
+      await _remove(name);
+    } else {
+      await _dropParts(name);
+      await _write(file, {...job, 'abort': true, 'g': true});
+    }
+    _keptReported.remove(uploadId);
+    if (report && job['g'] != true) {
+      _report((
+        upload: true,
+        ok: false,
+        name: baseName(m['k']! as String),
+      ), m['b'] as String?);
+    }
+  }
+
+  /// Aborts upload [m]: true once S3 dropped it (or never had it).
+  Future<bool> _abort(Map<String, Object?> m, String uploadId) async {
+    try {
+      await _s3.run(
+        m['p']! as String,
+        m['l']! as String,
+        (c) => c.abortMultipart(m['b']! as String, m['k']! as String, uploadId),
+      );
+    } on NotFound catch (_) {
+      // Gone already.
+    } on Object catch (_) {
+      return false;
+    }
+    return true;
   }
 
   /// Whether part copies of upload folder [name] wait to be sent.
@@ -692,20 +791,22 @@ class ObjectTransfers {
         for (final r in await d.database.allRecords())
           if (!r.status.isFinalState) r.task,
       ])
-        if (t is UploadTask) await t.filePath(),
+        if (t is UploadTask) await taskFile(t),
     };
     await dropUnusedCopies(stale, inUse);
   }
 
+  Future<void> _dropParts(String name) async {
+    try {
+      await Directory('${await partsRoot()}/$name').delete(recursive: true);
+    } on FileSystemException catch (_) {}
+  }
+
   Future<void> _remove(String name) async {
-    for (final e in <FileSystemEntity>[
-      Directory('${await partsRoot()}/$name'),
-      await _jobFile(name),
-    ]) {
-      try {
-        await e.delete(recursive: true);
-      } on FileSystemException catch (_) {}
-    }
+    await _dropParts(name);
+    try {
+      await (await _jobFile(name)).delete();
+    } on FileSystemException catch (_) {}
   }
 }
 
@@ -753,6 +854,10 @@ ObjectTransfers transfers(Ref ref) => connectTransfers(
 /// parked joins retried whenever the app is unlocked: at start, after each
 /// unlock and on each return to the foreground. Fakes in tests use it too.
 ObjectTransfers connectTransfers(Ref ref, ObjectTransfers transfers) {
+  transfers.projects = () async => {
+    for (final a in await ref.read(accountsProvider.future))
+      for (final p in a.projects) p.id,
+  };
   ref.listen(
     appSettingsProvider.select((s) => s.language),
     (_, language) => transfers.language = language,
