@@ -455,6 +455,7 @@
   "sshKeyHint": "Paste the public key, e.g. the content of id_ed25519.pub.",
   "sshKeyPrivate": "This is a private key. Never share it; paste the public key (.pub) instead.",
   "sshKeyUnknown": "Not a valid public key. Use ssh-ed25519, ssh-rsa, ecdsa or a security key.",
+  "sshKeySeveral": "These are several keys. Add one public key at a time.",
   "sshKeyGenerate": "Generate key pair",
   "sshKeyGenerated": "Ed25519 key pair generated",
   "sshKeyPrivateTitle": "Private key",

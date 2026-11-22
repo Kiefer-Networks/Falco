@@ -402,6 +402,7 @@
   "sshKeyHint": "Füge den öffentlichen Schlüssel ein, z. B. den Inhalt von id_ed25519.pub.",
   "sshKeyPrivate": "Das ist ein privater Schlüssel. Gib ihn nie weiter; füge stattdessen den öffentlichen Schlüssel (.pub) ein.",
   "sshKeyUnknown": "Kein gültiger öffentlicher Schlüssel. Nutze ssh-ed25519, ssh-rsa, ecdsa oder einen Security Key.",
+  "sshKeySeveral": "Das sind mehrere Schlüssel. Füge einen öffentlichen Schlüssel nach dem anderen hinzu.",
   "sshKeyGenerate": "Schlüsselpaar erzeugen",
   "sshKeyGenerated": "Ed25519 Schlüsselpaar erzeugt",
   "sshKeyPrivateTitle": "Privater Schlüssel",

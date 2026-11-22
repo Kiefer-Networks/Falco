@@ -7,6 +7,7 @@ import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/accounts/checks.dart';
 import 'package:falco/ui/ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -166,6 +167,19 @@ void main() {
       expect(find.text('Skip'), findsNothing);
       await tapText(tester, 'Add account');
       expect(find.text('STEP 1 OF 4'), findsOneWidget);
+    });
+
+    testWidgets('SET-024 a failing permission request still moves on', (
+      tester,
+    ) async {
+      final cloud = FakeCloud()
+        ..notifications.error = PlatformException(code: 'busy');
+      await pumpFalco(tester, cloud, accounts: const []);
+      for (var i = 0; i < 4; i++) {
+        await tapText(tester, 'Next');
+      }
+      expect(cloud.notifications.requests, 1);
+      expect(find.text('Ready to start'), findsOneWidget);
     });
 
     testWidgets('ONB-003 the language applies at once', (tester) async {

@@ -1497,6 +1497,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Kein gültiger öffentlicher Schlüssel. Nutze ssh-ed25519, ssh-rsa, ecdsa oder einen Security Key.';
 
   @override
+  String get sshKeySeveral =>
+      'Das sind mehrere Schlüssel. Füge einen öffentlichen Schlüssel nach dem anderen hinzu.';
+
+  @override
   String get sshKeyGenerate => 'Schlüsselpaar erzeugen';
 
   @override

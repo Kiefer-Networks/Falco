@@ -49,7 +49,7 @@ class SshKey {
 }
 
 /// Why a pasted key is refused.
-enum SshKeyProblem { empty, privateKey, unknownType }
+enum SshKeyProblem { empty, privateKey, unknownType, severalKeys }
 
 // Markers of private keys and certificates (CMP-072).
 const _privateMarkers = [
@@ -59,10 +59,23 @@ const _privateMarkers = [
   '-cert-v01@openssh.com',
 ];
 
-/// [key] as one line: trimmed, line breaks of a wrapped paste removed
-/// (CMP-071). Check and send this form.
-String normalizeSshKey(String key) =>
-    key.trim().replaceAll(RegExp(r'[\r\n]+'), '');
+/// [key] as one line (CMP-071): trimmed, a wrapped paste joined. A line
+/// break inside the base64 blob is dropped, one between tokens becomes a
+/// space. Check and send this form.
+String normalizeSshKey(String key) {
+  var line = '';
+  for (final part in key.trim().split(RegExp(r'[\r\n]+'))) {
+    final tokens = line.split(RegExp(r'\s+'));
+    // Type and an unfinished blob: the next line continues the blob.
+    final inBlob =
+        tokens.length == 2 &&
+        sshKeyTypes.contains(tokens[0]) &&
+        publicKeyBlob(line) == null &&
+        !part.startsWith(RegExp(r'\s'));
+    line = line.isEmpty || inBlob ? '$line$part' : '$line ${part.trim()}';
+  }
+  return line.trim();
+}
 
 /// Whether [a] and [b] are the same public key; the comment and
 /// whitespace do not count.
@@ -79,6 +92,13 @@ SshKeyProblem? sshKeyProblem(String key) {
   if (_privateMarkers.any(k.contains)) return SshKeyProblem.privateKey;
   // A known type with a blob of that type (CMP-073).
   if (publicKeyBlob(k) == null) return SshKeyProblem.unknownType;
+  // A second `type blob` pair after the first key.
+  final t = k.split(RegExp(r'\s+'));
+  for (var i = 2; i + 1 < t.length; i++) {
+    if (publicKeyBlob('${t[i]} ${t[i + 1]}') != null) {
+      return SshKeyProblem.severalKeys;
+    }
+  }
   return null;
 }
 

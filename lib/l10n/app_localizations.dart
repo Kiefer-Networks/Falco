@@ -2504,6 +2504,12 @@ abstract class AppLocalizations {
   /// **'Not a valid public key. Use ssh-ed25519, ssh-rsa, ecdsa or a security key.'**
   String get sshKeyUnknown;
 
+  /// No description provided for @sshKeySeveral.
+  ///
+  /// In en, this message translates to:
+  /// **'These are several keys. Add one public key at a time.'**
+  String get sshKeySeveral;
+
   /// No description provided for @sshKeyGenerate.
   ///
   /// In en, this message translates to:

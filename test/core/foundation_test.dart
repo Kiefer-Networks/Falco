@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:falco/core/actions/action_tracker.dart';
 import 'package:falco/core/errors/falco_error.dart';
+import 'package:falco/core/files/text_files.dart';
 import 'package:falco/core/http/pagination.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,6 +18,25 @@ ActionProgress action(ActionStatus status, int progress, {String? error}) =>
     );
 
 void main() {
+  test("pickerCopyDir finds only file_picker's own copy folder", () {
+    expect(
+      pickerCopyDir('/var/a/tmp/flutter_file_picker/U1/id_ed25519'),
+      '/var/a/tmp/flutter_file_picker/U1',
+    );
+    expect(
+      pickerCopyDir('/data/user/0/app/cache/file_picker/U2/sub/key.pub'),
+      '/data/user/0/app/cache/file_picker/U2',
+    );
+    for (final other in [
+      null,
+      '/storage/emulated/0/Download/key.pub',
+      '/var/a/tmp/flutter_file_picker/key.pub',
+      '/var/a/tmp/flutter_file_picker/../x/key.pub',
+    ]) {
+      expect(pickerCopyDir(other), isNull, reason: other);
+    }
+  });
+
   group('fetchAll (QRS-016)', () {
     test('follows next_page until it is null', () async {
       final pages = <int>[];

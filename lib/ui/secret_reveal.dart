@@ -6,6 +6,7 @@ import 'package:falco/ui/mono.dart';
 import 'package:falco/ui/sheets.dart';
 import 'package:falco/ui/theme/falco_colors.dart';
 import 'package:falco/ui/theme/tokens.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A secret (password, key) hidden by default, with show/hide and copy.
@@ -129,12 +130,7 @@ Future<void> showSecretSheet(
         Text(note, style: Theme.of(context).textTheme.bodyLarge),
         for (final MapEntry(key: label, value: secret) in secrets.entries)
           SecretReveal(label: label, secret: secret),
-        if (onSave != null)
-          OutlinedButton.icon(
-            onPressed: onSave,
-            icon: const Icon(Icons.save_alt),
-            label: Text(AppLocalizations.of(context).commonSaveToFile),
-          ),
+        if (onSave != null) _SaveButton(onSave),
         FilledButton(
           onPressed: () => Navigator.pop(context),
           child: Text(AppLocalizations.of(context).commonClose),
@@ -143,3 +139,41 @@ Future<void> showSecretSheet(
     ),
   ),
 );
+
+/// "Save to file": disabled while a save runs (the dialog allows one at
+/// a time); a failing dialog shows an error.
+class _SaveButton extends StatefulWidget {
+  const new(this.onSave);
+
+  final Future<void> Function() onSave;
+
+  @override
+  State<_SaveButton> createState() => _SaveButtonState();
+}
+
+class _SaveButtonState extends State<_SaveButton> {
+  bool _busy = false;
+
+  Future<void> _save() async {
+    setState(() => _busy = true);
+    try {
+      await widget.onSave();
+    } on PlatformException {
+      if (mounted) {
+        FalcoScaffold.showSnack(
+          context,
+          AppLocalizations.of(context).actionFailed,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+    onPressed: _busy ? null : _save,
+    icon: const Icon(Icons.save_alt),
+    label: Text(AppLocalizations.of(context).commonSaveToFile),
+  );
+}

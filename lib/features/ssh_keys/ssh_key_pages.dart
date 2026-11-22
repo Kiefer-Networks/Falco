@@ -144,6 +144,7 @@ String? sshKeyProblemText(String key, AppLocalizations l10n) =>
       null || SshKeyProblem.empty => null,
       SshKeyProblem.privateKey => l10n.sshKeyPrivate,
       SshKeyProblem.unknownType => l10n.sshKeyUnknown,
+      SshKeyProblem.severalKeys => l10n.sshKeySeveral,
     };
 
 /// Fills a public key field from a `.pub` file or a new Ed25519 key pair
