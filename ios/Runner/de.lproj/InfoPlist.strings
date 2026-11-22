@@ -1,2 +1,4 @@
 /* Face ID prompt, German (Info.plist holds the English text). */
 "NSFaceIDUsageDescription" = "Face ID entsperrt Falco und schützt deine Zugangsdaten.";
+"NSPhotoLibraryAddUsageDescription" = "Falco speichert nichts in deiner Fotomediathek.";
+"NSPhotoLibraryUsageDescription" = "Falco liest deine Fotomediathek nicht.";

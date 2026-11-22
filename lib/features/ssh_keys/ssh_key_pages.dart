@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'package:falco/app/router.dart';
 import 'package:falco/core/errors/falco_error.dart';
+import 'package:falco/core/files/text_files.dart';
 import 'package:falco/core/format/format.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/activity/activity.dart';
 import 'package:falco/features/compute/compute_ui.dart';
+import 'package:falco/features/ssh_keys/openssh.dart';
 import 'package:falco/features/ssh_keys/ssh_keys.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/error_text.dart';
@@ -144,7 +146,91 @@ String? sshKeyProblemText(String key, AppLocalizations l10n) =>
       SshKeyProblem.unknownType => l10n.sshKeyUnknown,
     };
 
-/// Add an SSH key: name, public key, labels (CMP-071, CMP-074).
+/// Fills a public key field from a `.pub` file or a new Ed25519 key pair
+/// (CMP-071, CMP-100, ROB-033, ROB-061). [onKey] gets the public key and,
+/// for a generated pair, the private key; keep that only until
+/// [showPrivateKey] handed it over.
+class SshKeySources extends ConsumerWidget {
+  const new({required this.comment, required this.onKey, super.key});
+
+  /// Comment of a generated key, usually its name.
+  final String comment;
+
+  final void Function(String publicKey, String? privateKey) onKey;
+
+  Future<void> _fromFile(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final picked = await ref.read(textFilesProvider).pick(maxBytes: 16 * 1024);
+    if (picked == null || !context.mounted) return;
+    final text = picked.text;
+    if (picked.tooLarge || text == null) {
+      FalcoScaffold.showSnack(
+        context,
+        picked.tooLarge ? l10n.fileTooLarge : l10n.fileNotText,
+      );
+      return;
+    }
+    onKey(text.trim(), null);
+  }
+
+  Future<void> _generate(BuildContext context) async {
+    final pair = await generateEd25519(comment: comment.trim());
+    if (!context.mounted) return;
+    onKey(pair.publicKey, pair.privateKey);
+    FalcoScaffold.showSnack(
+      context,
+      AppLocalizations.of(context).sshKeyGenerated,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return Wrap(
+      spacing: FalcoSpacing.s,
+      children: [
+        TextButton.icon(
+          onPressed: () => _fromFile(context, ref),
+          icon: const Icon(Icons.file_open_outlined),
+          label: Text(l10n.keyFromFile),
+        ),
+        TextButton.icon(
+          onPressed: () => _generate(context),
+          icon: const Icon(Icons.vpn_key_outlined),
+          label: Text(l10n.sshKeyGenerate),
+        ),
+      ],
+    );
+  }
+}
+
+/// Hands a generated private key over once, after its public key was
+/// added (CMP-100): show, copy (sensitive clipboard), save to a file.
+/// Falco keeps no copy.
+Future<void> showPrivateKey(
+  BuildContext context,
+  WidgetRef ref,
+  String privateKey,
+) {
+  final l10n = AppLocalizations.of(context);
+  return showSecretSheet(
+    context,
+    title: l10n.sshKeyPrivateTitle,
+    note: l10n.sshKeyPrivateNote,
+    secrets: {l10n.sshKeyPrivateTitle: privateKey},
+    onSave: () async {
+      final saved = await ref
+          .read(textFilesProvider)
+          .save('id_ed25519', privateKey);
+      if (saved && context.mounted) {
+        FalcoScaffold.showSnack(context, l10n.savedMessage);
+      }
+    },
+  );
+}
+
+/// Add an SSH key: name, public key from paste, file or a new key pair,
+/// labels (CMP-071, CMP-074, CMP-100).
 class CreateSshKeyPage extends ConsumerStatefulWidget {
   const new({required this.scope, super.key});
 
@@ -158,6 +244,12 @@ class _CreateSshKeyPageState extends ConsumerState<CreateSshKeyPage> {
   String? _project;
   var _values = <String, String>{};
   bool _creating = false;
+
+  /// Private key of a generated pair until it is handed over.
+  String? _private;
+
+  /// Counts filled keys, so the key field shows them.
+  int _fills = 0;
 
   Future<void> _create(ProjectScope scope) async {
     if (_creating) return;
@@ -176,7 +268,12 @@ class _CreateSshKeyPageState extends ConsumerState<CreateSshKeyPage> {
     );
     if (!mounted) return;
     setState(() => _creating = false);
-    if (ok) Navigator.pop(context);
+    if (!ok) return;
+    if (_private case final private?) {
+      _private = null;
+      await showPrivateKey(context, ref, private);
+    }
+    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -202,24 +299,45 @@ class _CreateSshKeyPageState extends ConsumerState<CreateSshKeyPage> {
               (_values['name'] ?? '').trim().isNotEmpty &&
               sshKeyProblem(key) == null &&
               validLabels(_values),
-          child: FormFields(
-            fields: [
-              FieldSpec('name', l10n.fieldName, maxLength: 63),
-              FieldSpec(
-                'key',
-                l10n.fieldPublicKey,
-                helper: sshKeyProblemText(key, l10n) ?? l10n.sshKeyHint,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              FormFields(
+                key: ValueKey(_fills),
+                fields: [
+                  FieldSpec('name', l10n.fieldName, maxLength: 63),
+                  FieldSpec(
+                    'key',
+                    l10n.fieldPublicKey,
+                    multiline: true,
+                    helper: sshKeyProblemText(key, l10n) ?? l10n.sshKeyHint,
+                  ),
+                  labelsField(l10n),
+                ],
+                values: _values,
+                onChanged: (v) => setState(() {
+                  // An edited key no longer matches the generated one.
+                  if (v['key'] != _values['key']) _private = null;
+                  _values = {..._values, ...v};
+                }),
               ),
-              labelsField(l10n),
+              SshKeySources(
+                comment: _values['name'] ?? '',
+                onKey: (public, private) => setState(() {
+                  _values = {..._values, 'key': public};
+                  _private = private;
+                  _fills++;
+                }),
+              ),
             ],
-            values: _values,
-            onChanged: (v) => setState(() => _values = {..._values, ...v}),
           ),
         ),
       ],
       summary: FactRows([
         ConfirmFact(l10n.fieldName, (_values['name'] ?? '').trim()),
         ConfirmFact(l10n.fieldPublicKey, key.trim(), mono: true),
+        if (_private != null)
+          ConfirmFact(l10n.sshKeyPrivateTitle, l10n.sshKeyPrivateAfter),
       ]),
     );
   }

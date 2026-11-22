@@ -113,8 +113,8 @@ class ObjectTransfers {
   /// Hands [tasks] to the platform.
   @protected
   Future<void> enqueue(List<Task> tasks) async {
+    // The notification permission is asked by the screen (SET-025).
     await start();
-    await FileDownloader().permissions.request(PermissionType.notifications);
     final ok = await FileDownloader().enqueueAll(tasks);
     if (ok.contains(false)) throw StateError('enqueue failed');
   }

@@ -64,7 +64,7 @@ class CreateWizard extends StatefulWidget {
   /// Shows progress on the create button.
   final bool creating;
 
-  /// Step to open at (showcase and tests).
+  /// Step to open at (tests).
   final int initialStep;
 
   /// Where close leads when there is no page to go back to (the wizard

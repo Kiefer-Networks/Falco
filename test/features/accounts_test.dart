@@ -137,12 +137,14 @@ void main() {
   });
 
   group('welcome', () {
-    testWidgets('ONB-001 ONB-002 four pages with Next, Back and Skip', (
+    testWidgets('ONB-001 ONB-002 SET-024 five pages with Next, Back and '
+        'Skip; leaving the permissions page asks for notifications', (
       tester,
     ) async {
-      await pumpFalco(tester, FakeCloud(), accounts: const []);
+      final cloud = FakeCloud();
+      await pumpFalco(tester, cloud, accounts: const []);
       expect(find.text('Choose your language'), findsOneWidget);
-      expect(find.bySemanticsLabel('Step 1 of 4'), findsOneWidget);
+      expect(find.bySemanticsLabel('Step 1 of 5'), findsOneWidget);
       await tapText(tester, 'Next');
       expect(find.text('What Falco does'), findsOneWidget);
       await tapText(tester, 'Back');
@@ -151,6 +153,11 @@ void main() {
       await tapText(tester, 'Next');
       expect(find.text('Your access stays safe'), findsOneWidget);
       await tapText(tester, 'Next');
+      expect(find.text('Permissions'), findsOneWidget);
+      expect(find.text('Notifications'), findsOneWidget);
+      expect(cloud.notifications.requests, 0);
+      await tapText(tester, 'Next');
+      expect(cloud.notifications.requests, 1);
       expect(find.text('Ready to start'), findsOneWidget);
       expect(find.text('Skip'), findsNothing);
       await tapText(tester, 'Add account');

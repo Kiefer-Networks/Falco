@@ -3,12 +3,12 @@
 @Tags(['golden'])
 library;
 
-import 'package:falco/ui/showcase/showcase_page.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../helpers.dart';
+import 'component_cases.dart';
 
 const _width = 390.0;
 

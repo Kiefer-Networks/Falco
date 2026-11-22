@@ -8,7 +8,6 @@ part of 'router.dart';
 
 List<RouteBase> get $appRoutes => [
   $homeRoute,
-  $showcaseRoute,
   $welcomeRoute,
   $setupRoute,
   $settingsRoute,
@@ -62,32 +61,6 @@ mixin $HomeRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/');
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $showcaseRoute => GoRouteData.$route(
-  path: '/showcase',
-  hasOverriddenOnExit: false,
-  factory: $ShowcaseRoute._fromState,
-);
-
-mixin $ShowcaseRoute on GoRouteData {
-  static ShowcaseRoute _fromState(GoRouterState state) => const ShowcaseRoute();
-
-  @override
-  String get location => GoRouteData.$location('/showcase');
 
   @override
   void go(BuildContext context) => context.go(location);

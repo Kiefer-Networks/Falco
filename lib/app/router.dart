@@ -36,9 +36,7 @@ import 'package:falco/features/storage/object_pages.dart';
 import 'package:falco/features/storage/storage_box_pages.dart';
 import 'package:falco/features/storage/storage_boxes.dart';
 import 'package:falco/features/volumes/volume_pages.dart';
-import 'package:falco/ui/showcase/showcase_page.dart';
 import 'package:falco/ui/ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -105,30 +103,6 @@ class HomeRoute extends GoRouteData with $HomeRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       const Scaffold(body: Center(child: CircularProgressIndicator()));
-}
-
-/// Design system showcase, debug builds only.
-@TypedGoRoute<ShowcaseRoute>(path: '/showcase')
-class ShowcaseRoute extends GoRouteData with $ShowcaseRoute {
-  const new();
-
-  @override
-  String? redirect(BuildContext context, GoRouterState state) =>
-      kDebugMode ? null : const HomeRoute().location;
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) => Consumer(
-    builder: (context, ref, _) {
-      final s = ref.watch(appSettingsProvider);
-      return ShowcasePage(
-        variant: s.variant ?? FalcoVariant.dark,
-        accent: s.accent,
-        onThemeChanged: (variant, accent) => ref
-            .read(appSettingsProvider.notifier)
-            .update(s.copyWith(variant: () => variant, accent: accent)),
-      );
-    },
-  );
 }
 
 /// First start without an account (ONB-001).

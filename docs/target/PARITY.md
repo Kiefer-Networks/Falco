@@ -16,16 +16,16 @@ Status: Abnahmeliste für den Neubau. Grundlage: [README.md](README.md) (Zielbil
 | Bereich | Präfix | Zeilen | davon neu oder ohne alte UI |
 |---|---|---|---|
 | Onboarding & Accounts | ONB | 42 | 0 |
-| Einstellungen & Sicherheit | SET | 23 | 1 |
-| Compute | CMP | 99 | 20 |
+| Einstellungen & Sicherheit | SET | 26 | 4 |
+| Compute | CMP | 100 | 21 |
 | Netzwerk | NET | 94 | 18 |
 | DNS | DNS | 31 | 10 |
 | Storage Boxen | STB | 37 | 16 |
 | Object Storage | OBJ | 25 | 6 |
-| Robot | ROB | 60 | 24 |
+| Robot | ROB | 61 | 25 |
 | Suche & Aktivität | SUC | 40 | 28 |
 | Querschnitt | QRS | 30 | 0 |
-| **Summe** | | **481** | **123** |
+| **Summe** | | **486** | **128** |
 
 Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endpunkt-zuordnung-alte-app) und die Liste [Nicht übernehmen](#nicht-übernehmen) (Präfix BUG).
 
@@ -34,7 +34,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 
 | ID | Funktion | Details/Regeln | Quelle | API Endpunkt(e) | Phase | Test |
 |---|---|---|---|---|---|---|
-| ONB-001 | Onboarding Seitenfolge | 4 Seiten: Sprache, Was Falco kann, Sicherheit, Start; Punkte Indikator | `S/welcome/OnboardingScreen.kt:49` |  | 3 | Widget |
+| ONB-001 | Onboarding Seitenfolge | 5 Seiten: Sprache, Was Falco kann, Sicherheit, Berechtigungen (SET-024), Start; Punkte Indikator | `S/welcome/OnboardingScreen.kt:49` |  | 3 | Widget |
 | ONB-002 | Onboarding Navigation | Weiter, Zurück, Überspringen; letzte Seite "Account hinzufügen" | `S/welcome/OnboardingScreen.kt:102` |  | 3 | Widget |
 | ONB-003 | Onboarding Sprachwahl | Sprache wählen, sofort angewendet, später in Einstellungen änderbar | `S/welcome/OnboardingViewModel.kt:22` |  | 3 | Widget |
 | ONB-004 | Onboarding Funktionsseite | Kurzbeschreibung Cloud, Robot, DNS, Object Storage | `S/welcome/OnboardingScreen.kt:149` |  | 3 | Golden |
@@ -104,6 +104,9 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | SET-021 | Geheimnis anzeigen Sheet | Einmalige Anzeige von Passwörtern mit Kopieren und Schließen | `C/dialog/SecureRevealDialog.kt:77` |  | 2 | Widget |
 | SET-022 | Fehlertexte bereinigt | Keine Tokens oder URLs mit Geheimnissen in Fehlermeldungen | `D/util/Errors.kt:20` |  | 2 | Unit |
 | SET-023 | Kein Entsperren vor dem ersten Account | Solange kein Account gespeichert ist, fragt der Start nicht nach Biometrie oder PIN; danach gilt SET-007. Das erste Geheimnis landet mit der Prüfung der Plattform im gebundenen Speicher | API neu |  | 9 | Unit |
+| SET-024 | Berechtigungen beim ersten Start | Onboarding Seite erklärt Mitteilungen (Fortschritt der Hintergrund Übertragungen) und Biometrie; Weiter fragt die Mitteilungen an (Android 13+, iOS). Biometrie fragt das System beim ersten Gebrauch (iOS Face ID beim ersten Account), Android braucht keine Laufzeitfreigabe | API neu |  | 9 | Widget |
+| SET-025 | Berechtigung im Kontext | Jede Übertragung fragt Mitteilungen erneut an (das System zeigt den Dialog nur, solange nicht entschieden); ohne Freigabe läuft sie trotzdem und die Startmeldung sagt es. Android 9 und älter fragen Speicher beim Download | API neu |  | 9 | Widget |
+| SET-026 | Nutzungstexte vollständig | Info.plist hat Texte (en, de) für Face ID und Fotomediathek, die Plugins verlinken; Manifest deklariert Internet, Mitteilungen, Übertragungsjobs und Speicher bis API 28. Kein Absturz durch fehlenden Text | API neu |  | 9 | Unit |
 
 ## Compute
 
@@ -179,9 +182,9 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | CMP-068 | Placement Group löschen | Alt nur im Repository, keine UI | `D/repo/CloudRepo.kt:915` | `DELETE /placement_groups/{id}` | 4 | Unit |
 | CMP-069 | Placement Group Detail | Alt nur im Repository; Neu: Detail mit Servern | `D/repo/CloudRepo.kt:898` | `GET /placement_groups/{id}` | 4 | Widget |
 | CMP-070 | SSH Key Liste Cloud | Name, Fingerprint | `S/cloud/CloudSshKeysTab.kt:98` | `GET /ssh_keys` | 4 | Golden |
-| CMP-071 | SSH Key hinzufügen | Aus Datei oder manuell; Name und Key Pflicht | `S/cloud/CloudSshKeysTab.kt:280`<br>`S/cloud/CloudSshKeysTab.kt:107` | `POST /ssh_keys` | 4 | Widget |
+| CMP-071 | SSH Key hinzufügen | Aus Datei (.pub), eingefügt oder erzeugt (CMP-100); Name und Key Pflicht | `S/cloud/CloudSshKeysTab.kt:280`<br>`S/cloud/CloudSshKeysTab.kt:107` | `POST /ssh_keys` | 4 | Widget |
 | CMP-072 | SSH Key Prüfung privat | Private Keys (PEM, OpenSSH, PuTTY, SSH2, Zertifikat) abgewiesen | `ui/util/SshKeyValidation.kt:12` |  | 4 | Unit |
-| CMP-073 | SSH Key Prüfung öffentlich | Nur bekannte Präfixe: ssh-rsa, ssh-ed25519, ssh-dss, ecdsa-sha2-nistp256/384/521, sk-ecdsa, sk-ssh-ed25519 | `ui/util/SshKeyValidation.kt:31` |  | 4 | Unit |
+| CMP-073 | SSH Key Prüfung öffentlich | Nur bekannte Typen: ssh-rsa, ssh-ed25519, ssh-dss, ecdsa-sha2-nistp256/384/521, sk-ecdsa, sk-ssh-ed25519; Base64 gültig und der Typ im Key Blob gleich dem Präfix. MD5 Fingerprint wie Hetzner und `ssh-keygen -E md5` | `ui/util/SshKeyValidation.kt:31` |  | 4 | Unit |
 | CMP-074 | SSH Key Projekt bei Aggregat | Projektwahl beim Anlegen | `S/cloud/CloudSshKeysTab.kt:235` | `POST /ssh_keys` | 4 | Widget |
 | CMP-075 | SSH Key löschen | Bestätigung | `S/cloud/CloudSshKeysTab.kt:245`<br>`S/cloud/CloudSshKeysTab.kt:117` | `DELETE /ssh_keys/{id}` | 4 | Unit |
 | CMP-076 | SSH Key umbenennen | Alt nur im Repository, keine UI | `D/repo/CloudRepo.kt:479` | `PUT /ssh_keys/{id}` | 4 | Widget |
@@ -208,6 +211,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | CMP-097 | Location einzeln | Location Details | API neu | `GET /locations/{id}` | 4 | Unit |
 | CMP-098 | Servertyp einzeln | Typdetails mit Preisen je Location | API neu | `GET /server_types/{id}` | 4 | Unit |
 | CMP-099 | SSH Key Detail | Name, Fingerprint, Key, Labels | API neu | `GET /ssh_keys/{id}` | 4 | Unit |
+| CMP-100 | SSH Schlüsselpaar erzeugen | Ed25519 im Gerät erzeugen (rein Dart, `cryptography`), öffentlichen Key hochladen; privaten Key als OpenSSH PEM einmal im Geheimnis Sheet zeigen, kopieren (sensibel) und als Datei speichern; nie gespeichert oder geloggt; unverschlüsselt, Hinweis auf `ssh-keygen -p`. RSA nicht (keine gepflegte reine Dart Implementierung mit vertretbarer Laufzeit) | API neu | `POST /ssh_keys` | 9 | Unit |
 
 ## Netzwerk
 
@@ -479,6 +483,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | ROB-057 | Robot Firewall | Server Firewall Status, Regeln (mit TCP Flags), Filter IPv6, Hetzner Dienste | API neu | `GET /firewall/{n}`<br>`POST /firewall/{n}`<br>`DELETE /firewall/{n}` | 7 | Widget |
 | ROB-058 | Robot Firewall Vorlagen | Vorlagen listen, anlegen, ändern, löschen | API neu | `GET /firewall/template`<br>`POST /firewall/template`<br>`GET /firewall/template/{id}`<br>`POST /firewall/template/{id}`<br>`DELETE /firewall/template/{id}` | 7 | Widget |
 | ROB-059 | Robot Traffic Abfrage | Traffic frei wählbar nach Zeitraum (Tag, Monat, Jahr) pro IP/Subnetz | `D/repo/RobotRepo.kt:94` | `POST /traffic` | 7 | Golden |
+| ROB-061 | Robot SSH Schlüsselpaar erzeugen | Wie CMP-100, gleiche Komponente im Robot Wizard | API neu | `POST /key` | 9 | Widget |
 | ROB-060 | Robot Bestellung | Server, Serverbörse, Addons bestellen; nur nach Entscheidung, Kaufbestätigung Pflicht | API neu | `GET /order/server/product`<br>`POST /order/server/transaction`<br>`GET /order/server_market/product`<br>`POST /order/server_market/transaction`<br>`GET /order/server_addon/{n}/product`<br>`POST /order/server_addon/transaction` | 7 | Integration |
 
 ## Suche & Aktivität
@@ -621,7 +626,7 @@ Jeder Endpunkt, den Falco 2.x deklariert, mit Fundstelle und den Zeilen, die ihn
 | cloud | `POST /firewalls/{id}/actions/apply_to_resources` | `D/api/CloudApi.kt:269` | `applyFirewall` | NET-003, NET-014, NET-089 |
 | cloud | `POST /firewalls/{id}/actions/remove_from_resources` | `D/api/CloudApi.kt:275` | `removeFirewall` | NET-015 |
 | cloud | `GET /ssh_keys` | `D/api/CloudApi.kt:283` | `listSshKeys` | CMP-008, CMP-009, CMP-011, CMP-070, SUC-002 |
-| cloud | `POST /ssh_keys` | `D/api/CloudApi.kt:286` | `createSshKey` | CMP-071, CMP-074 |
+| cloud | `POST /ssh_keys` | `D/api/CloudApi.kt:286` | `createSshKey` | CMP-071, CMP-074, CMP-100 |
 | cloud | `PUT /ssh_keys/{id}` | `D/api/CloudApi.kt:291` | `updateSshKey` | CMP-076 |
 | cloud | `DELETE /ssh_keys/{id}` | `D/api/CloudApi.kt:297` | `deleteSshKey` | CMP-075 |
 | cloud | `POST /floating_ips` | `D/api/CloudApi.kt:302` | `createFloatingIp` | NET-022, NET-023 |
@@ -746,7 +751,7 @@ Jeder Endpunkt, den Falco 2.x deklariert, mit Fundstelle und den Zeilen, die ihn
 | robot | `GET /traffic` | `D/api/RobotApi.kt:160` | `listTraffic` | keine Zeile |
 | robot | `POST /traffic` | `D/api/RobotApi.kt:170` | `queryTraffic` | ROB-008, ROB-059 |
 | robot | `GET /key` | `D/api/RobotApi.kt:178` | `listKeys` | ROB-011, ROB-032 |
-| robot | `POST /key` | `D/api/RobotApi.kt:182` | `createKey` | ROB-033 |
+| robot | `POST /key` | `D/api/RobotApi.kt:182` | `createKey` | ROB-033, ROB-061 |
 | robot | `DELETE /key/{fp}` | `D/api/RobotApi.kt:188` | `deleteKey` | ROB-034 |
 
 ## Nicht übernehmen

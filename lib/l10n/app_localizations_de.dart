@@ -22,6 +22,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonSave => 'Speichern';
 
   @override
+  String get commonSaveToFile => 'Als Datei speichern';
+
+  @override
   String get commonCreate => 'Erstellen';
 
   @override
@@ -266,12 +269,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get showcaseTitle => 'Design System';
-
-  @override
-  String get showcaseTheme => 'Design';
-
-  @override
   String get showcaseDark => 'Dunkel';
 
   @override
@@ -282,9 +279,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get showcaseAccent => 'Akzent';
-
-  @override
-  String get showcaseOpen => 'Öffnen';
 
   @override
   String get resourceServers => 'Server';
@@ -1020,6 +1014,24 @@ class AppLocalizationsDe extends AppLocalizations {
       'Füge einen Account mit Cloud API Token, Robot Zugang oder beidem hinzu. Jeder Zugang wird vor dem Speichern geprüft.';
 
   @override
+  String get welcomePermissions => 'Berechtigungen';
+
+  @override
+  String get welcomeNotificationsTitle => 'Mitteilungen';
+
+  @override
+  String get welcomeNotificationsText =>
+      'Uploads und Downloads laufen im Hintergrund weiter und zeigen ihren Fortschritt als Mitteilung. Falco fragt danach, wenn du weitergehst; Übertragungen funktionieren auch ohne.';
+
+  @override
+  String get welcomeBiometricsIos =>
+      'iOS fragt einmal, ob Falco Face ID nutzen darf, wenn du den ersten Account speicherst.';
+
+  @override
+  String get welcomeBiometricsAndroid =>
+      'Fingerabdruck und Geräte PIN brauchen keine eigene Berechtigung.';
+
+  @override
   String backupWindow(String window) {
     return 'An, Zeitfenster $window UTC';
   }
@@ -1478,7 +1490,23 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get sshKeyUnknown =>
-      'Unbekannter Schlüsseltyp. Nutze ssh-ed25519, ssh-rsa, ecdsa oder einen Security Key.';
+      'Kein gültiger öffentlicher Schlüssel. Nutze ssh-ed25519, ssh-rsa, ecdsa oder einen Security Key.';
+
+  @override
+  String get sshKeyGenerate => 'Schlüsselpaar erzeugen';
+
+  @override
+  String get sshKeyGenerated => 'Ed25519 Schlüsselpaar erzeugt';
+
+  @override
+  String get sshKeyPrivateTitle => 'Privater Schlüssel';
+
+  @override
+  String get sshKeyPrivateAfter => 'Wird nach dem Hinzufügen einmal angezeigt';
+
+  @override
+  String get sshKeyPrivateNote =>
+      'Speichere oder kopiere den privaten Schlüssel jetzt. Falco behält ihn nicht und kann ihn nicht erneut anzeigen. Er ist nicht verschlüsselt: bewahre ihn sicher auf, etwa in ~/.ssh nur für dich lesbar, und setze mit ssh-keygen -p eine Passphrase.';
 
   @override
   String get startAfterCreate => 'Nach dem Erstellen starten';
@@ -2822,6 +2850,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get transferFailed => 'Übertragung fehlgeschlagen';
+
+  @override
+  String get transferNoNotifications =>
+      'Mitteilungen sind aus: Die Übertragung läuft trotzdem, ihr Fortschritt erscheint nur in Falco.';
 
   @override
   String transferFailedNamed(String name) {

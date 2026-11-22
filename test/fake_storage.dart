@@ -678,6 +678,9 @@ class FakeTransfers extends ObjectTransfers {
   /// Whether the platform refuses the next tasks.
   bool refuse = false;
 
+  /// Whether tasks never report back, so the start message stays.
+  bool hold = false;
+
   @override
   Future<void> start() async {}
 
@@ -694,6 +697,7 @@ class FakeTransfers extends ObjectTransfers {
         downloadTasks.add(t as DownloadTask);
       }
     }
+    if (hold) return;
     // Like the platform: updates arrive after enqueue returned.
     for (final t in tasks) {
       unawaited(

@@ -35,7 +35,6 @@ void main() {
     await tester.pumpWidget(await app([true]));
     await tester.pumpAndSettle();
     expect(find.text('Choose your language'), findsOneWidget);
-    expect(find.text('Design system'), findsNothing);
     final context = tester.element(find.text('Choose your language'));
     expect(Theme.of(context).brightness, Brightness.dark);
     expect(FalcoColors.of(context).accent, AccentPreset.amber.dark);
@@ -173,12 +172,38 @@ void main() {
     expect(find.text('Robot'), findsWidgets);
   });
 
-  testWidgets('showcase stays reachable in debug builds', (tester) async {
-    await tester.pumpWidget(await app([true]));
-    await tester.pumpAndSettle();
-    const ShowcaseRoute().go(tester.element(find.text('Choose your language')));
-    await tester.pumpAndSettle();
-    expect(find.text('Design system'), findsOneWidget);
+  test('SET-026 every permission the plugins use is declared with a '
+      'usage text, so iOS cannot end the app for a missing one', () {
+    final plist = File('ios/Runner/Info.plist').readAsStringSync();
+    final de = File('ios/Runner/de.lproj/InfoPlist.strings').readAsStringSync();
+    for (final key in [
+      // local_auth: Face ID.
+      'NSFaceIDUsageDescription',
+      // file_picker and share_plus link the photo library APIs.
+      'NSPhotoLibraryUsageDescription',
+      'NSPhotoLibraryAddUsageDescription',
+    ]) {
+      expect(
+        plist,
+        matches(RegExp('<key>$key</key>\\s*<string>[^<]+</string>')),
+        reason: key,
+      );
+      expect(de, contains('"$key" = "'), reason: key);
+    }
+    final manifest = File('android/app/src/main/AndroidManifest.xml')
+        .readAsStringSync();
+    for (final permission in [
+      'INTERNET',
+      'POST_NOTIFICATIONS',
+      'RUN_USER_INITIATED_JOBS',
+      'FOREGROUND_SERVICE_DATA_SYNC',
+    ]) {
+      expect(manifest, contains('android.permission.$permission"'));
+    }
+    expect(
+      manifest,
+      matches(RegExp(r'WRITE_EXTERNAL_STORAGE"\s*android:maxSdkVersion="28"')),
+    );
   });
 
   test('User-Agent version matches the pubspec (BUG-009)', () {
