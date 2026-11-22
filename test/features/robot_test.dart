@@ -830,7 +830,8 @@ void main() {
         await servers;
         await api.servers();
         await expectLater(api.failovers(), refused);
-        expect(sent('/server'), 2);
+        // One of them is the probe that found the login valid.
+        expect(sent('/server'), 3);
         expect(sent('/failover'), 1);
       },
     );
@@ -857,7 +858,8 @@ void main() {
       await api.servers();
       await expectLater(api.failovers(), refused);
       expect(sent('/failover'), 1);
-      expect(sent('/server'), 2);
+      // One of them is the probe that found the login valid.
+      expect(sent('/server'), 3);
       // An account reload with the same login keeps the client.
       c.invalidate(accountsProvider);
       await c.read(accountsProvider.future);
@@ -873,6 +875,57 @@ void main() {
       await c.read(accountsProvider.future);
       await pumpEventQueue();
       expect(c.read(robotApiProvider('a1')), isNot(same(api)));
+    });
+
+    test('a refusal is a wrong login only when GET /server refuses it '
+        'too, before and after a success', () async {
+      const unauthorized = (
+        401,
+        {
+          'error': {'status': 401, 'code': 'UNAUTHORIZED', 'message': ''},
+        },
+      );
+      final cloud = FakeCloud();
+      final c = await fakeContainer(cloud, accounts: const [acmeRobot]);
+      int sent(String path) => cloud.adapter.requests
+          .where((r) => r.uri.host == 'robot-ws.your-server.de')
+          .where((r) => r.uri.path == path)
+          .length;
+      final api = c.read(robotApiProvider('a1'));
+      final refused = throwsA(isA<Unauthorized>());
+      // Before any success: a refused section does not block the login.
+      cloud.robot.failures['failover'] = unauthorized;
+      await expectLater(api.failovers(), refused);
+      await api.servers();
+      expect(sent('/server'), 2);
+      // After a success: the password changed outside the app.
+      cloud.robot.failures['vswitch'] = unauthorized;
+      cloud.robot.failures['server'] = unauthorized;
+      await expectLater(api.vswitches(), refused);
+      await expectLater(api.servers(), refused);
+      await expectLater(api.keys(), refused);
+      expect(sent('/server'), 3);
+      expect(sent('/key'), 0);
+    });
+
+    test('a template without a name fails; the loaded list is used', () async {
+      final cloud = FakeCloud();
+      final c = await fakeContainer(cloud, accounts: const [acmeRobot]);
+      int lists() =>
+          cloud.calls.where((e) => e == 'GET /firewall/template').length;
+      final sub = c.listen(robotTemplatesProvider('a1'), (_, _) {});
+      await c.read(robotTemplatesProvider('a1').future);
+      expect((await c.read(robotTemplateProvider('a1', 1).future)).name, 'web');
+      expect(lists(), 1);
+      sub.close();
+      cloud.robot.templates.first['name'] = '';
+      c
+        ..invalidate(robotTemplatesProvider('a1'))
+        ..invalidate(robotTemplateProvider('a1', 1));
+      await expectLater(
+        c.read(robotTemplateProvider('a1', 1).future),
+        throwsA(isA<NotFound>()),
+      );
     });
   });
 }

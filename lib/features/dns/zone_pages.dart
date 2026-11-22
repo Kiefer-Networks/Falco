@@ -16,6 +16,7 @@ import 'package:falco/features/dns/zones.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/error_text.dart';
 import 'package:falco/ui/ui.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -57,12 +58,24 @@ String _ns(Nameserver n) => n.address.contains(':')
     : '${n.address}:${n.port}';
 
 /// Record values of [text], one per line, normalized for [type]
-/// (DNS-009).
+/// (DNS-009); a value typed twice counts once, as the API refuses
+/// duplicates.
 List<DnsRecord> recordsOf(String type, String text) => [
-  for (final line in text.split('\n'))
-    if (line.trim().isNotEmpty)
-      (value: normalizeRecord(type, line), comment: ''),
+  for (final value in {
+    for (final line in text.split('\n'))
+      if (line.trim().isNotEmpty) normalizeRecord(type, line),
+  })
+    (value: value, comment: ''),
 ];
+
+/// [records] whose value [set] does not have yet.
+List<DnsRecord> _newIn(RRSet set, List<DnsRecord> records) {
+  final have = {for (final r in set.records) r.value};
+  return [
+    for (final r in records)
+      if (!have.contains(r.value)) r,
+  ];
+}
 
 /// DNS zones of a scope: name, records, TTL, status (DNS-001).
 class ZoneList extends ConsumerWidget {
@@ -164,31 +177,37 @@ Future<bool> showRecordSheet(
       final known = existing.where((e) => e.key == set.key).firstOrNull;
       final api = ref.read(cloudApiProvider(scope.projectId));
       final tracker = ref.read(actionTrackerProvider(scope));
-      final id = await (known == null
-          ? createRrset(api, zone.id, set)
-          : changeRrset(api, zone.id, known, AddRecords(set.records)));
-      tracker.track(id);
-      if (known == null) return;
+      if (known == null) {
+        tracker.track(await createRrset(api, zone.id, set));
+        return;
+      }
+      // The RRSet as it is now: a retry must not add again what an
+      // earlier try added, the API refuses a value the RRSet has.
+      final now = await getRrset(api, zone.id, known.name, known.type);
+      final records = _newIn(now, set.records);
       final relabel = set.labels.isNotEmpty;
-      final retime = set.ttl != null && set.ttl != known.ttl;
-      if (!relabel && !retime) return;
-      // A failed add must not close the form as saved, nor change more.
-      final added = await tracker.track(id).last;
-      if (added.status != ActionStatus.success) {
-        throw ActionFailed(code: added.errorCode);
+      final retime = set.ttl != null && set.ttl != now.ttl;
+      if (records.isNotEmpty) {
+        final id = await changeRrset(api, zone.id, now, AddRecords(records));
+        tracker.track(id);
+        if (!relabel && !retime) return;
+        // A failed add must not close the form as saved, nor change more.
+        final added = await tracker.track(id).last;
+        if (added.status != ActionStatus.success) {
+          throw ActionFailed(code: added.errorCode);
+        }
       }
       if (relabel) {
         // Labels are no action; added ones join those the RRSet has now,
         // as the PUT replaces them all.
-        final now = await getRrset(api, zone.id, known.name, known.type);
         final labels = {...now.labels, ...set.labels};
         if (labels.toString() != now.labels.toString()) {
-          await updateRrset(api, zone.id, known, labels);
+          await updateRrset(api, zone.id, now, labels);
         }
       }
       if (retime) {
         tracker.track(
-          await changeRrset(api, zone.id, known, ChangeRRSetTtl(set.ttl)),
+          await changeRrset(api, zone.id, now, ChangeRRSetTtl(set.ttl)),
         );
       }
     },
@@ -232,8 +251,16 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
       if (saved && mounted) {
         FalcoScaffold.showSnack(context, l10n.zoneExported);
       }
-    } on FalcoError catch (e) {
-      if (mounted) FalcoScaffold.showSnack(context, errorText(e, l10n));
+    } on Object catch (e) {
+      // The save dialog fails as a platform error, not a FalcoError.
+      if (mounted) {
+        FalcoScaffold.showSnack(
+          context,
+          e is PlatformException
+              ? l10n.actionFailed
+              : errorText(toFalcoError(e), l10n),
+        );
+      }
     }
   }
 
@@ -279,6 +306,8 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
 
   Future<void> _edit(Zone z) {
     final l10n = AppLocalizations.of(context);
+    // The labels the zone has, also after a try that failed later.
+    var savedLabels = z.labels;
     return FormSheet.show(
       context,
       title: l10n.commonEdit,
@@ -302,11 +331,14 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
         final api = ref.read(cloudApiProvider(_scope.projectId));
         final tracker = ref.read(actionTrackerProvider(_scope));
         final container = ProviderScope.containerOf(context, listen: false);
+        // Labels first: a PUT while the TTL action runs fails as locked.
+        // The TTL action starts last, so a retry never starts it twice.
+        if (labels.toString() != savedLabels.toString()) {
+          await updateZone(api, z.id, labels);
+          savedLabels = labels;
+        }
         if (ttl != z.ttl) {
           tracker.track(await changeZone(api, z.id, ChangeZoneTtl(ttl)));
-        }
-        if (labels.toString() != z.labels.toString()) {
-          await updateZone(api, z.id, labels);
         }
         refreshResource(container.invalidate, _scope, CloudType.zone, z.id);
       },
@@ -769,6 +801,24 @@ class RRSetDetailPage extends ConsumerWidget {
         runAction(context, ref, scope, (api) => changeRrset(api, zoneId, s, c));
     final locked = busy || s.protectChange;
 
+    Future<void> delete() async {
+      final t = (scope: scope, type: CloudType.zone, id: zoneId, name: s.key);
+      if (!await confirmDelete(context, t, l10n.rrsetDeleteConsequence) ||
+          !context.mounted) {
+        return;
+      }
+      if (await runAction(
+            context,
+            ref,
+            scope,
+            (api) => deleteRrset(api, zoneId, s),
+          ) &&
+          context.mounted) {
+        ref.invalidate(rrsetsProvider);
+        Navigator.pop(context);
+      }
+    }
+
     Future<void> editValue(DnsRecord r) => FormSheet.show(
       context,
       title: l10n.recordEdit,
@@ -837,15 +887,22 @@ class RRSetDetailPage extends ConsumerWidget {
                     ],
                     valid: (v) =>
                         recordsOf(s.type, v['values'] ?? '').isNotEmpty,
-                    onSave: (v) =>
-                        change(AddRecords(recordsOf(s.type, v['values']!))),
+                    onSave: (v) async {
+                      final records = _newIn(
+                        s,
+                        recordsOf(s.type, v['values']!),
+                      );
+                      if (records.isNotEmpty) {
+                        await change(AddRecords(records));
+                      }
+                    },
                   ),
           ),
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
             group: ActionGroup.manage,
-            onTap: busy
+            onTap: locked
                 ? null
                 : () => FormSheet.show(
                     context,
@@ -864,13 +921,28 @@ class RRSetDetailPage extends ConsumerWidget {
                       final ttl = int.tryParse(v['ttl']?.trim() ?? '');
                       final labels = parseLabels(v['labels'] ?? '')!;
                       final api = ref.read(cloudApiProvider(scope.projectId));
+                      final tracker = ref.read(actionTrackerProvider(scope));
                       final container = ProviderScope.containerOf(
                         context,
                         listen: false,
                       );
-                      if (ttl != s.ttl) await change(ChangeRRSetTtl(ttl));
+                      // Labels first: a PUT while the TTL action runs
+                      // fails as locked. The form closes as saved only
+                      // when the TTL action worked.
                       if (labels.toString() != s.labels.toString()) {
                         await updateRrset(api, zoneId, s, labels);
+                      }
+                      if (ttl != s.ttl) {
+                        final id = await changeRrset(
+                          api,
+                          zoneId,
+                          s,
+                          ChangeRRSetTtl(ttl),
+                        );
+                        final done = await tracker.track(id).last;
+                        if (done.status != ActionStatus.success) {
+                          throw ActionFailed(code: done.errorCode);
+                        }
                       }
                       refreshResource(
                         container.invalidate,
@@ -916,8 +988,12 @@ class RRSetDetailPage extends ConsumerWidget {
                   title: r.value,
                   subtitle: r.comment,
                   onTap: locked ? null : () => editValue(r),
+                  // Without its last value the RRSet is gone: deleting
+                  // it says so and leaves the page.
                   onRemove: locked
                       ? null
+                      : s.records.length == 1
+                      ? delete
                       : () => confirmAction(
                           context,
                           ref,
@@ -935,38 +1011,7 @@ class RRSetDetailPage extends ConsumerWidget {
           ),
           labelsSection(l10n, s.labels),
         ],
-        dangerZone: [
-          DeleteButton(
-            onPressed: locked
-                ? null
-                : () async {
-                    final t = (
-                      scope: scope,
-                      type: CloudType.zone,
-                      id: zoneId,
-                      name: s.key,
-                    );
-                    if (!await confirmDelete(
-                          context,
-                          t,
-                          l10n.rrsetDeleteConsequence,
-                        ) ||
-                        !context.mounted) {
-                      return;
-                    }
-                    if (await runAction(
-                          context,
-                          ref,
-                          scope,
-                          (api) => deleteRrset(api, zoneId, s),
-                        ) &&
-                        context.mounted) {
-                      ref.invalidate(rrsetsProvider);
-                      Navigator.pop(context);
-                    }
-                  },
-          ),
-        ],
+        dangerZone: [DeleteButton(onPressed: locked ? null : delete)],
       ),
     );
   }

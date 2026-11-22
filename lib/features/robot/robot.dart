@@ -5,11 +5,12 @@
 library;
 
 import 'dart:convert' show utf8;
+import 'dart:io' show HttpHeaders;
 import 'dart:math' show Random;
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart'
-    show DioException, InterceptorsWrapper, RequestOptions;
+    show DioException, InterceptorsWrapper, Options, RequestOptions;
 import 'package:falco/api/robot/robot_client.dart';
 import 'package:falco/core/actions/action_tracker.dart';
 import 'package:falco/core/errors/falco_error.dart';
@@ -27,13 +28,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'robot.g.dart';
 
 /// The Robot webservice of an account; the login is read per request.
-/// A login Robot refuses before it ever succeeded is wrong: every
-/// request with it fails at once as [Unauthorized]. Once a login
-/// succeeded, a refusal blocks only that path, a section the login may
-/// not use. A refusal that raced the first success counts for its path
-/// only. Either way it is sent again only after the stored login changes
-/// or is saved again (ROB-002). A changed login or a removed account
-/// rebuilds the client.
+/// When Robot refuses a request, `GET /server` is asked once with the
+/// same login: refused there too, the login is wrong and every request
+/// with it fails at once as [Unauthorized] (a password changed outside
+/// the app included). Accepted there, the refusal blocks only that path,
+/// a section the login may not use. Either way it is sent again only
+/// after the stored login changes or is saved again (ROB-002). A changed
+/// login or a removed account rebuilds the client.
 @Riverpod(keepAlive: true)
 RobotClient robotApi(Ref ref, String accountId) {
   final secrets = ref.watch(secretStoreProvider);
@@ -42,11 +43,12 @@ RobotClient robotApi(Ref ref, String accountId) {
   Digest fingerprint(RobotCredentials c) =>
       Hmac(sha256, key).convert(utf8.encode('${c.user}\n${c.password}'));
   const login = 'falco.robotLogin';
+  const probing = 'falco.robotProbe';
+  const server = '/server';
   final refused = <String, Digest>{};
-  // Paths refused before the login ever succeeded.
-  final early = <String, Digest>{};
+  // One probe per login at a time; refusals meanwhile share it.
+  final probes = <Digest, Future<int?>>{};
   Digest? wrong;
-  Digest? worked;
   Digest? last;
   // Every login change and account removal reloads the accounts, and so
   // do other account edits; only a different stored login rebuilds.
@@ -69,6 +71,8 @@ RobotClient robotApi(Ref ref, String accountId) {
   final dio = ref.watch(robotDioProvider)(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
+        // A probe carries the refused request's login already.
+        if (options.extra[probing] == true) return handler.next(options);
         final c = await secrets.robot(accountId);
         final sent = c == null ? null : fingerprint(c);
         last = sent;
@@ -82,24 +86,44 @@ RobotClient robotApi(Ref ref, String accountId) {
       },
     ),
   );
+  // Status of `GET /server` with the login [refusedBy] carried; null
+  // when Robot did not answer.
+  Future<int?> probe(RequestOptions refusedBy, Digest sent) =>
+      probes[sent] ??= () async {
+        try {
+          final r = await dio.get<Object?>(
+            server,
+            options: Options(
+              headers: {
+                HttpHeaders.authorizationHeader:
+                    refusedBy.headers[HttpHeaders.authorizationHeader],
+              },
+              extra: {probing: true},
+            ),
+          );
+          return r.statusCode;
+        } on DioException catch (e) {
+          return e.response?.statusCode;
+        } finally {
+          probes.removeWhere((k, _) => k == sent);
+        }
+      }();
+
   // The login a request carried, not the one stored meanwhile.
-  void answered(RequestOptions options, int? status) {
+  Future<void> answered(RequestOptions options, int? status) async {
     final sent = options.extra[login];
     if (sent is! Digest || status == null) return;
     if (status == 401) {
-      if (sent == worked) {
-        refused[options.path] = sent;
-      } else {
+      if (sent == wrong) return;
+      final path = options.path;
+      final check = path == server ? 401 : await probe(options, sent);
+      if (check == 401) {
         wrong = sent;
-        early[options.path] = sent;
+      } else {
+        refused[path] = sent;
       }
-    } else if (status < 400) {
-      worked = sent;
-      if (wrong == sent) wrong = null;
-      for (final e in early.entries) {
-        if (e.value == sent) refused[e.key] = sent;
-      }
-      early.clear();
+    } else if (status < 400 && wrong == sent) {
+      wrong = null;
     }
   }
 
@@ -107,12 +131,12 @@ RobotClient robotApi(Ref ref, String accountId) {
   dio.interceptors.insert(
     0,
     InterceptorsWrapper(
-      onResponse: (r, handler) {
-        answered(r.requestOptions, r.statusCode);
+      onResponse: (r, handler) async {
+        await answered(r.requestOptions, r.statusCode);
         handler.next(r);
       },
-      onError: (e, handler) {
-        answered(e.requestOptions, e.response?.statusCode);
+      onError: (e, handler) async {
+        await answered(e.requestOptions, e.response?.statusCode);
         handler.next(e);
       },
     ),
@@ -232,22 +256,36 @@ Future<List<RobotFirewall>> robotTemplates(Ref ref, String accountId) =>
 /// One template. Robot documents no name in the single template answer,
 /// so an empty one comes from the list (ROB-058); without it the apply
 /// confirmation would have nothing to type and Save would clear the name.
-/// The list is asked directly, not watched: deleting the template reloads
-/// the list and must not reload this one. A failing list leaves the name
-/// empty instead of failing the template.
+/// The list is read, not watched: deleting the template reloads the list
+/// and must not reload this one. The loaded list is used when it has the
+/// template, Robot is asked again only otherwise. Without a name the
+/// template fails: an empty name would let a typed confirmation pass
+/// untyped and Save would clear the name.
 @riverpod
 Future<RobotFirewall> robotTemplate(Ref ref, String accountId, int id) async {
   final api = ref.watch(robotApiProvider(accountId));
-  final t = await api.template(id);
-  if (t.name.isNotEmpty) return t;
-  String name;
+  // Read once by a confirmation: alive until it answers, and the list
+  // with it while it is read.
+  final alive = ref.keepAlive();
+  final list = ref.listen(robotTemplatesProvider(accountId).future, (_, _) {});
+  final RobotFirewall t;
+  String? name;
+  String? nameIn(List<RobotFirewall> list) =>
+      list.where((e) => e.id == id && e.name.isNotEmpty).firstOrNull?.name;
   try {
-    name =
-        (await api.templates()).where((e) => e.id == id).firstOrNull?.name ??
-        '';
-  } on Object {
-    name = '';
+    t = await api.template(id);
+    if (t.name.isNotEmpty) return t;
+    try {
+      name = nameIn(await list.read());
+    } on Object {
+      name = null;
+    }
+  } finally {
+    list.close();
+    alive.close();
   }
+  name ??= nameIn(await api.templates());
+  if (name == null) throw const NotFound();
   return (
     id: id,
     name: name,
