@@ -23,8 +23,8 @@ Future<void> main() async {
   );
   // The lock closes the vault before any background read; then pick up
   // transfers that went on while Falco was closed.
-  final transfers = (container..read(appLockProvider)).read(transfersProvider);
-  unawaited(transfers.start());
+  closeVaultAtStart(container);
+  unawaited(container.read(transfersProvider).start());
   runApp(
     UncontrolledProviderScope(container: container, child: const FalcoApp()),
   );
