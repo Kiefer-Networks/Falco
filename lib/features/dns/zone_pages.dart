@@ -180,19 +180,33 @@ Future<bool> showRecordSheet(
       final known = existing.where((e) => e.key == set.key).firstOrNull;
       final api = ref.read(cloudApiProvider(scope.projectId));
       final tracker = ref.read(actionTrackerProvider(scope));
-      if (known == null) {
-        tracker.track(await createRrset(api, zone.id, set));
-        return;
+      // The RRSet as it is now, not as the list showed it: created
+      // meanwhile it gets the values added, a retry must not add again
+      // what an earlier try added (the API refuses a value the RRSet
+      // has), gone meanwhile it is created anew.
+      Future<RRSet?> current() async {
+        try {
+          return await getRrset(
+            api,
+            zone.id,
+            known?.name ?? set.name,
+            set.type,
+          );
+        } on NotFound {
+          return null;
+        }
       }
-      // The RRSet as it is now: a retry must not add again what an
-      // earlier try added, the API refuses a value the RRSet has. Gone
-      // meanwhile, it is created anew.
-      final RRSet now;
-      try {
-        now = await getRrset(api, zone.id, known.name, known.type);
-      } on NotFound {
-        tracker.track(await createRrset(api, zone.id, set));
-        return;
+
+      var now = await current();
+      if (now == null) {
+        try {
+          tracker.track(await createRrset(api, zone.id, set));
+          return;
+        } on Conflict {
+          // Created between the read and the create.
+          now = await current();
+          if (now == null) rethrow;
+        }
       }
       final records = _newIn(now, set.records);
       final relabel = set.labels.isNotEmpty;
@@ -930,12 +944,27 @@ class RRSetDetailPage extends ConsumerWidget {
                     valid: (v) =>
                         recordsOf(s.type, v['values'] ?? '').isNotEmpty,
                     onSave: (v) async {
+                      // Against the RRSet as it is now: a value added
+                      // meanwhile is not sent again, the API would refuse
+                      // the whole add.
+                      final api = ref.read(cloudApiProvider(scope.projectId));
+                      final tracker = ref.read(actionTrackerProvider(scope));
+                      final now = await getRrset(api, zoneId, s.name, s.type);
                       final records = _newIn(
-                        s,
+                        now,
                         recordsOf(s.type, v['values']!),
                       );
-                      if (records.isNotEmpty) {
-                        await change(AddRecords(records));
+                      if (records.isEmpty) return;
+                      final id = await changeRrset(
+                        api,
+                        zoneId,
+                        now,
+                        AddRecords(records),
+                      );
+                      // A failed add must not close the form as saved.
+                      final added = await tracker.track(id).last;
+                      if (added.status != ActionStatus.success) {
+                        throw ActionFailed(code: added.errorCode);
                       }
                     },
                   ),

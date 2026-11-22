@@ -502,6 +502,26 @@ void main() {
     await settleAction(tester);
   });
 
+  testWidgets('DNS-007 an RRSet created meanwhile gets the values added', (
+    tester,
+  ) async {
+    final cloud = await openZone(tester);
+    cloud.rrsets[5]!.add(
+      rrsetJson(zone: 5, name: 'mail', type: 'A', values: ['203.0.113.7']),
+    );
+    await tile(tester, 'Add record');
+    await enter(tester, 'name', 'mail');
+    await enter(tester, 'values', '203.0.113.7\n203.0.113.8');
+    await tap(tester, 'Save');
+    expect(cloud.calls, isNot(contains('POST /zones/5/rrsets')));
+    expect(cloud.body('POST /zones/5/rrsets/mail/A/actions/add_records'), {
+      'records': [
+        {'value': '203.0.113.8'},
+      ],
+    });
+    await settleAction(tester);
+  });
+
   testWidgets('DNS-018 DNS-019 TSIG of primaries is kept and editable', (
     tester,
   ) async {
@@ -647,6 +667,23 @@ void main() {
       await settleAction(tester);
     });
 
+    testWidgets('DNS-007 a value added meanwhile is not added again', (
+      tester,
+    ) async {
+      final cloud = await openSet(tester);
+      final www = cloud.rrsets[5]!.firstWhere((r) => r['name'] == 'www');
+      (www['records']! as List).add({'value': 'cdn.example.net.'});
+      await tile(tester, 'Add value');
+      await enter(tester, 'values', 'cdn.example.net\nalt.example.net');
+      await tap(tester, 'Save');
+      expect(cloud.body('POST /zones/5/rrsets/www/CNAME/actions/add_records'), {
+        'records': [
+          {'value': 'alt.example.net.'},
+        ],
+      });
+      await settleAction(tester);
+    });
+
     testWidgets('DNS-010 DNS-028 DNS-030 TTL, labels, protection', (
       tester,
     ) async {
@@ -731,6 +768,20 @@ void main() {
       recordKey('MX', '10 mail.example.com.'),
     );
     expect(recordKey('TXT', '"A"'), isNot(recordKey('TXT', '"a"')));
+    expect(
+      recordKey('CAA', '0 issue "a  b"'),
+      isNot(recordKey('CAA', '0 issue "a b"')),
+    );
+    expect(
+      recordKey('CAA', '0  issue "a  b"'),
+      recordKey('CAA', '0 issue "a  b"'),
+    );
+    expect(
+      recordKey('DS', '2371 13 2 1F987CC6583E 92DF0890'),
+      recordKey('DS', '2371  13 2 1f987cc6583e92df0890'),
+    );
+    expect(recordKey('TLSA', '3 1 1 AB CD'), recordKey('TLSA', '3 1 1 abcd'));
+    expect(recordKey('SSHFP', '4 2 AB CD'), recordKey('SSHFP', '4 2 abcd'));
     const set = RRSet(
       name: '@',
       type: 'AAAA',
