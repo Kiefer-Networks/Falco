@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:background_downloader/background_downloader.dart'
     show BaseDirectory, Task;
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'text_files.g.dart';
@@ -27,6 +28,12 @@ String? decodeText(List<int> bytes) {
     return null;
   }
 }
+
+/// Whether [e] refuses a pick because the picker is still open (a second
+/// tap): the first pick goes on, so callers report nothing.
+bool pickerBusy(Object e) =>
+    e is PlatformException &&
+    (e.code == 'multiple_request' || e.code == 'already_active');
 
 /// The system file dialogs for text.
 class TextFiles {

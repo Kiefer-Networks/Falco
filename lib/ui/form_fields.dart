@@ -168,6 +168,9 @@ class _FormFieldsState extends State<FormFields> {
               keyboardType: f.multiline ? TextInputType.multiline : null,
               autocorrect: !f.secret,
               enableSuggestions: !f.secret,
+              // Names, values and labels are technical input.
+              smartDashesType: SmartDashesType.disabled,
+              smartQuotesType: SmartQuotesType.disabled,
               maxLength: f.maxLength,
               onChanged: (v) => _set(f.key, v),
               decoration: InputDecoration(

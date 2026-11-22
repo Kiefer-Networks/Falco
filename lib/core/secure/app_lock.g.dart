@@ -80,7 +80,7 @@ final class AuthenticatorProvider
   }
 }
 
-String _$authenticatorHash() => r'dfe8b4eec0b4621bffaeddce09deb23c2cef50b8';
+String _$authenticatorHash() => r'8dac920b2b725f4ea5484d07c40b41e26db0ea78';
 
 /// App lock: locked at start and after the auto lock time in background,
 /// both only while the lock is on in the settings (SET-007, SET-010).

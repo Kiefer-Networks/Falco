@@ -47,7 +47,7 @@ String typeSpecs(ServerType t, AppLocalizations l10n) => [
         i,
   ]..sort((a, b) => a.kind.index.compareTo(b.kind.index));
   return (
-    options: {for (final i in usable) '${i.id}': i.description},
+    options: {for (final i in usable) '${i.id}': i.label},
     details: {
       for (final i in usable)
         '${i.id}': [
@@ -418,6 +418,8 @@ class _CreateServerPageState extends ConsumerState<CreateServerPage> {
                 minLines: 3,
                 maxLines: 8,
                 autocorrect: false,
+                smartDashesType: SmartDashesType.disabled,
+                smartQuotesType: SmartQuotesType.disabled,
                 style: FalcoText.of(context).mono,
                 onChanged: (v) => setState(() => _userData = v),
                 decoration: InputDecoration(

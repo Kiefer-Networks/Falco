@@ -419,6 +419,14 @@ void main() {
       expect(await secrets.cloudToken('p1'), 't1');
     });
 
+    test('system prompts follow the system languages like the app, '
+        'English when none is supported', () {
+      const system = [Locale('fr'), Locale('de')];
+      expect(promptL10n(null, system).localeName, 'de');
+      expect(promptL10n('en', system).localeName, 'en');
+      expect(promptL10n(null, const [Locale('fr')]).localeName, 'en');
+    });
+
     test('the vault prompt is localized before the first vault access '
         '(T28)', () async {
       final c = ProviderContainer(

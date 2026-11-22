@@ -755,7 +755,7 @@ void main() {
           id: id,
           projectId: 'p1',
           kind: ImageKind.system,
-          description: 'image $id',
+          description: id == 4 ? '' : 'image $id',
           status: status ?? ResourceStatus.available,
           architecture: 'x86',
           created: DateTime(2026),
@@ -766,12 +766,14 @@ void main() {
         image(1),
         image(2, disk: 80),
         image(3, status: ResourceStatus.initializing),
+        image(4),
       ],
       'x86',
       40,
       AppLocalizationsEn(),
     );
-    expect(boot.options.keys, ['1']);
+    // A snapshot without description shows as its id.
+    expect(boot.options, {'1': 'image 1', '4': '#4'});
   });
 
   testWidgets('the Images tile counts own images only', (tester) async {

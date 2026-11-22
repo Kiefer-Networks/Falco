@@ -295,7 +295,8 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
       picked = await ref
           .read(textFilesProvider)
           .pick(maxBytes: maxZonefileBytes);
-    } on Exception catch (_) {
+    } on Exception catch (e) {
+      if (pickerBusy(e)) return;
       if (mounted) FalcoScaffold.showSnack(context, l10n.actionFailed);
       return;
     }

@@ -231,9 +231,16 @@ class ConfirmSheet extends StatefulWidget {
 
   /// Whether [input] confirms [resourceName] at level 2; an empty name
   /// never does.
+  /// Typographic dashes and quotes a keyboard may still insert count as
+  /// the plain ones (`--` becomes an em dash on iOS).
   static bool matches(String input, String resourceName) {
-    final name = resourceName.trim();
-    return name.isNotEmpty && input.trim() == name;
+    String plain(String s) => s
+        .trim()
+        .replaceAll(RegExp('[\u2013\u2014]'), '--')
+        .replaceAll(RegExp('[\u2018\u2019]'), "'")
+        .replaceAll(RegExp('[\u201C\u201D]'), '"');
+    final name = plain(resourceName);
+    return name.isNotEmpty && plain(input) == name;
   }
 
   /// Question, e.g. "Reboot db-primary?".
@@ -320,6 +327,8 @@ class _ConfirmSheetState extends State<ConfirmSheet> {
             key: const ValueKey('confirm-name'),
             autocorrect: false,
             enableSuggestions: false,
+            smartDashesType: SmartDashesType.disabled,
+            smartQuotesType: SmartQuotesType.disabled,
             onChanged: (v) => setState(() => _input = v),
             decoration: InputDecoration(
               labelText: l10n.confirmTypeNameLabel,

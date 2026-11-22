@@ -83,7 +83,11 @@ class CloudServer {
     architecture: s.serverType.architecture.name,
     // Location, not datacenter (BUG-011).
     location: s.location.name,
-    image: s.image?.description,
+    image: switch (s.image) {
+      null => null,
+      final i when i.description.trim().isEmpty => '#${i.id}',
+      final i => i.description,
+    },
     // The server carries the ISO; no extra call (CMP-037).
     iso: s.iso == null ? null : (s.iso!.name ?? s.iso!.description),
     placementGroup: s.placementGroup == null

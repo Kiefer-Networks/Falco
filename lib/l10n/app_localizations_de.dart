@@ -387,7 +387,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get lockPromptSubtitle =>
-      'Nutze Fingerabdruck, Gesicht oder Geräte-PIN';
+      'Nutze Fingerabdruck, Gesicht oder Geräte PIN';
 
   @override
   String get vaultLostTitle => 'Zugangsdaten gelöscht';

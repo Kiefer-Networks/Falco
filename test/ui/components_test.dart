@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:falco/core/errors/falco_error.dart';
+import 'package:falco/core/files/text_files.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/services.dart';
@@ -25,6 +26,19 @@ void main() {
       // A name with blanks around it is typed without them.
       expect(ConfirmSheet.matches('notes', 'notes '), isTrue);
       expect(ConfirmSheet.matches(' ', ' '), isFalse);
+      // Typographic dashes and quotes from the keyboard count as plain.
+      expect(
+        ConfirmSheet.matches('xn\u2014mnchen-3ya.de', 'xn--mnchen-3ya.de'),
+        isTrue,
+      );
+      expect(ConfirmSheet.matches('Bob\u2019s Mac', "Bob's Mac"), isTrue);
+    });
+
+    test('a second pick while the picker is open is no failure', () {
+      expect(pickerBusy(PlatformException(code: 'multiple_request')), isTrue);
+      expect(pickerBusy(PlatformException(code: 'already_active')), isTrue);
+      expect(pickerBusy(PlatformException(code: 'read_failed')), isFalse);
+      expect(pickerBusy(Exception()), isFalse);
     });
 
     testWidgets('QRS-010 confirm stays disabled until the name matches', (
