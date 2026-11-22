@@ -310,6 +310,13 @@ void main() {
       expect(find.text('new.txt'), findsOneWidget);
     });
 
+    testWidgets('a failing picker shows an error', (tester) async {
+      final cloud = await openBucket(tester);
+      cloud.files.pickError = PlatformException(code: 'already_active');
+      await tap(tester, 'Upload');
+      expect(find.text('The action failed.'), findsOneWidget);
+    });
+
     testWidgets('each finished transfer shows, a sheet defers it', (
       tester,
     ) async {
@@ -634,7 +641,7 @@ void main() {
           .read(s3AccessProvider)
           .run('p1', 'fsn1', (s) => s.createMultipart('media', 'x', 'a/b'));
       final transfers = c.read(transfersProvider);
-      final dir = Directory('${transfers.partsRoot}/x1')..createSync();
+      final dir = Directory('${await transfers.partsRoot()}/x1')..createSync();
       final events = transfers.events.first;
       await c
           .read(transfersProvider)
@@ -680,7 +687,7 @@ void main() {
       );
       expect(await event, (upload: true, ok: false, name: 'big.bin'));
       expect(cloud.storage.uploads, hasLength(1));
-      expect(Directory(transfers.partsRoot).listSync(), hasLength(1));
+      expect(Directory(await transfers.partsRoot()).listSync(), hasLength(1));
       // The job is kept apart from the part copies in temporary space.
       final jobs = Directory(await transfers.jobsRoot());
       expect(jobs.listSync(), hasLength(1));
@@ -692,7 +699,7 @@ void main() {
         cloud.storage.buckets['fsn1']!['media']!.objects['big.bin']!.size,
         20,
       );
-      expect(Directory(transfers.partsRoot).listSync(), isEmpty);
+      expect(Directory(await transfers.partsRoot()).listSync(), isEmpty);
       expect(jobs.listSync(), isEmpty);
     });
 
@@ -737,6 +744,7 @@ void main() {
       final transfers = c.read(transfersProvider);
       final events = <TransferEvent>[];
       transfers.events.listen(events.add);
+      final failed = transfers.events.first;
       final source = Directory.systemTemp.createTempSync(uploadCopyPrefix);
       await transfers.upload(
         projectId: 'p1',
@@ -746,11 +754,13 @@ void main() {
         file: File('${source.path}/big.bin')..writeAsStringSync('x' * 20),
         contentType: 'application/octet-stream',
       );
-      await pumpEventQueue();
+      // Reported once the last part is sent, not while others upload.
+      await failed;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
       // Three part events, one failure.
       expect(events, [(upload: true, ok: false, name: 'big.bin')]);
       expect(
-        Directory(transfers.partsRoot)
+        Directory(await transfers.partsRoot())
             .listSync(recursive: true)
             .whereType<File>(),
         isEmpty,
@@ -765,19 +775,51 @@ void main() {
       final transfers = c.read(transfersProvider);
       final events = <TransferEvent>[];
       transfers.events.listen(events.add);
-      final old = DateTime.now().subtract(
-        transferLinkExpiry + refusedJoinLimit + const Duration(hours: 1),
-      );
+      // Started "days ago" by a clock off: the refusals just began.
       final file = await job(c, 'x1', {
         'e': true,
-        't': old.millisecondsSinceEpoch,
+        't': DateTime.now()
+            .subtract(const Duration(days: 30))
+            .millisecondsSinceEpoch,
       });
-      final parts = Directory('${transfers.partsRoot}/x1')..createSync();
+      final parts = Directory('${await transfers.partsRoot()}/x1')
+        ..createSync();
+      await transfers.retryJoins();
+      expect(file.existsSync(), isTrue);
+      final first = jsonDecode(file.readAsStringSync()) as Map;
+      expect(first['r'], isA<int>());
+      // Refused since longer than the limit.
+      final old = DateTime.now().subtract(
+        refusedJoinLimit + const Duration(hours: 1),
+      );
+      file.writeAsStringSync(
+        jsonEncode({...first, 'r': old.millisecondsSinceEpoch}),
+      );
       await transfers.retryJoins();
       await transfers.retryJoins();
       expect(events, [(upload: true, ok: false, name: 'x')]);
       expect(file.existsSync(), isFalse);
       expect(parts.existsSync(), isFalse);
+      // The abort was tried.
+      expect(s3Calls(cloud).where((c) => c.startsWith('DELETE')), isNotEmpty);
+    });
+
+    test('a refusal for the device clock never gives up', () async {
+      final cloud = storageCloud()
+        ..storage.forbidParts = 100
+        ..storage.forbidCode = 'RequestTimeTooSkewed';
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider);
+      final old = DateTime.now().subtract(
+        refusedJoinLimit + const Duration(hours: 1),
+      );
+      final file = await job(c, 'x1', {
+        'e': true,
+        't': old.millisecondsSinceEpoch,
+        'r': old.millisecondsSinceEpoch,
+      });
+      await transfers.retryJoins();
+      expect(file.existsSync(), isTrue);
     });
 
     test('a finished single upload drops the picked copy', () async {
@@ -879,7 +921,7 @@ void main() {
         throwsStateError,
       );
       expect(cloud.storage.uploads, isEmpty);
-      expect(Directory(transfers.partsRoot).listSync(), isEmpty);
+      expect(Directory(await transfers.partsRoot()).listSync(), isEmpty);
       expect(Directory(await transfers.jobsRoot()).listSync(), isEmpty);
     });
 
@@ -966,6 +1008,95 @@ void main() {
         ..modified = DateTime.now().toUtc();
       await transfers.retryJoins();
       expect(events, [(upload: true, ok: true, name: 'x')]);
+    });
+
+    test('a lost join of the same content is found by its date', () async {
+      final cloud = storageCloud();
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider);
+      final events = <TransferEvent>[];
+      transfers.events.listen(events.add);
+      final before = DateTime.now().subtract(const Duration(hours: 1));
+      final start = DateTime.now().subtract(const Duration(minutes: 5));
+      for (final known in [
+        // The same ETag as before, written later.
+        {'pe': '"j-2"', 'pm': before.millisecondsSinceEpoch},
+        // The object before unknown: written since the upload started.
+        {'pu': true},
+      ]) {
+        await job(c, 'x1', {
+          'e': true,
+          't': start.millisecondsSinceEpoch,
+          ...known,
+        });
+        cloud.storage.uploads.clear();
+        cloud.storage.buckets['fsn1']!['media']!.objects['x'] = FakeObject(1)
+          ..etag = '"j-2"'
+          ..modified = DateTime.now().toUtc();
+        await transfers.retryJoins();
+      }
+      expect(events, [
+        (upload: true, ok: true, name: 'x'),
+        (upload: true, ok: true, name: 'x'),
+      ]);
+    });
+
+    test('an empty file is put directly', () async {
+      final cloud = storageCloud();
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider) as FakeTransfers;
+      final done = transfers.events.first;
+      await transfers.upload(
+        projectId: 'p1',
+        location: 'fsn1',
+        bucket: 'media',
+        key: 'empty.txt',
+        file: tempFile('empty.txt', ''),
+        contentType: 'text/plain',
+      );
+      expect(await done, (upload: true, ok: true, name: 'empty.txt'));
+      expect(transfers.uploadTasks, isEmpty);
+      expect(
+        cloud.storage.buckets['fsn1']!['media']!.objects['empty.txt']!.size,
+        0,
+      );
+      expect(cloud.storage.putTypes['empty.txt'], 'text/plain');
+    });
+
+    test('a refused part listing while parts upload stays silent', () async {
+      final cloud = storageCloud()..storage.forbidParts = 1;
+      final c = await fakeContainer(cloud, s3: true);
+      final id = await c
+          .read(s3AccessProvider)
+          .run('p1', 'fsn1', (s) => s.createMultipart('media', 'x', 'a/b'));
+      final transfers = c.read(transfersProvider);
+      final events = <TransferEvent>[];
+      transfers.events.listen(events.add);
+      final dir = Directory('${await transfers.partsRoot()}/x1')
+        ..createSync(recursive: true);
+      File('${dir.path}/1').createSync();
+      // Part 2 still uploads.
+      File('${dir.path}/2').createSync();
+      await transfers.onStatus(
+        TaskStatusUpdate(
+          UploadTask(
+            url: 'https://fsn1.your-objectstorage.com/media/x?partNumber=1',
+            filename: '1',
+            metaData: jsonEncode({
+              'p': 'p1',
+              'l': 'fsn1',
+              'b': 'media',
+              'k': 'x',
+              'u': id,
+              'n': 2,
+              'd': 'x1',
+            }),
+          ),
+          TaskStatus.complete,
+        ),
+      );
+      expect(events, isEmpty);
+      expect(File('${dir.path}/2').existsSync(), isTrue);
     });
 
     test('an older multipart object does not pass for a lost join', () async {

@@ -6,6 +6,8 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:background_downloader/background_downloader.dart'
+    show BaseDirectory, Task;
 import 'package:file_picker/file_picker.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -31,8 +33,11 @@ class TextFiles {
   const new();
 
   /// Lets the user pick a file of at most [maxBytes]; null when cancelled.
+  /// A failing picker or file throws (`PlatformException`,
+  /// [FileSystemException]); the picker's copy is gone then too.
   Future<PickedText?> pick({required int maxBytes}) async {
-    final file = (await FilePicker.pickFiles()).firstOrNull;
+    // One file only: a further selected one would leave its copy behind.
+    final file = await FilePicker.pickFile();
     if (file == null) return null;
     try {
       if ((await file.length() ?? 0) > maxBytes) {
@@ -55,15 +60,27 @@ class TextFiles {
   }
 
   /// Lets the user pick any file to upload (OBJ-007); null when
-  /// cancelled. A picked document without a path is copied to a
-  /// temporary file named like it.
+  /// cancelled. A picked document without a path is copied to a file
+  /// named like it below [uploadCopyRoot]. Throws like [pick], with no
+  /// copy left behind.
   Future<File?> pickFile() async {
-    final f = (await FilePicker.pickFiles()).firstOrNull;
+    final f = await FilePicker.pickFile();
     if (f == null) return null;
     if (f.path case final path?) return File(path);
-    final dir = await Directory.systemTemp.createTemp(uploadCopyPrefix);
+    final root = await uploadCopyRoot();
+    await root.create(recursive: true);
+    final dir = await root.createTemp(uploadCopyPrefix);
     final copy = '${dir.path}/${f.name}';
-    await f.xFile.saveTo(copy);
+    try {
+      await f.xFile.saveTo(copy);
+    } on Exception {
+      try {
+        await dir.delete(recursive: true);
+      } on FileSystemException {
+        // Already gone.
+      }
+      rethrow;
+    }
     return File(copy);
   }
 
@@ -131,21 +148,33 @@ String? pickerCopyDir(String? path) {
   return null;
 }
 
-/// Name start of the temporary folders [TextFiles.pickFile] copies a
-/// picked document without a path into.
+/// Name start of the folders [TextFiles.pickFile] copies a picked
+/// document without a path into.
 const uploadCopyPrefix = 'falco-upload';
 
+const _copyRootName = 'falco-picked';
+
+/// Where [TextFiles.pickFile] copies picked documents: application
+/// support, not temporary space, which Android empties on each app update
+/// while an upload may still send the copy.
+Future<Directory> uploadCopyRoot() async => Directory(
+  '${await Task.baseDirectoryPath(BaseDirectory.applicationSupport)}'
+  '/$_copyRootName',
+);
+
 /// The folder holding the copy of a file picked for upload at [path]: the
-/// picker's ([pickerCopyDir]) or the temporary one of
-/// [TextFiles.pickFile]. Null for any other path, which is not ours.
+/// picker's ([pickerCopyDir]) or the one of [TextFiles.pickFile] (in
+/// [uploadCopyRoot], or in temporary space before). Null for any other
+/// path, which is not ours.
 String? uploadCopyDir(String? path) {
   if (pickerCopyDir(path) case final dir?) return dir;
   if (path == null) return null;
   final dir = File(path).parent;
-  // Compared by name: the platform may spell the temporary folder through
-  // another link (`/private/var` on iOS).
+  // Compared by name: the platform may spell the folder through another
+  // link (`/private/var` on iOS).
+  final root = _name(dir.parent);
   return _name(dir).startsWith(uploadCopyPrefix) &&
-          _name(dir.parent) == _name(Directory.systemTemp)
+          (root == _copyRootName || root == _name(Directory.systemTemp))
       ? dir.path
       : null;
 }
@@ -165,29 +194,40 @@ Future<void> dropUploadCopy(String? path) async {
   }
 }
 
-/// Deletes the folders in [roots] (whose names start with [prefix])
-/// holding none of the files [inUse]: copies of picked files left behind.
-Future<void> dropUnusedCopies(
-  Iterable<Directory> roots,
-  Set<String> inUse, {
+/// The folders in [roots] whose names start with [prefix]: the copies
+/// [dropUnusedCopies] may delete.
+Future<List<Directory>> copyFolders(
+  Iterable<Directory> roots, {
   String prefix = '',
 }) async {
+  final folders = <Directory>[];
   for (final root in roots) {
     try {
-      await for (final dir in root.list()) {
-        final name = _name(dir);
-        if (dir is! Directory || !name.startsWith(prefix)) continue;
-        // By the folder's unique name: the platform may spell the path
-        // through another link (`/private/var` on iOS).
-        if (inUse.any((p) => p.contains('/$name/'))) continue;
-        try {
-          await dir.delete(recursive: true);
-        } on FileSystemException {
-          // In use by the system, or gone.
-        }
+      await for (final e in root.list()) {
+        if (e is Directory && _name(e).startsWith(prefix)) folders.add(e);
       }
     } on FileSystemException {
       // No such root.
+    }
+  }
+  return folders;
+}
+
+/// Deletes the [folders] holding none of the files [inUse]: copies of
+/// picked files left behind.
+Future<void> dropUnusedCopies(
+  Iterable<Directory> folders,
+  Set<String> inUse,
+) async {
+  for (final dir in folders) {
+    // By the folder's unique name: the platform may spell the path
+    // through another link (`/private/var` on iOS).
+    final name = _name(dir);
+    if (inUse.any((p) => p.contains('/$name/'))) continue;
+    try {
+      await dir.delete(recursive: true);
+    } on FileSystemException {
+      // In use by the system, or gone.
     }
   }
 }

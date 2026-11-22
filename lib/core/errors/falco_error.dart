@@ -195,6 +195,11 @@ Map<String, Object?>? _errorObject(Object? body) {
       return null;
     }
   } else if (data is String) {
+    // S3: `<Error><Code>RequestTimeTooSkewed</Code>…</Error>`.
+    if (RegExp('<Error>.*?<Code>([^<]+)</Code>', dotAll: true).firstMatch(data)
+        case final m?) {
+      return {'code': m[1]};
+    }
     try {
       data = jsonDecode(data);
     } on FormatException {

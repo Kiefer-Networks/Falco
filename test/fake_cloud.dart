@@ -1176,11 +1176,20 @@ class FakeTextFiles extends TextFiles {
   /// What the next save throws, once.
   Exception? saveError;
 
-  @override
-  Future<PickedText?> pick({required int maxBytes}) async => picked;
+  /// What picks throw instead of answering.
+  Exception? pickError;
 
   @override
-  Future<File?> pickFile() async => pickedFile;
+  Future<PickedText?> pick({required int maxBytes}) async {
+    if (pickError case final e?) throw e;
+    return picked;
+  }
+
+  @override
+  Future<File?> pickFile() async {
+    if (pickError case final e?) throw e;
+    return pickedFile;
+  }
 
   @override
   Future<bool> save(String name, String text) async {
