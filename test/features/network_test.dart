@@ -358,6 +358,38 @@ void main() {
       await settleAction(tester);
     });
 
+    testWidgets('NET-005 a rule added meanwhile stays; an applied firewall '
+        'cannot be deleted', (tester) async {
+      final cloud = await openNetwork(
+        tester,
+        'Firewalls',
+        cloud: withFirewall(),
+      );
+      await tap(tester, 'web');
+      expect(
+        find.text(
+          'Still in use. Remove it from all its servers and label selectors '
+          'first, then delete it.',
+        ),
+        findsOneWidget,
+      );
+      // Elsewhere, after the page loaded.
+      (cloud.collections['firewalls']!.first['rules']! as List).add(
+        ruleJson(port: '443', description: 'https'),
+      );
+      await tap(tester, 'Add rule');
+      await enter(tester, 'port', '80');
+      await tap(tester, 'Any IPv4');
+      await tap(tester, 'Save');
+      final rules =
+          cloud.body('POST /firewalls/51/actions/set_rules')['rules']! as List;
+      expect(
+        [for (final r in rules) (r as Map)['port']],
+        ['22', null, '443', '80'],
+      );
+      await settleAction(tester);
+    });
+
     testWidgets('NET-011 NET-012 edit and delete a rule', (tester) async {
       final cloud = await openNetwork(
         tester,
@@ -630,6 +662,21 @@ void main() {
       expect(cloud.body('POST /floating_ips/62/actions/change_protection'), {
         'delete': true,
       });
+      await settleAction(tester);
+      // The API refuses to delete an assigned IP: unassign first.
+      expect(
+        find.text(
+          'The IP is still assigned. Unassign it from its server first, '
+          'then delete it.',
+        ),
+        findsOneWidget,
+      );
+      await tester.ensureVisible(find.text('Delete'));
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+      expect(find.text('Delete spare-ip?'), findsNothing);
+      await tap(tester, 'Unassign');
+      await confirm(tester, 'Unassign');
       await settleAction(tester);
       await tap(tester, 'Delete');
       // The Floating IP's own texts, never another type's (BUG-001).

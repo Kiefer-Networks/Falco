@@ -372,8 +372,10 @@ class IpDetailPage extends ConsumerWidget {
           activitySection(l10n, scope, type, ip.id),
         ],
         dangerZone: [
+          // The API refuses to delete an assigned IP (must_be_unassigned).
+          if (ip.server != null) Text(l10n.errorMustBeUnassigned),
           DeleteButton(
-            onPressed: busy
+            onPressed: busy || ip.server != null
                 ? null
                 : () => deleteResource(
                     context,

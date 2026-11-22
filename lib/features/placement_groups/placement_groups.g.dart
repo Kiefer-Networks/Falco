@@ -70,7 +70,7 @@ final class PlacementGroupsProvider
   }
 }
 
-String _$placementGroupsHash() => r'a3ef256a9529ec3d4a0d2da9c4ade5f0682971f0';
+String _$placementGroupsHash() => r'5deed683cfbe622d360aca40639d077d6931833e';
 
 /// All placement groups of [scope] (CMP-065).
 
@@ -94,12 +94,14 @@ final class PlacementGroupsFamily extends $Family
   String toString() => r'placementGroupsProvider';
 }
 
-/// One placement group with its servers (CMP-069).
+/// One placement group with its servers (CMP-069). Read as raw JSON: a
+/// type unknown to the spec decodes, but cannot be encoded again.
 
 @ProviderFor(placementGroup)
 final placementGroupProvider = PlacementGroupFamily._();
 
-/// One placement group with its servers (CMP-069).
+/// One placement group with its servers (CMP-069). Read as raw JSON: a
+/// type unknown to the spec decodes, but cannot be encoded again.
 
 final class PlacementGroupProvider
     extends
@@ -109,7 +111,8 @@ final class PlacementGroupProvider
           FutureOr<PlacementGroup>
         >
     with $FutureModifier<PlacementGroup>, $FutureProvider<PlacementGroup> {
-  /// One placement group with its servers (CMP-069).
+  /// One placement group with its servers (CMP-069). Read as raw JSON: a
+  /// type unknown to the spec decodes, but cannot be encoded again.
   PlacementGroupProvider._({
     required PlacementGroupFamily super.from,
     required (ProjectScope, int) super.argument,
@@ -154,9 +157,10 @@ final class PlacementGroupProvider
   }
 }
 
-String _$placementGroupHash() => r'a8c1d63b0ef04d576de2246f9aefbbcba6e6b050';
+String _$placementGroupHash() => r'869e66485dc0695d3a5d78e5ba9cb6d7d13bce31';
 
-/// One placement group with its servers (CMP-069).
+/// One placement group with its servers (CMP-069). Read as raw JSON: a
+/// type unknown to the spec decodes, but cannot be encoded again.
 
 final class PlacementGroupFamily extends $Family
     with
@@ -173,7 +177,8 @@ final class PlacementGroupFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// One placement group with its servers (CMP-069).
+  /// One placement group with its servers (CMP-069). Read as raw JSON: a
+  /// type unknown to the spec decodes, but cannot be encoded again.
 
   PlacementGroupProvider call(ProjectScope scope, int groupId) =>
       PlacementGroupProvider._(argument: (scope, groupId), from: this);

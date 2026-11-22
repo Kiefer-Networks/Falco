@@ -34,17 +34,14 @@ class PlacementGroup {
     this.labels = const {},
   });
 
-  factory fromModel(
-    cloud.PlacementGroupsGet200BodyPlacementGroupsArrayModel g,
-    String p,
-  ) => PlacementGroup(
-    id: g.id,
+  factory fromJson(Json g, String p) => PlacementGroup(
+    id: g['id']! as int,
     projectId: p,
-    name: g.name,
-    type: g.$type.name,
-    servers: g.servers,
-    labels: g.labels,
-    created: g.created,
+    name: g['name']! as String,
+    type: g['type']! as String,
+    servers: [...?(g['servers'] as List?)?.cast<int>()],
+    labels: json(g['labels']).cast<String, String>(),
+    created: DateTime.parse(g['created']! as String),
   );
 
   final int id;
@@ -62,38 +59,29 @@ Future<List<PlacementGroup>> placementGroups(Ref ref, Scope scope) =>
     perProject(
       ref,
       scope,
-      (api, projectId) => fetchAll((page) async {
-        final r = await unwrap(
-          cloud.PlacementGroupsApi(api)
-              .listPlacementGroups(page: page, perPage: maxPerPage),
-        );
-        if (r is! cloud.ListPlacementGroupsResponse200) throw const Server();
-        return (
-          items: [
-            for (final g in r.body.placementGroups)
-              PlacementGroup.fromModel(g, projectId),
-          ],
-          nextPage: r.body.meta.pagination.nextPage,
-        );
-      }),
+      (api, projectId) => fetchAllJson(
+        (page) =>
+            cloud.PlacementGroupsApi(api)
+                .listPlacementGroups(page: page, perPage: maxPerPage),
+        'placement_groups',
+        (g) => PlacementGroup.fromJson(g, projectId),
+      ),
     );
 
-/// One placement group with its servers (CMP-069).
+/// One placement group with its servers (CMP-069). Read as raw JSON: a
+/// type unknown to the spec decodes, but cannot be encoded again.
 @riverpod
 Future<PlacementGroup> placementGroup(
   Ref ref,
   ProjectScope scope,
   int groupId,
 ) async {
-  final api = cloud.PlacementGroupsApi(
-    ref.watch(cloudApiProvider(scope.projectId)),
+  final body = await cloudJson(
+    cloud.PlacementGroupsApi(ref.watch(cloudApiProvider(scope.projectId)))
+        .getPlacementGroup(id: groupId),
   );
-  final r = await unwrap(api.getPlacementGroup(id: groupId));
-  if (r is! cloud.GetPlacementGroupResponse200) throw const NotFound();
-  return PlacementGroup.fromModel(
-    cloud.PlacementGroupsGet200BodyPlacementGroupsArrayModel.fromJson(
-      r.body.placementGroup.toJson(),
-    ),
+  return PlacementGroup.fromJson(
+    json(body['placement_group']),
     scope.projectId,
   );
 }

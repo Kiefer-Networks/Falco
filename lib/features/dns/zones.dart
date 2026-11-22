@@ -178,8 +178,11 @@ Future<List<Zone>> zones(Ref ref, Scope scope) => perProject(
 
 /// One zone (DNS-005).
 @riverpod
-Future<Zone> zone(Ref ref, ProjectScope scope, int zoneId) async {
-  final api = ref.watch(cloudApiProvider(scope.projectId));
+Future<Zone> zone(Ref ref, ProjectScope scope, int zoneId) =>
+    getZone(ref.watch(cloudApiProvider(scope.projectId)), scope, zoneId);
+
+/// One zone as the server has it now.
+Future<Zone> getZone(cloud.Server api, ProjectScope scope, int zoneId) async {
   final body = await cloudJson(
     cloud.ZonesApi(api).getZone(idOrName: '$zoneId'),
   );
@@ -588,4 +591,21 @@ String normalizeRecord(String type, String value) {
   final host = parts.last;
   if (host.endsWith('.') || !host.contains('.')) return v;
   return [...parts.take(parts.length - 1), '$host.'].join(' ');
+}
+
+/// What tells two values of [type] apart for the API: an address by its
+/// bytes (`2001:DB8::1` is `2001:db8:0:0:0:0:0:1`), host names in any
+/// case, runs of spaces as one. Compares values the user typed with
+/// those the server sends back.
+String recordKey(String type, String value) {
+  final v = value.trim();
+  if (type == 'TXT') return v;
+  final spaced = v.replaceAll(RegExp(r'\s+'), ' ');
+  try {
+    if (type == 'A') return Uri.parseIPv4Address(spaced).join('.');
+    if (type == 'AAAA') return Uri.parseIPv6Address(spaced).join('.');
+  } on FormatException {
+    return spaced;
+  }
+  return _hostTypes.contains(type) ? spaced.toLowerCase() : spaced;
 }

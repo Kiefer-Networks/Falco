@@ -311,6 +311,21 @@ void main() {
       expect(cloud.calls, contains('GET /placement_groups/41'));
     });
 
+    testWidgets('CMP-069 a type unknown to the spec still opens', (
+      tester,
+    ) async {
+      final cloud = FakeCloud(
+        placementGroups: [
+          {...placementGroupJson(id: 41, name: 'spread-1'), 'type': 'cluster'},
+        ],
+      );
+      await openTab(tester, 'Placement groups', cloud: cloud);
+      await tap(tester, 'spread-1');
+      expect(cloud.calls, contains('GET /placement_groups/41'));
+      expect(find.textContaining('cluster'), findsWidgets);
+      expect(find.byTooltip('Try again'), findsNothing);
+    });
+
     testWidgets('CMP-066 CMP-091 BUG-008 create with a type from the spec', (
       tester,
     ) async {

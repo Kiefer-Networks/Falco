@@ -469,6 +469,39 @@ void main() {
     await settleAction(tester);
   });
 
+  testWidgets('DNS-017 a primary added meanwhile stays', (tester) async {
+    final cloud = await openZone(tester, 'example.org');
+    // Elsewhere, after the page loaded.
+    (cloud.collections['zones']!.last['primary_nameservers']! as List).add({
+      'address': '192.0.2.55',
+      'port': 53,
+    });
+    await more(tester, 'Add primary nameserver');
+    await enter(tester, 'address', '192.0.2.54');
+    await tap(tester, 'Save');
+    expect(cloud.body('POST /zones/6/actions/change_primary_nameservers'), {
+      'primary_nameservers': [
+        {'address': '192.0.2.53', 'port': 53},
+        {'address': '192.0.2.55', 'port': 53},
+        {'address': '192.0.2.54', 'port': 53},
+      ],
+    });
+    await settleAction(tester);
+  });
+
+  testWidgets('DNS-007 an RRSet deleted meanwhile is created anew', (
+    tester,
+  ) async {
+    final cloud = await openZone(tester);
+    cloud.rrsets[5]!.removeWhere((r) => r['name'] == '@' && r['type'] == 'A');
+    await tile(tester, 'Add record');
+    await enter(tester, 'values', '203.0.113.2');
+    await tap(tester, 'Save');
+    expect(cloud.body('POST /zones/5/rrsets'), containsPair('type', 'A'));
+    expect(find.widgetWithText(FilledButton, 'Save'), findsNothing);
+    await settleAction(tester);
+  });
+
   testWidgets('DNS-018 DNS-019 TSIG of primaries is kept and editable', (
     tester,
   ) async {
@@ -571,6 +604,24 @@ void main() {
       },
     );
 
+    testWidgets('DNS-010 a value edit keeps values added meanwhile', (
+      tester,
+    ) async {
+      final cloud = await openSet(tester);
+      final www = cloud.rrsets[5]!.firstWhere((r) => r['name'] == 'www');
+      (www['records']! as List).add({'value': 'cdn.example.net.'});
+      await tap(tester, 'example.com.');
+      await enter(tester, 'value', 'example.net');
+      await tap(tester, 'Save');
+      expect(cloud.body('POST /zones/5/rrsets/www/CNAME/actions/set_records'), {
+        'records': [
+          {'value': 'example.net.'},
+          {'value': 'cdn.example.net.'},
+        ],
+      });
+      await settleAction(tester);
+    });
+
     testWidgets('DNS-007 DNS-011 add and remove a value', (tester) async {
       final cloud = await openSet(tester);
       await tile(tester, 'Add value');
@@ -668,6 +719,30 @@ void main() {
       '10 5 5060 sip.example.com.',
     );
     expect(normalizeRecord('A', ' 203.0.113.1 '), '203.0.113.1');
+  });
+
+  test('DNS-009 values compare in any spelling', () {
+    expect(recordsOf('AAAA', '2001:DB8::1\n2001:db8:0:0:0:0:0:1'), [
+      (value: '2001:DB8::1', comment: ''),
+    ]);
+    expect(recordKey('A', ' 203.0.113.1 '), recordKey('A', '203.0.113.1'));
+    expect(
+      recordKey('MX', '10  Mail.Example.com.'),
+      recordKey('MX', '10 mail.example.com.'),
+    );
+    expect(recordKey('TXT', '"A"'), isNot(recordKey('TXT', '"a"')));
+    const set = RRSet(
+      name: '@',
+      type: 'AAAA',
+      records: [
+        (value: '2001:db8::1', comment: ''),
+        (value: '2001:db8::2', comment: ''),
+      ],
+    );
+    expect(
+      swapRecord(set, '2001:DB8::2', (value: '2001:db8::1', comment: '')),
+      [(value: '2001:db8::1', comment: '')],
+    );
   });
 
   test('DNS-009 TXT values over 255 bytes go out as several strings', () {

@@ -433,6 +433,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Zugangsdaten bleiben gesperrt: die Prüfung des Systems wurde abgebrochen. Nichts wurde geändert.';
 
   @override
+  String get errorMustBeUnassigned =>
+      'Die IP ist noch zugewiesen. Zuerst von ihrem Server lösen, dann löschen.';
+
+  @override
+  String get errorResourceInUse =>
+      'Noch in Verwendung. Zuerst von allen Servern und Label Selectors entfernen, dann löschen.';
+
+  @override
   String get errorLocalStorage =>
       'Die Datei konnte auf diesem Gerät nicht gelesen oder geschrieben werden. Prüfe den freien Speicherplatz.';
 

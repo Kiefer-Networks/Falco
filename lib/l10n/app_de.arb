@@ -122,6 +122,8 @@
   "errorPinning": "Dem Serverzertifikat wird nicht vertraut. Die Verbindung wurde gestoppt, um deine Zugangsdaten zu schützen.",
   "errorServer": "Der Server hat einen Fehler gemeldet. Versuche es später erneut.",
   "errorLocked": "Die Zugangsdaten bleiben gesperrt: die Prüfung des Systems wurde abgebrochen. Nichts wurde geändert.",
+  "errorMustBeUnassigned": "Die IP ist noch zugewiesen. Zuerst von ihrem Server lösen, dann löschen.",
+  "errorResourceInUse": "Noch in Verwendung. Zuerst von allen Servern und Label Selectors entfernen, dann löschen.",
   "errorLocalStorage": "Die Datei konnte auf diesem Gerät nicht gelesen oder geschrieben werden. Prüfe den freien Speicherplatz.",
   "statusInProgress": "läuft",
   "statusDone": "erledigt",

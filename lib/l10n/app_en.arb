@@ -135,6 +135,8 @@
   "errorPinning": "The server certificate is not trusted. The connection was stopped to protect your access data.",
   "errorServer": "The server reported an error. Try again later.",
   "errorLocked": "Access data stays locked: the system check was cancelled. Nothing was changed.",
+  "errorMustBeUnassigned": "The IP is still assigned. Unassign it from its server first, then delete it.",
+  "errorResourceInUse": "Still in use. Remove it from all its servers and label selectors first, then delete it.",
   "errorLocalStorage": "The file could not be read or written on this device. Check the free storage space.",
   "statusInProgress": "in progress",
   "statusDone": "done",
