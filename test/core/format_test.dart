@@ -26,6 +26,12 @@ void main() {
     });
   });
 
+  test('formatDecimal keeps the digits and the locale', () {
+    expect(formatDecimal(1234.5, 2, 'en'), '1,234.50');
+    expect(formatDecimal(1234.5, 2, 'de'), '1.234,50');
+    expect(formatDecimal(3.25, 0, 'de'), '3');
+  });
+
   group('formatRelative', () {
     final now = DateTime(2026, 11, 21, 12);
     final en = AppLocalizationsEn();

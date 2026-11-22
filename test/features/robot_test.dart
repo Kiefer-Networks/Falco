@@ -787,6 +787,7 @@ void main() {
       );
       await expectLater(api.servers(), refused);
       await expectLater(api.servers(), refused);
+      await expectLater(api.failovers(), refused);
       expect(sent(), 1);
       await secrets.setRobot(
         'a1',
@@ -799,8 +800,8 @@ void main() {
       expect(sent(), 2);
     });
 
-    test('a refused path blocks only itself until a request succeeds or '
-        'the login is saved', () async {
+    test('after a success a refused path blocks only itself until the '
+        'login changes', () async {
       final cloud = FakeCloud();
       final c = await fakeContainer(cloud, accounts: const [acmeRobot]);
       cloud.robot.failures['failover'] = (
@@ -815,14 +816,27 @@ void main() {
           .length;
       final api = c.read(robotApiProvider('a1'));
       final refused = throwsA(isA<Unauthorized>());
-      await expectLater(api.failovers(), refused);
-      await expectLater(api.failovers(), refused);
-      expect(sent('/failover'), 1);
       await api.servers();
       await expectLater(api.failovers(), refused);
-      expect(sent('/failover'), 2);
+      await expectLater(api.failovers(), refused);
+      await api.servers();
+      await expectLater(api.failovers(), refused);
+      expect(sent('/failover'), 1);
+      expect(sent('/server'), 2);
+      // An account reload with the same login keeps the client.
       c.invalidate(accountsProvider);
       await c.read(accountsProvider.future);
+      await pumpEventQueue();
+      expect(c.read(robotApiProvider('a1')), same(api));
+      await c
+          .read(secretStoreProvider)
+          .setRobot(
+            'a1',
+            const RobotCredentials(user: 'other', password: fakeRobotPassword),
+          );
+      c.invalidate(accountsProvider);
+      await c.read(accountsProvider.future);
+      await pumpEventQueue();
       expect(c.read(robotApiProvider('a1')), isNot(same(api)));
     });
   });

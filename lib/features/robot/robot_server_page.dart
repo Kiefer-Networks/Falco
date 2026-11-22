@@ -211,9 +211,21 @@ class _ServerDetail extends ConsumerWidget {
               AsyncData(value: final t?) => DetailSection(
                 title: l10n.trafficMonth,
                 facts: [
-                  Fact(l10n.trafficIn, text: gbText(t.inGb), mono: true),
-                  Fact(l10n.trafficOut, text: gbText(t.outGb), mono: true),
-                  Fact(l10n.trafficSum, text: gbText(t.sumGb), mono: true),
+                  Fact(
+                    l10n.trafficIn,
+                    text: gbText(t.inGb, l10n.localeName),
+                    mono: true,
+                  ),
+                  Fact(
+                    l10n.trafficOut,
+                    text: gbText(t.outGb, l10n.localeName),
+                    mono: true,
+                  ),
+                  Fact(
+                    l10n.trafficSum,
+                    text: gbText(t.sumGb, l10n.localeName),
+                    mono: true,
+                  ),
                 ],
               ),
               _ => DetailSection(
@@ -607,5 +619,5 @@ String bootText(String kind, AppLocalizations l10n) => switch (kind) {
 String lastBootText(String kind, AppLocalizations l10n) =>
     kind == BootKind.rescue ? l10n.bootLastRescue : l10n.bootLastLinux;
 
-/// Gigabytes with two decimals.
-String gbText(double gb) => '${gb.toStringAsFixed(2)} GB';
+/// Gigabytes with two decimals in [locale].
+String gbText(double gb, String locale) => '${formatDecimal(gb, 2, locale)} GB';

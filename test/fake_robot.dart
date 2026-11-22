@@ -590,7 +590,17 @@ class FakeRobot {
             ..['rules'] = _rules(list);
         }
         if (o.method == 'DELETE') templates.remove(t);
-        return (200, o.method == 'DELETE' ? null : {'firewall_template': t});
+        // Robot documents no name in the single template answer.
+        return (
+          200,
+          switch (o.method) {
+            'DELETE' => null,
+            'GET' => {
+              'firewall_template': {...t}..remove('name'),
+            },
+            _ => {'firewall_template': t},
+          },
+        );
       case (_, ['firewall', final n]):
         final number = int.parse(n);
         final fw = firewalls.putIfAbsent(

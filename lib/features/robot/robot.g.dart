@@ -9,31 +9,34 @@ part of 'robot.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// The Robot webservice of an account; the login is read per request.
-/// Once Robot refuses a login on a path, requests to that path with
-/// that login fail at once as [Unauthorized] until it changes or any
-/// request succeeds. So a wrong password is not sent again for every
-/// list, and a section the login may not use blocks no other. Saving or
-/// deleting the login and removing the account rebuild the client.
+/// A login Robot refuses before it ever succeeded is wrong: every
+/// request with it fails at once as [Unauthorized]. Once a login
+/// succeeded, a refusal blocks only that path, a section the login may
+/// not use. Either way it is sent again only after the stored login
+/// changes (ROB-002). A changed login or a removed account rebuilds the
+/// client.
 
 @ProviderFor(robotApi)
 final robotApiProvider = RobotApiFamily._();
 
 /// The Robot webservice of an account; the login is read per request.
-/// Once Robot refuses a login on a path, requests to that path with
-/// that login fail at once as [Unauthorized] until it changes or any
-/// request succeeds. So a wrong password is not sent again for every
-/// list, and a section the login may not use blocks no other. Saving or
-/// deleting the login and removing the account rebuild the client.
+/// A login Robot refuses before it ever succeeded is wrong: every
+/// request with it fails at once as [Unauthorized]. Once a login
+/// succeeded, a refusal blocks only that path, a section the login may
+/// not use. Either way it is sent again only after the stored login
+/// changes (ROB-002). A changed login or a removed account rebuilds the
+/// client.
 
 final class RobotApiProvider
     extends $FunctionalProvider<RobotClient, RobotClient, RobotClient>
     with $Provider<RobotClient> {
   /// The Robot webservice of an account; the login is read per request.
-  /// Once Robot refuses a login on a path, requests to that path with
-  /// that login fail at once as [Unauthorized] until it changes or any
-  /// request succeeds. So a wrong password is not sent again for every
-  /// list, and a section the login may not use blocks no other. Saving or
-  /// deleting the login and removing the account rebuild the client.
+  /// A login Robot refuses before it ever succeeded is wrong: every
+  /// request with it fails at once as [Unauthorized]. Once a login
+  /// succeeded, a refusal blocks only that path, a section the login may
+  /// not use. Either way it is sent again only after the stored login
+  /// changes (ROB-002). A changed login or a removed account rebuilds the
+  /// client.
   RobotApiProvider._({
     required RobotApiFamily super.from,
     required String super.argument,
@@ -85,14 +88,15 @@ final class RobotApiProvider
   }
 }
 
-String _$robotApiHash() => r'd0dadab0da51e10595fad6d8e57420c6900d14c8';
+String _$robotApiHash() => r'60c693e05c46d714204bdd21ee397968e884d989';
 
 /// The Robot webservice of an account; the login is read per request.
-/// Once Robot refuses a login on a path, requests to that path with
-/// that login fail at once as [Unauthorized] until it changes or any
-/// request succeeds. So a wrong password is not sent again for every
-/// list, and a section the login may not use blocks no other. Saving or
-/// deleting the login and removing the account rebuild the client.
+/// A login Robot refuses before it ever succeeded is wrong: every
+/// request with it fails at once as [Unauthorized]. Once a login
+/// succeeded, a refusal blocks only that path, a section the login may
+/// not use. Either way it is sent again only after the stored login
+/// changes (ROB-002). A changed login or a removed account rebuilds the
+/// client.
 
 final class RobotApiFamily extends $Family
     with $FunctionalFamilyOverride<RobotClient, String> {
@@ -106,11 +110,12 @@ final class RobotApiFamily extends $Family
       );
 
   /// The Robot webservice of an account; the login is read per request.
-  /// Once Robot refuses a login on a path, requests to that path with
-  /// that login fail at once as [Unauthorized] until it changes or any
-  /// request succeeds. So a wrong password is not sent again for every
-  /// list, and a section the login may not use blocks no other. Saving or
-  /// deleting the login and removing the account rebuild the client.
+  /// A login Robot refuses before it ever succeeded is wrong: every
+  /// request with it fails at once as [Unauthorized]. Once a login
+  /// succeeded, a refusal blocks only that path, a section the login may
+  /// not use. Either way it is sent again only after the stored login
+  /// changes (ROB-002). A changed login or a removed account rebuilds the
+  /// client.
 
   RobotApiProvider call(String accountId) =>
       RobotApiProvider._(argument: accountId, from: this);
@@ -1615,8 +1620,16 @@ final class RobotTemplatesFamily extends $Family
   String toString() => r'robotTemplatesProvider';
 }
 
+/// One template. Robot documents no name in the single template answer,
+/// so an empty one comes from the list (ROB-058); without it the apply
+/// confirmation would have nothing to type and Save would clear the name.
+
 @ProviderFor(robotTemplate)
 final robotTemplateProvider = RobotTemplateFamily._();
+
+/// One template. Robot documents no name in the single template answer,
+/// so an empty one comes from the list (ROB-058); without it the apply
+/// confirmation would have nothing to type and Save would clear the name.
 
 final class RobotTemplateProvider
     extends
@@ -1626,6 +1639,9 @@ final class RobotTemplateProvider
           FutureOr<RobotFirewall>
         >
     with $FutureModifier<RobotFirewall>, $FutureProvider<RobotFirewall> {
+  /// One template. Robot documents no name in the single template answer,
+  /// so an empty one comes from the list (ROB-058); without it the apply
+  /// confirmation would have nothing to type and Save would clear the name.
   RobotTemplateProvider._({
     required RobotTemplateFamily super.from,
     required (String, int) super.argument,
@@ -1670,7 +1686,11 @@ final class RobotTemplateProvider
   }
 }
 
-String _$robotTemplateHash() => r'27f7bc13a7025c37f16b93994c72dea0ed80d4a9';
+String _$robotTemplateHash() => r'c9efb705695356100b888560f17d2e14bfc081f2';
+
+/// One template. Robot documents no name in the single template answer,
+/// so an empty one comes from the list (ROB-058); without it the apply
+/// confirmation would have nothing to type and Save would clear the name.
 
 final class RobotTemplateFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<RobotFirewall>, (String, int)> {
@@ -1682,6 +1702,10 @@ final class RobotTemplateFamily extends $Family
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
+
+  /// One template. Robot documents no name in the single template answer,
+  /// so an empty one comes from the list (ROB-058); without it the apply
+  /// confirmation would have nothing to type and Save would clear the name.
 
   RobotTemplateProvider call(String accountId, int id) =>
       RobotTemplateProvider._(argument: (accountId, id), from: this);

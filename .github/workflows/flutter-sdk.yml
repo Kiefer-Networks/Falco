@@ -51,8 +51,9 @@ jobs:
             exit 1
           }
           if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
-            if [ "$(gh pr list --head "$branch" --json number --jq length)" != 0 ]; then
-              echo "PR for $branch is open already"
+            if [ "$(gh pr list --head "$branch" --state all --json number --jq length)" != 0 ]; then
+              # Closed or merged counts too, so a declined PR is not reopened.
+              echo "PR for $branch exists already"
             else
               open_pr
             fi
