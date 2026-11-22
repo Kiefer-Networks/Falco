@@ -121,7 +121,7 @@ FirewallRule ruleOf(Map<String, String> v) => FirewallRule(
   inbound: (v['direction'] ?? 'in') == 'in',
   protocol: v['protocol'] ?? 'tcp',
   port: hasPort(v['protocol'] ?? 'tcp')
-      ? v['port']?.trim().toLowerCase()
+      ? v['port']?.replaceAll(RegExp(r'\s'), '').toLowerCase()
       : null,
   ips: splitIps(_ipsOf(v)),
   description: v['description']?.trim(),

@@ -31,6 +31,7 @@ sealed class FalcoError implements Exception {
       PinningFailed() => 'PinningFailed',
       Server() => 'Server',
       Locked() => 'Locked',
+      ActionFailed() => 'ActionFailed',
     };
     return code == null ? name : '$name($code)';
   }
@@ -104,6 +105,13 @@ final class Server extends FalcoError {
 final class Locked extends FalcoError {
   /// Creates the error.
   const new();
+}
+
+/// A started action ended with an error; [code] is the action's error
+/// code, if it sent one.
+final class ActionFailed extends FalcoError {
+  /// Creates the error.
+  const new({super.code});
 }
 
 /// Maps any error thrown by dio or a generated client to a [FalcoError].

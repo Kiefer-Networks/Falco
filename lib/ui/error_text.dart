@@ -14,4 +14,6 @@ String errorText(FalcoError error, AppLocalizations l10n) => switch (error) {
   PinningFailed() => l10n.errorPinning,
   Server() => l10n.errorServer,
   Locked() => l10n.errorLocked,
+  ActionFailed(:final code) =>
+    code == null ? l10n.actionFailed : '${l10n.actionFailed} ($code)',
 };

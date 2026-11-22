@@ -164,23 +164,29 @@ Future<bool> showRecordSheet(
       final known = existing.where((e) => e.key == set.key).firstOrNull;
       final api = ref.read(cloudApiProvider(scope.projectId));
       final tracker = ref.read(actionTrackerProvider(scope));
-      // Labels are no action; added ones join those the RRSet has.
-      if (known != null && set.labels.isNotEmpty) {
-        final labels = {...known.labels, ...set.labels};
-        if (labels.toString() != known.labels.toString()) {
-          await updateRrset(api, zone.id, known, labels);
-        }
-      }
       final id = await (known == null
           ? createRrset(api, zone.id, set)
           : changeRrset(api, zone.id, known, AddRecords(set.records)));
       tracker.track(id);
-      if (known != null && set.ttl != null && set.ttl != known.ttl) {
-        // A failed add must not close the form as saved.
-        final added = await tracker.track(id).last;
-        if (added.status != ActionStatus.success) {
-          throw Server(code: added.errorCode);
+      if (known == null) return;
+      final relabel = set.labels.isNotEmpty;
+      final retime = set.ttl != null && set.ttl != known.ttl;
+      if (!relabel && !retime) return;
+      // A failed add must not close the form as saved, nor change more.
+      final added = await tracker.track(id).last;
+      if (added.status != ActionStatus.success) {
+        throw ActionFailed(code: added.errorCode);
+      }
+      if (relabel) {
+        // Labels are no action; added ones join those the RRSet has now,
+        // as the PUT replaces them all.
+        final now = await getRrset(api, zone.id, known.name, known.type);
+        final labels = {...now.labels, ...set.labels};
+        if (labels.toString() != now.labels.toString()) {
+          await updateRrset(api, zone.id, known, labels);
         }
+      }
+      if (retime) {
         tracker.track(
           await changeRrset(api, zone.id, known, ChangeRRSetTtl(set.ttl)),
         );

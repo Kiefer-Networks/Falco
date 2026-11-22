@@ -233,11 +233,16 @@ void main() {
     await tile(tester, 'Add record');
     await enter(tester, 'values', '203.0.113.2');
     await enter(tester, 'labels', 'cdn=yes');
-    await tap(tester, 'Save');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    // The labels follow the added value, never before it.
+    expect(cloud.calls.where((c) => c.startsWith('PUT')), isEmpty);
+    await settleAction(tester);
     expect(cloud.body('PUT /zones/5/rrsets/@/A'), {
       'labels': {'cdn': 'yes'},
     });
-    await settleAction(tester);
   });
 
   testWidgets('DNS-007 a failed added value keeps the form with an error '
@@ -253,10 +258,7 @@ void main() {
       ..['error'] = {'code': 'action_failed', 'message': 'failed'};
     await settleAction(tester);
     expect(cloud.calls.where((c) => c.contains('change_ttl')), isEmpty);
-    expect(
-      find.text('The server reported an error. Try again later.'),
-      findsOneWidget,
-    );
+    expect(find.text('The action failed. (action_failed)'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Save'), findsOneWidget);
   });
 

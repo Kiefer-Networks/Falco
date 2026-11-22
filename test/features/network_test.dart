@@ -529,6 +529,7 @@ void main() {
       });
       expect(ruleValues(out)['preset'], 'v6');
       expect(validRule({'protocol': 'udp', 'port': ''}), isFalse);
+      expect(ruleOf({'protocol': 'tcp', 'port': ' 80 - 443 '}).port, '80-443');
     });
   });
 

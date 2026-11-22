@@ -205,12 +205,18 @@ Future<RRSet> rrset(
   int zoneId,
   String name,
   String type,
+) => getRrset(ref.watch(cloudApiProvider(scope.projectId)), zoneId, name, type);
+
+/// One RRSet as the server has it now.
+Future<RRSet> getRrset(
+  cloud.Server api,
+  int zone,
+  String name,
+  String type,
 ) async {
   final body = await cloudJson(
-    cloud.ZoneRrSetsApi(
-      ref.watch(cloudApiProvider(scope.projectId)),
-    ).getZoneRrset(
-      idOrName: '$zoneId',
+    cloud.ZoneRrSetsApi(api).getZoneRrset(
+      idOrName: '$zone',
       rrName: name,
       rrType: cloud.ZonesIdOrNameRrsetsRrNameRrTypeParametersModel3.fromJson(
         type,

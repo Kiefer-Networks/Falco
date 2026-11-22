@@ -6,6 +6,7 @@ import 'package:falco/core/scope/scope_repository.dart';
 import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/accounts/accounts.dart';
+import 'package:falco/features/robot/robot.dart' show robotApiProvider;
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/error_text.dart';
 import 'package:falco/ui/ui.dart';
@@ -433,6 +434,8 @@ class _AccountOps {
         await checkRobotLogin(container, c);
         await _secrets.setRobot(account.id, c);
         await _save(account.copyWith(hasRobot: true));
+        // A saved login is tried afresh, even when unchanged (ROB-002).
+        container.invalidate(robotApiProvider(account.id));
       },
     ),
     l10n.savedMessage,

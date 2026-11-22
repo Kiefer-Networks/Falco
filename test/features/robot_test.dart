@@ -702,6 +702,13 @@ void main() {
       await typeName(tester, 'db');
       await confirm(tester, 'Delete');
       expect(cloud.calls, contains('DELETE /firewall/template/5000'));
+      // The detail is not reloaded for the deleted template.
+      expect(
+        cloud.calls
+            .skipWhile((c) => c != 'DELETE /firewall/template/5000')
+            .where((c) => c == 'GET /firewall/template/5000'),
+        isEmpty,
+      );
     });
 
     testWidgets('ROB-057 editing a rule keeps TCP flags and fields the '
@@ -799,6 +806,34 @@ void main() {
       await api.servers();
       expect(sent(), 2);
     });
+
+    test(
+      'a refusal that raced the first success blocks only its path',
+      () async {
+        final cloud = FakeCloud();
+        final c = await fakeContainer(cloud, accounts: const [acmeRobot]);
+        cloud.robot.failures['failover'] = (
+          401,
+          {
+            'error': {'status': 401, 'code': 'UNAUTHORIZED', 'message': ''},
+          },
+        );
+        int sent(String path) => cloud.adapter.requests
+            .where((r) => r.uri.host == 'robot-ws.your-server.de')
+            .where((r) => r.uri.path == path)
+            .length;
+        final api = c.read(robotApiProvider('a1'));
+        final refused = throwsA(isA<Unauthorized>());
+        final failovers = api.failovers();
+        final servers = api.servers();
+        await expectLater(failovers, refused);
+        await servers;
+        await api.servers();
+        await expectLater(api.failovers(), refused);
+        expect(sent('/server'), 2);
+        expect(sent('/failover'), 1);
+      },
+    );
 
     test('after a success a refused path blocks only itself until the '
         'login changes', () async {
