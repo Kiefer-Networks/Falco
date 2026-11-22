@@ -30,9 +30,10 @@ part 'robot.g.dart';
 /// A login Robot refuses before it ever succeeded is wrong: every
 /// request with it fails at once as [Unauthorized]. Once a login
 /// succeeded, a refusal blocks only that path, a section the login may
-/// not use. Either way it is sent again only after the stored login
-/// changes (ROB-002). A changed login or a removed account rebuilds the
-/// client.
+/// not use. A refusal that raced the first success counts for its path
+/// only. Either way it is sent again only after the stored login changes
+/// or is saved again (ROB-002). A changed login or a removed account
+/// rebuilds the client.
 @Riverpod(keepAlive: true)
 RobotClient robotApi(Ref ref, String accountId) {
   final secrets = ref.watch(secretStoreProvider);
@@ -42,6 +43,8 @@ RobotClient robotApi(Ref ref, String accountId) {
       Hmac(sha256, key).convert(utf8.encode('${c.user}\n${c.password}'));
   const login = 'falco.robotLogin';
   final refused = <String, Digest>{};
+  // Paths refused before the login ever succeeded.
+  final early = <String, Digest>{};
   Digest? wrong;
   Digest? worked;
   Digest? last;
@@ -54,12 +57,14 @@ RobotClient robotApi(Ref ref, String accountId) {
       ref.invalidateSelf();
       return;
     }
+    RobotCredentials? c;
     try {
-      final c = await secrets.robot(accountId);
-      if (c == null || fingerprint(c) != seen) ref.invalidateSelf();
+      c = await secrets.robot(accountId);
     } on Object {
-      ref.invalidateSelf();
+      c = null;
     }
+    if (!ref.mounted) return;
+    if (c == null || fingerprint(c) != seen) ref.invalidateSelf();
   });
   final dio = ref.watch(robotDioProvider)(
     InterceptorsWrapper(
@@ -86,9 +91,15 @@ RobotClient robotApi(Ref ref, String accountId) {
         refused[options.path] = sent;
       } else {
         wrong = sent;
+        early[options.path] = sent;
       }
     } else if (status < 400) {
       worked = sent;
+      if (wrong == sent) wrong = null;
+      for (final e in early.entries) {
+        if (e.value == sent) refused[e.key] = sent;
+      }
+      early.clear();
     }
   }
 
@@ -221,13 +232,22 @@ Future<List<RobotFirewall>> robotTemplates(Ref ref, String accountId) =>
 /// One template. Robot documents no name in the single template answer,
 /// so an empty one comes from the list (ROB-058); without it the apply
 /// confirmation would have nothing to type and Save would clear the name.
+/// The list is asked directly, not watched: deleting the template reloads
+/// the list and must not reload this one. A failing list leaves the name
+/// empty instead of failing the template.
 @riverpod
 Future<RobotFirewall> robotTemplate(Ref ref, String accountId, int id) async {
-  // Both before the first await: a ref may not be used after it.
-  final listed = ref.watch(robotTemplatesProvider(accountId).future)..ignore();
-  final t = await ref.watch(robotApiProvider(accountId)).template(id);
+  final api = ref.watch(robotApiProvider(accountId));
+  final t = await api.template(id);
   if (t.name.isNotEmpty) return t;
-  final name = (await listed).where((e) => e.id == id).firstOrNull?.name ?? '';
+  String name;
+  try {
+    name =
+        (await api.templates()).where((e) => e.id == id).firstOrNull?.name ??
+        '';
+  } on Object {
+    name = '';
+  }
   return (
     id: id,
     name: name,

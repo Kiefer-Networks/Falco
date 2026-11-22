@@ -312,7 +312,7 @@ final class RrsetProvider
   }
 }
 
-String _$rrsetHash() => r'bc731fe53c206da58075b5929f25ad08dfa92912';
+String _$rrsetHash() => r'4e38d569671ba73b10c107249474266b9af65c3e';
 
 /// One RRSet (DNS-027).
 

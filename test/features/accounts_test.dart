@@ -6,6 +6,7 @@ import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/features/accounts/accounts.dart';
 import 'package:falco/features/accounts/checks.dart';
+import 'package:falco/features/robot/robot.dart' show robotApiProvider;
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -586,6 +587,10 @@ void main() {
 
     testWidgets('Robot access is checked, changed and deleted', (tester) async {
       final c = await openAccount(tester);
+      final before = c.read(robotApiProvider('a1'));
+      final servers = before.servers();
+      await tester.pumpAndSettle();
+      await servers;
       await tester.tap(
         find.descendant(
           of: find.widgetWithText(ListTile, 'Webservice access'),
@@ -604,6 +609,8 @@ void main() {
         (await c.read(secretStoreProvider).robot('a1'))?.user,
         fakeRobotUser,
       );
+      // Saving the same login again tries it afresh (ROB-002).
+      expect(c.read(robotApiProvider('a1')), isNot(same(before)));
 
       // The "saved" snackbar covers the row's menu.
       ScaffoldMessenger.of(tester.element(find.byType(Scaffold).last))
