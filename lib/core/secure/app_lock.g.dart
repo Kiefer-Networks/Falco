@@ -129,7 +129,7 @@ final class AppLockProvider extends $NotifierProvider<AppLock, AppLockState> {
   }
 }
 
-String _$appLockHash() => r'd95ba0353ae7b62f033610484f212f31e5ba2da0';
+String _$appLockHash() => r'826df6963245fea455920428430dafb30d1706b0';
 
 /// App lock: locked at start and after the auto lock time in background,
 /// both only while the lock is on in the settings (SET-007, SET-010).
