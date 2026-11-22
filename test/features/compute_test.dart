@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:falco/app/areas.dart';
 import 'package:falco/core/format/format.dart';
@@ -21,6 +20,7 @@ import 'package:falco/features/volumes/volume_pages.dart';
 import 'package:falco/features/volumes/volumes.dart';
 import 'package:falco/l10n/app_localizations_en.dart';
 import 'package:falco/ui/ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -522,6 +522,11 @@ void main() {
       expect(public, startsWith('ssh-ed25519 '));
       expect(public, endsWith(' laptop'));
       expect(find.text('Private key'), findsWidgets);
+      // A failing dialog shows an error, the sheet stays.
+      cloud.files.saveError = PlatformException(code: 'multiple_request');
+      await tap(tester, 'Save to file');
+      expect(find.text('The action failed.'), findsOneWidget);
+      expect(cloud.files.saved, isEmpty);
       await tap(tester, 'Save to file');
       final private = cloud.files.saved['id_ed25519']!;
       expect(private, startsWith('-----BEGIN OPENSSH PRIVATE KEY-----\n'));
@@ -537,6 +542,28 @@ void main() {
       final bare = _rfcKey.split(' ').take(2).join(' ');
       expect(sameSshKey(_rfcKey, '$bare other\n'), isTrue);
       expect(sameSshKey(_rfcKey, _keyOf('ssh-ed25519')), isFalse);
+    });
+
+    test('CMP-071 a break between tokens is a space; several keys are '
+        'refused', () {
+      final [type, blob, comment] = _rfcKey.split(' ');
+      expect(normalizeSshKey('$type\n$blob $comment'), _rfcKey);
+      expect(normalizeSshKey('$type $blob\r\n$comment\n'), _rfcKey);
+      expect(
+        normalizeSshKey(
+          '$type ${blob.substring(0, 30)}\n'
+          '${blob.substring(30)}\n$comment',
+        ),
+        _rfcKey,
+      );
+      expect(
+        sshKeyProblem('$_rfcKey\n${_keyOf('ssh-rsa')}'),
+        SshKeyProblem.severalKeys,
+      );
+      expect(
+        sshKeyProblem('$type $blob ${_keyOf('ssh-ed25519')}'),
+        SshKeyProblem.severalKeys,
+      );
     });
 
     testWidgets('CMP-100 an edited comment keeps the private key; a failed '

@@ -27,8 +27,8 @@ const sshKeyTypes = {
 };
 
 /// The key blob of an OpenSSH public key line (`type base64 [comment]`);
-/// null when the type is unknown, the base64 is broken or the blob names
-/// another type than the line.
+/// null when the type is unknown, the base64 is broken or cut, or the
+/// blob names another type than the line.
 Uint8List? publicKeyBlob(String line) {
   final parts = line.trim().split(RegExp(r'\s+'));
   if (parts.length < 2 || !sshKeyTypes.contains(parts[0])) return null;
@@ -38,10 +38,19 @@ Uint8List? publicKeyBlob(String line) {
   } on FormatException {
     return null;
   }
-  if (blob.length < 4) return null;
-  final n = ByteData.sublistView(blob).getUint32(0);
-  if (blob.length < 4 + n) return null;
-  return utf8.decode(blob.sublist(4, 4 + n), allowMalformed: true) == parts[0]
+  // Length prefixed fields that fill the blob exactly: the type and at
+  // least one more, so a cut blob does not pass.
+  final data = ByteData.sublistView(blob);
+  final fields = <Uint8List>[];
+  for (var at = 0; at < blob.length;) {
+    if (blob.length - at < 4) return null;
+    final n = data.getUint32(at);
+    if (blob.length - at - 4 < n) return null;
+    fields.add(blob.sublist(at + 4, at + 4 + n));
+    at += 4 + n;
+  }
+  return fields.length >= 2 &&
+          utf8.decode(fields.first, allowMalformed: true) == parts[0]
       ? blob
       : null;
 }

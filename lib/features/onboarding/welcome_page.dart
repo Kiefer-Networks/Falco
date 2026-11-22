@@ -36,7 +36,12 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
     if (_page == _permissions) {
       _busy = true;
       try {
-        await ref.read(notificationPermissionProvider).request();
+        await ref
+            .read(notificationPermissionProvider)
+            .request()
+            .timeout(const Duration(seconds: 30));
+      } on Object {
+        // Not granted; the permissions page must not hold the user.
       } finally {
         _busy = false;
       }

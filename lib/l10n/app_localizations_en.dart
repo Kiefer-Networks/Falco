@@ -1492,6 +1492,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not a valid public key. Use ssh-ed25519, ssh-rsa, ecdsa or a security key.';
 
   @override
+  String get sshKeySeveral =>
+      'These are several keys. Add one public key at a time.';
+
+  @override
   String get sshKeyGenerate => 'Generate key pair';
 
   @override

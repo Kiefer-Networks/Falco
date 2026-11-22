@@ -1173,6 +1173,9 @@ class FakeTextFiles extends TextFiles {
   File? pickedFile;
   final saved = <String, String>{};
 
+  /// What the next save throws, once.
+  Exception? saveError;
+
   @override
   Future<PickedText?> pick({required int maxBytes}) async => picked;
 
@@ -1181,6 +1184,10 @@ class FakeTextFiles extends TextFiles {
 
   @override
   Future<bool> save(String name, String text) async {
+    if (saveError case final e?) {
+      saveError = null;
+      throw e;
+    }
     saved[name] = text;
     return true;
   }
@@ -1191,9 +1198,13 @@ class FakeNotifications extends NotificationPermission {
   bool granted = true;
   int requests = 0;
 
+  /// What a request throws instead of answering.
+  Exception? error;
+
   @override
   Future<bool> request() async {
     requests++;
+    if (error case final e?) throw e;
     return granted;
   }
 }
