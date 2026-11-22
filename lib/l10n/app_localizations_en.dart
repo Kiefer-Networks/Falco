@@ -3258,6 +3258,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Robot rejected the login. Update it under Accounts.';
 
   @override
+  String get robotLoginMissing =>
+      'No Robot login is stored for this account. Enter it under Accounts.';
+
+  @override
   String get robotMac => 'Separate MAC';
 
   @override

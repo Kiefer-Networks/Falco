@@ -26,7 +26,12 @@ Widget? _loading<T>(
   VoidCallback retry,
 ) => async.hasValue
     ? null
-    : DetailLoading(title: title, error: async.error, onRetry: retry);
+    : DetailLoading(
+        title: title,
+        error: async.error,
+        onRetry: retry,
+        describe: robotErrorText,
+      );
 
 /// One failover IP: route to another server, unroute (ROB-018, ROB-019,
 /// ROB-044).
@@ -50,6 +55,7 @@ class RobotFailoverPage extends ConsumerWidget {
     if (f == null) {
       return DetailLoading(
         title: l10n.robotFailover,
+        describe: robotErrorText,
         error: const NotFound(),
         onRetry: () => ref.invalidate(provider),
       );
@@ -327,6 +333,7 @@ class RobotVSwitchPage extends ConsumerWidget {
             group: ActionGroup.manage,
             onTap: () => FormSheet.show(
               context,
+              describe: robotErrorText,
               title: l10n.commonEdit,
               fields: (_) => [
                 FieldSpec('name', l10n.fieldName, initial: v.name),
@@ -442,6 +449,7 @@ class RobotKeyPage extends ConsumerWidget {
             group: ActionGroup.manage,
             onTap: () => FormSheet.show(
               context,
+              describe: robotErrorText,
               title: l10n.commonEdit,
               fields: (_) => [
                 FieldSpec('name', l10n.fieldName, initial: k.name),
@@ -531,6 +539,7 @@ class RobotAddressPage extends ConsumerWidget {
     Future<void> warnings() async {
       final saved = await FormSheet.show(
         context,
+        describe: robotErrorText,
         title: l10n.trafficWarnings,
         fields: (_) => [
           FieldSpec(
@@ -1064,6 +1073,7 @@ class _RobotTemplatePageState extends ConsumerState<RobotTemplatePage> {
             group: ActionGroup.manage,
             onTap: () => FormSheet.show(
               context,
+              describe: robotErrorText,
               title: l10n.commonEdit,
               fields: (_) => [
                 FieldSpec('name', l10n.fieldName, initial: t.name),

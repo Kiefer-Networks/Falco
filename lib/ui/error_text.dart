@@ -4,6 +4,8 @@ import 'package:falco/l10n/app_localizations.dart';
 
 /// The one user facing text for each [FalcoError].
 String errorText(FalcoError error, AppLocalizations l10n) => switch (error) {
+  Unauthorized(code: 'ROBOT_LOGIN') => l10n.robotLoginRejected,
+  Unauthorized(code: 'ROBOT_NO_LOGIN') => l10n.robotLoginMissing,
   Unauthorized() => l10n.errorUnauthorized,
   Forbidden() => l10n.errorForbidden,
   NotFound() => l10n.errorNotFound,

@@ -125,6 +125,7 @@ Future<void> editRdns(
   if (!context.mounted) return;
   final saved = await FormSheet.show(
     context,
+    describe: robotErrorText,
     title: l10n.reverseDns,
     fields: (_) => [
       FieldSpec('ptr', formatIp(ip), initial: current?.ptr ?? ''),
@@ -216,6 +217,7 @@ Future<(String, FirewallRule)?> editRule(
   (String, FirewallRule)? result;
   await FormSheet.show(
     context,
+    describe: robotErrorText,
     title: rule == null ? l10n.ruleAdd : l10n.commonEdit,
     fields: (v) => [
       FieldSpec(

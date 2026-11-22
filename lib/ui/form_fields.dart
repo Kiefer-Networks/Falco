@@ -191,6 +191,7 @@ class FormSheet extends StatefulWidget {
     required this.fields,
     required this.valid,
     required this.onSave,
+    this.describe = errorText,
     super.key,
   });
 
@@ -201,10 +202,17 @@ class FormSheet extends StatefulWidget {
     required List<FieldSpec> Function(Map<String, String> values) fields,
     required bool Function(Map<String, String> values) valid,
     required Future<void> Function(Map<String, String> values) onSave,
+    String Function(FalcoError e, AppLocalizations l10n) describe = errorText,
   }) async =>
       await showFalcoSheet<bool>(
         context,
-        FormSheet(title: title, fields: fields, valid: valid, onSave: onSave),
+        FormSheet(
+          title: title,
+          fields: fields,
+          valid: valid,
+          onSave: onSave,
+          describe: describe,
+        ),
       ) ??
       false;
 
@@ -219,6 +227,9 @@ class FormSheet extends StatefulWidget {
 
   /// Checks and stores; throws a [FalcoError] to stay open.
   final Future<void> Function(Map<String, String> values) onSave;
+
+  /// Text of a failed save (Robot says which login or section).
+  final String Function(FalcoError e, AppLocalizations l10n) describe;
 
   @override
   State<FormSheet> createState() => _FormSheetState();
@@ -246,7 +257,7 @@ class _FormSheetState extends State<FormSheet> {
       await widget.onSave(_values);
       if (mounted) Navigator.pop(context, true);
     } on FalcoError catch (e) {
-      if (mounted) setState(() => _error = errorText(e, l10n));
+      if (mounted) setState(() => _error = widget.describe(e, l10n));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

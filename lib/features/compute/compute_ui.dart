@@ -508,12 +508,16 @@ class DetailLoading extends StatelessWidget {
     required this.title,
     required this.onRetry,
     this.error,
+    this.describe = errorText,
     super.key,
   });
 
   final String title;
   final Object? error;
   final VoidCallback onRetry;
+
+  /// Text of [error] (Robot says which login or section).
+  final String Function(FalcoError e, AppLocalizations l10n) describe;
 
   @override
   Widget build(BuildContext context) => FalcoScaffold(
@@ -523,7 +527,7 @@ class DetailLoading extends StatelessWidget {
       final e => Padding(
         padding: const EdgeInsets.all(FalcoSpacing.l),
         child: ErrorCard(
-          message: errorText(toFalcoError(e), AppLocalizations.of(context)),
+          message: describe(toFalcoError(e), AppLocalizations.of(context)),
           onRetry: onRetry,
         ),
       ),

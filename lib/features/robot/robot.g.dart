@@ -12,6 +12,11 @@ part of 'robot.dart';
 /// Until Robot answered a login, one request with it goes out and the
 /// others wait for that answer: Robot blocks the address after three
 /// failed logins, so a changed password must not fail once per open list.
+/// Without an answer (no connection) the waiting requests fail with that
+/// request's error. Only an answer that checked the login (2xx, or 4xx
+/// other than 401 and 429) makes it answered; a refusal of an answered
+/// login holds the following requests again until the probe below tells,
+/// and the app going to the background forgets every answer.
 /// When Robot refuses a request, `GET /server` is asked once with the
 /// same login (one already in flight counts): refused there too, the
 /// login is wrong and every request with it fails at once as
@@ -28,6 +33,11 @@ final robotApiProvider = RobotApiFamily._();
 /// Until Robot answered a login, one request with it goes out and the
 /// others wait for that answer: Robot blocks the address after three
 /// failed logins, so a changed password must not fail once per open list.
+/// Without an answer (no connection) the waiting requests fail with that
+/// request's error. Only an answer that checked the login (2xx, or 4xx
+/// other than 401 and 429) makes it answered; a refusal of an answered
+/// login holds the following requests again until the probe below tells,
+/// and the app going to the background forgets every answer.
 /// When Robot refuses a request, `GET /server` is asked once with the
 /// same login (one already in flight counts): refused there too, the
 /// login is wrong and every request with it fails at once as
@@ -44,6 +54,11 @@ final class RobotApiProvider
   /// Until Robot answered a login, one request with it goes out and the
   /// others wait for that answer: Robot blocks the address after three
   /// failed logins, so a changed password must not fail once per open list.
+  /// Without an answer (no connection) the waiting requests fail with that
+  /// request's error. Only an answer that checked the login (2xx, or 4xx
+  /// other than 401 and 429) makes it answered; a refusal of an answered
+  /// login holds the following requests again until the probe below tells,
+  /// and the app going to the background forgets every answer.
   /// When Robot refuses a request, `GET /server` is asked once with the
   /// same login (one already in flight counts): refused there too, the
   /// login is wrong and every request with it fails at once as
@@ -103,12 +118,17 @@ final class RobotApiProvider
   }
 }
 
-String _$robotApiHash() => r'e708961c9f3ccc9cf96e5e6f077a63c899db2a43';
+String _$robotApiHash() => r'9b08ba0920860ed125014948f1d3b2d6da231406';
 
 /// The Robot webservice of an account; the login is read per request.
 /// Until Robot answered a login, one request with it goes out and the
 /// others wait for that answer: Robot blocks the address after three
 /// failed logins, so a changed password must not fail once per open list.
+/// Without an answer (no connection) the waiting requests fail with that
+/// request's error. Only an answer that checked the login (2xx, or 4xx
+/// other than 401 and 429) makes it answered; a refusal of an answered
+/// login holds the following requests again until the probe below tells,
+/// and the app going to the background forgets every answer.
 /// When Robot refuses a request, `GET /server` is asked once with the
 /// same login (one already in flight counts): refused there too, the
 /// login is wrong and every request with it fails at once as
@@ -133,6 +153,11 @@ final class RobotApiFamily extends $Family
   /// Until Robot answered a login, one request with it goes out and the
   /// others wait for that answer: Robot blocks the address after three
   /// failed logins, so a changed password must not fail once per open list.
+  /// Without an answer (no connection) the waiting requests fail with that
+  /// request's error. Only an answer that checked the login (2xx, or 4xx
+  /// other than 401 and 429) makes it answered; a refusal of an answered
+  /// login holds the following requests again until the probe below tells,
+  /// and the app going to the background forgets every answer.
   /// When Robot refuses a request, `GET /server` is asked once with the
   /// same login (one already in flight counts): refused there too, the
   /// login is wrong and every request with it fails at once as

@@ -31,6 +31,7 @@ class RobotServerPage extends ConsumerWidget {
     if (s == null) {
       return DetailLoading(
         title: l10n.robotServer,
+        describe: robotErrorText,
         error: async.error,
         onRetry: () => ref.invalidate(provider),
       );
@@ -311,6 +312,7 @@ class _ServerDetail extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final saved = await FormSheet.show(
       context,
+      describe: robotErrorText,
       title: l10n.commonEdit,
       fields: (_) => [
         FieldSpec('name', l10n.fieldName, initial: server.name, maxLength: 100),
@@ -363,6 +365,7 @@ class _ServerDetail extends ConsumerWidget {
     Map<String, String>? picked;
     final ok = await FormSheet.show(
       context,
+      describe: robotErrorText,
       title: bootText(kind, l10n),
       fields: (_) => [
         if (options.os.isNotEmpty)
@@ -528,6 +531,7 @@ class _ServerDetail extends ConsumerWidget {
     Map<String, String>? picked;
     final ok = await FormSheet.show(
       context,
+      describe: robotErrorText,
       title: l10n.robotCancel,
       fields: (_) => [
         if (c.reasons.isNotEmpty)
