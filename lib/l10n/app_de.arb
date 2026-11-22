@@ -893,6 +893,7 @@
   "robotKeyDeleteConsequence": "Der Key wird aus Robot gelöscht. Server behalten früher installierte Keys.",
   "robotKeysEmpty": "Noch keine SSH Keys in Robot.",
   "robotLocked": "Gesperrt",
+  "robotLoginRejected": "Robot hat die Zugangsdaten abgelehnt. Aktualisiere sie unter Accounts.",
   "robotMac": "Eigene MAC",
   "robotNetmask": "Netzmaske",
   "robotNoAccess": "Dieser Account hat keinen Robot Zugang.",

@@ -3246,6 +3246,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get robotLocked => 'Locked';
 
   @override
+  String get robotLoginRejected =>
+      'Robot rejected the login. Update it under Accounts.';
+
+  @override
   String get robotMac => 'Separate MAC';
 
   @override

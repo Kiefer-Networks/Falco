@@ -583,7 +583,7 @@ class FakeRobot {
         final t = templates.firstWhere((t) => '${t['id']}' == id);
         if (o.method == 'POST') {
           t
-            ..['name'] = f['name']
+            ..['name'] = f['name'] ?? t['name']
             ..['filter_ipv6'] = f['filter_ipv6'] == 'true'
             ..['whitelist_hos'] = f['whitelist_hos'] == 'true'
             ..['is_default'] = f['is_default'] == 'true'

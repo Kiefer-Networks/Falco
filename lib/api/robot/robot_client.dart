@@ -788,9 +788,10 @@ class RobotClient {
     _unwrap(await _get('/firewall/template/$id'), 'firewall_template'),
   );
 
-  /// `POST /firewall/template` creates, `POST .../{id}` changes.
+  /// `POST /firewall/template` creates, `POST .../{id}` changes; a change
+  /// without [name] keeps the name.
   Future<RobotFirewall> saveTemplate({
-    required String name,
+    required String? name,
     required bool filterIpv6,
     required bool whitelistHos,
     required bool isDefault,
@@ -802,7 +803,7 @@ class RobotClient {
         'POST',
         id == null ? '/firewall/template' : '/firewall/template/$id',
         [
-          ('name', name),
+          if (name != null) ('name', name),
           ('filter_ipv6', '$filterIpv6'),
           ('whitelist_hos', '$whitelistHos'),
           ('is_default', '$isDefault'),

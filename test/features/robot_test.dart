@@ -108,8 +108,10 @@ void main() {
       final cloud = await openRobot(tester);
       await tester.longPress(find.text('#421'));
       await tester.pumpAndSettle();
-      // Types from GET /reset: 421 offers no software reset.
+      // Types from GET /reset: 421 offers no software reset, and
+      // GET /wol/421 no Wake on LAN (ROB-043).
       expect(find.text('Software reset (Ctrl+Alt+Del)'), findsNothing);
+      expect(find.text('Wake on LAN'), findsNothing);
       await tap(tester, 'Hardware reset');
       await confirm(tester, 'Reset');
       expect(cloud.calls, contains('GET /reset'));
@@ -665,10 +667,12 @@ void main() {
       expect(applied(), before);
       await typeName(tester, 'web');
       await confirm(tester, 'Apply template');
-      expect(
-        sentForm(cloud, 'POST /firewall/321'),
-        contains(('template_id', '1')),
-      );
+      // The template's IPv6 filter, not the server's.
+      expect(sentForm(cloud, 'POST /firewall/321'), [
+        ('status', 'active'),
+        ('filter_ipv6', 'false'),
+        ('template_id', '1'),
+      ]);
       await tap(tester, 'Clear firewall');
       await confirm(tester, 'Clear firewall');
       expect(cloud.calls, contains('DELETE /firewall/321'));
@@ -694,10 +698,10 @@ void main() {
       await enter(tester, 'dst_port', '5432');
       await tap(tester, 'Save');
       await tile(tester, 'Save');
-      expect(
-        sentForm(cloud, 'POST /firewall/template/5000'),
-        contains(('rules[input][0][dst_port]', '5432')),
-      );
+      final saved = sentForm(cloud, 'POST /firewall/template/5000');
+      expect(saved, contains(('rules[input][0][dst_port]', '5432')));
+      // An unedited name is not sent: it may be older than Robot's.
+      expect(saved.map((e) => e.$1), isNot(contains('name')));
       await tap(tester, 'Delete');
       await typeName(tester, 'db');
       await confirm(tester, 'Delete');
@@ -901,11 +905,72 @@ void main() {
       // After a success: the password changed outside the app.
       cloud.robot.failures['vswitch'] = unauthorized;
       cloud.robot.failures['server'] = unauthorized;
-      await expectLater(api.vswitches(), refused);
-      await expectLater(api.servers(), refused);
-      await expectLater(api.keys(), refused);
+      final login = throwsA(same(robotLoginRejected));
+      await expectLater(api.vswitches(), login);
+      await expectLater(api.servers(), login);
+      await expectLater(api.keys(), login);
       expect(sent('/server'), 3);
       expect(sent('/key'), 0);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        robotErrorText(robotLoginRejected, l10n),
+        'Robot rejected the login. Update it under Accounts.',
+      );
+      expect(
+        robotErrorText(const Unauthorized(), l10n),
+        l10n.robotSectionDisabled,
+      );
+    });
+
+    test('a login Robot has not answered yet is sent once; an open '
+        'GET /server is the probe', () async {
+      const unauthorized = (
+        401,
+        {
+          'error': {'status': 401, 'code': 'UNAUTHORIZED', 'message': ''},
+        },
+      );
+      final cloud = FakeCloud();
+      final c = await fakeContainer(cloud, accounts: const [acmeRobot]);
+      final secrets = c.read(secretStoreProvider);
+      await secrets.setRobot(
+        'a1',
+        const RobotCredentials(user: fakeRobotUser, password: 'wrong'),
+      );
+      int sent([String? path]) => cloud.adapter.requests
+          .where((r) => r.uri.host == 'robot-ws.your-server.de')
+          .where((r) => path == null || r.uri.path == path)
+          .length;
+      var api = c.read(robotApiProvider('a1'));
+      final login = throwsA(same(robotLoginRejected));
+      await Future.wait([
+        expectLater(api.servers(), login),
+        expectLater(api.failovers(), login),
+        expectLater(api.keys(), login),
+        expectLater(api.vswitches(), login),
+      ]);
+      expect(sent(), 1);
+      // A known login: a refusal while GET /server is open waits for it.
+      await secrets.setRobot(
+        'a1',
+        const RobotCredentials(
+          user: fakeRobotUser,
+          password: fakeRobotPassword,
+        ),
+      );
+      c.invalidate(accountsProvider);
+      await c.read(accountsProvider.future);
+      await pumpEventQueue();
+      api = c.read(robotApiProvider('a1'));
+      await api.keys();
+      cloud.robot.failures['vswitch'] = unauthorized;
+      cloud.robot.failures['server'] = unauthorized;
+      final before = sent('/server');
+      await Future.wait([
+        expectLater(api.vswitches(), login),
+        expectLater(api.servers(), login),
+      ]);
+      expect(sent('/server'), before + 1);
     });
 
     test('a template without a name fails; the loaded list is used', () async {
