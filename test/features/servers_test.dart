@@ -111,6 +111,12 @@ void main() {
         expect(find.text('CX22'), findsOneWidget);
         expect(find.text('4 GiB'), findsOneWidget);
         expect(cloud.calls, contains('GET /servers/1'));
+        await tester.scrollUntilVisible(
+          find.text('METRICS'),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
         expect(cloud.calls, contains('GET /servers/1/metrics'));
       },
     );

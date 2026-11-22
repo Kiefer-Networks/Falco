@@ -139,12 +139,19 @@ class NetworkDetailPage extends ConsumerWidget {
             ? '${progress.progress} %'
             : (n.protectDelete ? l10n.protected : null),
         name: n.name,
-        ids: [n.ipRange],
+        ids: [DetailId(n.ipRange, icon: Icons.lan_outlined, copy: true)],
+        facts: [
+          Fact(l10n.sectionSubnets, text: '${n.subnets.length}'),
+          Fact(l10n.sectionRoutes, text: '${n.routes.length}'),
+          Fact(l10n.fieldDeleteProtection, on: n.protectDelete),
+          Fact(l10n.fieldCreated, time: n.created),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.add_box_outlined,
             label: l10n.subnetAdd,
+            group: ActionGroup.manage,
             onTap: busy
                 ? null
                 : () => FormSheet.show(
@@ -158,6 +165,7 @@ class NetworkDetailPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.alt_route,
             label: l10n.routeAdd,
+            group: ActionGroup.manage,
             onTap: busy
                 ? null
                 : () => FormSheet.show(
@@ -187,6 +195,7 @@ class NetworkDetailPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => editNameAndLabels(
               context,
               ref,
@@ -199,6 +208,7 @@ class NetworkDetailPage extends ConsumerWidget {
           DetailAction(
             icon: n.protectDelete ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
+            group: ActionGroup.manage,
             onTap: busy
                 ? null
                 : () => toggleProtection(
@@ -213,6 +223,7 @@ class NetworkDetailPage extends ConsumerWidget {
           DetailAction(
             label: l10n.networkChangeRange,
             icon: Icons.open_in_full,
+            group: ActionGroup.network,
             onTap: () => FormSheet.show(
               context,
               title: l10n.networkChangeRange,
@@ -233,6 +244,7 @@ class NetworkDetailPage extends ConsumerWidget {
                 ? l10n.networkExposeOff
                 : l10n.networkExposeOn,
             icon: Icons.alt_route,
+            group: ActionGroup.network,
             onTap: () async {
               final ok = await ConfirmSheet.show(
                 context,
@@ -257,23 +269,12 @@ class NetworkDetailPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldIpRange, n.ipRange, mono: true),
-              ConfirmFact(l10n.sectionSubnets, '${n.subnets.length}'),
-              ConfirmFact(l10n.sectionRoutes, '${n.routes.length}'),
-              ConfirmFact(l10n.fieldVswitch, yesNo(n.hasVswitch, l10n)),
-              ConfirmFact(l10n.networkExpose, yesNo(n.exposeRoutes, l10n)),
-              ConfirmFact(
-                l10n.fieldDeleteProtection,
-                yesNo(n.protectDelete, l10n),
-              ),
-              ConfirmFact(
-                l10n.fieldCreated,
-                formatDateTime(n.created, l10n.localeName),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(n.labels, l10n)),
-            ]),
+            title: l10n.sectionNetwork,
+            facts: [
+              Fact(l10n.fieldIpRange, text: n.ipRange, copy: true),
+              Fact(l10n.fieldVswitch, on: n.hasVswitch),
+              Fact(l10n.networkExpose, on: n.exposeRoutes),
+            ],
           ),
           DetailSection(
             title: l10n.sectionSubnets,
@@ -333,8 +334,10 @@ class NetworkDetailPage extends ConsumerWidget {
           ),
           DetailSection(
             title: l10n.sectionMembers,
-            child: _Members(scope: scope, networkId: n.id),
+            cards: [_Members(scope: scope, networkId: n.id)],
           ),
+          labelsSection(l10n, n.labels),
+          detailsSection(l10n, id: n.id),
           activitySection(l10n, scope, CloudType.network, n.id),
         ],
         dangerZone: [
@@ -371,7 +374,7 @@ class _Members extends ConsumerWidget {
     final servers = {
       for (final s
           in ref.watch(serversProvider(scope)).value ?? const <CloudServer>[])
-        s.id: s.name,
+        s.id: s,
     };
     final lbs = {
       for (final l
@@ -379,31 +382,37 @@ class _Members extends ConsumerWidget {
               const <LoadBalancer>[])
         l.id: l.name,
     };
-    return entries([
-      for (final m in members)
-        if (m.type == 'server')
-          EntryRow(
-            leading: const Icon(Icons.dns_outlined),
-            title: servers[m.id] ?? '#${m.id}',
-            subtitle: [m.ip, ...m.aliasIps].join(' · '),
-            onTap: () => ServerRoute(
-              accountId: scope.accountId,
-              projectId: scope.projectId,
-              serverId: m.id,
-            ).push<void>(context),
-          )
-        else
-          EntryRow(
-            leading: const Icon(Icons.balance),
-            title: lbs[m.id] ?? '#${m.id}',
-            subtitle: m.ip,
-            onTap: () => LoadBalancerRoute(
-              accountId: scope.accountId,
-              projectId: scope.projectId,
-              lbId: m.id,
-            ).push<void>(context),
-          ),
-    ], l10n.membersEmpty);
+    if (members.isEmpty) return Text(l10n.membersEmpty);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: FalcoSpacing.s,
+      children: [
+        for (final m in members)
+          if (m.type == 'server')
+            RelatedCard(
+              icon: Icons.dns_outlined,
+              title: servers[m.id]?.name ?? '#${m.id}',
+              status: servers[m.id]?.status,
+              subtitle: [m.ip, ...m.aliasIps].join(' · '),
+              onTap: () => ServerRoute(
+                accountId: scope.accountId,
+                projectId: scope.projectId,
+                serverId: m.id,
+              ).push<void>(context),
+            )
+          else
+            RelatedCard(
+              icon: Icons.balance,
+              title: lbs[m.id] ?? '#${m.id}',
+              subtitle: m.ip,
+              onTap: () => LoadBalancerRoute(
+                accountId: scope.accountId,
+                projectId: scope.projectId,
+                lbId: m.id,
+              ).push<void>(context),
+            ),
+      ],
+    );
   }
 }
 

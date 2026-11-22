@@ -63,8 +63,13 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
     final off = s.status == ResourceStatus.off && !busy;
     final ops = ServerOps(context, ref, _scope, s);
 
-    DetailAction item(String label, IconData icon, VoidCallback onTap) =>
-        DetailAction(label: label, icon: icon, onTap: onTap);
+    DetailAction item(
+      ActionGroup group,
+      String label,
+      IconData icon,
+      VoidCallback onTap,
+    ) => DetailAction(label: label, icon: icon, group: group, onTap: onTap);
+    final locale = l10n.localeName;
 
     return FalcoScaffold(
       title: l10n.resourceServer,
@@ -89,8 +94,20 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
               ].join(' · ').nullIfEmpty,
         name: s.name,
         ids: [
-          if (s.ipv4 case final ip?) formatIp(ip),
-          if (s.ipv6 case final ip?) formatIp(ip),
+          if (s.ipv4 case final ip?)
+            DetailId(formatIp(ip), icon: Icons.public, copy: true),
+          if (s.ipv6 case final ip?)
+            DetailId(formatIp(ip), icon: Icons.public, copy: true),
+          DetailId(s.location, icon: Icons.place_outlined),
+          DetailId(s.type.toUpperCase(), icon: Icons.memory),
+        ],
+        facts: [
+          Fact(l10n.fieldVcpu, text: '${s.cores}'),
+          Fact(l10n.fieldMemory, text: gb(s.memoryGb, locale)),
+          Fact(l10n.fieldDisk, text: gb(s.diskGb, locale)),
+          Fact(l10n.fieldImage, text: s.image ?? l10n.commonNone),
+          Fact(l10n.fieldBackups, on: s.backupWindow != null),
+          Fact(l10n.fieldCreated, time: s.created),
         ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
@@ -98,122 +115,144 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
             DetailAction(
               icon: Icons.play_arrow,
               label: l10n.actionPowerOn,
+              group: ActionGroup.power,
               onTap: () => ops.power(ServerPower.powerOn),
             )
           else
             DetailAction(
               icon: Icons.power_settings_new,
               label: l10n.actionShutdown,
+              group: ActionGroup.power,
               onTap: running ? () => ops.power(ServerPower.shutdown) : null,
             ),
           DetailAction(
             icon: Icons.refresh,
             label: l10n.actionReboot,
+            group: ActionGroup.power,
             onTap: running ? () => ops.power(ServerPower.reboot) : null,
           ),
           DetailAction(
             icon: Icons.terminal,
             label: l10n.actionConsole,
+            group: ActionGroup.access,
             onTap: running ? ops.console : null,
           ),
           DetailAction(
             icon: Icons.power_off_outlined,
             label: l10n.actionPowerOff,
+            group: ActionGroup.power,
             onTap: running ? () => ops.power(ServerPower.powerOff) : null,
           ),
-          item(l10n.commonEdit, Icons.edit_outlined, ops.edit),
-          item(l10n.actionSnapshot, Icons.photo_camera_outlined, ops.snapshot),
           item(
-            s.backupWindow == null ? l10n.backupsOn : l10n.backupsOff,
-            Icons.backup_outlined,
-            ops.backups,
+            ActionGroup.access,
+            s.rescue ? l10n.rescueOff : l10n.rescueOn,
+            Icons.medical_services_outlined,
+            ops.rescue,
           ),
           item(
+            ActionGroup.access,
+            l10n.resetPassword,
+            Icons.password,
+            ops.resetRootPassword,
+          ),
+          item(
+            ActionGroup.manage,
+            l10n.commonEdit,
+            Icons.edit_outlined,
+            ops.edit,
+          ),
+          item(
+            ActionGroup.manage,
+            l10n.changeType,
+            Icons.swap_vert,
+            ops.changeType,
+          ),
+          item(
+            ActionGroup.manage,
             s.iso == null ? l10n.isoAttach : l10n.isoDetach,
             Icons.album_outlined,
             ops.iso,
           ),
           item(
-            s.rescue ? l10n.rescueOff : l10n.rescueOn,
-            Icons.medical_services_outlined,
-            ops.rescue,
-          ),
-          item(l10n.resetPassword, Icons.password, ops.resetRootPassword),
-          item(l10n.changeType, Icons.swap_vert, ops.changeType),
-          item(
+            ActionGroup.manage,
             s.placementGroup == null
                 ? l10n.placementGroupAdd
                 : l10n.placementGroupRemove,
             Icons.scatter_plot_outlined,
             ops.placementGroup,
           ),
-          item(l10n.fieldProtection, Icons.lock_outline, ops.protection),
-          item(l10n.reverseDns, Icons.dns_outlined, ops.reverseDns),
-          item(l10n.networkAttach, Icons.hub_outlined, ops.attachNetwork),
-          DetailAction(
-            label: l10n.actionReset,
-            icon: Icons.restart_alt,
-            destructive: true,
-            onTap: () => ops.power(ServerPower.reset),
+          item(
+            ActionGroup.manage,
+            l10n.fieldProtection,
+            Icons.lock_outline,
+            ops.protection,
+          ),
+          item(
+            ActionGroup.network,
+            l10n.reverseDns,
+            Icons.dns_outlined,
+            ops.reverseDns,
+          ),
+          item(
+            ActionGroup.network,
+            l10n.networkAttach,
+            Icons.hub_outlined,
+            ops.attachNetwork,
+          ),
+          item(
+            ActionGroup.backup,
+            l10n.actionSnapshot,
+            Icons.photo_camera_outlined,
+            ops.snapshot,
+          ),
+          item(
+            ActionGroup.backup,
+            s.backupWindow == null ? l10n.backupsOn : l10n.backupsOff,
+            Icons.backup_outlined,
+            ops.backups,
+          ),
+          item(
+            ActionGroup.danger,
+            l10n.actionReset,
+            Icons.restart_alt,
+            () => ops.power(ServerPower.reset),
           ),
         ],
         sections: [
+          _network(ops),
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldType, s.type.toUpperCase()),
-              ConfirmFact(l10n.fieldLocation, s.location),
-              ConfirmFact(l10n.fieldVcpu, '${s.cores}'),
-              ConfirmFact(l10n.fieldMemory, gb(s.memoryGb, l10n.localeName)),
-              ConfirmFact(l10n.fieldDisk, gb(s.diskGb, l10n.localeName)),
-              ConfirmFact(l10n.fieldImage, s.image ?? l10n.commonNone),
-              if (s.iso case final iso?) ConfirmFact(l10n.fieldIso, iso),
-              ConfirmFact(
-                l10n.fieldBackups,
-                s.backupWindow == null
-                    ? l10n.commonOff
-                    : l10n.backupWindow(s.backupWindow!),
-              ),
-              ConfirmFact(
-                l10n.fieldDeleteProtection,
-                yesNo(s.protectDelete, l10n),
-              ),
-              ConfirmFact(
-                l10n.fieldRebuildProtection,
-                yesNo(s.protectRebuild, l10n),
-              ),
-              ConfirmFact(
-                l10n.fieldCreated,
-                formatDateTime(s.created, l10n.localeName),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(s.labels, l10n)),
-            ]),
+            title: l10n.sectionConfiguration,
+            facts: [
+              Fact(l10n.fieldIso, text: s.iso ?? l10n.commonNone),
+              if (s.backupWindow case final w?)
+                Fact(l10n.fieldBackups, text: l10n.backupWindow(w)),
+              Fact(l10n.bootRescue, on: s.rescue),
+            ],
           ),
           DetailSection(
-            title: l10n.sectionNetwork,
-            child: _Network(ops: ops),
+            title: l10n.sectionProtection,
+            facts: [
+              Fact(l10n.fieldDeleteProtection, on: s.protectDelete),
+              Fact(l10n.fieldRebuildProtection, on: s.protectRebuild),
+            ],
           ),
-          DetailSection(
-            title: l10n.sectionAttached,
-            child: _Attached(scope: _scope, server: s),
-          ),
+          _attached(s),
           DetailSection(
             title: l10n.sectionMetrics,
-            child: Column(
-              spacing: FalcoSpacing.m,
-              children: [
-                _chart(ServerMetric.cpu, l10n.metricCpu, [l10n.metricCpu]),
-                _chart(ServerMetric.disk, l10n.metricDisk, [
-                  l10n.metricRead,
-                  l10n.metricWrite,
-                ]),
-                _chart(ServerMetric.network, l10n.metricNetwork, [
-                  l10n.metricIn,
-                  l10n.metricOut,
-                ]),
-              ],
-            ),
+            cards: [
+              _chart(ServerMetric.cpu, l10n.metricCpu, [l10n.metricCpu]),
+              _chart(ServerMetric.disk, l10n.metricDisk, [
+                l10n.metricRead,
+                l10n.metricWrite,
+              ]),
+              _chart(ServerMetric.network, l10n.metricNetwork, [
+                l10n.metricIn,
+                l10n.metricOut,
+              ]),
+            ],
           ),
+          labelsSection(l10n, s.labels),
+          detailsSection(l10n, id: s.id),
           activitySection(l10n, _scope, CloudType.server, widget.serverId),
         ],
         dangerZone: [
@@ -248,17 +287,10 @@ class _ServerDetailPageState extends ConsumerState<ServerDetailPage> {
         data: (period) =>
             serverMetricsProvider(_scope, widget.serverId, metric, period),
       );
-}
 
-/// Public IPs with reverse DNS, private networks with remove and alias
-/// IPs, firewalls (CMP-018, CMP-041, NET-086).
-class _Network extends ConsumerWidget {
-  const new({required this.ops});
-
-  final ServerOps ops;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  /// Public IPs with reverse DNS, private networks with remove and alias
+  /// IPs, firewalls (CMP-018, CMP-041, NET-086).
+  DetailSection _network(ServerOps ops) {
     final l10n = AppLocalizations.of(context);
     final s = ops.server;
     final scope = ops.scope;
@@ -277,84 +309,68 @@ class _Network extends ConsumerWidget {
               : ref.watch(firewallsProvider(scope)).value ?? const <Firewall>[])
         f.id: f.name,
     };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (s.ipv4 case final ip?) ...[
-          Text(l10n.publicIpv4, style: _label(context)),
-          CopyableValue(formatIp(ip)),
-          if (s.ipv4Ptr case final ptr? when ptr.isNotEmpty)
-            Text(l10n.reverseDnsValue(ptr), style: _label(context)),
-        ],
-        if (s.ipv6 case final ip?) ...[
-          Text(l10n.publicIpv6, style: _label(context)),
-          CopyableValue(formatIp(ip)),
-        ],
-        if (s.networks.isNotEmpty) ...[
-          Text(l10n.resourceNetworks, style: _label(context)),
-          for (final n in s.networks)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(networks[n.id] ?? '#${n.id}'),
-              subtitle: Mono([formatIp(n.ip), ...n.aliasIps].join(' · ')),
-              onTap: () => NetworkRoute(
-                accountId: scope.accountId,
-                projectId: scope.projectId,
-                networkId: n.id,
-              ).push<void>(context),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    tooltip: l10n.fieldAliasIps,
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () => ops.aliasIps(n.id, n.aliasIps),
-                  ),
-                  IconButton(
-                    tooltip: l10n.actionRemove,
-                    icon: const Icon(Icons.link_off),
-                    onPressed: () =>
-                        ops.detachNetwork(n.id, networks[n.id] ?? '#${n.id}'),
-                  ),
-                ],
-              ),
-            ),
-        ],
-        if (s.firewalls.isNotEmpty) ...[
-          Text(l10n.resourceFirewalls, style: _label(context)),
-          for (final f in s.firewalls)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.shield_outlined),
-              title: Text(firewalls[f] ?? '#$f'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => FirewallRoute(
-                accountId: scope.accountId,
-                projectId: scope.projectId,
-                firewallId: f,
-              ).push<void>(context),
-            ),
-        ],
+    final facts = [
+      if (s.ipv4 case final ip?) ...[
+        Fact(l10n.publicIpv4, text: formatIp(ip), copy: true),
+        if (s.ipv4Ptr case final ptr? when ptr.isNotEmpty)
+          Fact(l10n.reverseDns, text: ptr, mono: true),
       ],
+      if (s.ipv6 case final ip?)
+        Fact(l10n.publicIpv6, text: formatIp(ip), copy: true),
+    ];
+    final cards = [
+      for (final n in s.networks)
+        RelatedCard(
+          icon: Icons.hub_outlined,
+          title: networks[n.id] ?? '#${n.id}',
+          subtitle: [formatIp(n.ip), ...n.aliasIps].join(' · '),
+          onTap: () => NetworkRoute(
+            accountId: scope.accountId,
+            projectId: scope.projectId,
+            networkId: n.id,
+          ).push<void>(context),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: l10n.fieldAliasIps,
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () => ops.aliasIps(n.id, n.aliasIps),
+              ),
+              IconButton(
+                tooltip: l10n.actionRemove,
+                icon: const Icon(Icons.link_off),
+                onPressed: () =>
+                    ops.detachNetwork(n.id, networks[n.id] ?? '#${n.id}'),
+              ),
+            ],
+          ),
+        ),
+      for (final f in s.firewalls)
+        RelatedCard(
+          icon: Icons.shield_outlined,
+          title: firewalls[f] ?? '#$f',
+          subtitle: l10n.resourceFirewall,
+          onTap: () => FirewallRoute(
+            accountId: scope.accountId,
+            projectId: scope.projectId,
+            firewallId: f,
+          ).push<void>(context),
+        ),
+    ];
+    return DetailSection(
+      title: l10n.sectionNetwork,
+      facts: facts,
+      cards: cards,
+      child: facts.isEmpty && cards.isEmpty ? Text(l10n.commonNone) : null,
     );
   }
 
-  static TextStyle _label(BuildContext context) =>
-      TextStyle(fontSize: 13, color: FalcoColors.of(context).textSecondary);
-}
-
-/// Volumes, placement group and load balancers, with a jump into the
-/// detail where it exists (CMP-019).
-class _Attached extends ConsumerWidget {
-  const new({required this.scope, required this.server});
-
-  final ProjectScope scope;
-  final CloudServer server;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  /// Volumes, placement group and load balancers, with a jump into the
+  /// detail where it exists (CMP-019).
+  DetailSection _attached(CloudServer s) {
     final l10n = AppLocalizations.of(context);
-    final s = server;
+    final scope = _scope;
     final volumes = {
       for (final v
           in ref.watch(volumesProvider(scope)).value ?? const <Volume>[])
@@ -368,60 +384,49 @@ class _Attached extends ConsumerWidget {
                     const <LoadBalancer>[])
         lb.id: lb.name,
     };
-    Widget link(IconData icon, String title, String? sub, VoidCallback? tap) =>
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(icon),
-          title: Text(title),
-          subtitle: sub == null ? null : Text(sub),
-          trailing: tap == null ? null : const Icon(Icons.chevron_right),
-          onTap: tap,
-        );
-    final empty =
-        s.volumes.isEmpty &&
-        s.placementGroup == null &&
-        s.loadBalancers.isEmpty;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (empty) Text(l10n.commonNone),
-        for (final id in s.volumes)
-          link(
-            Icons.storage_outlined,
-            volumes[id]?.name ?? '#$id',
-            switch (volumes[id]) {
-              final v? => gb(v.sizeGb, l10n.localeName),
-              null => l10n.resourceVolume,
-            },
-            () => VolumeRoute(
-              accountId: scope.accountId,
-              projectId: scope.projectId,
-              volumeId: id,
-            ).push<void>(context),
-          ),
-        if (s.placementGroup case final g?)
-          link(
-            Icons.scatter_plot_outlined,
-            g.name,
-            l10n.resourcePlacementGroup,
-            () => PlacementGroupRoute(
-              accountId: scope.accountId,
-              projectId: scope.projectId,
-              groupId: g.id,
-            ).push<void>(context),
-          ),
-        for (final id in s.loadBalancers)
-          link(
-            Icons.balance,
-            lbs[id] ?? '#$id',
-            l10n.resourceLoadBalancer,
-            () => LoadBalancerRoute(
-              accountId: scope.accountId,
-              projectId: scope.projectId,
-              lbId: id,
-            ).push<void>(context),
-          ),
-      ],
+    final cards = [
+      for (final id in s.volumes)
+        RelatedCard(
+          icon: Icons.storage_outlined,
+          title: volumes[id]?.name ?? '#$id',
+          status: volumes[id]?.status,
+          subtitle: switch (volumes[id]) {
+            final v? => gb(v.sizeGb, l10n.localeName),
+            null => l10n.resourceVolume,
+          },
+          onTap: () => VolumeRoute(
+            accountId: scope.accountId,
+            projectId: scope.projectId,
+            volumeId: id,
+          ).push<void>(context),
+        ),
+      if (s.placementGroup case final g?)
+        RelatedCard(
+          icon: Icons.scatter_plot_outlined,
+          title: g.name,
+          subtitle: l10n.resourcePlacementGroup,
+          onTap: () => PlacementGroupRoute(
+            accountId: scope.accountId,
+            projectId: scope.projectId,
+            groupId: g.id,
+          ).push<void>(context),
+        ),
+      for (final id in s.loadBalancers)
+        RelatedCard(
+          icon: Icons.balance,
+          title: lbs[id] ?? '#$id',
+          subtitle: l10n.resourceLoadBalancer,
+          onTap: () => LoadBalancerRoute(
+            accountId: scope.accountId,
+            projectId: scope.projectId,
+            lbId: id,
+          ).push<void>(context),
+        ),
+    ];
+    return DetailSection(
+      title: l10n.sectionAttached,
+      cards: cards,
+      child: cards.isEmpty ? Text(l10n.commonNone) : null,
     );
   }
 }

@@ -120,11 +120,20 @@ class AccountPage extends ConsumerWidget {
       title: l10n.accountTitle,
       body: DetailPage(
         name: account.name,
-        ids: [if (account.description.isNotEmpty) account.description],
+        ids: [
+          if (account.description.isNotEmpty)
+            DetailId(account.description, icon: Icons.notes),
+        ],
+        facts: [
+          Fact(l10n.projectsStep, text: '${account.projects.length}'),
+          Fact(l10n.scopeRobot, on: account.hasRobot),
+          Fact(l10n.accountDefault, on: isDefault),
+        ],
         actions: [
           DetailAction(
             icon: Icons.open_in_browser,
             label: l10n.accountOpen,
+            group: ActionGroup.access,
             onTap: firstScope(account) == null
                 ? null
                 : () => scopeRoute(firstScope(account)!).go(context),
@@ -132,11 +141,13 @@ class AccountPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: ops.edit,
           ),
           DetailAction(
             icon: isDefault ? Icons.star : Icons.star_outline,
             label: l10n.accountDefault,
+            group: ActionGroup.manage,
             onTap: () => ref
                 .read(appSettingsProvider.notifier)
                 .update(
@@ -148,6 +159,7 @@ class AccountPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.add,
             label: l10n.projectAdd,
+            group: ActionGroup.manage,
             onTap: () =>
                 AddProjectRoute(accountId: account.id).push<void>(context),
           ),
@@ -172,17 +184,19 @@ class AccountPage extends ConsumerWidget {
                     title: Text(l10n.robotAccess),
                     subtitle: Text(l10n.robotStored),
                     trailing: MoreMenu(
-                      items: [
-                        MoreMenuItem(
+                      title: l10n.robotAccess,
+                      actions: [
+                        DetailAction(
                           label: l10n.robotChange,
                           icon: Icons.key,
-                          onSelected: ops.robot,
+                          group: ActionGroup.access,
+                          onTap: ops.robot,
                         ),
-                        MoreMenuItem(
+                        DetailAction(
                           label: l10n.robotDelete,
                           icon: Icons.delete_outline,
-                          destructive: true,
-                          onSelected: ops.deleteRobot,
+                          group: ActionGroup.danger,
+                          onTap: ops.deleteRobot,
                         ),
                       ],
                     ),
@@ -222,34 +236,38 @@ class _ProjectTile extends ConsumerWidget {
       title: Text(project.name),
       subtitle: Text(s3 == null ? l10n.s3NoKeys : l10n.s3Keys(s3)),
       trailing: MoreMenu(
-        items: [
-          MoreMenuItem(
+        title: project.name,
+        actions: [
+          DetailAction(
             label: l10n.actionRename,
             icon: Icons.edit_outlined,
-            onSelected: () => ops.rename(project),
+            group: ActionGroup.manage,
+            onTap: () => ops.rename(project),
           ),
-          MoreMenuItem(
+          DetailAction(
             label: l10n.tokenChange,
             icon: Icons.key,
-            onSelected: () => ops.token(project),
+            group: ActionGroup.access,
+            onTap: () => ops.token(project),
           ),
-          MoreMenuItem(
+          DetailAction(
             label: l10n.s3Change,
             icon: Icons.inventory_2_outlined,
-            onSelected: () => ops.s3(project),
+            group: ActionGroup.access,
+            onTap: () => ops.s3(project),
           ),
           if (s3 != null)
-            MoreMenuItem(
+            DetailAction(
               label: l10n.s3Delete,
               icon: Icons.key_off,
-              destructive: true,
-              onSelected: () => ops.deleteS3(project),
+              group: ActionGroup.danger,
+              onTap: () => ops.deleteS3(project),
             ),
-          MoreMenuItem(
+          DetailAction(
             label: l10n.projectDelete,
             icon: Icons.delete_outline,
-            destructive: true,
-            onSelected: () => ops.deleteProject(project),
+            group: ActionGroup.danger,
+            onTap: () => ops.deleteProject(project),
           ),
         ],
       ),

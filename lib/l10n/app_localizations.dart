@@ -386,6 +386,66 @@ abstract class AppLocalizations {
   /// **'Danger zone'**
   String get dangerZone;
 
+  /// No description provided for @commonOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get commonOn;
+
+  /// No description provided for @actionGroupPower.
+  ///
+  /// In en, this message translates to:
+  /// **'Power'**
+  String get actionGroupPower;
+
+  /// No description provided for @actionGroupAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Access'**
+  String get actionGroupAccess;
+
+  /// No description provided for @actionGroupManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get actionGroupManage;
+
+  /// No description provided for @actionGroupNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get actionGroupNetwork;
+
+  /// No description provided for @actionGroupBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup and images'**
+  String get actionGroupBackup;
+
+  /// No description provided for @sectionConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration'**
+  String get sectionConfiguration;
+
+  /// No description provided for @sectionProtection.
+  ///
+  /// In en, this message translates to:
+  /// **'Protection'**
+  String get sectionProtection;
+
+  /// No description provided for @sectionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get sectionDetails;
+
+  /// No description provided for @sectionRelated.
+  ///
+  /// In en, this message translates to:
+  /// **'Related'**
+  String get sectionRelated;
+
   /// No description provided for @wizardStep.
   ///
   /// In en, this message translates to:

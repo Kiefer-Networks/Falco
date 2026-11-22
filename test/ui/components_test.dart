@@ -282,6 +282,7 @@ void main() {
                 DetailAction(
                   icon: Icons.refresh,
                   label: 'Reboot',
+                  group: ActionGroup.power,
                   onTap: () => taps++,
                 ),
               ],
@@ -294,6 +295,46 @@ void main() {
       tester.semantics.tap(find.semantics.byLabel(label));
     }
     expect(taps, 2);
+  });
+
+  testWidgets('QRS-008 the More sheet groups actions, danger zone last', (
+    tester,
+  ) async {
+    var picked = '';
+    DetailAction action(String label, ActionGroup group) => DetailAction(
+      icon: Icons.circle,
+      label: label,
+      group: group,
+      onTap: () => picked = label,
+    );
+    await tester.pumpWidget(
+      testApp(
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: DetailActionBar(
+            actions: [
+              action('A', ActionGroup.power),
+              action('B', ActionGroup.power),
+              action('C', ActionGroup.power),
+              action('Wipe', ActionGroup.danger),
+              action('Rename', ActionGroup.manage),
+              action('Off', ActionGroup.power),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byTooltip('More actions'));
+    await tester.pumpAndSettle();
+    double y(String text) => tester.getTopLeft(find.text(text)).dy;
+    expect(y('POWER') < y('Off'), isTrue);
+    expect(y('Off') < y('MANAGE'), isTrue);
+    expect(y('Rename') < y('DANGER ZONE'), isTrue);
+    expect(y('DANGER ZONE') < y('Wipe'), isTrue);
+    expect(find.text('NETWORK'), findsNothing);
+    await tester.tap(find.text('Wipe'));
+    await tester.pumpAndSettle();
+    expect(picked, 'Wipe');
   });
 
   group('ResourceList', () {

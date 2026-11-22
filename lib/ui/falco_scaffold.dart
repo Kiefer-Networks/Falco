@@ -73,71 +73,29 @@ class FalcoScaffold extends StatelessWidget {
   }
 }
 
-/// One entry of a [MoreMenu].
-@immutable
-class MoreMenuItem {
-  /// Creates an entry.
-  const new({
-    required this.label,
-    required this.onSelected,
-    this.icon,
-    this.destructive = false,
-  });
-
-  /// Localized label.
-  final String label;
-
-  /// Called when chosen.
-  final VoidCallback onSelected;
-
-  /// Optional leading icon.
-  final IconData? icon;
-
-  /// Draws the entry in the error color (e.g. "Delete").
-  final bool destructive;
-}
-
-/// The single "more" menu of a screen's top bar.
+/// The single "more" menu of a screen's top bar or of a row: opens the
+/// grouped action sheet ([showActionSheet]) with [actions].
 class MoreMenu extends StatelessWidget {
-  /// Creates the menu with [items].
-  const new({required this.items, super.key});
+  /// Creates the menu with [actions].
+  const new({required this.actions, this.title, super.key});
 
-  /// Entries in display order.
-  final List<MoreMenuItem> items;
+  /// Entries; the sheet groups them by [ActionGroup].
+  final List<DetailAction> actions;
+
+  /// Sheet title; defaults to "More actions".
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
-    final c = FalcoColors.of(context);
-    return PopupMenuButton<int>(
-      tooltip: AppLocalizations.of(context).moreActions,
-      icon: Icon(Icons.more_vert, color: c.text),
-      onSelected: (i) => items[i].onSelected(),
-      itemBuilder: (context) => [
-        for (final (i, item) in items.indexed)
-          PopupMenuItem(
-            value: i,
-            child: Row(
-              children: [
-                if (item.icon != null) ...[
-                  Icon(
-                    item.icon,
-                    size: 20,
-                    color: item.destructive ? c.error : c.textSecondary,
-                  ),
-                  const SizedBox(width: 12),
-                ],
-                Flexible(
-                  child: Text(
-                    item.label,
-                    style: TextStyle(
-                      color: item.destructive ? c.error : c.text,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
+    final l10n = AppLocalizations.of(context);
+    return IconButton(
+      tooltip: l10n.moreActions,
+      icon: Icon(Icons.more_vert, color: FalcoColors.of(context).text),
+      onPressed: () => showActionSheet(
+        context,
+        title: title ?? l10n.moreActions,
+        actions: actions,
+      ),
     );
   }
 }

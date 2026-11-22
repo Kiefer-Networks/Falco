@@ -156,14 +156,22 @@ class ImageDetailPage extends ConsumerWidget {
         status: busy ? ResourceStatus.inProgress : i.status,
         name: i.description,
         ids: [
-          imageKindText(i.kind, l10n),
-          if (i.sizeGb case final size?) gb(size, l10n.localeName),
+          DetailId(imageKindText(i.kind, l10n), icon: Icons.album_outlined),
+          DetailId(i.architecture, icon: Icons.memory),
+        ],
+        facts: [
+          if (i.sizeGb case final size?)
+            Fact(l10n.fieldSize, text: gb(size, l10n.localeName)),
+          Fact(l10n.fieldDisk, text: gb(i.diskGb, l10n.localeName)),
+          Fact(l10n.fieldSource, text: i.source ?? l10n.commonNone),
+          Fact(l10n.fieldDeleteProtection, on: i.protectDelete),
         ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => editNameAndLabels(
               context,
               ref,
@@ -179,36 +187,20 @@ class ImageDetailPage extends ConsumerWidget {
           DetailAction(
             icon: i.protectDelete ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
+            group: ActionGroup.manage,
             onTap: busy ? null : protect,
           ),
           if (i.kind == ImageKind.backup)
             DetailAction(
               icon: Icons.photo_camera_outlined,
               label: l10n.imageConvert,
+              group: ActionGroup.backup,
               onTap: convert,
             ),
         ],
         sections: [
-          DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldType, imageKindText(i.kind, l10n)),
-              if (i.sizeGb case final size?)
-                ConfirmFact(l10n.fieldSize, gb(size, l10n.localeName)),
-              ConfirmFact(l10n.fieldDisk, gb(i.diskGb, l10n.localeName)),
-              ConfirmFact(l10n.fieldSource, i.source ?? l10n.commonNone),
-              ConfirmFact(l10n.fieldArchitecture, i.architecture),
-              ConfirmFact(
-                l10n.fieldDeleteProtection,
-                yesNo(i.protectDelete, l10n),
-              ),
-              ConfirmFact(
-                l10n.fieldCreated,
-                formatDateTime(i.created, l10n.localeName),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(i.labels, l10n)),
-            ]),
-          ),
+          labelsSection(l10n, i.labels),
+          detailsSection(l10n, id: i.id, created: i.created),
           activitySection(l10n, scope, CloudType.image, i.id),
         ],
         dangerZone: [

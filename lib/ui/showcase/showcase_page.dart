@@ -248,21 +248,25 @@ List<ShowcaseCase> showcaseCases() => [
             DetailAction(
               icon: Icons.refresh,
               label: l10n.actionReboot,
+              group: ActionGroup.power,
               onTap: () {},
             ),
             DetailAction(
               icon: Icons.power_settings_new,
               label: l10n.actionShutdown,
+              group: ActionGroup.power,
               onTap: null,
             ),
             DetailAction(
               icon: Icons.scatter_plot_outlined,
               label: l10n.placementGroupRemove,
+              group: ActionGroup.manage,
               onTap: () {},
             ),
             DetailAction(
               icon: Icons.terminal,
               label: l10n.actionConsole,
+              group: ActionGroup.access,
               onTap: () {},
             ),
           ],
@@ -412,7 +416,7 @@ List<ShowcaseCase> showcaseCases() => [
   ),
   (
     id: 'detail_page',
-    height: 900,
+    height: 1500,
     builder: (context) {
       final l10n = AppLocalizations.of(context);
       return FalcoScaffold(
@@ -425,53 +429,116 @@ List<ShowcaseCase> showcaseCases() => [
             l10n,
           ),
           name: 'db-primary',
-          ids: const ['116.203.88.4', '2a01:4f8:c17:3b2::/64'],
+          ids: const [
+            DetailId('116.203.88.4', icon: Icons.public, copy: true),
+            DetailId('fsn1', icon: Icons.place_outlined),
+            DetailId('CX32', icon: Icons.memory),
+          ],
+          facts: [
+            Fact(l10n.fieldVcpu, text: '4'),
+            Fact(l10n.fieldMemory, text: '8 GiB'),
+            Fact(
+              l10n.fieldDisk,
+              text: formatBytes(80 * 1024 * 1024 * 1024, l10n.localeName),
+            ),
+            Fact(l10n.fieldBackups, on: true),
+          ],
           onRefresh: _noop,
           actions: [
             DetailAction(
               icon: Icons.restart_alt,
               label: l10n.actionReboot,
+              group: ActionGroup.power,
               onTap: () {},
             ),
             DetailAction(
               icon: Icons.power_settings_new,
               label: l10n.actionShutdown,
+              group: ActionGroup.power,
               onTap: () {},
             ),
             DetailAction(
               icon: Icons.terminal,
               label: l10n.actionConsole,
+              group: ActionGroup.access,
+              onTap: () {},
+            ),
+            DetailAction(
+              icon: Icons.power_off_outlined,
+              label: l10n.actionPowerOff,
+              group: ActionGroup.power,
+              onTap: () {},
+            ),
+            DetailAction(
+              icon: Icons.edit_outlined,
+              label: l10n.commonEdit,
+              group: ActionGroup.manage,
+              onTap: () {},
+            ),
+            DetailAction(
+              icon: Icons.dns_outlined,
+              label: l10n.reverseDns,
+              group: ActionGroup.network,
               onTap: () {},
             ),
             DetailAction(
               icon: Icons.photo_camera_outlined,
               label: l10n.actionSnapshot,
+              group: ActionGroup.backup,
               onTap: null,
+            ),
+            DetailAction(
+              icon: Icons.restart_alt,
+              label: l10n.actionReset,
+              group: ActionGroup.danger,
+              onTap: () {},
             ),
           ],
           sections: [
             DetailSection(
-              title: l10n.sectionOverview,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const CopyableValue('116.203.88.4'),
-                  Mono(formatBytes(80 * 1024 * 1024 * 1024, l10n.localeName)),
-                ],
-              ),
+              title: l10n.sectionNetwork,
+              facts: [
+                Fact(l10n.publicIpv4, text: '116.203.88.4', copy: true),
+                Fact(l10n.reverseDns, text: 'db.example.com', mono: true),
+              ],
+            ),
+            DetailSection(
+              title: l10n.sectionProtection,
+              facts: [
+                Fact(l10n.fieldDeleteProtection, on: true),
+                Fact(l10n.fieldRebuildProtection, on: false),
+              ],
+            ),
+            DetailSection(
+              title: l10n.sectionAttached,
+              cards: [
+                RelatedCard(
+                  icon: Icons.storage_outlined,
+                  title: 'pg-data',
+                  subtitle: '100 GiB',
+                  status: ResourceStatus.available,
+                  onTap: () {},
+                ),
+              ],
+            ),
+            DetailSection(
+              title: l10n.fieldLabels,
+              child: const LabelChips({'env': 'prod', 'role': 'db'}),
             ),
             DetailSection(
               title: l10n.sectionMetrics,
-              child: _chart(
-                context,
-                headline: '38%',
-                series: [
-                  MetricSeries(
-                    label: l10n.metricCpu,
-                    points: _samples([12, 14, 11, 20, 24, 38, 52, 47, 40]),
-                  ),
-                ],
-              ),
+              cards: [
+                _chart(
+                  context,
+                  headline: '38%',
+                  series: [
+                    MetricSeries(
+                      label: l10n.metricCpu,
+                      points: _samples([12, 14, 11, 20, 24, 38, 52, 47, 40]),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
           dangerZone: [
@@ -504,17 +571,18 @@ List<ShowcaseCase> showcaseCases() => [
           ),
         ],
         moreMenu: MoreMenu(
-          items: [
-            MoreMenuItem(
+          actions: [
+            DetailAction(
               label: l10n.actionRename,
               icon: Icons.edit_outlined,
-              onSelected: () {},
+              group: ActionGroup.manage,
+              onTap: () {},
             ),
-            MoreMenuItem(
+            DetailAction(
               label: l10n.actionDelete,
               icon: Icons.delete_outline,
-              destructive: true,
-              onSelected: () {},
+              group: ActionGroup.danger,
+              onTap: () {},
             ),
           ],
         ),

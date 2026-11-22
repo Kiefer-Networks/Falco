@@ -76,7 +76,7 @@ void main() {
         300,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('10.0.1.2'), findsOneWidget);
+      expect(find.textContaining('10.0.1.2'), findsOneWidget);
     });
 
     testWidgets('NET-046 NET-047 add a vSwitch subnet, delete one', (

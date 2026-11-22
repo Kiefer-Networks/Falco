@@ -84,12 +84,13 @@ class SshKeyDetailPage extends ConsumerWidget {
       title: l10n.resourceSshKey,
       body: DetailPage(
         name: k.name,
-        ids: [k.fingerprint],
+        ids: [DetailId(k.fingerprint, icon: Icons.fingerprint, copy: true)],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => editNameAndLabels(
               context,
               ref,
@@ -102,20 +103,11 @@ class SshKeyDetailPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldFingerprint, k.fingerprint, mono: true),
-              ConfirmFact(
-                l10n.fieldCreated,
-                formatDateTime(k.created, l10n.localeName),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(k.labels, l10n)),
-            ]),
-          ),
-          DetailSection(
             title: l10n.fieldPublicKey,
             child: CopyableValue(k.publicKey),
           ),
+          labelsSection(l10n, k.labels),
+          detailsSection(l10n, id: k.id, created: k.created),
         ],
         dangerZone: [
           DeleteButton(

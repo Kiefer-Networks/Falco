@@ -167,6 +167,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dangerZone => 'Danger zone';
 
   @override
+  String get commonOn => 'On';
+
+  @override
+  String get actionGroupPower => 'Power';
+
+  @override
+  String get actionGroupAccess => 'Access';
+
+  @override
+  String get actionGroupManage => 'Manage';
+
+  @override
+  String get actionGroupNetwork => 'Network';
+
+  @override
+  String get actionGroupBackup => 'Backup and images';
+
+  @override
+  String get sectionConfiguration => 'Configuration';
+
+  @override
+  String get sectionProtection => 'Protection';
+
+  @override
+  String get sectionDetails => 'Details';
+
+  @override
+  String get sectionRelated => 'Related';
+
+  @override
   String wizardStep(int current, int total) {
     return 'Step $current of $total';
   }

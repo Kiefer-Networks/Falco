@@ -129,12 +129,19 @@ class CertificateDetailPage extends ConsumerWidget {
         status: busy ? ResourceStatus.inProgress : c.status(DateTime.now()),
         statusDetail: busy ? '${progress.progress} %' : _expiry(c, l10n),
         name: c.name,
-        ids: [_type(c, l10n), ...c.domains],
+        ids: [for (final d in c.domains) DetailId(d, icon: Icons.language)],
+        facts: [
+          Fact(l10n.fieldType, text: _type(c, l10n)),
+          if (c.validUntil case final d?) Fact(l10n.fieldValidUntil, time: d),
+          Fact(l10n.sectionUsedBy, text: '${c.usedBy.length}'),
+          Fact(l10n.fieldCreated, time: c.created),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => editNameAndLabels(
               context,
               ref,
@@ -148,6 +155,7 @@ class CertificateDetailPage extends ConsumerWidget {
             DetailAction(
               icon: Icons.refresh,
               label: l10n.certificateRetry,
+              group: ActionGroup.manage,
               onTap: c.failed && !busy
                   ? () => runAction(
                       context,
@@ -160,48 +168,43 @@ class CertificateDetailPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldType, _type(c, l10n)),
-              ConfirmFact(l10n.fieldDomains, c.domains.join('\n')),
-              if (c.validFrom case final d?)
-                ConfirmFact(
-                  l10n.fieldValidFrom,
-                  formatDateTime(d, l10n.localeName),
-                ),
-              if (c.validUntil case final d?)
-                ConfirmFact(
-                  l10n.fieldValidUntil,
-                  formatDateTime(d, l10n.localeName),
-                ),
-              if (c.fingerprint case final f?)
-                ConfirmFact(l10n.fieldFingerprint, f, mono: true),
+            title: l10n.sectionConfiguration,
+            facts: [
+              for (final d in c.domains)
+                Fact(l10n.fieldDomains, text: d, mono: true),
+              if (c.validFrom case final d?) Fact(l10n.fieldValidFrom, time: d),
               if (status(c.issuance) case final s?)
-                ConfirmFact(l10n.fieldIssuance, s),
+                Fact(l10n.fieldIssuance, text: s),
               if (status(c.renewal) case final s?)
-                ConfirmFact(l10n.fieldRenewal, s),
-              if (c.error case final e?) ConfirmFact(l10n.errorTitle, e),
-              ConfirmFact(
-                l10n.fieldCreated,
-                formatDateTime(c.created, l10n.localeName),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(c.labels, l10n)),
-            ]),
+                Fact(l10n.fieldRenewal, text: s),
+              if (c.error case final e?) Fact(l10n.errorTitle, text: e),
+            ],
           ),
           DetailSection(
             title: l10n.sectionUsedBy,
-            child: entries([
+            cards: [
+              if (c.usedBy.isEmpty) Text(l10n.certificateUnused),
               for (final id in c.usedBy)
-                EntryRow(
-                  leading: const Icon(Icons.balance),
+                RelatedCard(
+                  icon: Icons.balance,
                   title: lbs[id] ?? '#$id',
+                  subtitle: l10n.resourceLoadBalancer,
                   onTap: () => LoadBalancerRoute(
                     accountId: scope.accountId,
                     projectId: scope.projectId,
                     lbId: id,
                   ).push<void>(context),
                 ),
-            ], l10n.certificateUnused),
+            ],
+          ),
+          labelsSection(l10n, c.labels),
+          detailsSection(
+            l10n,
+            id: c.id,
+            more: [
+              if (c.fingerprint case final f?)
+                Fact(l10n.fieldFingerprint, text: f, copy: true),
+            ],
           ),
           activitySection(l10n, scope, CloudType.certificate, c.id),
         ],

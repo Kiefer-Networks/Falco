@@ -580,6 +580,10 @@ void main() {
         fakeRobotUser,
       );
 
+      // The "saved" snackbar covers the row's menu.
+      ScaffoldMessenger.of(tester.element(find.byType(Scaffold).last))
+          .hideCurrentSnackBar();
+      await tester.pumpAndSettle();
       await tester.tap(
         find.descendant(
           of: find.widgetWithText(ListTile, 'Webservice access'),

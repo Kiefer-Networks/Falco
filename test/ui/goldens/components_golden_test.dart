@@ -63,6 +63,17 @@ void main() {
         );
       });
 
+      testWidgets('detail_more_sheet QRS-008 QRS-030', (tester) async {
+        final c = showcaseCases().firstWhere((c) => c.id == 'detail_page');
+        await pumpCase(tester, c, variant);
+        await tester.tap(find.byTooltip('More actions'));
+        await tester.pumpAndSettle();
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('detail_more_sheet_${variant.name}.png'),
+        );
+      });
+
       testWidgets('confirm_sheet_level2_matched', (tester) async {
         final c = showcaseCases().firstWhere(
           (c) => c.id == 'confirm_sheet_level2',

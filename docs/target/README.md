@@ -105,9 +105,9 @@ Regeln:
 | Blockiert | `ActionHint`: ein Satz und genau ein Knopf, nur wenn der ganze Screen ohne diese Handlung nicht weitergeht (Entsperren, fehlender Robot Zugang, fehlende S3 Schlüssel); nie für leere Listen |
 | Fehler | Fehlerkarte mit Ursache in Klartext und "Erneut versuchen"; bei vorhandenen Daten bleiben diese sichtbar, Fehler als Banner |
 | Laden | Skeleton Zeilen beim ersten Laden, danach nur Fortschrittsbalken |
-| Detail | Kopf (Status, Name, Mono Kennungen) → Abschnitte (Übersicht, Metriken, Netzwerk, Einstellungen, Aktivität) → Gefahrenzone ganz unten im Inhalt. Alle Aktionen der Ressource in der Aktionsleiste unten (`DetailActionBar`) |
-| Aktionen im Detail | Aktionsleiste am unteren Rand, in Daumenreichweite: höchstens drei Aktionen als Knopf mit vollem Text (bricht um, wird nie abgeschnitten), alle weiteren im Blatt "Mehr". Kein Mehr Menü in der Kopfzeile einer Detailseite, keine Aktionsknöpfe im Inhalt außer der Gefahrenzone |
-| Weitere Aktionen sonst | Screens ohne Detail (Objekt Browser, Liste einer Zeile) nutzen ein "Mehr" Menü in der Kopfzeile bzw. an der Zeile; nie doppelt |
+| Detail | `DetailPage`: Kopfkarte (`DetailHeader`) → wichtigste Fakten als Kacheln (`FactGrid`) → Abschnitte nach Bedeutung (`DetailSection`) → Gefahrenzone ganz unten im Inhalt. Alle Aktionen der Ressource in der Aktionsleiste unten (`DetailActionBar`). Regeln in 5.1 |
+| Aktionen im Detail | Aktionsleiste am unteren Rand, in Daumenreichweite: höchstens drei Aktionen als Knopf mit vollem Text (bricht um, wird nie abgeschnitten), alle weiteren im Blatt "Mehr", nach Gruppen geordnet (5.2). Kein Mehr Menü in der Kopfzeile einer Detailseite, keine Aktionsknöpfe im Inhalt außer der Gefahrenzone |
+| Weitere Aktionen sonst | Screens ohne Detail (Objekt Browser, Liste einer Zeile) nutzen ein "Mehr" Menü (`MoreMenu`) in der Kopfzeile bzw. an der Zeile; es öffnet dasselbe gruppierte Aktionsblatt (`showActionSheet`); nie doppelt |
 | Anlegen | Genau ein Einstieg pro Screen: der FAB unten rechts auf der Liste des Typs ("+ Server erstellen"). Er öffnet immer einen Vollbild Wizard (Schritte, Zusammenfassung, Erstellen), Projekt Schritt nur wenn Scope "Alle Projekte". Übersicht und Leer Hinweis haben keinen Anlegen Knopf |
 | Bearbeiten | Bottom Sheet mit Formular und Speichern |
 | Bestätigen | Stufe 1: Sheet mit Titel, Folgen, primärer Aktion (Neustart, Ausschalten, Abhängen, Schutz ändern). Stufe 2: zusätzlich Namen eintippen (Löschen, Neuaufsetzen, Daten überschreiben). Die Regel steht im Code, nicht pro Screen |
@@ -118,6 +118,64 @@ Regeln:
 
 Jedes Muster existiert genau einmal als Komponente im Design System
 (`lib/ui/`). Screens setzen nur Komponenten zusammen.
+
+### 5.1 Detailseite
+
+Gilt für jede Ressource (Server, Volumes, Images, Placement Groups, SSH
+Keys, Netzwerke, Firewalls, Floating und Primary IPs, Load Balancer,
+Zertifikate, DNS Zonen und RRSets, Storage Boxen, Robot Server und mehr).
+Bausteine in `lib/ui/detail_page.dart`:
+
+- **`DetailHeader`**: Karte mit Status als Pille (`StatusBadge` auf
+  getönter Fläche), Name und Kennungen als Chips (`DetailId`). Werte, die
+  man kopiert (IPs, IDs, Fingerabdrücke, Hostnamen), sind Mono und
+  kopieren sich per Tipp (`copy: true`); Standort mit Ortssymbol und Code,
+  Typ mit Chipsymbol.
+- **`FactGrid`**: die drei bis sechs wichtigsten Fakten (`Fact`) als
+  Kacheln; zwei Spalten auf Telefonen, drei ab 520 dp, vier ab 840 dp
+  Breite des Detailbereichs. Kacheln einer Reihe sind gleich hoch, Text
+  bricht um statt abgeschnitten zu werden.
+- **`DetailSection`**: Titel in Großbuchstaben, darunter eine Karte mit
+  Zeilen aus Bezeichnung und Wert (`facts`) und freiem Inhalt (`child`,
+  etwa Einträge oder Aktivität), danach Karten, die selbst Karten sind
+  (`cards`: `RelatedCard`, Metrik Diagramme). Reihenfolge: Abschnitte der
+  Ressource (Netzwerk, Konfiguration, Schutz, Einträge) →
+  Verknüpfte Ressourcen → Metriken → Labels (`LabelChips`) → Details
+  (ID und Erstellt) → Aktivität. Was im `FactGrid` steht, wiederholt kein
+  Abschnitt.
+- **`Fact`**: genau ein Wert. Text (`mono` nur für technische Werte wie
+  IPs, IDs, Bereiche, Hostnamen; `copy` für Werte, die man kopiert), An
+  oder Aus als `StatusChip` (`on`, nie "Ja" oder "Nein" als Text), Datum
+  (`time`: relativ und absolut bis 30 Tage, danach absolut; so bleiben
+  Goldens stabil), sonst ein Widget (`child`).
+- **`RelatedCard`**: verknüpfte Ressourcen (Server einer IP, Volumes eines
+  Servers, Ziele eines Load Balancers) als antippbare Karte mit Symbol,
+  Name, Status oder Mono Zeile und Pfeil; Entfernen oder Bearbeiten als
+  `trailing`.
+
+Alles nutzt nur Farbtokens und Textstile des Themes (dunkel, hell, OLED,
+Akzent), funktioniert mit großer Schrift und auf Tablets und trägt
+Semantik: der Name ist Überschrift und wird zuerst vorgelesen, jede Zeile
+und Kachel wird als eine Einheit gelesen, Kopierchips sagen "kopieren".
+
+### 5.2 Aktionen in Gruppen
+
+Jede `DetailAction` trägt eine `ActionGroup`. Das Aktionsblatt
+(`showActionSheet`, genutzt von "Mehr" der `DetailActionBar` und von
+jedem `MoreMenu`) zeigt die Gruppen mit Überschrift in fester Reihenfolge:
+
+| Gruppe | Beispiele |
+|---|---|
+| Energie | Einschalten, Herunterfahren, Neustart, Ausschalten, Robot Reset, Wake on LAN |
+| Zugang | Konsole, Rescue, Boot Systeme, Passwörter, Zugriffseinstellungen, Download und Freigabelinks |
+| Verwalten | Bearbeiten, Schutz, Typ ändern, Placement Group, ISO, Volume anhängen, Einträge hinzufügen |
+| Netzwerk | Reverse DNS, Netzwerk anhängen, IP zuweisen, Firewall anwenden, Failover, öffentliches Interface |
+| Backup und Images | Snapshot, Backups, Image umwandeln, Snapshot Plan, Zonen Import und Export |
+| Gefahrenzone | Hard Reset, Ausgewählte löschen, Schlüssel und Projekte löschen; immer zuletzt und rot |
+
+Leere Gruppen entfallen. Die Aktionsleiste zeigt die ersten drei Aktionen
+in der Reihenfolge der Seite (wichtigste zuerst), unabhängig von ihrer
+Gruppe.
 
 ## 6. Datenarchitektur
 

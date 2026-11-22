@@ -180,19 +180,30 @@ class IpDetailPage extends ConsumerWidget {
             ? l10n.ipNotAssigned
             : l10n.ipAssignedTo(serverName),
         name: ip.name,
-        ids: [formatIp(ip.ip), ip.location],
+        ids: [
+          DetailId(formatIp(ip.ip), icon: Icons.public, copy: true),
+          DetailId(ip.location, icon: Icons.place_outlined),
+        ],
+        facts: [
+          Fact(l10n.fieldType, text: ip.ipv6 ? 'IPv6' : 'IPv4'),
+          Fact(l10n.resourceServer, text: serverName),
+          Fact(l10n.fieldDeleteProtection, on: ip.protectDelete),
+          Fact(l10n.fieldCreated, time: ip.created),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           if (ip.server == null)
             DetailAction(
               icon: Icons.link,
               label: l10n.ipAssign,
+              group: ActionGroup.network,
               onTap: busy ? null : assign,
             )
           else
             DetailAction(
               icon: Icons.link_off,
               label: l10n.ipUnassign,
+              group: ActionGroup.network,
               onTap: busy
                   ? null
                   : () => confirmAction(
@@ -215,6 +226,7 @@ class IpDetailPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.dns_outlined,
             label: l10n.reverseDns,
+            group: ActionGroup.network,
             onTap: busy
                 ? null
                 : () => FormSheet.show(
@@ -250,6 +262,7 @@ class IpDetailPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => FormSheet.show(
               context,
               title: l10n.commonEdit,
@@ -299,6 +312,7 @@ class IpDetailPage extends ConsumerWidget {
           DetailAction(
             icon: ip.protectDelete ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
+            group: ActionGroup.manage,
             onTap: busy
                 ? null
                 : () => toggleProtection(
@@ -313,56 +327,48 @@ class IpDetailPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldAddress, formatIp(ip.ip), mono: true),
-              ConfirmFact(l10n.fieldType, ip.ipv6 ? 'IPv6' : 'IPv4'),
-              ConfirmFact(l10n.ipAssigned, yesNo(ip.server != null, l10n)),
-              ConfirmFact(l10n.resourceServer, serverName),
-              ConfirmFact(l10n.fieldLocation, ip.location),
-              ConfirmFact(
-                l10n.reverseDns,
-                ip.reverseDns.isEmpty
-                    ? l10n.commonNone
-                    : [
-                        for (final MapEntry(:key, :value)
-                            in ip.reverseDns.entries)
-                          '$key → $value',
-                      ].join('\n'),
-                mono: ip.reverseDns.isNotEmpty,
-              ),
+            title: l10n.sectionNetwork,
+            facts: [
+              Fact(l10n.fieldAddress, text: formatIp(ip.ip), copy: true),
+              if (ip.reverseDns.isEmpty)
+                Fact(l10n.reverseDns, text: l10n.commonNone)
+              else
+                for (final MapEntry(:key, :value) in ip.reverseDns.entries)
+                  Fact(l10n.reverseDns, text: '$key → $value', mono: true),
+              if (ip.blocked) Fact(l10n.ipBlocked, on: true),
+            ],
+          ),
+          DetailSection(
+            title: l10n.sectionConfiguration,
+            facts: [
               if (floating)
-                ConfirmFact(
+                Fact(
                   l10n.fieldDescription,
-                  ip.description ?? l10n.commonNone,
+                  text: ip.description ?? l10n.commonNone,
                 )
               else
-                ConfirmFact(l10n.fieldAutoDelete, yesNo(ip.autoDelete, l10n)),
-              if (ip.blocked) ConfirmFact(l10n.ipBlocked, l10n.commonYes),
-              ConfirmFact(
-                l10n.fieldDeleteProtection,
-                yesNo(ip.protectDelete, l10n),
-              ),
-              ConfirmFact(
-                l10n.fieldCreated,
-                formatDateTime(ip.created, l10n.localeName),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(ip.labels, l10n)),
-            ]),
+                Fact(l10n.fieldAutoDelete, on: ip.autoDelete),
+            ],
           ),
           if (server case final s?)
             DetailSection(
               title: l10n.resourceServer,
-              child: EntryRow(
-                leading: const Icon(Icons.dns_outlined),
-                title: s.name,
-                onTap: () => ServerRoute(
-                  accountId: scope.accountId,
-                  projectId: scope.projectId,
-                  serverId: s.id,
-                ).push<void>(context),
-              ),
+              cards: [
+                RelatedCard(
+                  icon: Icons.dns_outlined,
+                  title: s.name,
+                  status: s.status,
+                  subtitle: s.type.toUpperCase(),
+                  onTap: () => ServerRoute(
+                    accountId: scope.accountId,
+                    projectId: scope.projectId,
+                    serverId: s.id,
+                  ).push<void>(context),
+                ),
+              ],
             ),
+          labelsSection(l10n, ip.labels),
+          detailsSection(l10n, id: ip.id),
           activitySection(l10n, scope, type, ip.id),
         ],
         dangerZone: [

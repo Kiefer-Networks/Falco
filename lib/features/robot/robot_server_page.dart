@@ -77,7 +77,23 @@ class _ServerDetail extends ConsumerWidget {
             ? l10n.cancelledOn(cancellation?.date ?? '')
             : null,
         name: s.label,
-        ids: [?s.ipv4, '#${s.number}'],
+        ids: [
+          if (s.ipv4 case final ip?)
+            DetailId(formatIp(ip), icon: Icons.public, copy: true),
+          DetailId(s.dc, icon: Icons.place_outlined),
+          DetailId('#${s.number}', copy: true),
+        ],
+        facts: [
+          Fact(l10n.robotProduct, text: s.product),
+          Fact(l10n.robotPaidUntilLabel, text: s.paidUntil),
+          Fact(l10n.robotTrafficQuota, text: s.traffic),
+          Fact(
+            l10n.robotBoot,
+            text: active.isEmpty
+                ? l10n.bootNone
+                : active.map((k) => bootText(k, l10n)).join(', '),
+          ),
+        ],
         onRefresh: () async {
           ref
             ..invalidate(robotBootProvider(a, n))
@@ -88,11 +104,14 @@ class _ServerDetail extends ConsumerWidget {
           DetailAction(
             icon: Icons.restart_alt,
             label: l10n.actionReset,
+            // A picker of reset types (software, power button, hardware).
+            group: ActionGroup.power,
             onTap: s.reset ? () => _reset(context, ref) : null,
           ),
           DetailAction(
             icon: Icons.medical_services_outlined,
             label: rescue?.active ?? false ? l10n.rescueOff : l10n.rescueOn,
+            group: ActionGroup.access,
             onTap: !s.rescue
                 ? null
                 : rescue?.active ?? false
@@ -102,11 +121,13 @@ class _ServerDetail extends ConsumerWidget {
           DetailAction(
             icon: Icons.power_settings_new,
             label: l10n.robotWol,
+            group: ActionGroup.power,
             onTap: wol ? () => wakeOnLan(context, ref, a, s) : null,
           ),
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => _rename(context, ref),
           ),
           for (final k in const [BootKind.linux, BootKind.vnc])
@@ -114,6 +135,7 @@ class _ServerDetail extends ConsumerWidget {
               DetailAction(
                 label: bootText(k, l10n),
                 icon: Icons.install_desktop,
+                group: ActionGroup.access,
                 onTap: () => boot[k]?.active ?? false
                     ? _deactivate(context, ref, k)
                     : _activate(context, ref, k),
@@ -122,6 +144,7 @@ class _ServerDetail extends ConsumerWidget {
             DetailAction(
               label: bootText(BootKind.windows, l10n),
               icon: Icons.window,
+              group: ActionGroup.access,
               onTap: () => boot[BootKind.windows]?.active ?? false
                   ? _deactivate(context, ref, BootKind.windows)
                   : _activate(context, ref, BootKind.windows),
@@ -130,11 +153,13 @@ class _ServerDetail extends ConsumerWidget {
             DetailAction(
               label: lastBootText(k, l10n),
               icon: Icons.history,
+              group: ActionGroup.access,
               onTap: () => _showLast(context, ref, k),
             ),
           DetailAction(
             label: l10n.robotFirewall,
             icon: Icons.shield_outlined,
+            group: ActionGroup.network,
             onTap: () =>
                 RobotFirewallRoute(accountId: a, number: n).push<void>(context),
           ),
@@ -142,94 +167,83 @@ class _ServerDetail extends ConsumerWidget {
             DetailAction(
               label: l10n.trafficTitle,
               icon: Icons.swap_vert,
+              group: ActionGroup.manage,
               onTap: () =>
                   RobotTrafficRoute(accountId: a, ip: ip).push<void>(context),
             ),
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.robotNumber, '#${s.number}', mono: true),
-              ConfirmFact(l10n.robotProduct, s.product),
-              ConfirmFact(l10n.robotDatacenter, s.dc),
-              ConfirmFact(l10n.fieldStatus, serverStatus(s).label(l10n)),
-              ConfirmFact(l10n.robotPaidUntilLabel, s.paidUntil),
-              ConfirmFact(l10n.robotTrafficQuota, s.traffic),
-            ]),
-          ),
-          DetailSection(
             title: l10n.sectionNetwork,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                FactRows([
-                  if (s.ipv4 case final ip?)
-                    ConfirmFact('IPv4', ip, mono: true),
-                  if (s.ipv6Net case final net?)
-                    ConfirmFact(l10n.robotIpv6Net, net, mono: true),
-                ]),
-                for (final ip in s.ips)
-                  EntryRow(
-                    leading: const Icon(Icons.dns_outlined),
-                    title: formatIp(ip),
-                    subtitle: rdns[ip] ?? l10n.rdnsDefault,
-                    onTap: () => editRdns(context, ref, a, ip),
+            facts: [
+              if (s.ipv4 case final ip?)
+                Fact('IPv4', text: formatIp(ip), copy: true),
+              if (s.ipv6Net case final net?)
+                Fact(l10n.robotIpv6Net, text: net, copy: true),
+            ],
+            child: s.ips.isEmpty && s.subnets.isEmpty
+                ? null
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final ip in s.ips)
+                        EntryRow(
+                          leading: const Icon(Icons.dns_outlined),
+                          title: formatIp(ip),
+                          subtitle: rdns[ip] ?? l10n.rdnsDefault,
+                          onTap: () => editRdns(context, ref, a, ip),
+                        ),
+                      for (final net in s.subnets)
+                        EntryRow(
+                          leading: const Icon(Icons.lan_outlined),
+                          title: net,
+                          onTap: () => RobotAddressRoute(
+                            accountId: a,
+                            kind: AddressKind.subnet,
+                            ip: net.split('/').first,
+                          ).push<void>(context),
+                        ),
+                    ],
                   ),
-                for (final net in s.subnets)
-                  EntryRow(
-                    leading: const Icon(Icons.lan_outlined),
-                    title: net,
-                    onTap: () => RobotAddressRoute(
-                      accountId: a,
-                      kind: AddressKind.subnet,
-                      ip: net.split('/').first,
-                    ).push<void>(context),
-                  ),
-              ],
-            ),
           ),
           if (traffic != null)
-            DetailSection(
-              title: l10n.trafficMonth,
-              child: switch (traffic) {
-                AsyncData(value: final t?) => FactRows([
-                  ConfirmFact(l10n.trafficIn, gbText(t.inGb), mono: true),
-                  ConfirmFact(l10n.trafficOut, gbText(t.outGb), mono: true),
-                  ConfirmFact(l10n.trafficSum, gbText(t.sumGb), mono: true),
-                ]),
-                AsyncData() => Text(l10n.trafficNone),
-                AsyncError(:final error) => Text(
-                  robotErrorText(toFalcoError(error), l10n),
+            switch (traffic) {
+              AsyncData(value: final t?) => DetailSection(
+                title: l10n.trafficMonth,
+                facts: [
+                  Fact(l10n.trafficIn, text: gbText(t.inGb), mono: true),
+                  Fact(l10n.trafficOut, text: gbText(t.outGb), mono: true),
+                  Fact(l10n.trafficSum, text: gbText(t.sumGb), mono: true),
+                ],
+              ),
+              _ => DetailSection(
+                title: l10n.trafficMonth,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: switch (traffic) {
+                    AsyncData() => Text(l10n.trafficNone),
+                    AsyncError(:final error) => Text(
+                      robotErrorText(toFalcoError(error), l10n),
+                    ),
+                    _ => const LinearProgressIndicator(),
+                  },
                 ),
-                _ => const LinearProgressIndicator(),
-              },
-            ),
-          DetailSection(
-            title: l10n.robotBoot,
-            child: Text(
-              active.isEmpty
-                  ? l10n.bootNone
-                  : active.map((k) => bootText(k, l10n)).join(', '),
-            ),
-          ),
+              ),
+            },
           if (cancellation != null)
             DetailSection(
               title: l10n.cancellation,
-              child: FactRows([
-                ConfirmFact(
+              facts: [
+                Fact(
                   l10n.fieldStatus,
-                  cancellation.cancelled
+                  text: cancellation.cancelled
                       ? l10n.cancelledOn(cancellation.date ?? '')
                       : l10n.notCancelled,
                 ),
-                ConfirmFact(l10n.cancelEarliest, cancellation.earliest),
+                Fact(l10n.cancelEarliest, text: cancellation.earliest),
                 if (cancellation.cancelled)
-                  ConfirmFact(
-                    l10n.cancelReserve,
-                    yesNo(cancellation.reserved, l10n),
-                  ),
-              ]),
+                  Fact(l10n.cancelReserve, on: cancellation.reserved),
+              ],
             ),
         ],
         dangerZone: [

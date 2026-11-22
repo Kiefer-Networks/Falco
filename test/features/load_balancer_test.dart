@@ -77,7 +77,10 @@ void main() {
         300,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('Server · 203.0.113.1 · healthy'), findsOneWidget);
+      expect(
+        find.textContaining('Server · 203.0.113.1 · healthy'),
+        findsOneWidget,
+      );
       expect(
         find.text('Label selector · Route via private network'),
         findsOneWidget,
@@ -188,7 +191,7 @@ void main() {
       );
       await tester.tap(
         find.descendant(
-          of: find.widgetWithText(ListTile, 'role=web'),
+          of: find.widgetWithText(RelatedCard, 'role=web'),
           matching: find.byTooltip('Remove'),
         ),
       );
@@ -307,7 +310,7 @@ void main() {
       await settleAction(tester);
       await tester.tap(
         find.descendant(
-          of: find.widgetWithText(ListTile, 'lan'),
+          of: find.widgetWithText(RelatedCard, 'lan'),
           matching: find.byTooltip('Remove'),
         ),
       );
