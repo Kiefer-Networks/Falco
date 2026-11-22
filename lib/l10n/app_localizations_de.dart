@@ -434,11 +434,46 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get errorMustBeUnassigned =>
-      'Die IP ist noch zugewiesen. Zuerst von ihrem Server lösen, dann löschen.';
+      'Noch zugewiesen oder angehängt. Zuerst lösen oder abhängen, dann löschen.';
 
   @override
   String get errorResourceInUse =>
+      'Noch von anderen Ressourcen verwendet. Zuerst dort entfernen, dann löschen.';
+
+  @override
+  String get errorClockSkew =>
+      'Die Uhrzeit dieses Geräts weicht ab, daher wurde die Anfrage abgelehnt. Datum und Uhrzeit automatisch einstellen und erneut versuchen.';
+
+  @override
+  String get errorLimitReached =>
+      'Das Limit dieses Projekts ist erreicht. Etwas Ungenutztes löschen oder bei Hetzner eine Erhöhung anfragen.';
+
+  @override
+  String get errorNotUnique =>
+      'Der Name oder Schlüssel wird schon verwendet. Wähle einen anderen.';
+
+  @override
+  String get errorRuleGone =>
+      'Diese Regel wurde anderswo geändert oder entfernt. Prüfe die aktuellen Regeln und versuche es erneut.';
+
+  @override
+  String get errorServerNotStopped => 'Schalte den Server zuerst aus.';
+
+  @override
+  String get ipAssignedHint =>
+      'Die IP ist noch zugewiesen. Zuerst von ihrem Server lösen, dann löschen.';
+
+  @override
+  String get firewallInUseHint =>
       'Noch in Verwendung. Zuerst von allen Servern und Label Selectors entfernen, dann löschen.';
+
+  @override
+  String get volumeAttachedHint =>
+      'Das Volume ist noch angehängt. Zuerst von seinem Server abhängen, dann löschen.';
+
+  @override
+  String get certificateInUseHint =>
+      'Noch von einem Load Balancer verwendet. Zuerst von allen Load Balancern entfernen, dann löschen.';
 
   @override
   String get errorLocalStorage =>

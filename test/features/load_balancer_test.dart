@@ -510,6 +510,18 @@ void main() {
         find.text('03:c7:55:9b:2a:d1:04:17:09:f6:d0:7f:18:34:63:d4'),
         findsOneWidget,
       );
+      // Used by a load balancer: the API would refuse the delete.
+      expect(
+        find.text(
+          'Still in use by a load balancer. Remove it from all its load '
+          'balancers first, then delete it.',
+        ),
+        findsOneWidget,
+      );
+      await tap(tester, 'Delete');
+      expect(find.text('Delete site?'), findsNothing);
+      // Removed from the load balancer elsewhere; the rename refreshes.
+      cloud.collections['certificates']!.first['used_by'] = <Object?>[];
       await tile(tester, 'Edit');
       await enter(tester, 'name', 'site-2');
       await tap(tester, 'Save');

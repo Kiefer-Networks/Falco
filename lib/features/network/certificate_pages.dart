@@ -209,14 +209,18 @@ class CertificateDetailPage extends ConsumerWidget {
           activitySection(l10n, scope, CloudType.certificate, c.id),
         ],
         dangerZone: [
+          // The API refuses to delete a certificate a load balancer uses.
+          if (c.usedBy.isNotEmpty) Text(l10n.certificateInUseHint),
           DeleteButton(
-            onPressed: () => deleteResource(
-              context,
-              ref,
-              t,
-              l10n.certificateDeleteConsequence,
-              (api) => deleteCertificate(api, c.id),
-            ),
+            onPressed: busy || c.usedBy.isNotEmpty
+                ? null
+                : () => deleteResource(
+                    context,
+                    ref,
+                    t,
+                    l10n.certificateDeleteConsequence,
+                    (api) => deleteCertificate(api, c.id),
+                  ),
           ),
         ],
       ),

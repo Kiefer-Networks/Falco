@@ -827,14 +827,68 @@ abstract class AppLocalizations {
   /// No description provided for @errorMustBeUnassigned.
   ///
   /// In en, this message translates to:
-  /// **'The IP is still assigned. Unassign it from its server first, then delete it.'**
+  /// **'Still assigned or attached. Unassign or detach it first, then delete it.'**
   String get errorMustBeUnassigned;
 
   /// No description provided for @errorResourceInUse.
   ///
   /// In en, this message translates to:
-  /// **'Still in use. Remove it from all its servers and label selectors first, then delete it.'**
+  /// **'Still in use by other resources. Remove it from them first, then delete it.'**
   String get errorResourceInUse;
+
+  /// No description provided for @errorClockSkew.
+  ///
+  /// In en, this message translates to:
+  /// **'The time of this device is off, so the request was refused. Set the date and time automatically and try again.'**
+  String get errorClockSkew;
+
+  /// No description provided for @errorLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'The limit of this project is reached. Delete something unused or ask Hetzner to raise the limit.'**
+  String get errorLimitReached;
+
+  /// No description provided for @errorNotUnique.
+  ///
+  /// In en, this message translates to:
+  /// **'The name or key is already in use. Choose another one.'**
+  String get errorNotUnique;
+
+  /// No description provided for @errorRuleGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This rule was changed or removed elsewhere. Check the current rules and try again.'**
+  String get errorRuleGone;
+
+  /// No description provided for @errorServerNotStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Power off the server first.'**
+  String get errorServerNotStopped;
+
+  /// No description provided for @ipAssignedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The IP is still assigned. Unassign it from its server first, then delete it.'**
+  String get ipAssignedHint;
+
+  /// No description provided for @firewallInUseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Still in use. Remove it from all its servers and label selectors first, then delete it.'**
+  String get firewallInUseHint;
+
+  /// No description provided for @volumeAttachedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The volume is still attached. Detach it from its server first, then delete it.'**
+  String get volumeAttachedHint;
+
+  /// No description provided for @certificateInUseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Still in use by a load balancer. Remove it from all its load balancers first, then delete it.'**
+  String get certificateInUseHint;
 
   /// No description provided for @errorLocalStorage.
   ///

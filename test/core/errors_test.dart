@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:falco/core/errors/falco_error.dart';
+import 'package:falco/l10n/app_localizations_en.dart';
+import 'package:falco/ui/error_text.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Map<String, Object?> cloudError(String code, [Object? details]) => {
@@ -186,5 +188,28 @@ void main() {
       },
     }).toString();
     expect(text, 'Unauthorized(unauthorized)');
+  });
+
+  test('errorText gives code specific advice', () {
+    final l10n = AppLocalizationsEn();
+    String text(FalcoError e) => errorText(e, l10n);
+    // A device clock that is off is no rejected key (S3 RequestTimeTooSkewed).
+    for (final e in const [
+      Forbidden(code: 'RequestTimeTooSkewed'),
+      Unauthorized(code: 'RequestTimeTooSkewed'),
+    ]) {
+      expect(text(e), l10n.errorClockSkew);
+    }
+    expect(text(const Forbidden()), l10n.errorForbidden);
+    expect(
+      text(const Forbidden(code: 'resource_limit_exceeded')),
+      l10n.errorLimitReached,
+    );
+    expect(text(const Conflict(code: 'uniqueness_error')), l10n.errorNotUnique);
+    expect(text(const Conflict(code: 'locked')), l10n.errorConflict);
+    expect(
+      text(const Invalid(code: 'server_not_stopped')),
+      l10n.errorServerNotStopped,
+    );
   });
 }
