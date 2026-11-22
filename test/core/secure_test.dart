@@ -7,9 +7,11 @@ import 'package:falco/core/scope/scope_repository.dart';
 import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
+import 'package:falco/l10n/app_localizations.dart';
 import 'package:falco/ui/ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -305,6 +307,41 @@ void main() {
       expect(await secrets.cloudToken('p1'), 't1');
     });
 
+    test('a re-key queued by a write does not ask again after the write '
+        'cancelled its move, nor after a close (T27)', () async {
+      device = (sdk: 36, secure: false);
+      await secrets.setCloudToken('p1', 't1');
+      device = (sdk: 36, secure: true);
+      final fresh = SecretStore(
+        null,
+        bound,
+        () async => deviceLock,
+        () async => device,
+      );
+      bound.fail = true;
+      final tries = bound.tries;
+      await expectLater(
+        fresh.setCloudToken('p2', 't2'),
+        throwsA(isA<Locked>()),
+      );
+      await pumpEventQueue();
+      expect(bound.tries, tries + 1, reason: 'one prompt, not two');
+      // A read whose re-key finds the vault closed asks nothing.
+      bound.fail = false;
+      final other = SecretStore(
+        null,
+        bound,
+        () async => deviceLock,
+        () async => device,
+      );
+      final read = other.cloudToken('p1');
+      final closing = read.then((_) => other.close());
+      expect(await read, 't1');
+      await closing;
+      await pumpEventQueue();
+      expect(bound.tries, tries + 1, reason: 'no prompt after close');
+    });
+
     test('readers of an open vault do not wait for a check (R5 Q25)', () async {
       await secrets.setCloudToken('p1', 't1');
       bound.gate = Completer();
@@ -380,6 +417,30 @@ void main() {
       expect(bound.reads, reads, reason: 'no prompt over the cover');
       await c.read(appLockProvider.notifier).unlock('why');
       expect(await secrets.cloudToken('p1'), 't1');
+    });
+
+    test('the vault prompt is localized before the first vault access '
+        '(T28)', () async {
+      final c = ProviderContainer(
+        overrides: [
+          preferencesProvider.overrideWithValue(
+            await testPrefs({'language': 'de'}),
+          ),
+          secretStoreProvider.overrideWithValue(secrets),
+        ],
+      );
+      addTearDown(c.dispose);
+      localizeVaultPrompt(c);
+      await secrets.setCloudToken('p1', 't1');
+      final de = lookupAppLocalizations(const Locale('de'));
+      expect(
+        bound.android?.toMap(),
+        containsPair('biometricPromptTitle', de.lockReason),
+      );
+      expect(
+        bound.android?.toMap(),
+        containsPair('biometricPromptSubtitle', de.lockPromptSubtitle),
+      );
     });
 
     test('one system check per unlock, again after close', () async {
@@ -800,6 +861,9 @@ class _Bound extends FlutterSecureStorage {
   final spaces = <String, Map<String, String>>{};
   int reads = 0;
   int writes = 0;
+
+  /// Write calls, failed ones included: each is a prompt on Android.
+  int tries = 0;
   bool fail = false;
   AndroidOptions? android;
 
@@ -874,6 +938,7 @@ class _Bound extends FlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
+    tries++;
     android = aOptions;
     await writeGate?.future;
     if (writeError case final e?) {

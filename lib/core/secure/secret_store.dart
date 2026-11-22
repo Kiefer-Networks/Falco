@@ -145,9 +145,13 @@ class SecretStore {
   /// the read that finds the vault gone; the app shows it and clears it.
   final lost = ValueNotifier<Set<String>>(const {});
 
-  /// Title of the system prompt on Android; set to a localized text by
-  /// the app lock.
+  /// Title and subtitle of the system prompt on Android, localized by
+  /// `localizeVaultPrompt` before the first vault access: the plugin keeps
+  /// the texts of its first use of a namespace for the whole process.
   String? prompt;
+
+  /// Subtitle of the system prompt on Android, see [prompt].
+  String? promptSubtitle;
 
   /// Raw read, for non secret structured data (account list).
   Future<String?> read(String key) => _plain.read(key: key);
@@ -184,6 +188,7 @@ class SecretStore {
         storageNamespace: namespace ?? await (_namespace ??= _firstUse()),
         requireBiometricsPerOperation: true,
         biometricPromptTitle: prompt,
+        biometricPromptSubtitle: promptSubtitle,
       );
 
   /// The namespace of the current generation. The plugin makes a missing
@@ -272,11 +277,23 @@ class SecretStore {
     return true;
   }
 
-  /// Re-keys a weak vault after its first read with the lock off; a
-  /// cancelled prompt keeps the old key until the next write or check.
-  void _rekey(Map<String, String> loaded) => _serial(() async {
-    if (await _weakNow) await _moveKey(_open ?? loaded, _epoch);
-  }).ignore();
+  /// Re-keys a weak vault after its first read (of close [epoch]) with the
+  /// lock off; a cancelled prompt keeps the old key until the next write
+  /// or check. Skipped when the vault closed since the read, so no prompt
+  /// rises over the lock cover and no stale secrets are published, and
+  /// when a move ran since, so a cancelled prompt is not asked again.
+  void _rekey(int epoch) {
+    final moves = _moves;
+    _serial(() async {
+      if (!await _weakNow) return;
+      final open = _open;
+      if (epoch != _epoch || open == null || moves != _moves) return;
+      await _moveKey(open, epoch);
+    }).ignore();
+  }
+
+  /// Counts [_moveKey] attempts, see [_rekey].
+  int _moves = 0;
 
   /// Moves the vault to a new key now that the device has a screen lock:
   /// the old key opened without asking, the write under the new one asks,
@@ -285,6 +302,7 @@ class SecretStore {
   /// keeps the old vault; until then reads stay on the old namespace.
   /// Call in line with the other writes.
   Future<void> _moveKey(Map<String, String> secrets, int epoch) async {
+    _moves++;
     final oldOptions = await _android();
     final target = await _save(
       secrets,
@@ -327,7 +345,7 @@ class SecretStore {
       final secrets = await _load();
       if (epoch == _epoch) {
         _open = secrets;
-        if (await _weakNow) _rekey(secrets);
+        if (await _weakNow) _rekey(epoch);
       }
       return secrets;
     } finally {

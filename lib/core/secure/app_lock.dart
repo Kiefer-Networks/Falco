@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:ui' show Locale, PlatformDispatcher;
+
 import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/scope/scope_repository.dart';
 import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
+import 'package:falco/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -49,6 +53,29 @@ void closeVaultAtStart(ProviderContainer container) {
   if (container.read(appLockProvider) != AppLockState.unlocked) {
     container.read(secretStoreProvider).close();
   }
+}
+
+/// Sets the Android vault prompt texts in the app language, falling back
+/// to the system language, before anything reads the vault: the plugin
+/// keeps the texts of its first use of a namespace for the process. Later
+/// language changes reach namespaces used after them.
+void localizeVaultPrompt(ProviderContainer container) {
+  final secrets = container.read(secretStoreProvider);
+  container.listen(appSettingsProvider.select((s) => s.language), (
+    _,
+    language,
+  ) {
+    final code = language ?? PlatformDispatcher.instance.locale.languageCode;
+    final l10n = lookupAppLocalizations(
+      AppLocalizations.supportedLocales.firstWhere(
+        (l) => l.languageCode == code,
+        orElse: () => const Locale('en'),
+      ),
+    );
+    secrets
+      ..prompt = l10n.lockReason
+      ..promptSubtitle = l10n.lockPromptSubtitle;
+  }, fireImmediately: true);
 }
 
 /// State of the app lock. Held in memory only, never persisted (SET-011).

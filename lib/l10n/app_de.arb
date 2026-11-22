@@ -109,6 +109,7 @@
   "lockTitle": "Falco ist gesperrt.",
   "lockUnlock": "Entsperren",
   "lockReason": "Entsperre Falco, um auf deine Server zuzugreifen",
+  "lockPromptSubtitle": "Nutze Fingerabdruck, Gesicht oder Geräte-PIN",
   "vaultLostTitle": "Zugangsdaten gelöscht",
   "vaultLostMessage": "Das System hat die gespeicherten Zugangsdaten gelöscht, zum Beispiel nach einer Änderung der Fingerabdrücke oder des Gesichts. Gib Tokens und Zugangsdaten erneut ein für: {accounts}.",
   "@vaultLostMessage": {"placeholders": {"accounts": {"type": "String"}}},
