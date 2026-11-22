@@ -75,12 +75,15 @@ Future<void> checkRobot(Dio dio) async {
 }
 
 /// Checks S3 keys with ListBuckets (`GET /`). S3 rejects unknown keys
-/// with 403; that is reported as rejected access data.
+/// with 403; that is reported as rejected access data, unless the device
+/// clock is off (RequestTimeTooSkewed): then the keys are fine.
 Future<void> checkS3(Dio dio) async {
   try {
     await dio.get<Object?>('/');
   } on DioException catch (e) {
     final error = toFalcoError(e);
-    throw error is Forbidden ? Unauthorized(code: error.code) : error;
+    throw error is Forbidden && error.code != 'RequestTimeTooSkewed'
+        ? Unauthorized(code: error.code)
+        : error;
   }
 }

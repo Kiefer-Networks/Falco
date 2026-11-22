@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/features/network/firewall_pages.dart';
 import 'package:falco/features/network/firewalls.dart';
 import 'package:falco/features/network/ips.dart';
@@ -533,6 +534,33 @@ void main() {
       expect(find.text('edge'), findsOneWidget);
     });
 
+    test('NET-011 NET-012 an edit acts on exactly the tapped copy', () {
+      FirewallRule rule(String port) => FirewallRule(
+        inbound: true,
+        protocol: 'tcp',
+        port: port,
+        ips: const [],
+      );
+      final ssh = rule('22');
+      final rules = [ssh, rule('80'), ssh];
+      // Deleting one of two equal rules keeps the other (SSH stays open).
+      expect(removeRuleAt(rules, ssh, 1), [ssh, rule('80')]);
+      expect(removeRuleAt(rules, ssh, 2), rules);
+      expect(editRule(rules, ssh, rule('443'), 1), [
+        ssh,
+        rule('80'),
+        rule('443'),
+      ]);
+      // Edited into a rule that exists: the copy goes, no duplicate comes.
+      expect(editRule(rules, ssh, rule('80'), 1), [ssh, rule('80')]);
+      expect(editRule(rules, null, rule('80')), rules);
+      // Gone meanwhile: refused instead of added.
+      expect(
+        () => editRule([rule('80')], ssh, rule('443')),
+        throwsA(isA<Conflict>()),
+      );
+    });
+
     test('NET-006 NET-007 NET-008 NET-009 rule rules', () {
       expect(hasPort('tcp'), isTrue);
       expect(hasPort('icmp'), isFalse);
@@ -639,6 +667,20 @@ void main() {
         'dns_ptr': null,
       });
       await settleAction(tester);
+    });
+
+    testWidgets('a Primary IP leaves only a server that is off', (
+      tester,
+    ) async {
+      final cloud = await openNetwork(tester, 'Primary IPs', cloud: withIps());
+      await tap(tester, 'web-v4');
+      await tap(tester, 'Unassign');
+      expect(find.text('Power off the server first.'), findsOneWidget);
+      expect(find.text('Unassign web-v4 from web-1?'), findsNothing);
+      expect(
+        cloud.calls,
+        isNot(contains('POST /primary_ips/71/actions/unassign')),
+      );
     });
 
     testWidgets('NET-025 NET-028 NET-029 NET-030 BUG-001 assign, edit, '

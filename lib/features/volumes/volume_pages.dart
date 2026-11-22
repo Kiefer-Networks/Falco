@@ -211,25 +211,29 @@ class VolumeDetailPage extends ConsumerWidget {
           activitySection(l10n, scope, CloudType.volume, v.id),
         ],
         dangerZone: [
+          // The API refuses to delete an attached volume.
+          if (v.server != null) Text(l10n.volumeAttachedHint),
           DeleteButton(
-            onPressed: () async {
-              if (!await confirmDelete(
-                context,
-                t,
-                l10n.volumeDeleteConsequence,
-              )) {
-                return;
-              }
-              if (!context.mounted) return;
-              final deleted = await runChange(
-                context,
-                ref,
-                t,
-                (api) => deleteVolume(api, v.id),
-                done: l10n.deletedMessage(v.name),
-              );
-              if (deleted && context.mounted) Navigator.pop(context);
-            },
+            onPressed: busy || v.server != null
+                ? null
+                : () async {
+                    if (!await confirmDelete(
+                      context,
+                      t,
+                      l10n.volumeDeleteConsequence,
+                    )) {
+                      return;
+                    }
+                    if (!context.mounted) return;
+                    final deleted = await runChange(
+                      context,
+                      ref,
+                      t,
+                      (api) => deleteVolume(api, v.id),
+                      done: l10n.deletedMessage(v.name),
+                    );
+                    if (deleted && context.mounted) Navigator.pop(context);
+                  },
           ),
         ],
       ),

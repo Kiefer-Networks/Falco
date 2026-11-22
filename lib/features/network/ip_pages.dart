@@ -206,6 +206,15 @@ class IpDetailPage extends ConsumerWidget {
               group: ActionGroup.network,
               onTap: busy
                   ? null
+                  // A Primary IP leaves only a server that is off
+                  // (server_not_stopped otherwise).
+                  : !floating &&
+                        server != null &&
+                        server.status != ResourceStatus.off
+                  ? () => FalcoScaffold.showSnack(
+                      context,
+                      l10n.errorServerNotStopped,
+                    )
                   : () => confirmAction(
                       context,
                       ref,
@@ -373,7 +382,7 @@ class IpDetailPage extends ConsumerWidget {
         ],
         dangerZone: [
           // The API refuses to delete an assigned IP (must_be_unassigned).
-          if (ip.server != null) Text(l10n.errorMustBeUnassigned),
+          if (ip.server != null) Text(l10n.ipAssignedHint),
           DeleteButton(
             onPressed: busy || ip.server != null
                 ? null

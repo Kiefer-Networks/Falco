@@ -429,11 +429,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorMustBeUnassigned =>
-      'The IP is still assigned. Unassign it from its server first, then delete it.';
+      'Still assigned or attached. Unassign or detach it first, then delete it.';
 
   @override
   String get errorResourceInUse =>
+      'Still in use by other resources. Remove it from them first, then delete it.';
+
+  @override
+  String get errorClockSkew =>
+      'The time of this device is off, so the request was refused. Set the date and time automatically and try again.';
+
+  @override
+  String get errorLimitReached =>
+      'The limit of this project is reached. Delete something unused or ask Hetzner to raise the limit.';
+
+  @override
+  String get errorNotUnique =>
+      'The name or key is already in use. Choose another one.';
+
+  @override
+  String get errorRuleGone =>
+      'This rule was changed or removed elsewhere. Check the current rules and try again.';
+
+  @override
+  String get errorServerNotStopped => 'Power off the server first.';
+
+  @override
+  String get ipAssignedHint =>
+      'The IP is still assigned. Unassign it from its server first, then delete it.';
+
+  @override
+  String get firewallInUseHint =>
       'Still in use. Remove it from all its servers and label selectors first, then delete it.';
+
+  @override
+  String get volumeAttachedHint =>
+      'The volume is still attached. Detach it from its server first, then delete it.';
+
+  @override
+  String get certificateInUseHint =>
+      'Still in use by a load balancer. Remove it from all its load balancers first, then delete it.';
 
   @override
   String get errorLocalStorage =>

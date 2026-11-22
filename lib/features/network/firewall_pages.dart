@@ -164,18 +164,42 @@ Future<bool> showRuleSheet(
   );
 }
 
-/// [rules] with [old] replaced by [next], or [next] added when [old] is
-/// null or gone; [next] never twice (NET-005, NET-011).
+/// Position of the [nth] rule equal to [rule] in [rules] (0 based), or -1.
+/// Equal rules can exist twice; an edit acts on the one tapped.
+int ruleIndex(List<FirewallRule> rules, FirewallRule rule, int nth) {
+  var seen = 0;
+  for (final (i, x) in rules.indexed) {
+    if (x == rule && seen++ == nth) return i;
+  }
+  return -1;
+}
+
+/// [rules] with the [nth] copy of [old] replaced by [next], or [next]
+/// added when [old] is null (NET-005, NET-011). An edit never adds a
+/// second copy of [next]. Throws [Conflict] (`rule_gone`) when [old] was
+/// changed or removed meanwhile.
 List<FirewallRule> editRule(
   List<FirewallRule> rules,
   FirewallRule? old,
-  FirewallRule next,
+  FirewallRule next, [
+  int nth = 0,
+]) {
+  if (old == null) return rules.contains(next) ? rules : [...rules, next];
+  final i = ruleIndex(rules, old, nth);
+  if (i < 0) throw const Conflict(code: 'rule_gone');
+  if (next == old) return rules;
+  final out = [...rules]..removeAt(i);
+  return out.contains(next) ? out : (out..insert(i, next));
+}
+
+/// [rules] without the [nth] copy of [rule]; unchanged when it is gone.
+List<FirewallRule> removeRuleAt(
+  List<FirewallRule> rules,
+  FirewallRule rule,
+  int nth,
 ) {
-  final out = [
-    for (final x in rules)
-      if (x == old) next else x,
-  ];
-  return out.contains(next) ? out.toSet().toList() : [...out, next];
+  final i = ruleIndex(rules, rule, nth);
+  return i < 0 ? rules : ([...rules]..removeAt(i));
 }
 
 /// One line for a rule: protocol and port.
@@ -212,7 +236,15 @@ class FirewallDetailPage extends ConsumerWidget {
     final progress = ref
         .watch(trackedActionProvider(scope, CloudType.firewall, f.id))
         .value;
-    final busy = progress != null && !progress.done;
+    // A rule change starts one action per applied server besides
+    // set_firewall_rules: busy until all of them ended, not only the one
+    // reported last.
+    final busy =
+        (progress != null && !progress.done) ||
+        ref
+            .watch(actionTrackerProvider(scope))
+            .running
+            .any((a) => a.resources.contains((CloudType.firewall, f.id)));
 
     // Rules and targets change by actions per applied server; the
     // firewall itself refreshes at once.
@@ -236,7 +268,7 @@ class FirewallDetailPage extends ConsumerWidget {
           ).then((now) => setRules(api, f.id, edit(now.rules))),
         );
 
-    Future<void> removeRule(FirewallRule r) async {
+    Future<void> removeRule(FirewallRule r, int nth) async {
       final ok = await ConfirmSheet.show(
         context,
         title: l10n.ruleDeleteTitle(ruleTitle(r)),
@@ -251,12 +283,15 @@ class FirewallDetailPage extends ConsumerWidget {
         context,
         ref,
         t,
-        (_) => setAll((now) => [...now.where((x) => x != r)]),
+        (_) => setAll((now) => removeRuleAt(now, r, nth)),
       );
     }
 
+    // Which copy of an equal rule a row shows.
+    int nthOf(int i) => f.rules.take(i).where((x) => x == f.rules[i]).length;
+
     Widget rules(bool inbound) => entries([
-      for (final r in f.rules)
+      for (final (i, r) in f.rules.indexed)
         if (r.inbound == inbound)
           EntryRow(
             title: ruleTitle(r),
@@ -270,9 +305,10 @@ class FirewallDetailPage extends ConsumerWidget {
                     context,
                     title: l10n.ruleEdit,
                     initial: r,
-                    save: (rule) => setAll((now) => editRule(now, r, rule)),
+                    save: (rule) =>
+                        setAll((now) => editRule(now, r, rule, nthOf(i))),
                   ),
-            onRemove: busy ? null : () => removeRule(r),
+            onRemove: busy ? null : () => removeRule(r, nthOf(i)),
           ),
     ], l10n.rulesEmpty);
 
@@ -429,7 +465,7 @@ class FirewallDetailPage extends ConsumerWidget {
         ],
         dangerZone: [
           // The API refuses to delete an applied firewall (resource_in_use).
-          if (f.appliedTo.isNotEmpty) Text(l10n.errorResourceInUse),
+          if (f.appliedTo.isNotEmpty) Text(l10n.firewallInUseHint),
           DeleteButton(
             onPressed: f.appliedTo.isNotEmpty
                 ? null
