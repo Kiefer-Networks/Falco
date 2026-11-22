@@ -8,13 +8,20 @@ import 'package:falco/ui/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Shows [sheet] as a modal bottom sheet that follows the keyboard.
-Future<R?> showFalcoSheet<R>(BuildContext context, Widget sheet) =>
-    showModalBottomSheet<R>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => sheet,
-    );
+/// Without [dismissible] neither a scrim tap, a drag nor back closes it;
+/// only the sheet's own buttons do.
+Future<R?> showFalcoSheet<R>(
+  BuildContext context,
+  Widget sheet, {
+  bool dismissible = true,
+}) => showModalBottomSheet<R>(
+  context: context,
+  isScrollControlled: true,
+  useSafeArea: true,
+  isDismissible: dismissible,
+  enableDrag: dismissible,
+  builder: (_) => dismissible ? sheet : PopScope(canPop: false, child: sheet),
+);
 
 // ponytail: one load at a time app wide; a picker opens from one screen.
 var _pickerLoading = false;
@@ -31,8 +38,10 @@ Future<T?> loadForPicker<T>(
   final l10n = AppLocalizations.of(context);
   try {
     return await load();
-  } on FalcoError catch (e) {
-    if (context.mounted) FalcoScaffold.showSnack(context, errorText(e, l10n));
+  } on Object catch (e) {
+    if (context.mounted) {
+      FalcoScaffold.showSnack(context, errorText(toFalcoError(e), l10n));
+    }
     return null;
   } finally {
     _pickerLoading = false;

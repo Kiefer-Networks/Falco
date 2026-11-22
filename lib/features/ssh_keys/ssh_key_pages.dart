@@ -148,15 +148,15 @@ String? sshKeyProblemText(String key, AppLocalizations l10n) =>
 
 /// Fills a public key field from a `.pub` file or a new Ed25519 key pair
 /// (CMP-071, CMP-100, ROB-033, ROB-061). [onKey] gets the public key and,
-/// for a generated pair, the private key; keep that only until
-/// [showPrivateKey] handed it over.
+/// for a generated pair, the pair; keep that only until [showPrivateKey]
+/// handed its private key over.
 class SshKeySources extends ConsumerWidget {
   const new({required this.comment, required this.onKey, super.key});
 
   /// Comment of a generated key, usually its name.
   final String comment;
 
-  final void Function(String publicKey, String? privateKey) onKey;
+  final void Function(String publicKey, SshKeyPair? pair) onKey;
 
   Future<void> _fromFile(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
@@ -170,13 +170,18 @@ class SshKeySources extends ConsumerWidget {
       );
       return;
     }
+    // A private key file stays out of the field (CMP-072).
+    if (sshKeyProblem(text) == SshKeyProblem.privateKey) {
+      FalcoScaffold.showSnack(context, l10n.sshKeyPrivate);
+      return;
+    }
     onKey(text.trim(), null);
   }
 
   Future<void> _generate(BuildContext context) async {
     final pair = await generateEd25519(comment: comment.trim());
     if (!context.mounted) return;
-    onKey(pair.publicKey, pair.privateKey);
+    onKey(pair.publicKey, pair);
     FalcoScaffold.showSnack(
       context,
       AppLocalizations.of(context).sshKeyGenerated,
@@ -206,18 +211,22 @@ class SshKeySources extends ConsumerWidget {
 
 /// Hands a generated private key over once, after its public key was
 /// added (CMP-100): show, copy (sensitive clipboard), save to a file.
-/// Falco keeps no copy.
+/// Falco keeps no copy. Also after a [failed] add, since the key may have
+/// reached Hetzner although the answer got lost. Only the close button
+/// ends the sheet, so a stray tap cannot lose the key.
 Future<void> showPrivateKey(
   BuildContext context,
   WidgetRef ref,
-  String privateKey,
-) {
+  String privateKey, {
+  bool failed = false,
+}) {
   final l10n = AppLocalizations.of(context);
   return showSecretSheet(
     context,
     title: l10n.sshKeyPrivateTitle,
-    note: l10n.sshKeyPrivateNote,
+    note: failed ? l10n.sshKeyPrivateFailed : l10n.sshKeyPrivateNote,
     secrets: {l10n.sshKeyPrivateTitle: privateKey},
+    dismissible: false,
     onSave: () async {
       final saved = await ref
           .read(textFilesProvider)
@@ -245,14 +254,22 @@ class _CreateSshKeyPageState extends ConsumerState<CreateSshKeyPage> {
   var _values = <String, String>{};
   bool _creating = false;
 
-  /// Private key of a generated pair until it is handed over.
-  String? _private;
+  /// A generated pair until its private key is handed over.
+  SshKeyPair? _pair;
 
   /// Counts filled keys, so the key field shows them.
   int _fills = 0;
 
+  /// The generated private key while the key field holds its public key;
+  /// a changed comment or line break does not count (CMP-100).
+  String? get _private => switch (_pair) {
+    final p? when sameSshKey(_values['key'] ?? '', p.publicKey) => p.privateKey,
+    _ => null,
+  };
+
   Future<void> _create(ProjectScope scope) async {
     if (_creating) return;
+    final private = _private;
     setState(() => _creating = true);
     final ok = await runChange(
       context,
@@ -261,19 +278,18 @@ class _CreateSshKeyPageState extends ConsumerState<CreateSshKeyPage> {
       (api) => createSshKey(
         api,
         name: _values['name']!.trim(),
-        publicKey: _values['key']!,
+        publicKey: normalizeSshKey(_values['key']!),
         labels: parseLabels(_values['labels'] ?? '') ?? const {},
       ),
       done: AppLocalizations.of(context).createdMessage(_values['name']!),
     );
     if (!mounted) return;
     setState(() => _creating = false);
-    if (!ok) return;
-    if (_private case final private?) {
-      _private = null;
-      await showPrivateKey(context, ref, private);
+    if (private != null) {
+      if (ok) _pair = null;
+      await showPrivateKey(context, ref, private, failed: !ok);
     }
-    if (mounted) Navigator.pop(context);
+    if (ok && mounted) Navigator.pop(context);
   }
 
   @override
@@ -315,17 +331,13 @@ class _CreateSshKeyPageState extends ConsumerState<CreateSshKeyPage> {
                   labelsField(l10n),
                 ],
                 values: _values,
-                onChanged: (v) => setState(() {
-                  // An edited key no longer matches the generated one.
-                  if (v['key'] != _values['key']) _private = null;
-                  _values = {..._values, ...v};
-                }),
+                onChanged: (v) => setState(() => _values = {..._values, ...v}),
               ),
               SshKeySources(
                 comment: _values['name'] ?? '',
-                onKey: (public, private) => setState(() {
+                onKey: (public, pair) => setState(() {
                   _values = {..._values, 'key': public};
-                  _private = private;
+                  _pair = pair;
                   _fills++;
                 }),
               ),

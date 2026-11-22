@@ -2528,6 +2528,12 @@ abstract class AppLocalizations {
   /// **'Save or copy the private key now. Falco does not keep it and cannot show it again. It is not encrypted: store it safely, for example in ~/.ssh with access for you only, and add a passphrase with ssh-keygen -p.'**
   String get sshKeyPrivateNote;
 
+  /// No description provided for @sshKeyPrivateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding the key failed, but it may have reached Hetzner anyway. Save the private key now so it is not lost. If the key is missing in the list, add it again. The private key is not encrypted: store it safely.'**
+  String get sshKeyPrivateFailed;
+
   /// No description provided for @startAfterCreate.
   ///
   /// In en, this message translates to:

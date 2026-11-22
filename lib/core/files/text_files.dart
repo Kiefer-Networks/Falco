@@ -15,10 +15,12 @@ part 'text_files.g.dart';
 /// limit. `text` is null then, and when the file is not UTF-8 text.
 typedef PickedText = ({String? text, bool tooLarge});
 
-/// [bytes] as UTF-8 text; null when they are not.
+/// [bytes] as UTF-8 text without a leading byte order mark; null when
+/// they are not UTF-8.
 String? decodeText(List<int> bytes) {
   try {
-    return utf8.decode(bytes);
+    final text = utf8.decode(bytes);
+    return text.startsWith('\uFEFF') ? text.substring(1) : text;
   } on FormatException {
     return null;
   }
@@ -52,13 +54,35 @@ class TextFiles {
   }
 
   /// Lets the user save [text] as [name]; false when cancelled.
-  Future<bool> save(String name, String text) async =>
-      await FilePicker.saveFile(
-        fileName: name,
-        bytes: utf8.encode(text),
-        mimeType: 'text/plain',
-      ) !=
-      null;
+  Future<bool> save(String name, String text) async {
+    try {
+      return await FilePicker.saveFile(
+            fileName: name,
+            bytes: utf8.encode(text),
+            mimeType: 'text/plain',
+          ) !=
+          null;
+    } finally {
+      if (Platform.isIOS) await _dropSaveCopy(name);
+    }
+  }
+
+  /// iOS writes a saved file to `flutter_file_picker/<uuid>/<name>` in
+  /// the temporary folder first and keeps it there; it may be a private
+  /// key. Removes only folders holding [name], so picked files of a
+  /// running upload stay.
+  Future<void> _dropSaveCopy(String name) async {
+    final root = Directory('${Directory.systemTemp.path}/flutter_file_picker');
+    try {
+      await for (final dir in root.list()) {
+        if (dir is Directory && File('${dir.path}/$name').existsSync()) {
+          await dir.delete(recursive: true);
+        }
+      }
+    } on FileSystemException {
+      // Nothing left to remove.
+    }
+  }
 }
 
 @Riverpod(keepAlive: true)

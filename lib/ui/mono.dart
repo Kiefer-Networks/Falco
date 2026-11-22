@@ -66,7 +66,12 @@ class CopyableValue extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Flexible(
-                child: Mono(value, style: TextStyle(color: c.text)),
+                // Fingerprints and IPv6 addresses show in full.
+                child: Mono(
+                  value,
+                  maxLines: 3,
+                  style: TextStyle(color: c.text),
+                ),
               ),
               const SizedBox(width: 8),
               Icon(Icons.content_copy, size: 16, color: c.textSecondary),

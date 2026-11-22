@@ -135,8 +135,8 @@ Future<void> showActionSheet(
 @immutable
 class DetailId {
   /// Creates an identifier; [copy] makes it a mono value that copies
-  /// itself on tap (IPs, IDs, fingerprints).
-  const new(this.value, {this.icon, this.copy = false});
+  /// itself on tap (IPs, IDs, fingerprints), or [copyText] when given.
+  const new(this.value, {this.icon, this.copy = false, this.copyText});
 
   /// Displayed value.
   final String value;
@@ -146,6 +146,9 @@ class DetailId {
 
   /// Copies [value] on tap; also draws it in mono.
   final bool copy;
+
+  /// Raw value copied instead of [value] (`123` for `#123`).
+  final String? copyText;
 }
 
 /// One fact of a [FactGrid] or a [DetailSection]: a [label] and exactly
@@ -483,7 +486,12 @@ class _IdChip extends StatelessWidget {
           ],
           Flexible(
             child: id.copy
-                ? Mono(id.value, style: TextStyle(color: c.text))
+                ? Mono(
+                    id.value,
+                    // Fingerprints and IPv6 addresses show in full.
+                    maxLines: 3,
+                    style: TextStyle(color: c.text),
+                  )
                 : Text(
                     id.value,
                     maxLines: 1,
@@ -507,7 +515,7 @@ class _IdChip extends StatelessWidget {
       return Semantics(label: id.value, excludeSemantics: true, child: padded);
     }
     Future<void> copy() async {
-      await Clipboard.setData(ClipboardData(text: id.value));
+      await Clipboard.setData(ClipboardData(text: id.copyText ?? id.value));
       if (context.mounted) FalcoScaffold.showSnack(context, l10n.copied);
     }
 

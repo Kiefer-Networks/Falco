@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:math';
+
 import 'package:falco/app/router.dart';
 import 'package:falco/core/permissions/notifications.dart';
 import 'package:falco/core/settings/settings.dart';
@@ -23,15 +25,24 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
   static const _permissions = 3;
   int _page = 0;
 
+  /// The permission request runs; a second tap waits for it.
+  bool _busy = false;
+
   void _addAccount() => const SetupRoute().push<void>(context);
 
   /// Leaving the permissions page asks for what it explained (SET-024).
   Future<void> _next() async {
+    if (_busy) return;
     if (_page == _permissions) {
-      await ref.read(notificationPermissionProvider).request();
+      _busy = true;
+      try {
+        await ref.read(notificationPermissionProvider).request();
+      } finally {
+        _busy = false;
+      }
       if (!mounted) return;
     }
-    setState(() => _page++);
+    setState(() => _page = min(_page + 1, _pages - 1));
   }
 
   @override

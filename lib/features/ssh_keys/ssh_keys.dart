@@ -59,9 +59,22 @@ const _privateMarkers = [
   '-cert-v01@openssh.com',
 ];
 
+/// [key] as one line: trimmed, line breaks of a wrapped paste removed
+/// (CMP-071). Check and send this form.
+String normalizeSshKey(String key) =>
+    key.trim().replaceAll(RegExp(r'[\r\n]+'), '');
+
+/// Whether [a] and [b] are the same public key; the comment and
+/// whitespace do not count.
+bool sameSshKey(String a, String b) {
+  final x = publicKeyBlob(normalizeSshKey(a));
+  final y = publicKeyBlob(normalizeSshKey(b));
+  return x != null && listEquals(x, y);
+}
+
 /// Checks a pasted public key; null when it can be added.
 SshKeyProblem? sshKeyProblem(String key) {
-  final k = key.trim();
+  final k = normalizeSshKey(key);
   if (k.isEmpty) return SshKeyProblem.empty;
   if (_privateMarkers.any(k.contains)) return SshKeyProblem.privateKey;
   // A known type with a blob of that type (CMP-073).
