@@ -1,4 +1,4 @@
-Falco 3 is a complete rebuild for Android and iOS.
+Falco 3 is a complete rebuild for iOS.
 • Every Hetzner API in one app: Cloud, DNS, Storage Boxes, Object Storage and Robot
 • Accounts with several Cloud projects, or all projects at once
 • Search across all resources, activity per project

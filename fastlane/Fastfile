@@ -8,8 +8,10 @@ PACKAGE = "de.kiefer_networks.falco"
 BUNDLE_ID = "de.kiefer-networks.falco"
 
 platform :android do
-  # Uploads the signed AAB with listing texts and changelog to the internal
-  # track. Screenshots are uploaded by hand (docs/target/RELEASE.md).
+  # Uploads the signed AAB with its changelog to the internal track. The
+  # store listing is not per track, so it is left alone here (production
+  # may still serve the previous app) and uploaded by promote to production.
+  # Screenshots are uploaded by hand (docs/target/RELEASE.md).
   lane :internal do |options|
     upload_to_play_store(
       package_name: PACKAGE,
@@ -18,22 +20,26 @@ platform :android do
       aab: options.fetch(:aab),
       metadata_path: "fastlane/metadata/android",
       skip_upload_apk: true,
+      skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
     )
   end
 
-  # Promotes the internal release of version_code to another track.
+  # Promotes the internal release of version_code to another track. The
+  # listing texts go up only together with a production release.
   lane :promote do |options|
+    track = options.fetch(:track)
     upload_to_play_store(
       package_name: PACKAGE,
       json_key_data: ENV.fetch("PLAY_SERVICE_ACCOUNT_JSON"),
       track: "internal",
-      track_promote_to: options.fetch(:track),
+      track_promote_to: track,
       version_code: options.fetch(:version_code).to_i,
       skip_upload_apk: true,
       skip_upload_aab: true,
-      skip_upload_metadata: true,
+      metadata_path: "fastlane/metadata/android",
+      skip_upload_metadata: track != "production",
       skip_upload_changelogs: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
