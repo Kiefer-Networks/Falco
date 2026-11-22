@@ -1686,7 +1686,7 @@ final class RobotTemplateProvider
   }
 }
 
-String _$robotTemplateHash() => r'c9efb705695356100b888560f17d2e14bfc081f2';
+String _$robotTemplateHash() => r'eb9378d53f87286df22d34047a833de30e6952b0';
 
 /// One template. Robot documents no name in the single template answer,
 /// so an empty one comes from the list (ROB-058); without it the apply
