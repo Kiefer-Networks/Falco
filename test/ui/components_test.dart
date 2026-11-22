@@ -20,6 +20,8 @@ void main() {
       expect(ConfirmSheet.matches('DB-primary', 'db-primary'), isFalse);
       expect(ConfirmSheet.matches('db-prim', 'db-primary'), isFalse);
       expect(ConfirmSheet.matches('', 'db-primary'), isFalse);
+      expect(ConfirmSheet.matches('', ''), isFalse);
+      expect(ConfirmSheet.matches('  ', ''), isFalse);
     });
 
     testWidgets('QRS-010 confirm stays disabled until the name matches', (

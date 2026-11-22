@@ -6,6 +6,7 @@ import 'package:falco/core/files/text_files.dart' show decodeText;
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/features/dns/zone_pages.dart';
 import 'package:falco/features/dns/zones.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -112,6 +113,11 @@ void main() {
     expect(cloud.body('PUT /zones/5'), {
       'labels': {'team': 'web'},
     });
+    // Labels first: a PUT during the TTL action would be refused.
+    expect(
+      cloud.calls.indexOf('PUT /zones/5'),
+      lessThan(cloud.calls.indexOf('POST /zones/5/actions/change_ttl')),
+    );
     await settleAction(tester);
     await tile(tester, 'Protection');
     await confirm(tester, 'Protect');
@@ -202,6 +208,30 @@ void main() {
       ],
     });
     await settleAction(tester);
+  });
+
+  testWidgets('DNS-007 values the RRSet has or typed twice are added once', (
+    tester,
+  ) async {
+    final cloud = await openZone(tester);
+    await tile(tester, 'Add record');
+    await enter(tester, 'values', '203.0.113.1\n203.0.113.2\n203.0.113.2');
+    await tap(tester, 'Save');
+    expect(cloud.body('POST /zones/5/rrsets/@/A/actions/add_records'), {
+      'records': [
+        {'value': '203.0.113.2'},
+      ],
+    });
+    await settleAction(tester);
+    // Nothing new: no action at all.
+    final adds = cloud.calls.where((c) => c.endsWith('add_records')).length;
+    await tile(tester, 'Add record');
+    await enter(tester, 'values', '203.0.113.1');
+    await tap(tester, 'Save');
+    expect(
+      cloud.calls.where((c) => c.endsWith('add_records')),
+      hasLength(adds),
+    );
   });
 
   testWidgets('DNS-007 a new TTL for an existing RRSet waits for the added '
@@ -382,6 +412,14 @@ void main() {
       contains('@ IN A 203.0.113.1'),
     );
     expect(find.text('Zone file saved'), findsOneWidget);
+  });
+
+  testWidgets('DNS-016 a failing save dialog says so', (tester) async {
+    final cloud = await openZone(tester);
+    cloud.files.saveError = PlatformException(code: 'multiple_request');
+    await tile(tester, 'Export');
+    expect(find.text('The action failed.'), findsOneWidget);
+    expect(cloud.files.saved, isEmpty);
   });
 
   testWidgets('DNS-017 DNS-018 DNS-019 DNS-020 primary nameservers', (
@@ -572,6 +610,14 @@ void main() {
       expect(cloud.body('PUT /zones/5/rrsets/www/CNAME'), {
         'labels': {'cdn': 'yes'},
       });
+      expect(
+        cloud.calls.indexOf('PUT /zones/5/rrsets/www/CNAME'),
+        lessThan(
+          cloud.calls.indexOf(
+            'POST /zones/5/rrsets/www/CNAME/actions/change_ttl',
+          ),
+        ),
+      );
       await settleAction(tester);
       await tile(tester, 'Protection');
       await confirm(tester, 'Protect');
@@ -580,6 +626,21 @@ void main() {
         {'change': true},
       );
       await settleAction(tester);
+    });
+
+    testWidgets('DNS-011 removing the last value deletes the RRSet', (
+      tester,
+    ) async {
+      final cloud = await openSet(tester);
+      await tester.tap(find.byTooltip('Delete').first);
+      await tester.pumpAndSettle();
+      await typeName(tester, 'www/CNAME');
+      await confirm(tester, 'Delete');
+      expect(cloud.calls, contains('DELETE /zones/5/rrsets/www/CNAME'));
+      expect(cloud.calls.where((c) => c.endsWith('remove_records')), isEmpty);
+      await settleAction(tester);
+      expect(find.text('www CNAME'), findsNothing);
+      expect(find.text('@ A'), findsOneWidget, reason: 'back on the zone');
     });
 
     testWidgets('DNS-029 delete the RRSet', (tester) async {
