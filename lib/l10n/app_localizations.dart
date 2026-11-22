@@ -824,6 +824,18 @@ abstract class AppLocalizations {
   /// **'Access data stays locked: the system check was cancelled. Nothing was changed.'**
   String get errorLocked;
 
+  /// No description provided for @errorMustBeUnassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'The IP is still assigned. Unassign it from its server first, then delete it.'**
+  String get errorMustBeUnassigned;
+
+  /// No description provided for @errorResourceInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Still in use. Remove it from all its servers and label selectors first, then delete it.'**
+  String get errorResourceInUse;
+
   /// No description provided for @errorLocalStorage.
   ///
   /// In en, this message translates to:

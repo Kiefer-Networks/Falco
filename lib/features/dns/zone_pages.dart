@@ -58,22 +58,25 @@ String _ns(Nameserver n) => n.address.contains(':')
     : '${n.address}:${n.port}';
 
 /// Record values of [text], one per line, normalized for [type]
-/// (DNS-009); a value typed twice counts once, as the API refuses
-/// duplicates.
-List<DnsRecord> recordsOf(String type, String text) => [
-  for (final value in {
+/// (DNS-009); a value typed twice, in any spelling, counts once, as the
+/// API refuses duplicates.
+List<DnsRecord> recordsOf(String type, String text) {
+  final seen = <String>{};
+  return [
     for (final line in text.split('\n'))
-      if (line.trim().isNotEmpty) normalizeRecord(type, line),
-  })
-    (value: value, comment: ''),
-];
+      if (line.trim().isNotEmpty)
+        if (normalizeRecord(type, line) case final value
+            when seen.add(recordKey(type, value)))
+          (value: value, comment: ''),
+  ];
+}
 
-/// [records] whose value [set] does not have yet.
+/// [records] whose value [set] does not have yet, in any spelling.
 List<DnsRecord> _newIn(RRSet set, List<DnsRecord> records) {
-  final have = {for (final r in set.records) r.value};
+  final have = {for (final r in set.records) recordKey(set.type, r.value)};
   return [
     for (final r in records)
-      if (!have.contains(r.value)) r,
+      if (!have.contains(recordKey(set.type, r.value))) r,
   ];
 }
 
@@ -182,8 +185,15 @@ Future<bool> showRecordSheet(
         return;
       }
       // The RRSet as it is now: a retry must not add again what an
-      // earlier try added, the API refuses a value the RRSet has.
-      final now = await getRrset(api, zone.id, known.name, known.type);
+      // earlier try added, the API refuses a value the RRSet has. Gone
+      // meanwhile, it is created anew.
+      final RRSet now;
+      try {
+        now = await getRrset(api, zone.id, known.name, known.type);
+      } on NotFound {
+        tracker.track(await createRrset(api, zone.id, set));
+        return;
+      }
       final records = _newIn(now, set.records);
       final relabel = set.labels.isNotEmpty;
       final retime = set.ttl != null && set.ttl != now.ttl;
@@ -393,17 +403,17 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
               ? null
               : (key.isEmpty ? current?.tsigKey : key),
         );
+        // From the primaries the zone has now: one added or changed
+        // meanwhile stays.
         return startTracked(
           ref,
           _scope,
-          (api) => changeZone(
-            api,
-            z.id,
-            SetPrimaries([
-              for (final p in z.primaries)
-                if (p == current) next else p,
-              if (current == null) next,
-            ]),
+          (api) => getZone(api, _scope, z.id).then(
+            (now) => changeZone(
+              api,
+              z.id,
+              SetPrimaries(withPrimary(now.primaries, current, next)),
+            ),
           ),
         );
       },
@@ -602,7 +612,7 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
               label: l10n.primaryAdd,
               icon: Icons.add,
               group: ActionGroup.manage,
-              onTap: () => _primary(z),
+              onTap: busy ? null : () => _primary(z),
             ),
         ],
         sections: [
@@ -626,13 +636,15 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
                             consequence: l10n.primaryRemoveConsequence,
                             label: l10n.actionRemove,
                             name: z.name,
-                            start: (api) => changeZone(
-                              api,
-                              z.id,
-                              SetPrimaries([
-                                for (final x in z.primaries)
-                                  if (x != p) x,
-                              ]),
+                            start: (api) => getZone(api, _scope, z.id).then(
+                              (now) => changeZone(
+                                api,
+                                z.id,
+                                SetPrimaries([
+                                  for (final x in now.primaries)
+                                    if (x != p) x,
+                                ]),
+                              ),
                             ),
                           ),
                   ),
@@ -760,6 +772,20 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
 bool bulkSelectable(RRSet s) =>
     s.type != 'SOA' && !(s.type == 'NS' && s.name == '@');
 
+/// [now] with [old] replaced by [next], or [next] added when [old] is
+/// null or gone; [next] never twice (DNS-017).
+List<Nameserver> withPrimary(
+  List<Nameserver> now,
+  Nameserver? old,
+  Nameserver next,
+) {
+  final out = [
+    for (final p in now)
+      if (p == old) next else p,
+  ];
+  return out.contains(next) ? out.toSet().toList() : [...out, next];
+}
+
 /// A nameserver port, 1 to 65535 (DNS-018).
 bool validNameserverPort(String? text) {
   final p = int.tryParse(text?.trim() ?? '');
@@ -837,15 +863,25 @@ class RRSetDetailPage extends ConsumerWidget {
         final value = normalizeRecord(s.type, v['value']!);
         final comment = (v['comment'] ?? '').trim();
         // Only the comment: update in place (DNS-031); else replace the
-        // value within the RRSet (DNS-010).
-        return value == r.value
-            ? change(UpdateRecords([(value: value, comment: comment)]))
-            : change(
-                SetRecords([
-                  for (final x in s.records)
-                    if (x == r) (value: value, comment: comment) else x,
-                ]),
-              );
+        // value within the RRSet as it is now, so values added meanwhile
+        // stay (DNS-010).
+        if (recordKey(s.type, value) == recordKey(s.type, r.value)) {
+          return change(UpdateRecords([(value: r.value, comment: comment)]));
+        }
+        return startTracked(
+          ref,
+          scope,
+          (api) => getRrset(api, zoneId, s.name, s.type).then(
+            (now) => changeRrset(
+              api,
+              zoneId,
+              s,
+              SetRecords(
+                swapRecord(now, r.value, (value: value, comment: comment)),
+              ),
+            ),
+          ),
+        );
       },
     );
 
@@ -1021,6 +1057,20 @@ class RRSetDetailPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The values of [now] with [old] swapped for [next] (added when [old]
+/// is gone), each value once (DNS-010).
+List<DnsRecord> swapRecord(RRSet now, String old, DnsRecord next) {
+  String key(String v) => recordKey(now.type, v);
+  final seen = <String>{};
+  return [
+    for (final x in now.records)
+      if (key(x.value) == key(old) ? next : x case final y
+          when seen.add(key(y.value)))
+        y,
+    if (!seen.contains(key(next.value))) next,
+  ];
 }
 
 /// Create a primary or secondary zone (DNS-002, DNS-022).

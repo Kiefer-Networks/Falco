@@ -9,6 +9,9 @@ String errorText(FalcoError error, AppLocalizations l10n) => switch (error) {
   NotFound() => l10n.errorNotFound,
   Conflict() => l10n.errorConflict,
   RateLimited() => l10n.errorRateLimited,
+  // Deletes the API refuses while a resource is still attached.
+  Invalid(code: 'must_be_unassigned') => l10n.errorMustBeUnassigned,
+  Invalid(code: 'resource_in_use') => l10n.errorResourceInUse,
   Invalid() => l10n.errorInvalid,
   Network() => l10n.errorNetwork,
   PinningFailed() => l10n.errorPinning,

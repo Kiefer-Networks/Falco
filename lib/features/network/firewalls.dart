@@ -62,6 +62,21 @@ class FirewallRule {
     inbound ? 'source_ips' : 'destination_ips': ips,
     'description': ?(description?.trim().isEmpty ?? true ? null : description),
   };
+
+  /// Rules are equal by value: a rule of a page snapshot finds itself
+  /// among the rules the firewall has now.
+  @override
+  bool operator ==(Object other) =>
+      other is FirewallRule &&
+      other.inbound == inbound &&
+      other.protocol == protocol &&
+      other.port == port &&
+      listEquals(other.ips, ips) &&
+      other.description == description;
+
+  @override
+  int get hashCode =>
+      Object.hash(inbound, protocol, port, Object.hashAll(ips), description);
 }
 
 /// What a firewall is applied to: a server or a label selector.
@@ -123,8 +138,19 @@ Future<List<Firewall>> firewalls(Ref ref, Scope scope) => perProject(
 
 /// One firewall (NET-004, NET-013).
 @riverpod
-Future<Firewall> firewall(Ref ref, ProjectScope scope, int firewallId) async {
-  final api = ref.watch(cloudApiProvider(scope.projectId));
+Future<Firewall> firewall(Ref ref, ProjectScope scope, int firewallId) =>
+    getFirewall(
+      ref.watch(cloudApiProvider(scope.projectId)),
+      scope,
+      firewallId,
+    );
+
+/// One firewall as the server has it now.
+Future<Firewall> getFirewall(
+  cloud.Server api,
+  ProjectScope scope,
+  int firewallId,
+) async {
   final body = await cloudJson(
     cloud.FirewallsApi(api).getFirewall(id: firewallId),
   );

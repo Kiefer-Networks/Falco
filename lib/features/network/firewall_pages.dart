@@ -164,6 +164,20 @@ Future<bool> showRuleSheet(
   );
 }
 
+/// [rules] with [old] replaced by [next], or [next] added when [old] is
+/// null or gone; [next] never twice (NET-005, NET-011).
+List<FirewallRule> editRule(
+  List<FirewallRule> rules,
+  FirewallRule? old,
+  FirewallRule next,
+) {
+  final out = [
+    for (final x in rules)
+      if (x == old) next else x,
+  ];
+  return out.contains(next) ? out.toSet().toList() : [...out, next];
+}
+
 /// One line for a rule: protocol and port.
 String ruleTitle(FirewallRule r) =>
     [r.protocol.toUpperCase(), ?r.port].join(' ');
@@ -195,6 +209,10 @@ class FirewallDetailPage extends ConsumerWidget {
           in ref.watch(serversProvider(scope)).value ?? const <CloudServer>[])
         s.id: s,
     };
+    final progress = ref
+        .watch(trackedActionProvider(scope, CloudType.firewall, f.id))
+        .value;
+    final busy = progress != null && !progress.done;
 
     // Rules and targets change by actions per applied server; the
     // firewall itself refreshes at once.
@@ -207,8 +225,16 @@ class FirewallDetailPage extends ConsumerWidget {
       refreshResource(container.invalidate, scope, CloudType.firewall, f.id);
     }
 
-    Future<void> setAll(List<FirewallRule> rules) =>
-        track((api) => setRules(api, f.id, rules));
+    // A rule change applies to the rules the firewall has now, not to
+    // this page's: a rule added meanwhile is never dropped.
+    Future<void> setAll(List<FirewallRule> Function(List<FirewallRule>) edit) =>
+        track(
+          (api) => getFirewall(
+            api,
+            scope,
+            f.id,
+          ).then((now) => setRules(api, f.id, edit(now.rules))),
+        );
 
     Future<void> removeRule(FirewallRule r) async {
       final ok = await ConfirmSheet.show(
@@ -225,7 +251,7 @@ class FirewallDetailPage extends ConsumerWidget {
         context,
         ref,
         t,
-        (_) => setAll([...f.rules.where((x) => !identical(x, r))]),
+        (_) => setAll((now) => [...now.where((x) => x != r)]),
       );
     }
 
@@ -238,16 +264,15 @@ class FirewallDetailPage extends ConsumerWidget {
               r.ips.join(', '),
               if (r.description case final d? when d.isNotEmpty) d,
             ].join(' · '),
-            onTap: () => showRuleSheet(
-              context,
-              title: l10n.ruleEdit,
-              initial: r,
-              save: (rule) => setAll([
-                for (final x in f.rules)
-                  if (identical(x, r)) rule else x,
-              ]),
-            ),
-            onRemove: () => removeRule(r),
+            onTap: busy
+                ? null
+                : () => showRuleSheet(
+                    context,
+                    title: l10n.ruleEdit,
+                    initial: r,
+                    save: (rule) => setAll((now) => editRule(now, r, rule)),
+                  ),
+            onRemove: busy ? null : () => removeRule(r),
           ),
     ], l10n.rulesEmpty);
 
@@ -335,11 +360,13 @@ class FirewallDetailPage extends ConsumerWidget {
             icon: Icons.add,
             label: l10n.ruleAdd,
             group: ActionGroup.manage,
-            onTap: () => showRuleSheet(
-              context,
-              title: l10n.ruleAdd,
-              save: (rule) => setAll([...f.rules, rule]),
-            ),
+            onTap: busy
+                ? null
+                : () => showRuleSheet(
+                    context,
+                    title: l10n.ruleAdd,
+                    save: (rule) => setAll((now) => editRule(now, null, rule)),
+                  ),
           ),
           DetailAction(
             icon: Icons.shield_outlined,
@@ -401,14 +428,18 @@ class FirewallDetailPage extends ConsumerWidget {
           activitySection(l10n, scope, CloudType.firewall, f.id),
         ],
         dangerZone: [
+          // The API refuses to delete an applied firewall (resource_in_use).
+          if (f.appliedTo.isNotEmpty) Text(l10n.errorResourceInUse),
           DeleteButton(
-            onPressed: () => deleteResource(
-              context,
-              ref,
-              t,
-              l10n.firewallDeleteConsequence,
-              (api) => deleteFirewall(api, f.id),
-            ),
+            onPressed: f.appliedTo.isNotEmpty
+                ? null
+                : () => deleteResource(
+                    context,
+                    ref,
+                    t,
+                    l10n.firewallDeleteConsequence,
+                    (api) => deleteFirewall(api, f.id),
+                  ),
           ),
         ],
       ),
