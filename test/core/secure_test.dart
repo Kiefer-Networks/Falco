@@ -206,6 +206,8 @@ void main() {
       expect(await secrets.verify(), isTrue);
       expect(bound.writes, writes + 1, reason: 'the new key asks');
       expect(namespace(), 'vault.1');
+      secrets.close();
+      await secrets.open();
       expect(await secrets.cloudToken('p1'), 't1');
       // A cancelled replacement fails the check and keeps the old vault.
       bound.fail = true;
@@ -219,8 +221,47 @@ void main() {
       await other.cloudToken('p1');
       device = (sdk: 36, secure: true);
       await expectLater(other.verify(), throwsA(isA<Locked>()));
+      expect(await other.cloudToken('p1'), 't1');
       bound.fail = false;
       expect(await other.verify(), isTrue);
+    });
+
+    test('a re-key switches to the new key only after its write, in line '
+        'with other writes, and a cancelled one stays closed '
+        '(R16, R27, R28)', () async {
+      const plain = FlutterSecureStorage();
+      device = (sdk: 36, secure: false);
+      await secrets.setCloudToken('p1', 't1');
+      device = (sdk: 36, secure: true);
+      // Cancelled while locked: the vault stays closed.
+      secrets.close();
+      bound.fail = true;
+      await expectLater(secrets.verify(), throwsA(isA<Locked>()));
+      await expectLater(secrets.cloudToken('p1'), throwsA(isA<Locked>()));
+      // The process may end during the prompt: nothing switched yet.
+      bound
+        ..fail = false
+        ..writeGate = Completer();
+      final verified = secrets.verify();
+      await pumpEventQueue();
+      expect(await plain.read(key: 'vault.ns'), isNull);
+      expect(await plain.read(key: 'vault.weak'), '1');
+      final concurrent = secrets.setCloudToken('p2', 't2');
+      bound.writeGate!.complete();
+      bound.writeGate = null;
+      expect(await verified, isTrue);
+      await concurrent;
+      expect(await plain.read(key: 'vault.ns'), '1');
+      expect(await plain.read(key: 'vault.weak'), isNull);
+      expect(bound.spaces['vault'], isEmpty);
+      final fresh = SecretStore(
+        null,
+        bound,
+        () async => deviceLock,
+        () async => device,
+      );
+      expect(await fresh.cloudToken('p1'), 't1');
+      expect(await fresh.cloudToken('p2'), 't2');
     });
 
     test('with the lock on the vault starts closed (L8), an unlock without '
@@ -654,9 +695,10 @@ void main() {
 }
 
 /// The bound store of a device: counts reads, [fail]s writes like a
-/// device without screen lock.
+/// device without screen lock. On Android each Keystore namespace holds
+/// its own items, like the plugin; iOS ignores the Android options.
 class _Bound extends FlutterSecureStorage {
-  final data = <String, String>{};
+  final spaces = <String, Map<String, String>>{};
   int reads = 0;
   int writes = 0;
   bool fail = false;
@@ -671,6 +713,19 @@ class _Bound extends FlutterSecureStorage {
   /// Holds reads until completed.
   Completer<void>? gate;
 
+  /// Holds writes until completed.
+  Completer<void>? writeGate;
+
+  /// Items of the namespace used last.
+  Map<String, String> get data => _space(android);
+
+  Map<String, String> _space(AndroidOptions? options) => spaces.putIfAbsent(
+    defaultTargetPlatform == TargetPlatform.android
+        ? options?.toMap()['storageNamespace'] ?? 'vault'
+        : '',
+    () => {},
+  );
+
   @override
   Future<void> delete({
     required String key,
@@ -680,7 +735,7 @@ class _Bound extends FlutterSecureStorage {
     WebOptions? webOptions,
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
-  }) async => data.remove(key);
+  }) async => _space(aOptions).remove(key);
 
   @override
   Future<void> deleteAll({
@@ -690,7 +745,7 @@ class _Bound extends FlutterSecureStorage {
     WebOptions? webOptions,
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
-  }) async => data.clear();
+  }) async => _space(aOptions).clear();
 
   @override
   Future<String?> read({
@@ -706,7 +761,7 @@ class _Bound extends FlutterSecureStorage {
     android = aOptions;
     await gate?.future;
     if (readError case final e?) throw e;
-    return data[key];
+    return _space(aOptions)[key];
   }
 
   @override
@@ -721,13 +776,14 @@ class _Bound extends FlutterSecureStorage {
     WindowsOptions? wOptions,
   }) async {
     android = aOptions;
+    await writeGate?.future;
     if (writeError case final e?) {
       writeError = null;
       throw e;
     }
     if (fail) throw PlatformException(code: 'no_passcode');
     writes++;
-    data[key] = value!;
+    _space(aOptions)[key] = value!;
   }
 
   @override
@@ -739,5 +795,5 @@ class _Bound extends FlutterSecureStorage {
     WebOptions? webOptions,
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
-  }) async => data.containsKey(key);
+  }) async => _space(aOptions).containsKey(key);
 }

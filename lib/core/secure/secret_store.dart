@@ -196,16 +196,6 @@ class SecretStore {
     return generation == null ? 'vault' : 'vault.$generation';
   }
 
-  /// Switches the namespace generation; null is the first one.
-  Future<void> _useGeneration(String? generation) async {
-    if (generation == null) {
-      await _plain.delete(key: _generation);
-    } else {
-      await _plain.write(key: _generation, value: generation);
-    }
-    _namespace = null;
-  }
-
   Future<String> _nextGeneration() async {
     final current = await _plain.read(key: _generation);
     return '${(int.tryParse(current ?? '') ?? 0) + 1}';
@@ -215,7 +205,8 @@ class SecretStore {
   /// else the plugin would keep the dead key and fail every write.
   Future<void> _dropInvalidated() async {
     await _bound.deleteAll(aOptions: await _android());
-    await _useGeneration(await _nextGeneration());
+    await _plain.write(key: _generation, value: await _nextGeneration());
+    _namespace = null;
   }
 
   /// Reads the vault; the system asks for Face ID, fingerprint or the
@@ -239,9 +230,10 @@ class SecretStore {
   }
 
   /// Reads the vault again even when it is open, so the system asks the
-  /// user now; a failed check keeps the vault as it was.
+  /// user now; a failed check keeps the vault as it was, closed included.
   Future<bool> verify() async {
     final before = _open;
+    final closed = _closed;
     _open = null;
     try {
       await open();
@@ -250,29 +242,39 @@ class SecretStore {
       rethrow;
     }
     if (await _plain.read(key: _weak) != null && (await _device()).secure) {
-      await _rekey();
+      try {
+        await _rekey();
+      } on Object {
+        if (closed) close();
+        rethrow;
+      }
     }
     return true;
   }
 
   /// Moves the vault to a new key now that the device has a screen lock:
   /// the old key opened without asking, the write under the new one asks,
-  /// and that is the check. A cancelled write keeps the old vault.
-  Future<void> _rekey() async {
+  /// and that is the check. The new namespace is used only after that
+  /// write succeeded, so a cancelled prompt or the process ending in it
+  /// keeps the old vault. Runs in line with the other writes, on the
+  /// latest secrets.
+  Future<void> _rekey() => _serial(() async {
+    if (await _plain.read(key: _weak) == null) return;
     final secrets = await _secrets();
-    final old = await _android();
-    final generation = await _plain.read(key: _generation);
-    await _plain.delete(key: _weak);
-    await _useGeneration(await _nextGeneration());
+    final old = _namespace;
+    final oldOptions = await _android();
+    final next = await _nextGeneration();
+    _namespace = Future.value('vault.$next');
     try {
       await _save(secrets);
     } on Object {
-      await _useGeneration(generation);
-      await _plain.write(key: _weak, value: '1');
+      _namespace = old;
       rethrow;
     }
-    await _bound.deleteAll(aOptions: old);
-  }
+    await _plain.write(key: _generation, value: next);
+    await _plain.delete(key: _weak);
+    await _bound.deleteAll(aOptions: oldOptions);
+  });
 
   /// Ends the closed state without reading the vault, when the app opens
   /// without a check: no account yet, or the lock turned off.
@@ -367,11 +369,16 @@ class SecretStore {
 
   /// Applies [change] to the latest vault and saves it if [change] returns
   /// true. Writes run one after another, so none overwrites another.
-  Future<void> _update(bool Function(Map<String, String> secrets) change) {
-    final done = _writes.then((_) async {
-      final secrets = {...await _secrets()};
-      if (change(secrets)) await _save(secrets);
-    });
+  Future<void> _update(bool Function(Map<String, String> secrets) change) =>
+      _serial(() async {
+        final secrets = {...await _secrets()};
+        if (change(secrets)) await _save(secrets);
+      });
+
+  /// Runs [work] after all earlier writes; a failed one does not stop the
+  /// next.
+  Future<void> _serial(Future<void> Function() work) {
+    final done = _writes.then((_) => work());
     _writes = done.then((_) {}, onError: (Object _) {});
     return done;
   }

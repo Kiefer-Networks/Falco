@@ -79,8 +79,25 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
         clipboard.setPrimaryClip(clip)
+        // Read back in the foreground: the system's copy time tells this
+        // clip apart from a later one with the same label.
+        copiedAt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            clipboard.primaryClipDescription?.timestamp ?: 0L
+        } else {
+            0L
+        }
+        pending = false
         handler.removeCallbacksAndMessages(null)
         handler.postDelayed({ clearIfOurs(clipboard) }, expirySeconds * 1000L)
+    }
+
+    // A clip that was unreadable at its expiry (background) is checked
+    // again as soon as Falco is in front.
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && pending) {
+            clearIfOurs(applicationContext.getSystemService(ClipboardManager::class.java))
+        }
     }
 
     // Process wide, so a recreated or finished activity still clears.
@@ -88,12 +105,24 @@ class MainActivity : FlutterFragmentActivity() {
         const val LABEL = "falco-secret"
         val handler = Handler(Looper.getMainLooper())
 
+        // Copy time of our clip on Android 8+ (0 below).
+        var copiedAt = 0L
+
+        // The expiry passed while the clip was unreadable.
+        var pending = false
+
         // In background Android 10+ hides the clip (null description): it
-        // is cleared then, since a secret must not outlive the expiry. Only
-        // a readable foreign clip stays.
+        // may be a foreign clip copied meanwhile, so it stays and is checked
+        // on the next focus. Only a clip proven ours is cleared.
         fun clearIfOurs(clipboard: ClipboardManager) {
             val description = clipboard.primaryClipDescription
-            if (description != null && description.label != LABEL) return
+            pending = description == null
+            if (description == null || description.label != LABEL) return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                description.timestamp != copiedAt
+            ) {
+                return
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 clipboard.clearPrimaryClip()
             } else {
