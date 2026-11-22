@@ -5450,6 +5450,12 @@ abstract class AppLocalizations {
   /// **'Locked'**
   String get robotLocked;
 
+  /// No description provided for @robotLoginRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Robot rejected the login. Update it under Accounts.'**
+  String get robotLoginRejected;
+
   /// No description provided for @robotMac.
   ///
   /// In en, this message translates to:

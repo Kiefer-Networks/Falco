@@ -804,7 +804,9 @@ class _RobotFirewallPageState extends ConsumerState<RobotFirewallPage> {
       rules: rules ?? f.rules,
     );
 
-    Future<void> apply({int? template}) async {
+    // Robot sets filter_ipv6 over the template's, so a template sends
+    // its own.
+    Future<void> apply({RobotFirewall? template}) async {
       final done = await runRobot(
         context,
         ref,
@@ -812,10 +814,10 @@ class _RobotFirewallPageState extends ConsumerState<RobotFirewallPage> {
         (api) => api.setFirewall(
           n,
           active: f.status != 'disabled',
-          filterIpv6: f.filterIpv6,
+          filterIpv6: (template ?? f).filterIpv6,
           whitelistHos: f.whitelistHos,
           rules: f.rules,
-          templateId: template,
+          templateId: template?.id,
         ),
         command: RobotCommand.firewall,
         server: n,
@@ -865,10 +867,14 @@ class _RobotFirewallPageState extends ConsumerState<RobotFirewallPage> {
             l10n.firewallRules,
             '${t.rules.values.fold(0, (n, r) => n + r.length)}',
           ),
+          ConfirmFact(
+            l10n.firewallFilterIpv6,
+            t.filterIpv6 ? l10n.commonOn : l10n.commonOff,
+          ),
         ],
         destructive: true,
       );
-      if (ok && context.mounted) await apply(template: t.id);
+      if (ok && context.mounted) await apply(template: t);
     }
 
     Future<void> clear() async {
@@ -1020,6 +1026,8 @@ class _RobotTemplatePageState extends ConsumerState<RobotTemplatePage> {
         ids: [DetailId('#${t.id}', copy: true, copyText: '${t.id}')],
         onRefresh: () async {
           setState(() => _draft = null);
+          // The name may come from the list, so that is read again too.
+          ref.invalidate(robotTemplatesProvider(a));
           await refreshQuietly(ref, provider.future);
         },
         actions: [
@@ -1034,9 +1042,11 @@ class _RobotTemplatePageState extends ConsumerState<RobotTemplatePage> {
                       context,
                       ref,
                       a,
+                      // The name only when edited: it may come from an
+                      // older list and would undo a rename made elsewhere.
                       (api) => api.saveTemplate(
                         id: t.id,
-                        name: t.name,
+                        name: t.name == async.requireValue.name ? null : t.name,
                         filterIpv6: t.filterIpv6,
                         whitelistHos: t.whitelistHos,
                         isDefault: t.isDefault,

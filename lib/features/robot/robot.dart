@@ -4,6 +4,7 @@
 /// ROB-059).
 library;
 
+import 'dart:async' show Completer;
 import 'dart:convert' show utf8;
 import 'dart:io' show HttpHeaders;
 import 'dart:math' show Random;
@@ -27,14 +28,21 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'robot.g.dart';
 
+/// A Robot login that Robot refused on `GET /server` too (ROB-002).
+const robotLoginRejected = Unauthorized(code: 'ROBOT_LOGIN');
+
 /// The Robot webservice of an account; the login is read per request.
+/// Until Robot answered a login, one request with it goes out and the
+/// others wait for that answer: Robot blocks the address after three
+/// failed logins, so a changed password must not fail once per open list.
 /// When Robot refuses a request, `GET /server` is asked once with the
-/// same login: refused there too, the login is wrong and every request
-/// with it fails at once as [Unauthorized] (a password changed outside
-/// the app included). Accepted there, the refusal blocks only that path,
-/// a section the login may not use. Either way it is sent again only
-/// after the stored login changes or is saved again (ROB-002). A changed
-/// login or a removed account rebuilds the client.
+/// same login (one already in flight counts): refused there too, the
+/// login is wrong and every request with it fails at once as
+/// [robotLoginRejected] (a password changed outside the app included).
+/// Accepted there, the refusal blocks only that path, a section the login
+/// may not use. Either way it is sent again only after the stored login
+/// changes or is saved again (ROB-002). A changed login or a removed
+/// account rebuilds the client.
 @Riverpod(keepAlive: true)
 RobotClient robotApi(Ref ref, String accountId) {
   final secrets = ref.watch(secretStoreProvider);
@@ -44,10 +52,15 @@ RobotClient robotApi(Ref ref, String accountId) {
       Hmac(sha256, key).convert(utf8.encode('${c.user}\n${c.password}'));
   const login = 'falco.robotLogin';
   const probing = 'falco.robotProbe';
+  const first = 'falco.robotFirst';
+  const serving = 'falco.robotServing';
   const server = '/server';
   final refused = <String, Digest>{};
   // One probe per login at a time; refusals meanwhile share it.
   final probes = <Digest, Future<int?>>{};
+  // Logins Robot answered, and the one request asking for the others.
+  final known = <Digest>{};
+  final asking = <Digest, Future<void>>{};
   Digest? wrong;
   Digest? last;
   // Every login change and account removal reloads the accounts, and so
@@ -76,10 +89,35 @@ RobotClient robotApi(Ref ref, String accountId) {
         final c = await secrets.robot(accountId);
         final sent = c == null ? null : fingerprint(c);
         last = sent;
-        if (c == null || sent == wrong || sent == refused[options.path]) {
+        while (sent != null && !known.contains(sent)) {
+          final ahead = asking[sent];
+          if (ahead == null) break;
+          await ahead;
+        }
+        if (c == null || sent == null) {
           return handler.reject(
             DioException(requestOptions: options, error: const Unauthorized()),
           );
+        }
+        if (sent == wrong || sent == refused[options.path]) {
+          return handler.reject(
+            DioException(
+              requestOptions: options,
+              error: sent == wrong ? robotLoginRejected : const Unauthorized(),
+            ),
+          );
+        }
+        if (!known.contains(sent)) {
+          final done = Completer<void>();
+          asking[sent] = done.future;
+          options.extra[first] = done;
+        }
+        if (options.path == server &&
+            options.method == 'GET' &&
+            !probes.containsKey(sent)) {
+          final status = Completer<int?>();
+          probes[sent] = status.future;
+          options.extra[serving] = status;
         }
         options.extra[login] = sent;
         basicAuth(c.user, c.password).onRequest(options, handler);
@@ -112,20 +150,39 @@ RobotClient robotApi(Ref ref, String accountId) {
   // The login a request carried, not the one stored meanwhile.
   Future<void> answered(RequestOptions options, int? status) async {
     final sent = options.extra[login];
-    if (sent is! Digest || status == null) return;
-    if (status == 401) {
-      if (sent == wrong) return;
-      final path = options.path;
-      final check = path == server ? 401 : await probe(options, sent);
-      if (check == 401) {
-        wrong = sent;
+    if (options.extra.remove(serving) case final Completer<int?> c) {
+      probes.removeWhere((_, f) => f == c.future);
+      c.complete(status);
+    }
+    try {
+      if (sent is! Digest || status == null) return;
+      if (status == 401) {
+        if (sent == wrong) return;
+        final path = options.path;
+        final check = path == server ? 401 : await probe(options, sent);
+        if (check == 401) {
+          wrong = sent;
+          known.remove(sent);
+        } else {
+          refused[path] = sent;
+          if (check != null) known.add(sent);
+        }
       } else {
-        refused[path] = sent;
+        known.add(sent);
+        if (status < 400 && wrong == sent) wrong = null;
       }
-    } else if (status < 400 && wrong == sent) {
-      wrong = null;
+    } finally {
+      // Waiting requests go now: with the answer, or one of them asks.
+      if (options.extra.remove(first) case final Completer<void> done) {
+        asking.removeWhere((_, f) => f == done.future);
+        done.complete();
+      }
     }
   }
+
+  // A refusal that proved the login wrong says so.
+  bool rejectsLogin(RequestOptions options, int? status) =>
+      status == 401 && wrong != null && options.extra[login] == wrong;
 
   // First, so it sees the answer before errors are mapped.
   dio.interceptors.insert(
@@ -133,10 +190,23 @@ RobotClient robotApi(Ref ref, String accountId) {
     InterceptorsWrapper(
       onResponse: (r, handler) async {
         await answered(r.requestOptions, r.statusCode);
+        if (rejectsLogin(r.requestOptions, r.statusCode)) {
+          return handler.reject(
+            DioException.badResponse(
+              statusCode: 401,
+              requestOptions: r.requestOptions,
+              response: r,
+            ).copyWith(error: robotLoginRejected),
+          );
+        }
         handler.next(r);
       },
       onError: (e, handler) async {
-        await answered(e.requestOptions, e.response?.statusCode);
+        final status = e.response?.statusCode;
+        await answered(e.requestOptions, status);
+        if (rejectsLogin(e.requestOptions, status)) {
+          return handler.reject(e.copyWith(error: robotLoginRejected));
+        }
         handler.next(e);
       },
     ),
@@ -360,9 +430,10 @@ abstract final class RobotCommand {
   static const firewall = 'robot_firewall';
 }
 
-/// Text of a Robot failure; a section the login may not use says so
-/// (ROB-002); throttling stays throttling (ROB-003).
+/// Text of a Robot failure; a wrong login and a section the login may
+/// not use say so (ROB-002); throttling stays throttling (ROB-003).
 String robotErrorText(FalcoError e, AppLocalizations l10n) => switch (e) {
+  Unauthorized(code: 'ROBOT_LOGIN') => l10n.robotLoginRejected,
   Unauthorized() || Forbidden() => l10n.robotSectionDisabled,
   _ => errorText(e, l10n),
 };

@@ -3263,6 +3263,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get robotLocked => 'Gesperrt';
 
   @override
+  String get robotLoginRejected =>
+      'Robot hat die Zugangsdaten abgelehnt. Aktualisiere sie unter Accounts.';
+
+  @override
   String get robotMac => 'Eigene MAC';
 
   @override

@@ -124,6 +124,10 @@ Future<void> quickActions(
   RobotServer s,
 ) async {
   final l10n = AppLocalizations.of(context);
+  // Wake on LAN only where Robot offers it (ROB-043); unknown is no.
+  final wol = ref
+      .read(robotWolProvider(accountId, s.number).future)
+      .catchError((Object _) => false);
   final List<String> types;
   try {
     types =
@@ -135,6 +139,7 @@ Future<void> quickActions(
     }
     return;
   }
+  final canWake = await wol;
   if (!context.mounted) return;
   final pick = await ChoiceList.show(
     context,
@@ -142,7 +147,7 @@ Future<void> quickActions(
     selected: '',
     options: {
       for (final t in types) t: resetTypeText(t, l10n),
-      'wol': l10n.robotWol,
+      if (canWake) 'wol': l10n.robotWol,
     },
   );
   if (pick == null || !context.mounted) return;
