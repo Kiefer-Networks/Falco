@@ -21,7 +21,7 @@ Made for admins
 
 Privacy and security
 • No tracking, no analytics, no ads, no third party services
-• Your tokens and passwords stay on your device, in the Keychain or Android Keystore, behind Face ID, fingerprint or device PIN
+• Your tokens and passwords stay on your device, in the iOS Keychain, behind Face ID, Touch ID or the device passcode
 • Falco talks only to the Hetzner APIs, with certificate pinning for every host
 • Free software under GPL 3.0 or later
 

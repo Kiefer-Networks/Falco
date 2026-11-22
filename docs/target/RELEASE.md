@@ -11,13 +11,17 @@ Uploads laufen über fastlane (`Gemfile`, `Gemfile.lock`, `fastlane/Fastfile`).
 2. **Android:** Tests, signiertes AAB und APK, GitHub Release mit APK, AAB,
    `SHA256SUMS` und Build Provenance (`gh attestation verify <datei> -R
    Kiefer-Networks/Falco`), danach Upload des AAB in den internen Test Track
-   von Google Play samt Texten und Changelog.
+   von Google Play samt Changelog. Die Texte des Store Eintrags lädt dieser
+   Schritt nicht hoch: der Eintrag gilt für alle Tracks, Produktion zeigt
+   ihn also sofort, auch solange dort noch die alte Version läuft.
 3. **iOS:** signiertes IPA, Upload zu TestFlight.
 4. Testen über den internen Track und TestFlight.
 5. Manueller Lauf: Actions → Release → *Run workflow*, als Ref den Tag
    wählen (nicht den Branch):
    - `play_track`: interne Version nach `alpha`, `beta` oder `production`
-     übernehmen (nichts wird neu gebaut).
+     übernehmen (nichts wird neu gebaut). Nur mit `production` lädt der
+     Schritt auch die Texte aus `fastlane/metadata/android` in den Store
+     Eintrag.
    - `ios_submit`: den TestFlight Build mit den Texten aus
      `fastlane/metadata/ios` zur App Prüfung einreichen. Veröffentlicht wird
      nach der Freigabe manuell in App Store Connect.
@@ -56,7 +60,7 @@ Base64 ohne Zeilenumbrüche erzeugen: `base64 -i datei | tr -d '\n'`.
    Schlüssel → JSON. Die Datei ist `PLAY_SERVICE_ACCOUNT_JSON`.
 3. Play Console → Nutzer und Berechtigungen → Neue Nutzer einladen → Mailadresse
    des Dienstkontos. Unter *App Berechtigungen* nur Falco hinzufügen mit:
-   - Store Präsenz verwalten (Texte und Changelog)
+   - Store Präsenz verwalten (Texte beim Wechsel nach Produktion)
    - Releases für Test Tracks erstellen, bearbeiten und veröffentlichen
    - Releases in der Produktion erstellen, bearbeiten und veröffentlichen
      (nur für `play_track: production`)
@@ -104,8 +108,8 @@ Secrets ersetzen.
   (Prüfer brauchen einen Hetzner Cloud Token eines Test Projekts).
 - Kategorie: **Tools**, Kontakt Mailadresse und Website.
 - Alte Übersetzungen des Store Eintrags (fr, es, it, ru, zh) löschen; Falco 3
-  ist nur Deutsch und Englisch, der Upload überschreibt nur `de-DE` und
-  `en-US`.
+  ist nur Deutsch und Englisch, der Upload (beim Wechsel nach Produktion)
+  überschreibt nur `de-DE` und `en-US`.
 - Screenshots hochladen (siehe unten). Der Workflow lädt keine Bilder hoch.
 
 ### App Store
@@ -154,37 +158,94 @@ dem Debug Schlüssel zu signieren.
 
 ## Umstellung: `next` wird `main`
 
-Noch nicht ausgeführt. Empfohlen vor dem Tag `v3.0.0`, damit Links auf
-`main` (Datenschutzerklärung, Badges) stimmen.
+Noch nicht ausgeführt. **Pflicht vor jedem Tag `v*`:** der Preflight in
+`release.yml` bricht ab, wenn der getaggte Commit nicht auf `main` liegt
+(`compare main...<sha>` muss `behind` oder `identical` sein). Solange
+Falco 3 nur auf `next` liegt, ist also kein Release möglich. Außerdem
+zeigen Links auf `main` (Datenschutzerklärung, Badges) erst danach auf
+Falco 3.
+
+Alle Einstellungen unten ändert der Maintainer von Hand in GitHub; kein
+Workflow und kein Skript stellt sie um.
 
 1. Alle Phasen auf `next` gemerged, CI grün, Abnahme auf beiden Plattformen.
-2. Pull Request `next` → `main` mit **Merge Commit** (kein Squash, die
-   Historie von `next` bleibt erhalten). `next` stammt von `main` ab, der
-   Kotlin Code wird dabei entfernt.
+2. **Konflikte auflösen.** `next` stammt von `main` ab, lässt sich aber
+   nicht konfliktfrei mergen: beide Seiten haben
+   `.github/workflows/flutter-sdk.yml`, `pins.yml` und `specs.yml`
+   unabhängig angelegt.
 
-   Das Ruleset `main` erlaubt nur Squash (`allowed_merge_methods:
-   ["squash"]`) und verlangt lineare Historie (`required_linear_history`),
-   in den Repository Einstellungen ist „Allow merge commits“ aus. Für
-   diesen einen Merge stellt der Maintainer von Hand um und danach zurück:
+   ```
+   git fetch origin
+   git merge-tree --write-tree origin/main origin/next
+   ```
+
+   listet die Konflikte (Stand jetzt genau diese drei Dateien, add/add).
+   Aufgelöst wird immer mit dem Stand von `next`, auf einem eigenen Branch:
+
+   ```
+   git switch -c cutover origin/next
+   git merge -S origin/main
+   git checkout origin/next -- .github/workflows/flutter-sdk.yml \
+     .github/workflows/pins.yml .github/workflows/specs.yml
+   git commit -S
+   git push origin cutover
+   ```
+
+   Danach muss `git diff origin/next cutover` leer sein. Der Kotlin Code
+   von Falco 2 wird beim Merge nach `main` entfernt. Ein Squash Merge
+   dieser Auflösung nach `next` hilft nicht (die Merge Basis bleibt
+   dieselbe, der Konflikt kommt wieder), deshalb geht der Pull Request
+   von `cutover` aus.
+3. **`next` vor dem Löschen schützen.** In den Repository Einstellungen ist
+   „Automatically delete head branches“ an (`delete_branch_on_merge`). Mit
+   `cutover` als Quelle wird nur `cutover` gelöscht. Wer stattdessen
+   direkt `next` → `main` mergt, schaltet die Option für diesen Merge aus
+   (Settings → General → Pull Requests) und danach wieder an, oder setzt
+   vorher `git tag -s next-final origin/next` und legt `next` nach dem
+   Merge aus dem Tag neu an.
+4. **CodeQL.** Die Standard Konfiguration von Code Scanning läuft mit den
+   Sprachen `actions` und `java-kotlin`, das Ruleset `main` verlangt ein
+   CodeQL Ergebnis ohne Fehler (`code_scanning`). Scheitert die
+   `java-kotlin` Analyse im Pull Request (Falco 3 hat kaum noch Kotlin
+   Code), schaltet der Maintainer vor dem Merge unter Settings → Code
+   security → Code scanning → CodeQL analysis → Edit `java-kotlin` ab (nur
+   `actions` bleibt) und startet die Checks neu.
+5. **Pull Request `cutover` → `main`** über GitHub, nicht lokal: das Ruleset
+   `main` verlangt einen Pull Request, die Ausnahme für Admins gilt nur im
+   Pull Request (`bypass_mode: pull_request`), ein lokaler Merge mit
+   Push auf `main` wird abgelehnt. Die geforderten Checks (Lint & Unit
+   Tests, Build Debug APK, Dependency Review, Workflow Security (zizmor),
+   Check PR Title) liefern `ci.yml` und `chore.yml` von `next` unter
+   denselben Namen (beide laufen für Pull Requests nach `main`).
+
+   Gewünscht ist ein **Merge Commit** (kein Squash, die Historie von
+   `next` bleibt erhalten). Das Ruleset `main` erlaubt nur Squash
+   (`allowed_merge_methods: ["squash"]`) und verlangt lineare Historie
+   (`required_linear_history`), in den Repository Einstellungen ist „Allow
+   merge commits“ aus. Für diesen einen Merge stellt der Maintainer von
+   Hand um und danach zurück:
 
    1. Settings → General → Pull Requests: **Allow merge commits**
       einschalten.
    2. Settings → Rules → Rulesets → `main`: unter „Require a pull
       request before merging“ bei „Allowed merge methods“ **Merge**
       ergänzen und **Require linear history** abwählen. Speichern.
-   3. Den Pull Request mit „Create a merge commit“ mergen. Der Merge
-      Commit muss signiert sein (`required_signatures`): über die GitHub
-      Oberfläche signiert GitHub selbst, lokal mit `git merge -S`.
+   3. Den Pull Request in der GitHub Oberfläche mit „Create a merge
+      commit“ mergen. GitHub signiert den Merge Commit selbst
+      (`required_signatures`).
    4. Sofort zurückstellen: Allowed merge methods wieder nur **Squash**,
-      **Require linear history** wieder an, **Allow merge commits** aus.
+      **Require linear history** wieder an, **Allow merge commits** aus,
+      „Automatically delete head branches“ wieder an (falls in Schritt 3
+      ausgeschaltet).
 
    Ohne diese Umstellung ist ein Squash Merge zulässig: der Stand von
    `main` ist danach derselbe, nur die einzelnen Commits von `next`
-   fehlen in der Historie von `main` (sie bleiben im Tag oder Branch
-   `next` erhalten, solange er nicht gelöscht ist).
-3. Auf `main` umstellen: `target-branch: next` in
+   fehlen in der Historie von `main` (sie bleiben im Branch `next` oder
+   im Tag `next-final` erhalten).
+6. Auf `main` umstellen: `target-branch: next` in
    `.github/dependabot.yml` entfernen, `ci.yml` Trigger auf `main`
-   beschränken, Hinweise auf `next` in Workflows und Dokumenten anpassen.
-4. Rulesets und Environment `release` prüfen (Tags `v*`), dann
+   beschränken, Hinweise auf `next` in Workflows und Dokumenten anpassen
+   (wieder per Pull Request).
+7. Rulesets und Environment `release` prüfen (Tags `v*`), dann
    `v3.0.0` auf `main` taggen.
-5. `next` nach erfolgreichem Release löschen oder archivieren.
+8. `next` nach erfolgreichem Release löschen oder archivieren.
