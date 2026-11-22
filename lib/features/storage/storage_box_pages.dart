@@ -85,6 +85,12 @@ List<ConfirmFact> accessFacts(Access access, AppLocalizations l10n) => [
     ConfirmFact(accessLabel(key, l10n), yesNo(value, l10n)),
 ];
 
+/// Access settings as on or off facts of a detail section.
+List<Fact> accessSwitches(Access access, AppLocalizations l10n) => [
+  for (final MapEntry(:key, :value) in access.entries)
+    Fact(accessLabel(key, l10n), on: value),
+];
+
 /// The password field and its repetition (STB-012, STB-018).
 List<FieldSpec> passwordFields(AppLocalizations l10n) => [
   FieldSpec(
@@ -225,7 +231,19 @@ class StorageBoxDetailPage extends ConsumerWidget {
         status: busy ? ResourceStatus.inProgress : b.status,
         statusDetail: busy ? '${progress.progress} %' : null,
         name: b.name,
-        ids: [b.username, b.server].where((s) => s.isNotEmpty).toList(),
+        ids: [
+          if (b.server.isNotEmpty)
+            DetailId(b.server, icon: Icons.dns_outlined, copy: true),
+          if (b.username.isNotEmpty)
+            DetailId(b.username, icon: Icons.person_outline, copy: true),
+          DetailId(b.location, icon: Icons.place_outlined),
+        ],
+        facts: [
+          Fact(l10n.fieldType, text: b.typeName),
+          Fact(l10n.fieldSize, text: formatBytes(b.capacity, locale)),
+          Fact(l10n.fieldDeleteProtection, on: b.protectDelete),
+          Fact(l10n.fieldCreated, time: b.created),
+        ],
         onRefresh: () async {
           ref
             ..invalidate(boxSnapshotsProvider(scope, b.id))
@@ -237,6 +255,7 @@ class StorageBoxDetailPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.photo_camera_outlined,
             label: l10n.actionSnapshot,
+            group: ActionGroup.backup,
             onTap: busy
                 ? null
                 : () => FormSheet.show(
@@ -260,11 +279,13 @@ class StorageBoxDetailPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.person_add_alt,
             label: l10n.subaccountCreate,
+            group: ActionGroup.manage,
             onTap: busy ? null : () => _createSubaccount(context, ref, b),
           ),
           DetailAction(
             icon: Icons.password,
             label: l10n.boxResetPassword,
+            group: ActionGroup.access,
             onTap: busy
                 ? null
                 : () => FormSheet.show(
@@ -282,6 +303,7 @@ class StorageBoxDetailPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => FormSheet.show(
               context,
               title: l10n.commonEdit,
@@ -314,6 +336,7 @@ class StorageBoxDetailPage extends ConsumerWidget {
           DetailAction(
             label: l10n.boxAccessSettings,
             icon: Icons.tune,
+            group: ActionGroup.access,
             onTap: () => FormSheet.show(
               context,
               title: l10n.boxAccessSettings,
@@ -330,16 +353,19 @@ class StorageBoxDetailPage extends ConsumerWidget {
           DetailAction(
             label: l10n.boxSnapshotPlan,
             icon: Icons.schedule,
+            group: ActionGroup.backup,
             onTap: () => _plan(context, ref, b),
           ),
           DetailAction(
             label: l10n.boxChangeType,
             icon: Icons.swap_vert,
+            group: ActionGroup.manage,
             onTap: () => _changeType(context, ref, b),
           ),
           DetailAction(
             label: b.protectDelete ? l10n.protectOff : l10n.protectOn,
             icon: b.protectDelete ? Icons.lock_open : Icons.lock,
+            group: ActionGroup.manage,
             onTap: () async {
               if (await confirmProtection(
                     context,
@@ -357,51 +383,42 @@ class StorageBoxDetailPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldUsername, b.username, mono: true),
-              ConfirmFact(l10n.fieldServer, b.server, mono: true),
-              ConfirmFact(l10n.fieldType, b.typeName),
-              ConfirmFact(l10n.fieldLocation, b.location),
-              ConfirmFact(l10n.fieldSize, formatBytes(b.capacity, locale)),
-              ConfirmFact(l10n.boxUsedData, formatBytes(b.usedData, locale)),
-              ConfirmFact(
-                l10n.boxUsedSnapshots,
-                formatBytes(b.usedSnapshots, locale),
-              ),
-              ConfirmFact(
-                l10n.fieldDeleteProtection,
-                yesNo(b.protectDelete, l10n),
-              ),
-              ConfirmFact(l10n.fieldCreated, formatDateTime(b.created, locale)),
-              ConfirmFact(l10n.fieldLabels, labelsText(b.labels, l10n)),
-            ]),
-          ),
-          DetailSection(
             title: l10n.boxUsage,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: FalcoSpacing.xs,
-              children: [
-                LinearProgressIndicator(
-                  value: b.capacity == 0 ? 0 : b.used / b.capacity,
-                ),
-                Text(
-                  l10n.boxUsedOf(
-                    formatBytes(b.used, locale),
-                    formatBytes(b.capacity, locale),
+            facts: [
+              Fact(l10n.boxUsedData, text: formatBytes(b.usedData, locale)),
+              Fact(
+                l10n.boxUsedSnapshots,
+                text: formatBytes(b.usedSnapshots, locale),
+              ),
+            ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: FalcoSpacing.s),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: FalcoSpacing.xs,
+                children: [
+                  LinearProgressIndicator(
+                    value: b.capacity == 0 ? 0 : b.used / b.capacity,
                   ),
-                ),
-              ],
+                  Text(
+                    l10n.boxUsedOf(
+                      formatBytes(b.used, locale),
+                      formatBytes(b.capacity, locale),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           DetailSection(
             title: l10n.boxAccessSettings,
-            child: FactRows(accessFacts(b.access, l10n)),
+            facts: accessSwitches(b.access, l10n),
           ),
           DetailSection(
             title: l10n.boxSnapshotPlan,
-            child: Text(planText(b.plan, l10n)),
+            facts: [
+              Fact(l10n.boxAutomaticSnapshots, text: planText(b.plan, l10n)),
+            ],
           ),
           DetailSection(
             title: l10n.sectionSnapshots,
@@ -443,6 +460,8 @@ class StorageBoxDetailPage extends ConsumerWidget {
                 ),
             ], l10n.emptySubaccounts),
           ),
+          labelsSection(l10n, b.labels),
+          detailsSection(l10n, id: b.id),
           activitySection(l10n, scope, storageBoxType, b.id),
         ],
         dangerZone: [
@@ -691,12 +710,17 @@ class BoxSnapshotPage extends ConsumerWidget {
       title: l10n.resourceBoxSnapshot,
       body: DetailPage(
         name: s.name,
-        ids: [formatDateTime(s.created, locale)],
+        facts: [
+          Fact(l10n.fieldSize, text: formatBytes(s.size, locale)),
+          Fact(l10n.boxAutomatic, on: s.automatic),
+          Fact(l10n.fieldCreated, time: s.created),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => FormSheet.show(
               context,
               title: l10n.commonEdit,
@@ -726,19 +750,17 @@ class BoxSnapshotPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldName, s.name, mono: true),
-              ConfirmFact(
+            title: l10n.sectionConfiguration,
+            facts: [
+              Fact(l10n.fieldName, text: s.name, mono: true),
+              Fact(
                 l10n.fieldDescription,
-                s.description.isEmpty ? l10n.commonNone : s.description,
+                text: s.description.isEmpty ? l10n.commonNone : s.description,
               ),
-              ConfirmFact(l10n.fieldSize, formatBytes(s.size, locale)),
-              ConfirmFact(l10n.boxAutomatic, yesNo(s.automatic, l10n)),
-              ConfirmFact(l10n.fieldCreated, formatDateTime(s.created, locale)),
-              ConfirmFact(l10n.fieldLabels, labelsText(s.labels, l10n)),
-            ]),
+            ],
           ),
+          labelsSection(l10n, s.labels),
+          detailsSection(l10n, id: s.id),
         ],
         dangerZone: [
           OutlinedButton.icon(
@@ -833,12 +855,21 @@ class SubaccountPage extends ConsumerWidget {
       body: DetailPage(
         status: busy ? ResourceStatus.inProgress : null,
         name: s.name.isEmpty ? s.username : s.name,
-        ids: [s.username, s.server],
+        ids: [
+          DetailId(s.username, icon: Icons.person_outline, copy: true),
+          DetailId(s.server, icon: Icons.dns_outlined, copy: true),
+        ],
+        facts: [
+          Fact(l10n.fieldHomeDirectory, text: s.home, mono: true),
+          Fact(l10n.accessReadonly, on: s.access['readonly'] ?? false),
+          Fact(l10n.fieldCreated, time: s.created),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => FormSheet.show(
               context,
               title: l10n.commonEdit,
@@ -870,6 +901,7 @@ class SubaccountPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.folder_outlined,
             label: l10n.fieldHomeDirectory,
+            group: ActionGroup.access,
             onTap: busy
                 ? null
                 : () async {
@@ -893,6 +925,7 @@ class SubaccountPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.tune,
             label: l10n.boxAccessSettings,
+            group: ActionGroup.access,
             onTap: busy
                 ? null
                 : () => FormSheet.show(
@@ -914,6 +947,7 @@ class SubaccountPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.password,
             label: l10n.boxResetPassword,
+            group: ActionGroup.access,
             onTap: busy
                 ? null
                 : () => FormSheet.show(
@@ -934,26 +968,22 @@ class SubaccountPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldUsername, s.username, mono: true),
-              ConfirmFact(l10n.fieldServer, s.server, mono: true),
-              ConfirmFact(l10n.fieldHomeDirectory, s.home, mono: true),
-              ConfirmFact(
+            title: l10n.sectionConfiguration,
+            facts: [
+              Fact(l10n.fieldUsername, text: s.username, copy: true),
+              Fact(l10n.fieldServer, text: s.server, copy: true),
+              Fact(
                 l10n.fieldDescription,
-                s.description.isEmpty ? l10n.commonNone : s.description,
+                text: s.description.isEmpty ? l10n.commonNone : s.description,
               ),
-              ConfirmFact(
-                l10n.fieldCreated,
-                formatDateTime(s.created, l10n.localeName),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(s.labels, l10n)),
-            ]),
+            ],
           ),
           DetailSection(
             title: l10n.boxAccessSettings,
-            child: FactRows(accessFacts(s.access, l10n)),
+            facts: accessSwitches(s.access, l10n),
           ),
+          labelsSection(l10n, s.labels),
+          detailsSection(l10n, id: s.id),
         ],
         dangerZone: [
           DeleteButton(

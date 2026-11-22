@@ -96,12 +96,18 @@ class PlacementGroupDetailPage extends ConsumerWidget {
       title: l10n.resourcePlacementGroup,
       body: DetailPage(
         name: g.name,
-        ids: [g.type],
+        ids: [DetailId(g.type, icon: Icons.scatter_plot_outlined)],
+        facts: [
+          Fact(l10n.fieldType, text: g.type),
+          Fact(l10n.resourceServers, text: '${g.servers.length}'),
+          Fact(l10n.fieldCreated, time: g.created),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => editNameAndLabels(
               context,
               ref,
@@ -114,39 +120,28 @@ class PlacementGroupDetailPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldType, g.type),
-              ConfirmFact(
-                l10n.fieldCreated,
-                formatDateTime(g.created, l10n.localeName),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(g.labels, l10n)),
-            ]),
-          ),
-          DetailSection(
             title: l10n.resourceServers,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (g.servers.isEmpty) Text(l10n.placementGroupEmpty),
-                for (final id in g.servers)
-                  ResourceRow(
-                    status: servers[id]?.status ?? ResourceStatus.unknown,
-                    name: servers[id]?.name ?? '#$id',
-                    monoLine: [
-                      if (servers[id]?.address case final a?) formatIp(a),
-                      if (servers[id] case final s?) s.type.toUpperCase(),
-                    ].join(' · '),
-                    onTap: () => ServerRoute(
-                      accountId: scope.accountId,
-                      projectId: scope.projectId,
-                      serverId: id,
-                    ).push<void>(context),
-                  ),
-              ],
-            ),
+            cards: [
+              for (final id in g.servers)
+                RelatedCard(
+                  icon: Icons.dns_outlined,
+                  title: servers[id]?.name ?? '#$id',
+                  status: servers[id]?.status ?? ResourceStatus.unknown,
+                  subtitle: [
+                    if (servers[id]?.address case final a?) formatIp(a),
+                    if (servers[id] case final s?) s.type.toUpperCase(),
+                  ].join(' · '),
+                  onTap: () => ServerRoute(
+                    accountId: scope.accountId,
+                    projectId: scope.projectId,
+                    serverId: id,
+                  ).push<void>(context),
+                ),
+            ],
+            child: g.servers.isEmpty ? Text(l10n.placementGroupEmpty) : null,
           ),
+          labelsSection(l10n, g.labels),
+          detailsSection(l10n, id: g.id),
         ],
         dangerZone: [
           DeleteButton(

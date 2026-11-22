@@ -193,7 +193,7 @@ class FirewallDetailPage extends ConsumerWidget {
     final servers = {
       for (final s
           in ref.watch(serversProvider(scope)).value ?? const <CloudServer>[])
-        s.id: s.name,
+        s.id: s,
     };
 
     // Rules and targets change by actions per applied server; the
@@ -261,7 +261,7 @@ class FirewallDetailPage extends ConsumerWidget {
         options: {
           'selector': l10n.labelSelector,
           for (final MapEntry(:key, :value) in servers.entries)
-            if (!applied.contains(key)) '$key': value,
+            if (!applied.contains(key)) '$key': value.name,
         },
       );
       if (pick == null || !context.mounted) return;
@@ -295,6 +295,27 @@ class FirewallDetailPage extends ConsumerWidget {
       );
     }
 
+    Future<void> removeTarget(FirewallTarget a) async {
+      final name = a.server != null
+          ? servers[a.server]?.name ?? '#${a.server}'
+          : a.selector!;
+      final ok = await ConfirmSheet.show(
+        context,
+        title: l10n.firewallRemoveTitle(f.name, name),
+        consequence: l10n.firewallRemoveConsequence,
+        confirmLabel: l10n.actionRemove,
+        resourceName: f.name,
+      );
+      if (ok && context.mounted) {
+        await runChange(
+          context,
+          ref,
+          t,
+          (_) => track((api) => applyFirewall(api, f.id, a, remove: true)),
+        );
+      }
+    }
+
     final inbound = f.rules.where((r) => r.inbound).length;
     return FalcoScaffold(
       title: l10n.resourceFirewall,
@@ -302,12 +323,18 @@ class FirewallDetailPage extends ConsumerWidget {
         status: f.active ? ResourceStatus.available : ResourceStatus.off,
         statusDetail: f.active ? l10n.firewallActive : l10n.firewallNotApplied,
         name: f.name,
-        ids: [l10n.ruleCount(f.rules.length)],
+        facts: [
+          Fact(l10n.ruleInbound, text: '$inbound'),
+          Fact(l10n.ruleOutbound, text: '${f.rules.length - inbound}'),
+          Fact(l10n.sectionAppliedTo, text: '${f.appliedTo.length}'),
+          Fact(l10n.fieldCreated, time: f.created),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.add,
             label: l10n.ruleAdd,
+            group: ActionGroup.manage,
             onTap: () => showRuleSheet(
               context,
               title: l10n.ruleAdd,
@@ -317,11 +344,13 @@ class FirewallDetailPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.shield_outlined,
             label: l10n.firewallApply,
+            group: ActionGroup.network,
             onTap: apply,
           ),
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => editNameAndLabels(
               context,
               ref,
@@ -333,60 +362,42 @@ class FirewallDetailPage extends ConsumerWidget {
           ),
         ],
         sections: [
-          DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.ruleInbound, '$inbound'),
-              ConfirmFact(l10n.ruleOutbound, '${f.rules.length - inbound}'),
-              ConfirmFact(l10n.sectionAppliedTo, '${f.appliedTo.length}'),
-              ConfirmFact(
-                l10n.fieldCreated,
-                formatDateTime(f.created, l10n.localeName),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(f.labels, l10n)),
-            ]),
-          ),
           DetailSection(title: l10n.ruleInbound, child: rules(true)),
           DetailSection(title: l10n.ruleOutbound, child: rules(false)),
           DetailSection(
             title: l10n.sectionAppliedTo,
-            child: entries([
+            cards: [
+              if (f.appliedTo.isEmpty) Text(l10n.firewallNotAppliedHint),
               for (final a in f.appliedTo)
-                EntryRow(
-                  leading: Icon(
-                    a.server != null ? Icons.dns_outlined : Icons.label_outline,
-                  ),
+                RelatedCard(
+                  icon: a.server != null
+                      ? Icons.dns_outlined
+                      : Icons.label_outline,
                   title: switch (a) {
-                    (server: final id?, selector: _) => servers[id] ?? '#$id',
+                    (server: final id?, selector: _) =>
+                      servers[id]?.name ?? '#$id',
                     (server: _, selector: final s) => s ?? '',
                   },
+                  status: servers[a.server]?.status,
                   subtitle: a.server != null ? null : l10n.labelSelector,
-                  removeLabel: l10n.actionRemove,
-                  onRemove: () async {
-                    final name = a.server != null
-                        ? servers[a.server] ?? '#${a.server}'
-                        : a.selector!;
-                    final ok = await ConfirmSheet.show(
-                      context,
-                      title: l10n.firewallRemoveTitle(f.name, name),
-                      consequence: l10n.firewallRemoveConsequence,
-                      confirmLabel: l10n.actionRemove,
-                      resourceName: f.name,
-                    );
-                    if (ok && context.mounted) {
-                      await runChange(
-                        context,
-                        ref,
-                        t,
-                        (_) => track(
-                          (api) => applyFirewall(api, f.id, a, remove: true),
-                        ),
-                      );
-                    }
+                  onTap: switch (a.server) {
+                    final id? => () => ServerRoute(
+                      accountId: scope.accountId,
+                      projectId: scope.projectId,
+                      serverId: id,
+                    ).push<void>(context),
+                    null => null,
                   },
+                  trailing: IconButton(
+                    tooltip: l10n.actionRemove,
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: () => removeTarget(a),
+                  ),
                 ),
-            ], l10n.firewallNotAppliedHint),
+            ],
           ),
+          labelsSection(l10n, f.labels),
+          detailsSection(l10n, id: f.id),
           activitySection(l10n, scope, CloudType.firewall, f.id),
         ],
         dangerZone: [

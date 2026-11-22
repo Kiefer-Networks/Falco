@@ -117,7 +117,8 @@ void main() {
       final cloud = await openTab(tester, 'Volumes', cloud: withVolumes());
       await tap(tester, 'data');
       expect(find.text('/dev/disk/by-id/scsi-0HC_Volume_31'), findsOneWidget);
-      expect(find.text('web-1'), findsOneWidget);
+      // The server fact and its card.
+      expect(find.text('web-1'), findsNWidgets(2));
       await tap(tester, 'Detach');
       expect(find.text('Detach data?'), findsOneWidget);
       await confirm(tester, 'Detach');

@@ -130,29 +130,44 @@ class VolumeDetailPage extends ConsumerWidget {
         status: busy ? ResourceStatus.inProgress : v.status,
         statusDetail: busy ? '${progress.progress} %' : null,
         name: v.name,
-        ids: [gb(v.sizeGb, l10n.localeName), v.location],
+        ids: [DetailId(v.location, icon: Icons.place_outlined)],
+        facts: [
+          Fact(l10n.fieldSize, text: gb(v.sizeGb, l10n.localeName)),
+          Fact(l10n.fieldFormat, text: v.format ?? l10n.commonNone),
+          Fact(
+            l10n.resourceServer,
+            text: v.server == null
+                ? l10n.volumeNotAttached
+                : server?.name ?? '#${v.server}',
+          ),
+          Fact(l10n.fieldDeleteProtection, on: v.protectDelete),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           if (v.server == null)
             DetailAction(
               icon: Icons.link,
               label: l10n.volumeAttach,
+              group: ActionGroup.manage,
               onTap: busy ? null : () => _attach(context, ref, v),
             )
           else
             DetailAction(
               icon: Icons.link_off,
               label: l10n.volumeDetach,
+              group: ActionGroup.manage,
               onTap: busy ? null : () => _detach(context, ref, v, server),
             ),
           DetailAction(
             icon: Icons.open_in_full,
             label: l10n.volumeResize,
+            group: ActionGroup.manage,
             onTap: busy ? null : () => _resize(context, ref, v),
           ),
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => editNameAndLabels(
               context,
               ref,
@@ -165,44 +180,34 @@ class VolumeDetailPage extends ConsumerWidget {
           DetailAction(
             icon: v.protectDelete ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
+            group: ActionGroup.manage,
             onTap: busy ? null : protect,
           ),
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldSize, gb(v.sizeGb, l10n.localeName)),
-              ConfirmFact(l10n.fieldFormat, v.format ?? l10n.commonNone),
-              ConfirmFact(l10n.fieldLocation, v.location),
-              ConfirmFact(l10n.fieldDevice, v.device, mono: true),
-              ConfirmFact(
-                l10n.fieldDeleteProtection,
-                yesNo(v.protectDelete, l10n),
-              ),
-              ConfirmFact(
-                l10n.fieldCreated,
-                formatDateTime(v.created, l10n.localeName),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(v.labels, l10n)),
-            ]),
+            title: l10n.sectionConfiguration,
+            facts: [Fact(l10n.fieldDevice, text: v.device, mono: true)],
           ),
-          DetailSection(
-            title: l10n.sectionAttachment,
-            child: v.server == null
-                ? Text(l10n.volumeNotAttached)
-                : ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.dns_outlined),
-                    title: Text(server?.name ?? '#${v.server}'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => ServerRoute(
-                      accountId: scope.accountId,
-                      projectId: scope.projectId,
-                      serverId: v.server!,
-                    ).push<void>(context),
-                  ),
-          ),
+          if (v.server case final id?)
+            DetailSection(
+              title: l10n.sectionAttachment,
+              cards: [
+                RelatedCard(
+                  icon: Icons.dns_outlined,
+                  title: server?.name ?? '#$id',
+                  status: server?.status,
+                  subtitle: server?.type.toUpperCase(),
+                  onTap: () => ServerRoute(
+                    accountId: scope.accountId,
+                    projectId: scope.projectId,
+                    serverId: id,
+                  ).push<void>(context),
+                ),
+              ],
+            ),
+          labelsSection(l10n, v.labels),
+          detailsSection(l10n, id: v.id, created: v.created),
           activitySection(l10n, scope, CloudType.volume, v.id),
         ],
         dangerZone: [

@@ -262,9 +262,31 @@ Future<bool> confirmProtection(
 String yesNo(bool value, AppLocalizations l10n) =>
     value ? l10n.commonYes : l10n.commonNo;
 
-/// Labels for a detail page, or "None".
+/// Labels for a wizard summary, or "None".
 String labelsText(Map<String, String> labels, AppLocalizations l10n) =>
     labels.isEmpty ? l10n.commonNone : formatLabels(labels);
+
+/// The labels section of a detail page.
+DetailSection labelsSection(
+  AppLocalizations l10n,
+  Map<String, String> labels,
+) => DetailSection(title: l10n.fieldLabels, child: LabelChips(labels));
+
+/// The last section before the activity of a detail page: the ID to copy
+/// and the creation date, after [more] facts (fingerprint, created from).
+DetailSection detailsSection(
+  AppLocalizations l10n, {
+  required int id,
+  DateTime? created,
+  List<Fact> more = const [],
+}) => DetailSection(
+  title: l10n.sectionDetails,
+  facts: [
+    ...more,
+    Fact('ID', text: '$id', copy: true),
+    if (created != null) Fact(l10n.fieldCreated, time: created),
+  ],
+);
 
 /// Hetzner sizes are GB; shown in the one byte format.
 String gb(num gb, String locale) =>

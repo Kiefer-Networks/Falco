@@ -192,11 +192,12 @@ class _ScopeHomePageState extends ConsumerState<ScopeHomePage> {
       ],
       moreMenu: kDebugMode
           ? MoreMenu(
-              items: [
-                MoreMenuItem(
+              actions: [
+                DetailAction(
                   label: l10n.showcaseTitle,
                   icon: Icons.palette_outlined,
-                  onSelected: () => const ShowcaseRoute().push<void>(context),
+                  group: ActionGroup.manage,
+                  onTap: () => const ShowcaseRoute().push<void>(context),
                 ),
               ],
             )

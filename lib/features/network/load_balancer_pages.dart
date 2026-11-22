@@ -312,11 +312,10 @@ class LoadBalancerDetailPage extends ConsumerWidget {
         .watch(trackedActionProvider(scope, CloudType.loadBalancer, lb.id))
         .value;
     final busy = progress != null && !progress.done;
-    final servers = {
-      for (final s
-          in ref.watch(serversProvider(scope)).value ?? const <CloudServer>[])
-        s.id: s.name,
-    };
+    final serverList =
+        ref.watch(serversProvider(scope)).value ?? const <CloudServer>[];
+    final servers = {for (final s in serverList) s.id: s.name};
+    final serverStatus = {for (final s in serverList) s.id: s.status};
     final networks = {
       for (final n
           in ref.watch(networksProvider(scope)).value ?? const <CloudNetwork>[])
@@ -392,15 +391,23 @@ class LoadBalancerDetailPage extends ConsumerWidget {
             : (lb.protectDelete ? l10n.protected : null),
         name: lb.name,
         ids: [
-          if (lb.ipv4 case final ip?) formatIp(ip),
-          lb.type.name.toUpperCase(),
-          lb.location,
+          if (lb.ipv4 case final ip?)
+            DetailId(formatIp(ip), icon: Icons.public, copy: true),
+          DetailId(lb.location, icon: Icons.place_outlined),
+          DetailId(lb.type.name.toUpperCase(), icon: Icons.memory),
+        ],
+        facts: [
+          Fact(l10n.lbAlgorithm, text: _algorithm(lb.algorithm, l10n)),
+          Fact(l10n.sectionServices, text: '${lb.services.length}'),
+          Fact(l10n.sectionTargets, text: '${lb.targets.length}'),
+          Fact(l10n.fieldDeleteProtection, on: lb.protectDelete),
         ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.add_link,
             label: l10n.serviceAdd,
+            group: ActionGroup.manage,
             onTap: busy
                 ? null
                 : () => showServiceSheet(
@@ -413,6 +420,7 @@ class LoadBalancerDetailPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.add_circle_outline,
             label: l10n.targetAdd,
+            group: ActionGroup.manage,
             onTap: busy
                 ? null
                 : () => showTargetSheet(
@@ -425,6 +433,7 @@ class LoadBalancerDetailPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => editNameAndLabels(
               context,
               ref,
@@ -437,6 +446,7 @@ class LoadBalancerDetailPage extends ConsumerWidget {
           DetailAction(
             icon: lb.protectDelete ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
+            group: ActionGroup.manage,
             onTap: busy
                 ? null
                 : () => toggleProtection(
@@ -451,6 +461,7 @@ class LoadBalancerDetailPage extends ConsumerWidget {
           DetailAction(
             label: l10n.lbAlgorithm,
             icon: Icons.shuffle,
+            group: ActionGroup.manage,
             onTap: () => FormSheet.show(
               context,
               title: l10n.lbAlgorithm,
@@ -472,16 +483,19 @@ class LoadBalancerDetailPage extends ConsumerWidget {
           DetailAction(
             label: l10n.lbChangeType,
             icon: Icons.swap_vert,
+            group: ActionGroup.manage,
             onTap: changeType,
           ),
           DetailAction(
             label: l10n.networkAttach,
             icon: Icons.hub_outlined,
+            group: ActionGroup.network,
             onTap: attachNetwork,
           ),
           DetailAction(
             label: lb.publicEnabled ? l10n.lbPublicOff : l10n.lbPublicOn,
             icon: Icons.public,
+            group: ActionGroup.network,
             onTap: () => lb.publicEnabled
                 ? confirmAction(
                     context,
@@ -502,6 +516,7 @@ class LoadBalancerDetailPage extends ConsumerWidget {
           DetailAction(
             label: l10n.reverseDns,
             icon: Icons.dns_outlined,
+            group: ActionGroup.network,
             onTap: () => FormSheet.show(
               context,
               title: l10n.reverseDns,
@@ -521,53 +536,34 @@ class LoadBalancerDetailPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(
-                l10n.fieldType,
-                '${lb.type.name.toUpperCase()} · ${_typeDetail(lb.type, l10n)}',
-              ),
-              ConfirmFact(l10n.fieldLocation, lb.location),
-              ConfirmFact(l10n.lbAlgorithm, _algorithm(lb.algorithm, l10n)),
-              ConfirmFact(l10n.sectionServices, '${lb.services.length}'),
-              ConfirmFact(l10n.sectionTargets, '${lb.targets.length}'),
-              ConfirmFact(
-                l10n.fieldDeleteProtection,
-                yesNo(lb.protectDelete, l10n),
-              ),
-              ConfirmFact(
-                l10n.fieldCreated,
-                formatDateTime(lb.created, l10n.localeName),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(lb.labels, l10n)),
-            ]),
-          ),
-          DetailSection(
             title: l10n.sectionNetwork,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (!lb.publicEnabled)
-                  Text(l10n.lbPublicDisabled)
-                else ...[
-                  if (lb.ipv4 case final ip?) ...[
-                    Text(l10n.publicIpv4),
-                    CopyableValue(formatIp(ip)),
-                    if (lb.ipv4Ptr case final ptr? when ptr.isNotEmpty)
-                      Text(l10n.reverseDnsValue(ptr)),
-                  ],
-                  if (lb.ipv6 case final ip?) ...[
-                    Text(l10n.publicIpv6),
-                    CopyableValue(formatIp(ip)),
-                  ],
-                ],
-                for (final p in lb.privateNets)
-                  EntryRow(
-                    leading: const Icon(Icons.hub_outlined),
-                    title: networks[p.network] ?? '#${p.network}',
-                    subtitle: p.ip,
-                    removeLabel: l10n.actionRemove,
-                    onRemove: busy
+            facts: [
+              if (!lb.publicEnabled)
+                Fact(l10n.publicIpv4, text: l10n.lbPublicDisabled)
+              else ...[
+                if (lb.ipv4 case final ip?)
+                  Fact(l10n.publicIpv4, text: formatIp(ip), copy: true),
+                if (lb.ipv4Ptr case final ptr? when ptr.isNotEmpty)
+                  Fact(l10n.reverseDns, text: ptr, mono: true),
+                if (lb.ipv6 case final ip?)
+                  Fact(l10n.publicIpv6, text: formatIp(ip), copy: true),
+              ],
+            ],
+            cards: [
+              for (final p in lb.privateNets)
+                RelatedCard(
+                  icon: Icons.hub_outlined,
+                  title: networks[p.network] ?? '#${p.network}',
+                  subtitle: p.ip,
+                  onTap: () => NetworkRoute(
+                    accountId: scope.accountId,
+                    projectId: scope.projectId,
+                    networkId: p.network,
+                  ).push<void>(context),
+                  trailing: IconButton(
+                    tooltip: l10n.actionRemove,
+                    icon: const Icon(Icons.link_off),
+                    onPressed: busy
                         ? null
                         : () => confirmAction(
                             context,
@@ -587,8 +583,19 @@ class LoadBalancerDetailPage extends ConsumerWidget {
                             ),
                           ),
                   ),
-              ],
-            ),
+                ),
+            ],
+          ),
+          DetailSection(
+            title: l10n.sectionConfiguration,
+            facts: [
+              Fact(
+                l10n.fieldType,
+                text:
+                    '${lb.type.name.toUpperCase()} · '
+                    '${_typeDetail(lb.type, l10n)}',
+              ),
+            ],
           ),
           DetailSection(
             title: l10n.sectionServices,
@@ -628,78 +635,95 @@ class LoadBalancerDetailPage extends ConsumerWidget {
           ),
           DetailSection(
             title: l10n.sectionTargets,
-            child: entries([
+            cards: [
+              if (lb.targets.isEmpty) Text(l10n.targetsEmpty),
               for (final target in lb.targets)
-                EntryRow(
+                RelatedCard(
+                  icon: switch (target['type']) {
+                    'server' => Icons.dns_outlined,
+                    'label_selector' => Icons.label_outline,
+                    _ => Icons.public,
+                  },
                   title: targetTitle(target, servers),
                   subtitle: targetDetail(target, l10n),
-                  removeLabel: l10n.actionRemove,
-                  onRemove: busy
-                      ? null
-                      : () => confirmAction(
-                          context,
-                          ref,
-                          scope,
-                          title: l10n.targetRemoveTitle(
-                            targetTitle(target, servers),
+                  status: target['type'] == 'server'
+                      ? serverStatus[json(target['server'])['id']]
+                      : null,
+                  onTap: switch (target['type'] == 'server'
+                      ? json(target['server'])['id']
+                      : null) {
+                    final int id => () => ServerRoute(
+                      accountId: scope.accountId,
+                      projectId: scope.projectId,
+                      serverId: id,
+                    ).push<void>(context),
+                    _ => null,
+                  },
+                  trailing: IconButton(
+                    tooltip: l10n.actionRemove,
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: busy
+                        ? null
+                        : () => confirmAction(
+                            context,
+                            ref,
+                            scope,
+                            title: l10n.targetRemoveTitle(
+                              targetTitle(target, servers),
+                            ),
+                            consequence: l10n.targetRemoveConsequence,
+                            label: l10n.actionRemove,
+                            name: lb.name,
+                            start: (api) => changeLoadBalancer(
+                              api,
+                              lb.id,
+                              RemoveTarget(target),
+                            ),
                           ),
-                          consequence: l10n.targetRemoveConsequence,
-                          label: l10n.actionRemove,
-                          name: lb.name,
-                          start: (api) => changeLoadBalancer(
-                            api,
-                            lb.id,
-                            RemoveTarget(target),
-                          ),
-                        ),
+                  ),
                 ),
-            ], l10n.targetsEmpty),
+            ],
           ),
           DetailSection(
             title: l10n.sectionMetrics,
-            child: Column(
-              spacing: FalcoSpacing.m,
-              children: [
-                for (final (metric, title, labels, rate) in [
-                  (
-                    LbMetric.openConnections,
-                    l10n.metricOpenConnections,
-                    [l10n.metricOpenConnections],
-                    false,
-                  ),
-                  (
-                    LbMetric.connectionsPerSecond,
-                    l10n.metricConnectionsPerSecond,
-                    [l10n.metricConnectionsPerSecond],
-                    false,
-                  ),
-                  (
-                    LbMetric.requestsPerSecond,
-                    l10n.metricRequestsPerSecond,
-                    [l10n.metricRequestsPerSecond],
-                    false,
-                  ),
-                  (
-                    LbMetric.bandwidth,
-                    l10n.metricNetwork,
-                    [l10n.metricIn, l10n.metricOut],
-                    true,
-                  ),
-                ])
-                  MetricPanel(
-                    title: title,
-                    labels: labels,
-                    rate: rate,
-                    data: (period) => loadBalancerMetricsProvider(
-                      scope,
-                      lb.id,
-                      metric,
-                      period,
-                    ),
-                  ),
-              ],
-            ),
+            cards: [
+              for (final (metric, title, labels, rate) in [
+                (
+                  LbMetric.openConnections,
+                  l10n.metricOpenConnections,
+                  [l10n.metricOpenConnections],
+                  false,
+                ),
+                (
+                  LbMetric.connectionsPerSecond,
+                  l10n.metricConnectionsPerSecond,
+                  [l10n.metricConnectionsPerSecond],
+                  false,
+                ),
+                (
+                  LbMetric.requestsPerSecond,
+                  l10n.metricRequestsPerSecond,
+                  [l10n.metricRequestsPerSecond],
+                  false,
+                ),
+                (
+                  LbMetric.bandwidth,
+                  l10n.metricNetwork,
+                  [l10n.metricIn, l10n.metricOut],
+                  true,
+                ),
+              ])
+                MetricPanel(
+                  title: title,
+                  labels: labels,
+                  rate: rate,
+                  data: (period) =>
+                      loadBalancerMetricsProvider(scope, lb.id, metric, period),
+                ),
+            ],
           ),
+          labelsSection(l10n, lb.labels),
+          detailsSection(l10n, id: lb.id, created: lb.created),
           activitySection(l10n, scope, CloudType.loadBalancer, lb.id),
         ],
         dangerZone: [

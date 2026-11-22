@@ -468,7 +468,20 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
             ? '${progress.progress} %'
             : (z.protectDelete ? l10n.protected : null),
         name: z.name,
-        ids: [l10n.ttlValue(z.ttl), ...z.nameservers],
+        ids: [
+          for (final ns in z.nameservers)
+            DetailId(ns, icon: Icons.dns_outlined, copy: true),
+        ],
+        facts: [
+          Fact(
+            l10n.fieldMode,
+            text: z.secondary ? l10n.zoneSecondary : l10n.zonePrimary,
+          ),
+          Fact(l10n.fieldDefaultTtl, text: '${z.ttl} s', mono: true),
+          Fact(l10n.sectionRecords, text: '${z.recordCount}'),
+          Fact(l10n.fieldDeleteProtection, on: z.protectDelete),
+          Fact(l10n.fieldCreated, time: z.created),
+        ],
         onRefresh: () => Future.wait([
           refreshQuietly(ref, provider.future),
           if (!z.secondary) refreshQuietly(ref, setsProvider.future),
@@ -477,6 +490,7 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
           DetailAction(
             icon: Icons.add,
             label: l10n.recordAdd,
+            group: ActionGroup.manage,
             // Create or add needs the loaded RRSets (DNS-007).
             onTap: busy || z.secondary || !setsAsync.hasValue
                 ? null
@@ -485,11 +499,13 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: busy ? null : () => _edit(z),
           ),
           DetailAction(
             icon: z.protectDelete ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
+            group: ActionGroup.manage,
             onTap: busy
                 ? null
                 : () => toggleProtection(
@@ -505,16 +521,19 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
             DetailAction(
               icon: Icons.download,
               label: l10n.zoneExport,
+              group: ActionGroup.backup,
               onTap: () => _export(z),
             ),
             DetailAction(
               label: l10n.recordsSelect,
               icon: Icons.checklist,
+              group: ActionGroup.manage,
               onTap: () => setState(() => _selected = {}),
             ),
             DetailAction(
               label: l10n.zoneImport,
               icon: Icons.upload_file,
+              group: ActionGroup.backup,
               onTap: () => _import(z),
             ),
           ],
@@ -522,37 +541,11 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
             DetailAction(
               label: l10n.primaryAdd,
               icon: Icons.add,
+              group: ActionGroup.manage,
               onTap: () => _primary(z),
             ),
         ],
         sections: [
-          DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(
-                l10n.fieldMode,
-                z.secondary ? l10n.zoneSecondary : l10n.zonePrimary,
-              ),
-              ConfirmFact(l10n.fieldDefaultTtl, '${z.ttl} s'),
-              ConfirmFact(l10n.fieldStatus, z.resourceStatus.label(l10n)),
-              ConfirmFact(l10n.sectionRecords, '${z.recordCount}'),
-              if (z.nameservers.isNotEmpty)
-                ConfirmFact(
-                  l10n.fieldNameservers,
-                  z.nameservers.join('\n'),
-                  mono: true,
-                ),
-              ConfirmFact(
-                l10n.fieldDeleteProtection,
-                yesNo(z.protectDelete, l10n),
-              ),
-              ConfirmFact(
-                l10n.fieldCreated,
-                formatDateTime(z.created, l10n.localeName),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(z.labels, l10n)),
-            ]),
-          ),
           if (z.secondary)
             DetailSection(
               title: l10n.sectionPrimaries,
@@ -667,6 +660,8 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
               ],
             ),
           ),
+          labelsSection(l10n, z.labels),
+          detailsSection(l10n, id: z.id),
           activitySection(l10n, _scope, CloudType.zone, z.id),
         ],
         dangerZone: [
@@ -784,12 +779,27 @@ class RRSetDetailPage extends ConsumerWidget {
             ? '${progress.progress} %'
             : (s.protectChange ? l10n.protected : null),
         name: '${s.name} ${s.type}',
-        ids: [?zone?.name, l10n.ttlValue(s.ttl ?? zone?.ttl ?? 3600)],
+        ids: [
+          if (zone case final z?)
+            DetailId(z.name, icon: Icons.language, copy: true),
+        ],
+        facts: [
+          Fact(l10n.fieldRecordName, text: s.name, mono: true),
+          Fact(l10n.fieldType, text: s.type, mono: true),
+          Fact(
+            l10n.fieldTtl,
+            text: s.ttl == null
+                ? l10n.ttlDefault(zone?.ttl ?? 3600)
+                : l10n.ttlValue(s.ttl!),
+          ),
+          Fact(l10n.fieldChangeProtection, on: s.protectChange),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.add,
             label: l10n.valueAdd,
+            group: ActionGroup.manage,
             onTap: locked
                 ? null
                 : () => FormSheet.show(
@@ -812,6 +822,7 @@ class RRSetDetailPage extends ConsumerWidget {
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: busy
                 ? null
                 : () => FormSheet.show(
@@ -851,6 +862,7 @@ class RRSetDetailPage extends ConsumerWidget {
           DetailAction(
             icon: s.protectChange ? Icons.lock : Icons.lock_open,
             label: l10n.fieldProtection,
+            group: ActionGroup.manage,
             onTap: busy
                 ? null
                 : () async {
@@ -874,24 +886,6 @@ class RRSetDetailPage extends ConsumerWidget {
           ),
         ],
         sections: [
-          DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldRecordName, s.name, mono: true),
-              ConfirmFact(l10n.fieldType, s.type),
-              ConfirmFact(
-                l10n.fieldTtl,
-                s.ttl == null
-                    ? l10n.ttlDefault(zone?.ttl ?? 3600)
-                    : l10n.ttlValue(s.ttl!),
-              ),
-              ConfirmFact(
-                l10n.fieldChangeProtection,
-                yesNo(s.protectChange, l10n),
-              ),
-              ConfirmFact(l10n.fieldLabels, labelsText(s.labels, l10n)),
-            ]),
-          ),
           DetailSection(
             title: l10n.fieldValues,
             child: entries([
@@ -917,6 +911,7 @@ class RRSetDetailPage extends ConsumerWidget {
                 ),
             ], l10n.recordsEmpty),
           ),
+          labelsSection(l10n, s.labels),
         ],
         dangerZone: [
           DeleteButton(

@@ -537,11 +537,11 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | QRS-005 | Fehlerzustand | Fehlerkarte mit "Retry" | `C/ErrorState.kt:52` |  | 1 | Golden |
 | QRS-006 | Ladezustand | Ladeanzeige; Neu Skeleton | `C/LoadingState.kt:45` |  | 1 | Golden |
 | QRS-007 | Leerzustand | "Nothing here yet." plus Aktion | `C/EmptyState.kt` |  | 1 | Golden |
-| QRS-008 | Aktionssheet | Gruppierte Aktionen im Bottom Sheet | `C/dialog/ActionsBottomSheet.kt` |  | 1 | Golden |
+| QRS-008 | Aktionssheet | Gruppierte Aktionen im Bottom Sheet; Neu: jede Aktion trägt eine Gruppe (Energie, Zugang, Verwalten, Netzwerk, Backup und Images, Gefahrenzone), Gefahrenzone zuletzt und rot | `C/dialog/ActionsBottomSheet.kt` |  | 1 | Golden |
 | QRS-009 | Bestätigung einfach | "%s?" mit Folgen, Abbrechen | `C/dialog/ConfirmDestructiveDialog.kt:40` |  | 1 | Widget |
 | QRS-010 | Bestätigung Name eintippen | Löschen erst nach Eingabe des Namens | `C/dialog/TypeToConfirmDeleteDialog.kt:82` |  | 1 | Widget |
 | QRS-011 | Statuskomponente | Running, Off, Starting, Stopping, Initializing, Rebuilding, Migrating, Deleting | `C/Console.kt:77` |  | 1 | Golden |
-| QRS-012 | Detailbausteine | HeroCard, KpiStrip, ActionStrip, DetailSection | `C/detail/HeroCard.kt` |  | 1 | Golden |
+| QRS-012 | Detailbausteine | HeroCard, KpiStrip, ActionStrip, DetailSection; Neu: DetailHeader (Status, Name, kopierbare Kennungen), FactGrid, DetailSection nach Bedeutung, StatusChip für An und Aus, RelatedCard | `C/detail/HeroCard.kt` |  | 1 | Golden |
 | QRS-013 | Wizard Gerüst | Schritte, Zurück, Weiter, Erstellen, Auswahlkarten | `C/wizard/WizardScaffold.kt`<br>`C/wizard/PickCard.kt` |  | 1 | Golden |
 | QRS-014 | Liniendiagramm | Mehrere Serien, Achsen, Min/Max | `C/LineChart.kt:107` |  | 1 | Golden |
 | QRS-015 | Byte Formatierung | Einheitliche Bytes Ausgabe | `ui/util/ByteFormat.kt` |  | 2 | Unit |

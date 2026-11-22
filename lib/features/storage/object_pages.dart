@@ -304,40 +304,46 @@ class _BucketPageState extends ConsumerState<BucketPage> {
           ? l10n.selectedCount(_selected.length)
           : (widget.prefix.isEmpty ? _b : baseName(widget.prefix)),
       moreMenu: MoreMenu(
-        items: selecting
+        actions: selecting
             ? [
-                MoreMenuItem(
+                DetailAction(
                   label: l10n.selectionClear,
                   icon: Icons.deselect,
-                  onSelected: () => setState(_selected.clear),
+                  group: ActionGroup.manage,
+                  onTap: () => setState(_selected.clear),
                 ),
-                MoreMenuItem(
+                DetailAction(
                   label: l10n.actionDelete,
                   icon: Icons.delete_outline,
-                  onSelected: _deleteSelected,
+                  group: ActionGroup.danger,
+                  onTap: _deleteSelected,
                 ),
               ]
             : [
-                MoreMenuItem(
+                DetailAction(
                   label: l10n.bucketSettings,
                   icon: Icons.tune,
-                  onSelected: _settings,
+                  group: ActionGroup.manage,
+                  onTap: _settings,
                 ),
-                MoreMenuItem(
+                DetailAction(
                   label: l10n.folderCreate,
                   icon: Icons.create_new_folder_outlined,
-                  onSelected: _createFolder,
+                  group: ActionGroup.manage,
+                  onTap: _createFolder,
                 ),
-                MoreMenuItem(
+                DetailAction(
                   label: l10n.uploadLink,
                   icon: Icons.link,
-                  onSelected: _uploadLink,
+                  group: ActionGroup.access,
+                  onTap: _uploadLink,
                 ),
                 if (widget.prefix.isEmpty)
-                  MoreMenuItem(
+                  DetailAction(
                     label: l10n.bucketDelete,
                     icon: Icons.delete_outline,
-                    onSelected: _deleteBucket,
+                    group: ActionGroup.danger,
+                    onTap: _deleteBucket,
                   ),
               ],
       ),
@@ -433,36 +439,59 @@ class _BucketPageState extends ConsumerState<BucketPage> {
 
   Future<void> _actions(S3Object o) {
     final l10n = AppLocalizations.of(context);
-    final name = baseName(o.key);
-    void pick(VoidCallback action) {
-      Navigator.pop(context);
-      action();
-    }
-
-    Widget item(IconData icon, String label, VoidCallback action) => ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon),
-      title: Text(label),
-      onTap: () => pick(action),
-    );
-    return showFalcoSheet<void>(
+    DetailAction item(
+      IconData icon,
+      String label,
+      ActionGroup group,
+      VoidCallback onTap,
+    ) => DetailAction(icon: icon, label: label, group: group, onTap: onTap);
+    return showActionSheet(
       context,
-      SheetFrame(
-        title: name,
-        children: [
-          item(Icons.info_outline, l10n.objectInfo, () => _info(o)),
-          item(Icons.share_outlined, l10n.shareLink, () => _share(o)),
-          item(Icons.download, l10n.objectDownload, () => _download(o.key)),
-          item(Icons.history, l10n.objectVersions, () => _versions(o)),
-          item(Icons.copy, l10n.objectCopy, () => _copy(o, move: false)),
-          item(
-            Icons.drive_file_move_outline,
-            l10n.objectMove,
-            () => _copy(o, move: true),
-          ),
-          item(Icons.delete_outline, l10n.actionDelete, () => _delete(o)),
-        ],
-      ),
+      title: baseName(o.key),
+      actions: [
+        item(
+          Icons.download,
+          l10n.objectDownload,
+          ActionGroup.access,
+          () => _download(o.key),
+        ),
+        item(
+          Icons.share_outlined,
+          l10n.shareLink,
+          ActionGroup.access,
+          () => _share(o),
+        ),
+        item(
+          Icons.info_outline,
+          l10n.objectInfo,
+          ActionGroup.manage,
+          () => _info(o),
+        ),
+        item(
+          Icons.history,
+          l10n.objectVersions,
+          ActionGroup.manage,
+          () => _versions(o),
+        ),
+        item(
+          Icons.copy,
+          l10n.objectCopy,
+          ActionGroup.manage,
+          () => _copy(o, move: false),
+        ),
+        item(
+          Icons.drive_file_move_outline,
+          l10n.objectMove,
+          ActionGroup.manage,
+          () => _copy(o, move: true),
+        ),
+        item(
+          Icons.delete_outline,
+          l10n.actionDelete,
+          ActionGroup.danger,
+          () => _delete(o),
+        ),
+      ],
     );
   }
 

@@ -125,17 +125,29 @@ class RobotFailoverPage extends ConsumerWidget {
             ? l10n.failoverUnrouted
             : l10n.failoverActiveOn(names[active] ?? active),
         name: formatIp(f.ip),
-        ids: [f.netmask],
+        ids: [
+          DetailId(formatIp(f.ip), icon: Icons.public, copy: true),
+          DetailId(f.netmask, icon: Icons.lan_outlined),
+        ],
+        facts: [
+          Fact(l10n.failoverOwner, text: names[f.serverIp] ?? f.serverIp),
+          Fact(
+            l10n.failoverActive,
+            text: active == null ? l10n.commonNone : names[active] ?? active,
+          ),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.alt_route,
             label: l10n.failoverRoute,
+            group: ActionGroup.network,
             onTap: route,
           ),
           DetailAction(
             icon: Icons.link_off,
             label: l10n.failoverUnroute,
+            group: ActionGroup.network,
             onTap: active == null
                 ? null
                 : () async {
@@ -162,16 +174,14 @@ class RobotFailoverPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldAddress, f.ip, mono: true),
-              ConfirmFact(l10n.robotNetmask, f.netmask, mono: true),
-              ConfirmFact(l10n.failoverOwner, names[f.serverIp] ?? f.serverIp),
-              ConfirmFact(
-                l10n.failoverActive,
-                active == null ? l10n.commonNone : names[active] ?? active,
-              ),
-            ]),
+            title: l10n.sectionNetwork,
+            facts: [
+              Fact(l10n.fieldAddress, text: formatIp(f.ip), copy: true),
+              Fact(l10n.robotNetmask, text: f.netmask, mono: true),
+              Fact(l10n.failoverOwner, text: f.serverIp, copy: true),
+              if (active != null)
+                Fact(l10n.failoverActive, text: active, copy: true),
+            ],
           ),
         ],
       ),
@@ -298,17 +308,23 @@ class RobotVSwitchPage extends ConsumerWidget {
       body: DetailPage(
         status: v.cancelled ? ResourceStatus.cancelled : ResourceStatus.active,
         name: v.name,
-        ids: ['VLAN ${v.vlan}', '#${v.id}'],
+        ids: [DetailId('#${v.id}', copy: true)],
+        facts: [
+          Fact('VLAN', text: '${v.vlan}', mono: true),
+          Fact(l10n.robotServers, text: '${v.servers.length}'),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.add_link,
             label: l10n.vswitchAddServer,
+            group: ActionGroup.network,
             onTap: v.cancelled ? null : add,
           ),
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => FormSheet.show(
               context,
               title: l10n.commonEdit,
@@ -340,44 +356,39 @@ class RobotVSwitchPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact('ID', '#${v.id}', mono: true),
-              ConfirmFact('VLAN', '${v.vlan}', mono: true),
-              ConfirmFact(
-                l10n.fieldStatus,
-                v.cancelled
-                    ? ResourceStatus.cancelled.label(l10n)
-                    : ResourceStatus.active.label(l10n),
-              ),
-            ]),
-          ),
-          DetailSection(
             title: l10n.robotServers,
-            child: entries([
+            cards: [
               for (final s in v.servers)
-                EntryRow(
-                  leading: const Icon(Icons.dns_outlined),
+                RelatedCard(
+                  icon: Icons.dns_outlined,
                   title: names[s.number] ?? '#${s.number}',
                   subtitle: '${s.ip} · ${s.status}',
-                  removeLabel: l10n.actionRemove,
                   onTap: () => RobotServerRoute(
                     accountId: a,
                     number: s.number,
                   ).push<void>(context),
-                  onRemove: v.cancelled ? null : () => remove(s),
+                  trailing: v.cancelled
+                      ? null
+                      : IconButton(
+                          tooltip: l10n.actionRemove,
+                          icon: const Icon(Icons.remove_circle_outline),
+                          onPressed: () => remove(s),
+                        ),
                 ),
-            ], l10n.vswitchNoServers),
+            ],
+            child: v.servers.isEmpty
+                ? entries(const [], l10n.vswitchNoServers)
+                : null,
           ),
           if (v.subnets.isNotEmpty || v.cloudNetworks.isNotEmpty)
             DetailSection(
               title: l10n.sectionNetwork,
-              child: FactRows([
+              facts: [
                 for (final s in v.subnets)
-                  ConfirmFact(l10n.robotSubnet, s, mono: true),
+                  Fact(l10n.robotSubnet, text: s, copy: true),
                 for (final c in v.cloudNetworks)
-                  ConfirmFact(l10n.resourceNetwork, c, mono: true),
-              ]),
+                  Fact(l10n.resourceNetwork, text: c, mono: true),
+              ],
             ),
         ],
         dangerZone: [
@@ -417,12 +428,18 @@ class RobotKeyPage extends ConsumerWidget {
       title: l10n.resourceSshKey,
       body: DetailPage(
         name: k.name,
-        ids: [k.fingerprint],
+        ids: [DetailId(k.fingerprint, icon: Icons.fingerprint, copy: true)],
+        facts: [
+          Fact(l10n.fieldType, text: k.type, mono: true),
+          Fact(l10n.keyBits, text: '${k.size}'),
+          Fact(l10n.fieldCreated, text: k.created),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => FormSheet.show(
               context,
               title: l10n.commonEdit,
@@ -442,14 +459,11 @@ class RobotKeyPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldFingerprint, k.fingerprint, mono: true),
-              ConfirmFact(l10n.fieldType, k.type),
-              ConfirmFact(l10n.keyBits, '${k.size}'),
-              ConfirmFact(l10n.fieldCreated, k.created),
-              ConfirmFact(l10n.fieldPublicKey, k.data, mono: true),
-            ]),
+            title: l10n.fieldPublicKey,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Mono(k.data, maxLines: 8),
+            ),
           ),
         ],
         dangerZone: [
@@ -634,22 +648,34 @@ class RobotAddressPage extends ConsumerWidget {
       body: DetailPage(
         status: x.locked ? ResourceStatus.locked : ResourceStatus.active,
         name: addressText(x, kind),
-        ids: [names[x.serverNumber] ?? '#${x.serverNumber}'],
+        ids: [DetailId(addressText(x, kind), icon: Icons.public, copy: true)],
+        facts: [
+          Fact(
+            l10n.robotServer,
+            text: names[x.serverNumber] ?? '#${x.serverNumber}',
+          ),
+          if (kind == AddressKind.subnet)
+            Fact(l10n.robotFailover, on: x.failover),
+          Fact(l10n.robotLocked, on: x.locked),
+        ],
         onRefresh: () => refreshQuietly(ref, provider.future),
         actions: [
           DetailAction(
             icon: Icons.notifications_outlined,
             label: l10n.trafficWarnings,
+            group: ActionGroup.manage,
             onTap: warnings,
           ),
           DetailAction(
             icon: Icons.settings_ethernet,
             label: mac?.$2 == null ? l10n.macOn : l10n.macOff,
+            group: ActionGroup.network,
             onTap: macPossible ? toggleMac : null,
           ),
           DetailAction(
             icon: Icons.swap_vert,
             label: l10n.trafficTitle,
+            group: ActionGroup.manage,
             onTap: () => RobotTrafficRoute(
               accountId: a,
               ip: kind == AddressKind.ip ? x.ip : null,
@@ -659,48 +685,57 @@ class RobotAddressPage extends ConsumerWidget {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
-            child: FactRows([
-              ConfirmFact(l10n.fieldAddress, addressText(x, kind), mono: true),
+            title: l10n.sectionNetwork,
+            facts: [
+              Fact(l10n.fieldAddress, text: addressText(x, kind), copy: true),
               if (x.gateway case final g?)
-                ConfirmFact(l10n.fieldGateway, g, mono: true),
+                Fact(l10n.fieldGateway, text: g, copy: true),
               if (x.broadcast case final b?)
-                ConfirmFact(l10n.robotBroadcast, b, mono: true),
-              ConfirmFact(
-                l10n.robotServer,
-                names[x.serverNumber] ?? '#${x.serverNumber}',
+                Fact(l10n.robotBroadcast, text: b, mono: true),
+              if (mac?.$2 case final m? when macPossible)
+                Fact(l10n.robotMac, text: m, copy: true)
+              else
+                Fact(
+                  l10n.robotMac,
+                  text: macPossible ? l10n.commonNone : l10n.macUnavailable,
+                ),
+            ],
+          ),
+          DetailSection(
+            title: l10n.robotServer,
+            cards: [
+              RelatedCard(
+                icon: Icons.dns_outlined,
+                title: names[x.serverNumber] ?? '#${x.serverNumber}',
+                subtitle: '#${x.serverNumber}',
+                onTap: () => RobotServerRoute(
+                  accountId: a,
+                  number: x.serverNumber,
+                ).push<void>(context),
               ),
-              if (kind == AddressKind.subnet)
-                ConfirmFact(l10n.robotFailover, yesNo(x.failover, l10n)),
-              ConfirmFact(l10n.robotLocked, yesNo(x.locked, l10n)),
-              ConfirmFact(
-                l10n.robotMac,
-                !macPossible ? l10n.macUnavailable : mac?.$2 ?? l10n.commonNone,
-                mono: mac?.$2 != null,
-              ),
-            ]),
+            ],
           ),
           DetailSection(
             title: l10n.trafficWarnings,
-            child: FactRows([
-              ConfirmFact(l10n.trafficWarnings, yesNo(x.warnings, l10n)),
-              ConfirmFact(l10n.trafficHourly, '${x.hourly}'),
-              ConfirmFact(l10n.trafficDaily, '${x.daily}'),
-              ConfirmFact(l10n.trafficMonthly, '${x.monthly}'),
-            ]),
+            facts: [
+              Fact(l10n.trafficWarnings, on: x.warnings),
+              Fact(l10n.trafficHourly, text: '${x.hourly}', mono: true),
+              Fact(l10n.trafficDaily, text: '${x.daily}', mono: true),
+              Fact(l10n.trafficMonthly, text: '${x.monthly}', mono: true),
+            ],
           ),
           if (cancellation != null)
             DetailSection(
               title: l10n.cancellation,
-              child: FactRows([
-                ConfirmFact(
+              facts: [
+                Fact(
                   l10n.fieldStatus,
-                  cancellation.cancelled
+                  text: cancellation.cancelled
                       ? l10n.cancelledOn(cancellation.date ?? '')
                       : l10n.notCancelled,
                 ),
-                ConfirmFact(l10n.cancelEarliest, cancellation.earliest),
-              ]),
+                Fact(l10n.cancelEarliest, text: cancellation.earliest),
+              ],
             ),
         ],
         dangerZone: [
@@ -869,7 +904,11 @@ class _RobotFirewallPageState extends ConsumerState<RobotFirewallPage> {
         },
         statusDetail: _draft == null ? null : l10n.firewallUnsaved,
         name: l10n.robotFirewall,
-        ids: ['#$n', if (f.port.isNotEmpty) f.port],
+        ids: [
+          DetailId('#$n', copy: true),
+          if (f.port.isNotEmpty)
+            DetailId(f.port, icon: Icons.settings_ethernet),
+        ],
         onRefresh: () async {
           setState(() => _draft = null);
           await refreshQuietly(ref, provider.future);
@@ -878,22 +917,25 @@ class _RobotFirewallPageState extends ConsumerState<RobotFirewallPage> {
           DetailAction(
             icon: Icons.save_outlined,
             label: l10n.firewallApply,
+            group: ActionGroup.network,
             onTap: _draft == null ? null : apply,
           ),
           DetailAction(
             icon: active ? Icons.shield : Icons.shield_outlined,
             label: active ? l10n.firewallDisable : l10n.firewallEnable,
+            group: ActionGroup.manage,
             onTap: () => edit(copy(status: active ? 'disabled' : 'active')),
           ),
           DetailAction(
             label: l10n.firewallUseTemplate,
             icon: Icons.copy_all,
+            group: ActionGroup.manage,
             onTap: useTemplate,
           ),
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
+            title: l10n.sectionConfiguration,
             child: Column(
               children: [
                 SwitchListTile(
@@ -975,7 +1017,7 @@ class _RobotTemplatePageState extends ConsumerState<RobotTemplatePage> {
         statusDetail: _draft == null ? null : l10n.firewallUnsaved,
         status: _draft == null ? null : ResourceStatus.inProgress,
         name: t.name,
-        ids: ['#${t.id}'],
+        ids: [DetailId('#${t.id}', copy: true)],
         onRefresh: () async {
           setState(() => _draft = null);
           await refreshQuietly(ref, provider.future);
@@ -984,6 +1026,7 @@ class _RobotTemplatePageState extends ConsumerState<RobotTemplatePage> {
           DetailAction(
             icon: Icons.save_outlined,
             label: l10n.commonSave,
+            group: ActionGroup.manage,
             onTap: _draft == null
                 ? null
                 : () async {
@@ -1008,6 +1051,7 @@ class _RobotTemplatePageState extends ConsumerState<RobotTemplatePage> {
           DetailAction(
             icon: Icons.edit_outlined,
             label: l10n.commonEdit,
+            group: ActionGroup.manage,
             onTap: () => FormSheet.show(
               context,
               title: l10n.commonEdit,
@@ -1021,7 +1065,7 @@ class _RobotTemplatePageState extends ConsumerState<RobotTemplatePage> {
         ],
         sections: [
           DetailSection(
-            title: l10n.sectionOverview,
+            title: l10n.sectionConfiguration,
             child: Column(
               children: [
                 SwitchListTile(
