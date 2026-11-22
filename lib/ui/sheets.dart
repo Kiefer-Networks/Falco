@@ -231,8 +231,10 @@ class ConfirmSheet extends StatefulWidget {
 
   /// Whether [input] confirms [resourceName] at level 2; an empty name
   /// never does.
-  static bool matches(String input, String resourceName) =>
-      resourceName.isNotEmpty && input.trim() == resourceName;
+  static bool matches(String input, String resourceName) {
+    final name = resourceName.trim();
+    return name.isNotEmpty && input.trim() == name;
+  }
 
   /// Question, e.g. "Reboot db-primary?".
   final String title;

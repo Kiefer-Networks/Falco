@@ -278,6 +278,23 @@ void main() {
       await confirm(tester, 'Delete');
       expect(cloud.calls, contains('DELETE /images/8'));
     });
+
+    testWidgets('CMP-095 an image without a description is deleted by #id', (
+      tester,
+    ) async {
+      final cloud = await openTab(
+        tester,
+        'Images',
+        cloud: FakeCloud(
+          images: [imageJson(id: 8, description: '', type: 'snapshot')],
+        ),
+      );
+      await tap(tester, '#8');
+      await tap(tester, 'Delete');
+      await typeName(tester, '#8');
+      await confirm(tester, 'Delete');
+      expect(cloud.calls, contains('DELETE /images/8'));
+    });
   });
 
   group('placement groups', () {
@@ -574,6 +591,14 @@ void main() {
       final [type, blob, comment] = _rfcKey.split(' ');
       expect(normalizeSshKey('$type\n$blob $comment'), _rfcKey);
       expect(normalizeSshKey('$type $blob\r\n$comment\n'), _rfcKey);
+      // Trailing blanks and indented continuation lines.
+      expect(
+        normalizeSshKey(
+          '$type ${blob.substring(0, 30)} \n'
+          '  ${blob.substring(30)}\t\n  $comment ',
+        ),
+        _rfcKey,
+      );
       expect(
         normalizeSshKey(
           '$type ${blob.substring(0, 30)}\n'
