@@ -205,6 +205,12 @@ class FakeStorage {
   /// Whether aborting a multipart upload fails with a server error.
   bool failAbort = false;
 
+  /// Part listings refused with 403 (rotated keys, a wrong clock).
+  int forbidParts = 0;
+
+  /// Whether asking a bucket for its location fails with a server error.
+  bool failLocation = false;
+
   /// Locations whose every S3 request fails with a server error.
   final failing = <String>{};
 
@@ -471,6 +477,9 @@ class FakeStorage {
           b?.public = o.headers['x-amz-acl'] == 'public-read';
           return (200, null);
         case 'GET' when q.containsKey('location'):
+          if (failLocation) {
+            return (500, '<Error><Code>InternalError</Code></Error>');
+          }
           return (200, '<LocationConstraint>$location</LocationConstraint>');
         case 'PUT':
           at[bucket] = FakeBucket()
@@ -563,6 +572,10 @@ class FakeStorage {
           '<InitiateMultipartUploadResult><UploadId>$id</UploadId></InitiateMultipartUploadResult>',
         );
       case 'GET' when q.containsKey('uploadId'):
+        if (forbidParts > 0) {
+          forbidParts--;
+          return (403, '<Error><Code>AccessDenied</Code></Error>');
+        }
         final u = uploads[q['uploadId']];
         if (u == null) return (404, '<Error><Code>NoSuchUpload</Code></Error>');
         return (
