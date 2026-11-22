@@ -162,7 +162,13 @@ class SshKeySources extends ConsumerWidget {
 
   Future<void> _fromFile(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
-    final picked = await ref.read(textFilesProvider).pick(maxBytes: 16 * 1024);
+    final PickedText? picked;
+    try {
+      picked = await ref.read(textFilesProvider).pick(maxBytes: 16 * 1024);
+    } on Exception catch (_) {
+      if (context.mounted) FalcoScaffold.showSnack(context, l10n.actionFailed);
+      return;
+    }
     if (picked == null || !context.mounted) return;
     final text = picked.text;
     if (picked.tooLarge || text == null) {

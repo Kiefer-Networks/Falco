@@ -397,17 +397,26 @@ class S3Client {
     );
   }
 
-  /// Stores [bytes] at [key]; an empty `name/` key is a folder (OBJ-024).
-  /// Sent as [Uint8List], the only list dio sends as is (others it
-  /// encodes as JSON), so the body is what was hashed.
-  Future<void> put(String bucket, String key, List<int> bytes) {
+  /// Stores [bytes] at [key] as [contentType] (if given); an empty
+  /// `name/` key is a folder (OBJ-024). Sent as [Uint8List], the only
+  /// list dio sends as is (others it encodes as JSON), so the body is
+  /// what was hashed.
+  Future<void> put(
+    String bucket,
+    String key,
+    List<int> bytes, {
+    String? contentType,
+  }) {
     final data = Uint8List.fromList(bytes);
     return _dio.request<String>(
       _url(s3Path(bucket, key)),
       data: data,
       options: Options(
         method: 'PUT',
-        headers: {Headers.contentLengthHeader: data.length},
+        headers: {
+          Headers.contentLengthHeader: data.length,
+          Headers.contentTypeHeader: ?contentType,
+        },
         responseType: ResponseType.plain,
       ),
     );

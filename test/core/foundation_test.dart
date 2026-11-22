@@ -54,12 +54,13 @@ void main() {
     final root = Directory('${other.path}/file_picker');
     final used = File('${root.path}/U1/a.bin')..createSync(recursive: true);
     final stale = File('${root.path}/U2/b.bin')..createSync(recursive: true);
-    await dropUnusedCopies(
-      [root, Directory('${other.path}/none')],
-      {'/private${used.path}'},
-    );
+    final folders = await copyFolders([root, Directory('${other.path}/none')]);
+    // Picked after the folders were taken: not stale.
+    final fresh = File('${root.path}/U3/c.bin')..createSync(recursive: true);
+    await dropUnusedCopies(folders, {'/private${used.path}'});
     expect(used.existsSync(), isTrue);
     expect(stale.parent.existsSync(), isFalse);
+    expect(fresh.existsSync(), isTrue);
   });
 
   group('fetchAll (QRS-016)', () {

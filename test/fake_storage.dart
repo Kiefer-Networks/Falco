@@ -208,6 +208,12 @@ class FakeStorage {
   /// Part listings refused with 403 (rotated keys, a wrong clock).
   int forbidParts = 0;
 
+  /// The S3 error code of those refusals.
+  String forbidCode = 'AccessDenied';
+
+  /// Content types of objects put directly, by key.
+  final putTypes = <String, String?>{};
+
   /// Whether asking a bucket for its location fails with a server error.
   bool failLocation = false;
 
@@ -580,7 +586,7 @@ class FakeStorage {
       case 'GET' when q.containsKey('uploadId'):
         if (forbidParts > 0) {
           forbidParts--;
-          return (403, '<Error><Code>AccessDenied</Code></Error>');
+          return (403, '<Error><Code>$forbidCode</Code></Error>');
         }
         final u = uploads[q['uploadId']];
         if (u == null) return (404, '<Error><Code>NoSuchUpload</Code></Error>');
@@ -644,6 +650,7 @@ class FakeStorage {
         return (200, '<CopyObjectResult><ETag>"c"</ETag></CopyObjectResult>');
       case 'PUT':
         _store(b, key, (o.data as List<int>?)?.length ?? 0);
+        putTypes[key] = o.contentType;
         return (200, null);
       case 'DELETE':
         b.objects.remove(key);

@@ -266,9 +266,15 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
 
   Future<void> _import(Zone z) async {
     final l10n = AppLocalizations.of(context);
-    final picked = await ref
-        .read(textFilesProvider)
-        .pick(maxBytes: maxZonefileBytes);
+    final PickedText? picked;
+    try {
+      picked = await ref
+          .read(textFilesProvider)
+          .pick(maxBytes: maxZonefileBytes);
+    } on Exception catch (_) {
+      if (mounted) FalcoScaffold.showSnack(context, l10n.actionFailed);
+      return;
+    }
     if (picked == null || !mounted) return;
     final text = picked.text;
     if (text == null) {

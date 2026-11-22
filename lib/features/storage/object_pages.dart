@@ -456,8 +456,15 @@ class _BucketPageState extends ConsumerState<BucketPage> {
 
   Future<void> _upload() async {
     final l10n = AppLocalizations.of(context);
-    final file = await ref.read(textFilesProvider).pickFile();
-    if (file == null) return;
+    final File? picked;
+    try {
+      picked = await ref.read(textFilesProvider).pickFile();
+    } on Exception catch (_) {
+      if (mounted) FalcoScaffold.showSnack(context, l10n.actionFailed);
+      return;
+    }
+    if (picked == null) return;
+    final file = picked;
     // The picker's copy goes unless a transfer sends it; a finished
     // single part upload or the part copies of a multipart one drop it.
     void drop() => unawaited(dropUploadCopy(file.path));
