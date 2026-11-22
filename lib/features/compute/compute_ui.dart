@@ -428,8 +428,12 @@ class _MetricPanelState extends ConsumerState<MetricPanel> {
         .expand((s) => s)
         .fold<double>(0, (m, p) => p.$2 > m ? p.$2 : m);
     final (unit, factor) = widget.rate ? byteRate(max) : (widget.unit, 1.0);
-    String value(double v) =>
-        '${(v / factor).toStringAsFixed(v / factor < 10 ? 1 : 0)} $unit'.trim();
+    String value(double v) {
+      final n = v / factor;
+      return '${formatDecimal(n, n < 10 ? 1 : 0, l10n.localeName)} $unit'
+          .trim();
+    }
+
     final labels = widget.labels;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

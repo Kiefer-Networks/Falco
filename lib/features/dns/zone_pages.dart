@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import 'dart:convert' show utf8;
+
 import 'package:falco/api/cloud/cloud.dart';
 import 'package:falco/app/router.dart';
 import 'package:falco/core/actions/action_tracker.dart';
@@ -162,12 +164,23 @@ Future<bool> showRecordSheet(
       final known = existing.where((e) => e.key == set.key).firstOrNull;
       final api = ref.read(cloudApiProvider(scope.projectId));
       final tracker = ref.read(actionTrackerProvider(scope));
+      // Labels are no action; added ones join those the RRSet has.
+      if (known != null && set.labels.isNotEmpty) {
+        final labels = {...known.labels, ...set.labels};
+        if (labels.toString() != known.labels.toString()) {
+          await updateRrset(api, zone.id, known, labels);
+        }
+      }
       final id = await (known == null
           ? createRrset(api, zone.id, set)
           : changeRrset(api, zone.id, known, AddRecords(set.records)));
       tracker.track(id);
       if (known != null && set.ttl != null && set.ttl != known.ttl) {
-        if (!await _ended(tracker, id)) return;
+        // A failed add must not close the form as saved.
+        final added = await tracker.track(id).last;
+        if (added.status != ActionStatus.success) {
+          throw Server(code: added.errorCode);
+        }
         tracker.track(
           await changeRrset(api, zone.id, known, ChangeRRSetTtl(set.ttl)),
         );
@@ -242,7 +255,10 @@ class _ZoneDetailPageState extends ConsumerState<ZoneDetailPage> {
       level: ConfirmLevel.typeName,
       destructive: true,
       facts: [
-        ConfirmFact(l10n.fieldSize, formatBytes(text.length, l10n.localeName)),
+        ConfirmFact(
+          l10n.fieldSize,
+          formatBytes(utf8.encode(text).length, l10n.localeName),
+        ),
       ],
     );
     if (ok && mounted) {

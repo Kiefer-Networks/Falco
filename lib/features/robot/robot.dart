@@ -27,31 +27,47 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'robot.g.dart';
 
 /// The Robot webservice of an account; the login is read per request.
-/// Once Robot refuses a login on a path, requests to that path with
-/// that login fail at once as [Unauthorized] until it changes or any
-/// request succeeds. So a wrong password is not sent again for every
-/// list, and a section the login may not use blocks no other. Saving or
-/// deleting the login and removing the account rebuild the client.
+/// A login Robot refuses before it ever succeeded is wrong: every
+/// request with it fails at once as [Unauthorized]. Once a login
+/// succeeded, a refusal blocks only that path, a section the login may
+/// not use. Either way it is sent again only after the stored login
+/// changes (ROB-002). A changed login or a removed account rebuilds the
+/// client.
 @Riverpod(keepAlive: true)
 RobotClient robotApi(Ref ref, String accountId) {
   final secrets = ref.watch(secretStoreProvider);
-  // Every login change and account removal reloads the accounts; their
-  // first load is no change.
-  ref.listen(accountsProvider, (previous, next) {
-    if ((previous?.hasValue ?? false) && !next.isLoading) ref.invalidateSelf();
-  });
   // Logins are compared by a keyed hash; the key lives only here.
   final key = [for (var i = 0; i < 32; i++) Random.secure().nextInt(256)];
   Digest fingerprint(RobotCredentials c) =>
       Hmac(sha256, key).convert(utf8.encode('${c.user}\n${c.password}'));
   const login = 'falco.robotLogin';
   final refused = <String, Digest>{};
+  Digest? wrong;
+  Digest? worked;
+  Digest? last;
+  // Every login change and account removal reloads the accounts, and so
+  // do other account edits; only a different stored login rebuilds.
+  ref.listen(accountsProvider, (previous, next) async {
+    if (!(previous?.hasValue ?? false) || next.isLoading) return;
+    final seen = last;
+    if (seen == null) {
+      ref.invalidateSelf();
+      return;
+    }
+    try {
+      final c = await secrets.robot(accountId);
+      if (c == null || fingerprint(c) != seen) ref.invalidateSelf();
+    } on Object {
+      ref.invalidateSelf();
+    }
+  });
   final dio = ref.watch(robotDioProvider)(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
         final c = await secrets.robot(accountId);
         final sent = c == null ? null : fingerprint(c);
-        if (c == null || sent == refused[options.path]) {
+        last = sent;
+        if (c == null || sent == wrong || sent == refused[options.path]) {
           return handler.reject(
             DioException(requestOptions: options, error: const Unauthorized()),
           );
@@ -66,9 +82,13 @@ RobotClient robotApi(Ref ref, String accountId) {
     final sent = options.extra[login];
     if (sent is! Digest || status == null) return;
     if (status == 401) {
-      refused[options.path] = sent;
+      if (sent == worked) {
+        refused[options.path] = sent;
+      } else {
+        wrong = sent;
+      }
     } else if (status < 400) {
-      refused.clear();
+      worked = sent;
     }
   }
 
@@ -198,9 +218,27 @@ Future<RobotFirewall> robotFirewall(Ref ref, String accountId, int number) =>
 Future<List<RobotFirewall>> robotTemplates(Ref ref, String accountId) =>
     ref.watch(robotApiProvider(accountId)).templates();
 
+/// One template. Robot documents no name in the single template answer,
+/// so an empty one comes from the list (ROB-058); without it the apply
+/// confirmation would have nothing to type and Save would clear the name.
 @riverpod
-Future<RobotFirewall> robotTemplate(Ref ref, String accountId, int id) =>
-    ref.watch(robotApiProvider(accountId)).template(id);
+Future<RobotFirewall> robotTemplate(Ref ref, String accountId, int id) async {
+  // Both before the first await: a ref may not be used after it.
+  final listed = ref.watch(robotTemplatesProvider(accountId).future)..ignore();
+  final t = await ref.watch(robotApiProvider(accountId)).template(id);
+  if (t.name.isNotEmpty) return t;
+  final name = (await listed).where((e) => e.id == id).firstOrNull?.name ?? '';
+  return (
+    id: id,
+    name: name,
+    status: t.status,
+    filterIpv6: t.filterIpv6,
+    whitelistHos: t.whitelistHos,
+    isDefault: t.isDefault,
+    port: t.port,
+    rules: t.rules,
+  );
+}
 
 /// `YYYY-MM-DD` of [d].
 String isoDate(DateTime d) => d.toIso8601String().substring(0, 10);

@@ -20,6 +20,14 @@ String formatBytes(int bytes, String locale) {
   return '$number ${_byteUnits[unit]}';
 }
 
+/// Formats [value] with exactly [digits] fraction digits, e.g. `1,234.50`
+/// (en) or `1.234,50` (de).
+String formatDecimal(num value, int digits, String locale) =>
+    NumberFormat.decimalPatternDigits(
+      locale: locale,
+      decimalDigits: digits,
+    ).format(value);
+
 /// Formats [time] relative to [now], e.g. `5 minutes ago`. Older than
 /// 30 days falls back to [formatDateTime]. Future times read as "just now".
 String formatRelative(DateTime time, DateTime now, AppLocalizations l10n) {

@@ -226,6 +226,40 @@ void main() {
     await settleAction(tester);
   });
 
+  testWidgets('DNS-007 labels for an existing RRSet join its labels', (
+    tester,
+  ) async {
+    final cloud = await openZone(tester);
+    await tile(tester, 'Add record');
+    await enter(tester, 'values', '203.0.113.2');
+    await enter(tester, 'labels', 'cdn=yes');
+    await tap(tester, 'Save');
+    expect(cloud.body('PUT /zones/5/rrsets/@/A'), {
+      'labels': {'cdn': 'yes'},
+    });
+    await settleAction(tester);
+  });
+
+  testWidgets('DNS-007 a failed added value keeps the form with an error '
+      'and skips the TTL', (tester) async {
+    final cloud = await openZone(tester);
+    await tile(tester, 'Add record');
+    await enter(tester, 'ttl', '7200');
+    await enter(tester, 'values', '203.0.113.2');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pump(const Duration(milliseconds: 50));
+    cloud.actions.first
+      ..['status'] = 'error'
+      ..['error'] = {'code': 'action_failed', 'message': 'failed'};
+    await settleAction(tester);
+    expect(cloud.calls.where((c) => c.contains('change_ttl')), isEmpty);
+    expect(
+      find.text('The server reported an error. Try again later.'),
+      findsOneWidget,
+    );
+    expect(find.widgetWithText(FilledButton, 'Save'), findsOneWidget);
+  });
+
   testWidgets('DNS-012 DNS-013 DNS-014 select, bulk edit, result', (
     tester,
   ) async {

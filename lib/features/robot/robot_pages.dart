@@ -1251,9 +1251,21 @@ class _RobotTrafficPageState extends ConsumerState<RobotTrafficPage> {
                   for (final MapEntry(key: address, value: t)
                       in data.entries) ...[
                     ConfirmFact(l10n.fieldAddress, address, mono: true),
-                    ConfirmFact(l10n.trafficIn, gbText(t.inGb), mono: true),
-                    ConfirmFact(l10n.trafficOut, gbText(t.outGb), mono: true),
-                    ConfirmFact(l10n.trafficSum, gbText(t.sumGb), mono: true),
+                    ConfirmFact(
+                      l10n.trafficIn,
+                      gbText(t.inGb, l10n.localeName),
+                      mono: true,
+                    ),
+                    ConfirmFact(
+                      l10n.trafficOut,
+                      gbText(t.outGb, l10n.localeName),
+                      mono: true,
+                    ),
+                    ConfirmFact(
+                      l10n.trafficSum,
+                      gbText(t.sumGb, l10n.localeName),
+                      mono: true,
+                    ),
                   ],
                 ]),
               _ => const LinearProgressIndicator(),
