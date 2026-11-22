@@ -691,8 +691,7 @@ class FakeTransfers extends ObjectTransfers {
   new(super.s3, this.storage, {super.onUploaded})
     : super(
         partSize: storage.partSize,
-        partsRoot: Directory.systemTemp.createTempSync('falco-parts').path,
-        jobsRoot: Directory.systemTemp.createTempSync('falco-jobs').path,
+        supportRoot: Directory.systemTemp.createTempSync('falco-support').path,
       );
 
   final FakeStorage storage;
@@ -719,7 +718,7 @@ class FakeTransfers extends ObjectTransfers {
       final url = Uri.parse(t.url);
       if (t is UploadTask) {
         uploadTasks.add(t);
-        storage.upload(url, await File(await t.filePath()).length());
+        storage.upload(url, await File(await taskFile(t)).length());
       } else {
         storage.downloads.add(url);
         downloadTasks.add(t as DownloadTask);

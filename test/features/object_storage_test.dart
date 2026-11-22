@@ -9,6 +9,7 @@ import 'package:falco/core/errors/falco_error.dart';
 import 'package:falco/core/files/text_files.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/secure/app_lock.dart';
+import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/features/storage/object_pages.dart';
 import 'package:falco/features/storage/object_storage.dart';
 import 'package:falco/features/storage/transfers.dart';
@@ -310,11 +311,32 @@ void main() {
       expect(find.text('new.txt'), findsOneWidget);
     });
 
+    testWidgets('an empty file shows done, not started', (tester) async {
+      final cloud = await openBucket(tester);
+      cloud.files.pickedFile = tempFile('empty.txt', '');
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Upload'));
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      });
+      await tester.pumpAndSettle();
+      expect(find.text('Uploaded: empty.txt'), findsOneWidget);
+      expect(find.textContaining('in the background'), findsNothing);
+    });
+
     testWidgets('a failing picker shows an error', (tester) async {
+      final cloud = await openBucket(tester);
+      cloud.files.pickError = PlatformException(code: 'unknown_path');
+      await tap(tester, 'Upload');
+      expect(find.text('The action failed.'), findsOneWidget);
+    });
+
+    testWidgets('a second tap while the picker is open stays silent', (
+      tester,
+    ) async {
       final cloud = await openBucket(tester);
       cloud.files.pickError = PlatformException(code: 'already_active');
       await tap(tester, 'Upload');
-      expect(find.text('The action failed.'), findsOneWidget);
+      expect(find.text('The action failed.'), findsNothing);
     });
 
     testWidgets('each finished transfer shows, a sheet defers it', (
@@ -621,6 +643,11 @@ void main() {
         contentType: 'application/octet-stream',
       );
       expect(await done, (upload: true, ok: true, name: 'big.bin'));
+      // Parts relative to application support, resolved by the platform.
+      expect(
+        (transfers as FakeTransfers).uploadTasks.map((t) => t.baseDirectory),
+        everyElement(BaseDirectory.applicationSupport),
+      );
       expect(
         cloud.storage.buckets['fsn1']!['media']!.objects['big.bin']!.size,
         20,
@@ -641,7 +668,8 @@ void main() {
           .read(s3AccessProvider)
           .run('p1', 'fsn1', (s) => s.createMultipart('media', 'x', 'a/b'));
       final transfers = c.read(transfersProvider);
-      final dir = Directory('${await transfers.partsRoot()}/x1')..createSync();
+      final dir = Directory('${await transfers.partsRoot()}/x1')
+        ..createSync(recursive: true);
       final events = transfers.events.first;
       await c
           .read(transfersProvider)
@@ -783,7 +811,7 @@ void main() {
             .millisecondsSinceEpoch,
       });
       final parts = Directory('${await transfers.partsRoot()}/x1')
-        ..createSync();
+        ..createSync(recursive: true);
       await transfers.retryJoins();
       expect(file.existsSync(), isTrue);
       final first = jsonDecode(file.readAsStringSync()) as Map;
@@ -940,16 +968,93 @@ void main() {
       expect(events, [(upload: true, ok: false, name: 'x')]);
     });
 
-    test('without keys a job waits silently', () async {
-      final c = await fakeContainer(storageCloud(), s3: true);
+    test('without keys a job waits silently, then gives up', () async {
+      final c = await fakeContainer(
+        storageCloud(),
+        s3: true,
+        accounts: const [
+          Account(
+            id: 'a1',
+            name: 'Acme',
+            projects: [
+              Project(id: 'p1', name: 'prod'),
+              Project(id: 'nokeys', name: 'dev'),
+            ],
+          ),
+        ],
+      );
+      await c.read(secretStoreProvider).deleteProject('nokeys');
       final transfers = c.read(transfersProvider);
       final events = <TransferEvent>[];
       transfers.events.listen(events.add);
       final file = await job(c, 'x1', {'e': true, 'p': 'nokeys'});
+      final parts = Directory('${await transfers.partsRoot()}/x1')
+        ..createSync(recursive: true);
       await transfers.retryJoins();
       await transfers.retryJoins();
       expect(events, isEmpty);
       expect(file.existsSync(), isTrue);
+      // Without keys since longer than the limit: told once, the copies go,
+      // the job stays for a later abort.
+      final old = DateTime.now().subtract(
+        refusedJoinLimit + const Duration(hours: 1),
+      );
+      file.writeAsStringSync(
+        jsonEncode({
+          ...jsonDecode(file.readAsStringSync()) as Map,
+          'r': old.millisecondsSinceEpoch,
+        }),
+      );
+      await transfers.retryJoins();
+      await transfers.retryJoins();
+      expect(events, [(upload: true, ok: false, name: 'x')]);
+      expect(parts.existsSync(), isFalse);
+      expect(file.existsSync(), isTrue);
+    });
+
+    test('a job of a removed project goes with its copies', () async {
+      final c = await fakeContainer(storageCloud(), s3: true);
+      final transfers = c.read(transfersProvider);
+      final events = <TransferEvent>[];
+      transfers.events.listen(events.add);
+      final file = await job(c, 'x1', {'e': true, 'p': 'gone'});
+      final parts = Directory('${await transfers.partsRoot()}/x1')
+        ..createSync(recursive: true);
+      await transfers.retryJoins();
+      expect(file.existsSync(), isFalse);
+      expect(parts.existsSync(), isFalse);
+      expect(events, isEmpty);
+    });
+
+    test('a given up job stays until its abort went through', () async {
+      final cloud = storageCloud()
+        ..storage.forbidParts = 100
+        ..storage.failAbort = true;
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider);
+      final events = <TransferEvent>[];
+      transfers.events.listen(events.add);
+      final old = DateTime.now().subtract(
+        refusedJoinLimit + const Duration(hours: 1),
+      );
+      final file = await job(c, 'x1', {
+        'e': true,
+        't': old.millisecondsSinceEpoch,
+        'r': old.millisecondsSinceEpoch,
+      });
+      final parts = Directory('${await transfers.partsRoot()}/x1')
+        ..createSync(recursive: true);
+      await transfers.retryJoins();
+      await transfers.retryJoins();
+      expect(events, [(upload: true, ok: false, name: 'x')]);
+      expect(parts.existsSync(), isFalse);
+      expect(jsonDecode(file.readAsStringSync()), containsPair('g', true));
+      expect(cloud.storage.uploads, hasLength(1));
+      cloud.storage.failAbort = false;
+      await transfers.retryJoins();
+      expect(cloud.storage.uploads, isEmpty);
+      expect(file.existsSync(), isFalse);
+      expect(events, hasLength(1));
     });
 
     test('a job is dropped only once its abort went through', () async {
@@ -1010,6 +1115,53 @@ void main() {
       expect(events, [(upload: true, ok: true, name: 'x')]);
     });
 
+    test('a lost join with the object before unknown takes S3 skew', () async {
+      final cloud = storageCloud();
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider);
+      final events = <TransferEvent>[];
+      transfers.events.listen(events.add);
+      // The device clock 10 minutes ahead of S3's.
+      final ahead = DateTime.now().add(const Duration(minutes: 10));
+      await job(c, 'x1', {
+        'e': true,
+        't': ahead.millisecondsSinceEpoch,
+        'pu': true,
+      });
+      cloud.storage.uploads.clear();
+      cloud.storage.buckets['fsn1']!['media']!.objects['x'] = FakeObject(1)
+        ..etag = '"j-2"'
+        ..modified = DateTime.now().toUtc();
+      await transfers.retryJoins();
+      expect(events, [(upload: true, ok: true, name: 'x')]);
+    });
+
+    test('uploads below application support resolve there', () async {
+      final c = await fakeContainer(storageCloud(), s3: true);
+      final transfers = c.read(transfersProvider) as FakeTransfers;
+      final done = transfers.events.first;
+      final support = await transfers.supportRoot();
+      final copy = Directory('$support/falco-picked/${uploadCopyPrefix}1')
+        ..createSync(recursive: true);
+      await transfers.upload(
+        projectId: 'p1',
+        location: 'fsn1',
+        bucket: 'media',
+        key: 'a.txt',
+        file: File('${copy.path}/a.txt')..writeAsStringSync('hi'),
+        contentType: 'text/plain',
+      );
+      final task = transfers.uploadTasks.single;
+      expect(task.baseDirectory, BaseDirectory.applicationSupport);
+      expect(task.directory, 'falco-picked/${uploadCopyPrefix}1');
+      expect(
+        jsonDecode(task.metaData),
+        containsPair('s', 'falco-picked/${uploadCopyPrefix}1/a.txt'),
+      );
+      await done;
+      expect(copy.existsSync(), isFalse);
+    });
+
     test('a lost join of the same content is found by its date', () async {
       final cloud = storageCloud();
       final c = await fakeContainer(cloud, s3: true);
@@ -1046,7 +1198,7 @@ void main() {
       final c = await fakeContainer(cloud, s3: true);
       final transfers = c.read(transfersProvider) as FakeTransfers;
       final done = transfers.events.first;
-      await transfers.upload(
+      final finished = await transfers.upload(
         projectId: 'p1',
         location: 'fsn1',
         bucket: 'media',
@@ -1054,6 +1206,7 @@ void main() {
         file: tempFile('empty.txt', ''),
         contentType: 'text/plain',
       );
+      expect(finished, isTrue);
       expect(await done, (upload: true, ok: true, name: 'empty.txt'));
       expect(transfers.uploadTasks, isEmpty);
       expect(
