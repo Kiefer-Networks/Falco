@@ -528,6 +528,71 @@ void main() {
       await tap(tester, 'Close');
       expect(find.text('Private key'), findsNothing);
     });
+
+    test('CMP-071 a wrapped key is joined; the comment does not change the '
+        'key', () {
+      final wrapped = '${_rfcKey.substring(0, 40)}\n${_rfcKey.substring(40)}\n';
+      expect(sshKeyProblem(wrapped), isNull);
+      expect(normalizeSshKey(wrapped), _rfcKey);
+      final bare = _rfcKey.split(' ').take(2).join(' ');
+      expect(sameSshKey(_rfcKey, '$bare other\n'), isTrue);
+      expect(sameSshKey(_rfcKey, _keyOf('ssh-ed25519')), isFalse);
+    });
+
+    testWidgets('CMP-100 an edited comment keeps the private key; a failed '
+        'add still hands it over, the sheet only closes by Close', (
+      tester,
+    ) async {
+      final cloud = await openTab(tester, 'SSH keys');
+      await tap(tester, 'Add SSH key');
+      await tester.enterText(find.byKey(const ValueKey('name')), 'laptop');
+      await tester.pumpAndSettle();
+      await tap(tester, 'Generate key pair');
+      final field = find.descendant(
+        of: find.byKey(const ValueKey('key')),
+        matching: find.byType(EditableText),
+      );
+      final public = tester.widget<EditableText>(field).controller.text;
+      await tester.enterText(
+        find.byKey(const ValueKey('key')),
+        '$public edited\n',
+      );
+      await tester.pumpAndSettle();
+      await tap(tester, 'Next');
+      expect(find.text('Shown once after the key is added'), findsOneWidget);
+
+      cloud.failWith = (409, errorJson('uniqueness_error'));
+      await tap(tester, 'Create');
+      expect(
+        find.textContaining('it may have reached Hetzner'),
+        findsOneWidget,
+      );
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Private key'), findsWidgets);
+      await tap(tester, 'Close');
+
+      cloud.failWith = null;
+      await tap(tester, 'Create');
+      expect(cloud.body('POST /ssh_keys')['public_key'], '$public edited');
+      expect(find.textContaining('Save or copy the private key'), findsOne);
+      await tap(tester, 'Close');
+      expect(find.text('Private key'), findsNothing);
+    });
+
+    testWidgets('CMP-072 From file refuses a private key', (tester) async {
+      final cloud = await openTab(tester, 'SSH keys');
+      await tap(tester, 'Add SSH key');
+      cloud.files.picked = (
+        text: '-----BEGIN OPENSSH PRIVATE KEY-----\nabc\n',
+        tooLarge: false,
+      );
+      await tap(tester, 'From file');
+      expect(find.textContaining('This is a private key'), findsOneWidget);
+      expect(find.textContaining('BEGIN OPENSSH'), findsNothing);
+    });
   });
 
   test('CMP-017 CMP-057 CMP-093 details read enum values the spec does not '

@@ -1513,6 +1513,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Speichere oder kopiere den privaten Schlüssel jetzt. Falco behält ihn nicht und kann ihn nicht erneut anzeigen. Er ist nicht verschlüsselt: bewahre ihn sicher auf, etwa in ~/.ssh nur für dich lesbar, und setze mit ssh-keygen -p eine Passphrase.';
 
   @override
+  String get sshKeyPrivateFailed =>
+      'Das Hinzufügen ist fehlgeschlagen, der Key kann Hetzner aber trotzdem erreicht haben. Speichere den privaten Schlüssel jetzt, damit er nicht verloren geht. Fehlt der Key in der Liste, füge ihn erneut hinzu. Der private Schlüssel ist nicht verschlüsselt: bewahre ihn sicher auf.';
+
+  @override
   String get startAfterCreate => 'Nach dem Erstellen starten';
 
   @override

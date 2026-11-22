@@ -361,6 +361,11 @@ void main() {
   testWidgets('DNS-015 a file that is not UTF-8 text says so', (tester) async {
     expect(decodeText([0xff, 0xfe]), isNull);
     expect(decodeText(utf8.encode('www IN A 203.0.113.5')), isNotNull);
+    // A byte order mark would hide a leading $ORIGIN.
+    expect(
+      decodeText([0xef, 0xbb, 0xbf, ...utf8.encode(r'$ORIGIN x.')]),
+      r'$ORIGIN x.',
+    );
     final cloud = await openZone(tester);
     cloud.files.picked = (text: null, tooLarge: false);
     await more(tester, 'Import zone file');

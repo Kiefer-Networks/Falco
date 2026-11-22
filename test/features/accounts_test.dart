@@ -156,9 +156,13 @@ void main() {
       expect(find.text('Permissions'), findsOneWidget);
       expect(find.text('Notifications'), findsOneWidget);
       expect(cloud.notifications.requests, 0);
-      await tapText(tester, 'Next');
+      // A double tap moves one page, never past the last.
+      await tester.tap(find.text('Next'));
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
       expect(cloud.notifications.requests, 1);
       expect(find.text('Ready to start'), findsOneWidget);
+      expect(find.bySemanticsLabel('Step 5 of 5'), findsOneWidget);
       expect(find.text('Skip'), findsNothing);
       await tapText(tester, 'Add account');
       expect(find.text('STEP 1 OF 4'), findsOneWidget);

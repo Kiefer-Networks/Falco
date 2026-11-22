@@ -110,15 +110,18 @@ class _SecretRevealState extends State<SecretReveal> {
 
 /// Shows one time secrets (a root password, a console login) in a sheet:
 /// [note] explains them, each entry is a [SecretReveal]. [onSave] adds
-/// "Save to file" (a generated private key).
+/// "Save to file" (a generated private key). Without [dismissible] only
+/// the close button ends the sheet.
 Future<void> showSecretSheet(
   BuildContext context, {
   required String title,
   required String note,
   required Map<String, String> secrets,
   Future<void> Function()? onSave,
+  bool dismissible = true,
 }) => showFalcoSheet<void>(
   context,
+  dismissible: dismissible,
   Builder(
     builder: (context) => SheetFrame(
       title: title,

@@ -9,6 +9,7 @@ import 'package:falco/features/compute/compute_ui.dart';
 import 'package:falco/features/robot/robot.dart';
 import 'package:falco/features/robot/robot_server_page.dart';
 import 'package:falco/features/robot/robot_ui.dart';
+import 'package:falco/features/ssh_keys/openssh.dart';
 import 'package:falco/features/ssh_keys/ssh_key_pages.dart';
 import 'package:falco/features/ssh_keys/ssh_keys.dart';
 import 'package:falco/l10n/app_localizations.dart';
@@ -307,7 +308,7 @@ class RobotVSwitchPage extends ConsumerWidget {
       body: DetailPage(
         status: v.cancelled ? ResourceStatus.cancelled : ResourceStatus.active,
         name: v.name,
-        ids: [DetailId('#${v.id}', copy: true)],
+        ids: [DetailId('#${v.id}', copy: true, copyText: '${v.id}')],
         facts: [
           Fact('VLAN', text: '${v.vlan}', mono: true),
           Fact(l10n.robotServers, text: '${v.servers.length}'),
@@ -904,7 +905,7 @@ class _RobotFirewallPageState extends ConsumerState<RobotFirewallPage> {
         statusDetail: _draft == null ? null : l10n.firewallUnsaved,
         name: l10n.robotFirewall,
         ids: [
-          DetailId('#$n', copy: true),
+          DetailId('#$n', copy: true, copyText: '$n'),
           if (f.port.isNotEmpty)
             DetailId(f.port, icon: Icons.settings_ethernet),
         ],
@@ -1016,7 +1017,7 @@ class _RobotTemplatePageState extends ConsumerState<RobotTemplatePage> {
         statusDetail: _draft == null ? null : l10n.firewallUnsaved,
         status: _draft == null ? null : ResourceStatus.inProgress,
         name: t.name,
-        ids: [DetailId('#${t.id}', copy: true)],
+        ids: [DetailId('#${t.id}', copy: true, copyText: '${t.id}')],
         onRefresh: () async {
           setState(() => _draft = null);
           await refreshQuietly(ref, provider.future);
@@ -1335,8 +1336,15 @@ class _RobotCreatePageState extends ConsumerState<RobotCreatePage> {
   /// Counts filled keys, so the key field shows them.
   int _files = 0;
 
-  /// Private key of a generated pair until it is handed over (ROB-061).
-  String? _private;
+  /// A generated pair until its private key is handed over (ROB-061).
+  SshKeyPair? _pair;
+
+  /// The generated private key while the key field holds its public key;
+  /// a changed comment or line break does not count.
+  String? get _private => switch (_pair) {
+    final p? when sameSshKey(_values['key'] ?? '', p.publicKey) => p.privateKey,
+    _ => null,
+  };
 
   String _v(String key) => (_values[key] ?? '').trim();
 
@@ -1350,6 +1358,7 @@ class _RobotCreatePageState extends ConsumerState<RobotCreatePage> {
 
   Future<void> _create() async {
     if (_creating) return;
+    final private = _private;
     setState(() => _creating = true);
     final l10n = AppLocalizations.of(context);
     final a = widget.accountId;
@@ -1367,7 +1376,10 @@ class _RobotCreatePageState extends ConsumerState<RobotCreatePage> {
           int.parse(_v('vlan')),
         ),
         RobotCreateKind.rdns => api.setRdns(_v('ip'), _v('ptr'), create: true),
-        RobotCreateKind.key => api.addKey(_v('name'), _v('key')),
+        RobotCreateKind.key => api.addKey(
+          _v('name'),
+          normalizeSshKey(_v('key')),
+        ),
         RobotCreateKind.template => api.saveTemplate(
           name: _v('name'),
           filterIpv6: _values['filterIpv6'] == 'true',
@@ -1394,12 +1406,11 @@ class _RobotCreatePageState extends ConsumerState<RobotCreatePage> {
     );
     if (!mounted) return;
     setState(() => _creating = false);
-    if (!ok) return;
-    if (_private case final private?) {
-      _private = null;
-      await showPrivateKey(context, ref, private);
+    if (private != null) {
+      if (ok) _pair = null;
+      await showPrivateKey(context, ref, private, failed: !ok);
     }
-    if (mounted) Navigator.pop(context);
+    if (ok && mounted) Navigator.pop(context);
   }
 
   @override
@@ -1463,18 +1474,14 @@ class _RobotCreatePageState extends ConsumerState<RobotCreatePage> {
                 key: ValueKey(_files),
                 fields: prefill(fields, _values),
                 values: _values,
-                onChanged: (v) => setState(() {
-                  // An edited key no longer matches the generated one.
-                  if (v['key'] != _values['key']) _private = null;
-                  _values = {..._values, ...v};
-                }),
+                onChanged: (v) => setState(() => _values = {..._values, ...v}),
               ),
               if (widget.kind == RobotCreateKind.key)
                 SshKeySources(
                   comment: _v('name'),
-                  onKey: (public, private) => setState(() {
+                  onKey: (public, pair) => setState(() {
                     _values = {..._values, 'key': public};
-                    _private = private;
+                    _pair = pair;
                     _files++;
                   }),
                 ),

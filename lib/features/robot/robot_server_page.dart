@@ -81,7 +81,7 @@ class _ServerDetail extends ConsumerWidget {
           if (s.ipv4 case final ip?)
             DetailId(formatIp(ip), icon: Icons.public, copy: true),
           DetailId(s.dc, icon: Icons.place_outlined),
-          DetailId('#${s.number}', copy: true),
+          DetailId('#${s.number}', copy: true, copyText: '${s.number}'),
         ],
         facts: [
           Fact(l10n.robotProduct, text: s.product),
