@@ -64,6 +64,9 @@ class S3Credentials {
 /// (`requireBiometricsPerOperation`), else the plugin would keep the key
 /// open after [close]; [open] keeps one read per unlock and [apply] one
 /// write per change. A cancelled check fails as [Locked].
+/// Android 7 to 10 keeps the vault unbound: the plugin's key there needs
+/// a fingerprint for every use and fails without one; the app lock checks
+/// with local_auth instead.
 /// The account list is no secret and stays in the plain store, so the
 /// app can start before the unlock.
 class SecretStore {
@@ -73,9 +76,20 @@ class SecretStore {
     FlutterSecureStorage? plain,
     FlutterSecureStorage? bound,
     Future<bool> Function()? deviceLock,
+    Future<AndroidDevice> Function()? android,
   ]) : _plain = plain ?? _plainStorage,
        _bound = bound ?? _boundStorage,
-       _deviceLock = deviceLock ?? LocalAuthentication().isDeviceSupported;
+       _deviceLock = deviceLock ?? LocalAuthentication().isDeviceSupported,
+       _device = android ?? _androidDevice;
+
+  static Future<AndroidDevice> _androidDevice() async {
+    final info = await const MethodChannel('falco/device')
+        .invokeMapMethod<String, Object?>('info');
+    return (
+      sdk: info?['sdk'] as int? ?? 30,
+      secure: info?['secure'] as bool? ?? true,
+    );
+  }
 
   static const _plainStorage = FlutterSecureStorage(
     iOptions: IOSOptions(
@@ -102,11 +116,25 @@ class SecretStore {
   /// is gone when the system deleted the vault.
   static const _keys = 'vault.keys';
 
+  /// Generation of the Keystore namespace on Android. A new one gets a new
+  /// key from the plugin: after the system invalidated the old key, or to
+  /// replace a key made without a screen lock.
+  static const _generation = 'vault.ns';
+
+  /// Set when the Keystore namespace was first used in a process while
+  /// the device had no screen lock: the plugin may have made its key
+  /// without user authentication, so reading it proves nothing.
+  static const _weak = 'vault.weak';
+
   final FlutterSecureStorage _plain;
   final FlutterSecureStorage _bound;
 
   /// Whether the device has a screen lock the vault can bind to.
   final Future<bool> Function() _deviceLock;
+
+  /// API level and screen lock of an Android device.
+  final Future<AndroidDevice> Function() _device;
+  Future<String>? _namespace;
   Map<String, String>? _open;
   Future<Map<String, String>>? _opening;
   Future<void> _writes = Future.value();
@@ -129,15 +157,66 @@ class SecretStore {
       _plain.write(key: key, value: value);
 
   /// Whether the vault is hardware bound; then [open] is the unlock.
-  Future<bool> get bound async =>
-      await _plain.read(key: _unbound) == null &&
-      await _bound.containsKey(key: _vault, aOptions: _android);
+  Future<bool> get bound async {
+    if (await _plain.read(key: _unbound) != null) return false;
+    try {
+      return await _bound.containsKey(key: _vault, aOptions: await _android());
+    } on PlatformException {
+      // Android 7 to 10 without a fingerprint cannot make the key.
+      if (await _keystoreUsable) rethrow;
+      return false;
+    }
+  }
 
-  AndroidOptions get _android => AndroidOptions.biometric(
-    storageNamespace: 'vault',
+  static bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
+
+  /// Whether the plugin's authentication bound key works without a
+  /// fingerprint: Android 11 and later, and iOS.
+  Future<bool> get _keystoreUsable async =>
+      !_isAndroid || (await _device()).sdk >= 30;
+
+  /// Whether the vault goes to the bound store; on Android 7 to 10 only a
+  /// vault bound before stays there.
+  Future<bool> get _keystore async => await _keystoreUsable || await bound;
+
+  Future<AndroidOptions> _android() async => AndroidOptions.biometric(
+    storageNamespace: await (_namespace ??= _firstUse()),
     requireBiometricsPerOperation: true,
     biometricPromptTitle: prompt,
   );
+
+  /// The namespace of the current generation. The plugin makes a missing
+  /// key on the first use in a process; without a screen lock that key is
+  /// not authentication bound, which [verify] repairs later.
+  Future<String> _firstUse() async {
+    final generation = await _plain.read(key: _generation);
+    if (_isAndroid && !(await _device()).secure) {
+      await _plain.write(key: _weak, value: '1');
+    }
+    return generation == null ? 'vault' : 'vault.$generation';
+  }
+
+  /// Switches the namespace generation; null is the first one.
+  Future<void> _useGeneration(String? generation) async {
+    if (generation == null) {
+      await _plain.delete(key: _generation);
+    } else {
+      await _plain.write(key: _generation, value: generation);
+    }
+    _namespace = null;
+  }
+
+  Future<String> _nextGeneration() async {
+    final current = await _plain.read(key: _generation);
+    return '${(int.tryParse(current ?? '') ?? 0) + 1}';
+  }
+
+  /// Drops the vault of an invalidated key and moves to a fresh namespace,
+  /// else the plugin would keep the dead key and fail every write.
+  Future<void> _dropInvalidated() async {
+    await _bound.deleteAll(aOptions: await _android());
+    await _useGeneration(await _nextGeneration());
+  }
 
   /// Reads the vault; the system asks for Face ID, fingerprint or the
   /// device PIN when it is bound. Throws [Locked] when the user cancels.
@@ -145,6 +224,11 @@ class SecretStore {
   Future<bool> open() async {
     final closed = _closed;
     _closed = false;
+    if (closed) {
+      // A read that started while closed fails as Locked: do not join it.
+      _opening = null;
+      _epoch++;
+    }
     try {
       await _secrets();
     } on Object {
@@ -160,12 +244,39 @@ class SecretStore {
     final before = _open;
     _open = null;
     try {
-      return await open();
+      await open();
     } on Object {
       _open ??= before;
       rethrow;
     }
+    if (await _plain.read(key: _weak) != null && (await _device()).secure) {
+      await _rekey();
+    }
+    return true;
   }
+
+  /// Moves the vault to a new key now that the device has a screen lock:
+  /// the old key opened without asking, the write under the new one asks,
+  /// and that is the check. A cancelled write keeps the old vault.
+  Future<void> _rekey() async {
+    final secrets = await _secrets();
+    final old = await _android();
+    final generation = await _plain.read(key: _generation);
+    await _plain.delete(key: _weak);
+    await _useGeneration(await _nextGeneration());
+    try {
+      await _save(secrets);
+    } on Object {
+      await _useGeneration(generation);
+      await _plain.write(key: _weak, value: '1');
+      rethrow;
+    }
+    await _bound.deleteAll(aOptions: old);
+  }
+
+  /// Ends the closed state without reading the vault, when the app opens
+  /// without a check: no account yet, or the lock turned off.
+  void release() => _closed = false;
 
   /// Forgets the open vault; the next secret needs a fresh unlock. Until
   /// [open], reads fail with [Locked] instead of asking from background
@@ -200,13 +311,15 @@ class SecretStore {
   Future<Map<String, String>> _load() async {
     if (_closed && await bound) throw const Locked();
     String? raw;
-    try {
-      raw = await _bound.read(key: _vault, aOptions: _android);
-    } on PlatformException catch (e) {
-      if (!_invalidated(e)) throw const Locked();
-      // New fingerprints or face: the system dropped the key, the vault
-      // is lost. Reset it; the app lock falls back to the device check.
-      await _bound.deleteAll(aOptions: _android);
+    if (await _keystore) {
+      try {
+        raw = await _bound.read(key: _vault, aOptions: await _android());
+      } on PlatformException catch (e) {
+        if (!_invalidated(e)) throw const Locked();
+        // New fingerprints or face: the system dropped the key, the vault
+        // is lost. Reset it; the app lock falls back to the device check.
+        await _dropInvalidated();
+      }
     }
     raw ??= await _plain.read(key: _unbound);
     if (raw == null) {
@@ -226,22 +339,27 @@ class SecretStore {
     await _plain.delete(key: _keys);
   }
 
-  Future<void> _save(Map<String, String> secrets) async {
+  Future<void> _save(Map<String, String> secrets, {bool retry = true}) async {
     final raw = jsonEncode(secrets);
-    try {
-      await _bound.write(key: _vault, value: raw, aOptions: _android);
-      await _plain.delete(key: _unbound);
-    } on PlatformException {
-      // Android stores unbound by itself without a screen lock, and with
-      // a screen lock an error is a cancelled prompt: nothing changed.
-      if (defaultTargetPlatform == TargetPlatform.android ||
-          await _deviceLock()) {
-        throw const Locked();
-      }
-      // No screen lock to bind to: keep a working, unbound vault and drop
-      // the bound one, else its stale secrets would win the next read.
+    if (!await _keystore) {
       await _plain.write(key: _unbound, value: raw);
-      await _bound.delete(key: _vault);
+    } else {
+      try {
+        await _bound.write(key: _vault, value: raw, aOptions: await _android());
+        await _plain.delete(key: _unbound);
+      } on PlatformException catch (e) {
+        if (retry && _invalidated(e)) {
+          await _dropInvalidated();
+          return await _save(secrets, retry: false);
+        }
+        // Android stores unbound by itself without a screen lock, and with
+        // a screen lock an error is a cancelled prompt: nothing changed.
+        if (_isAndroid || await _deviceLock()) throw const Locked();
+        // No screen lock to bind to: keep a working, unbound vault and drop
+        // the bound one, else its stale secrets would win the next read.
+        await _plain.write(key: _unbound, value: raw);
+        await _bound.delete(key: _vault);
+      }
     }
     _open = secrets;
     await _plain.write(key: _keys, value: jsonEncode(secrets.keys.toList()));
@@ -354,6 +472,9 @@ class SecretStore {
         : (jsonDecode(raw) as Map).cast<String, Object?>();
   }
 }
+
+/// API level and screen lock (keyguard secure) of an Android device.
+typedef AndroidDevice = ({int sdk, bool secure});
 
 /// Changes to several secrets, applied by [SecretStore.apply] at once.
 class SecretChanges {

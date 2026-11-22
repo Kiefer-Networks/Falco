@@ -104,6 +104,21 @@ void main() {
       expect(last.status, ActionStatus.success);
     });
 
+    test('waits out a locked app without giving up (L1)', () async {
+      var calls = 0;
+      final tracker = ActionTracker(
+        (_) async {
+          if (++calls <= 7) throw const Locked();
+          return action(ActionStatus.success, 100);
+        },
+        interval: Duration.zero,
+        maxInterval: Duration.zero,
+      );
+      final last = await tracker.track(1).last;
+      expect(last.status, ActionStatus.success);
+      expect(calls, greaterThan(tracker.maxFailures));
+    });
+
     test('gives up after repeated transient failures', () async {
       var calls = 0;
       final tracker = ActionTracker((_) async {

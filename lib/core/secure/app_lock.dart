@@ -76,10 +76,15 @@ class AppLock extends _$AppLock {
 
   static final _uptime = Stopwatch()..start();
 
+  /// With the lock on the vault starts closed, so background work at
+  /// launch fails as [Locked] instead of raising the system prompt over
+  /// the cover.
   @override
-  AppLockState build() => ref.read(appSettingsProvider).lock
-      ? AppLockState.locked
-      : AppLockState.unlocked;
+  AppLockState build() {
+    if (!ref.read(appSettingsProvider).lock) return AppLockState.unlocked;
+    ref.read(secretStoreProvider).close();
+    return AppLockState.locked;
+  }
 
   Future<void>? _pending;
 
@@ -90,14 +95,17 @@ class AppLock extends _$AppLock {
     return _pending ??= () async {
       try {
         if (await _noAccounts()) {
-          state = AppLockState.unlocked;
+          _open();
           return;
         }
-        state = switch (await check(reason)) {
-          true => AppLockState.unlocked,
-          false => AppLockState.locked,
-          null => AppLockState.unavailable,
-        };
+        switch (await check(reason)) {
+          case true:
+            _open();
+          case false:
+            state = AppLockState.locked;
+          case null:
+            state = AppLockState.unavailable;
+        }
       } finally {
         _pending = null;
       }
@@ -141,6 +149,14 @@ class AppLock extends _$AppLock {
   Future<void> disable() async {
     final settings = ref.read(appSettingsProvider.notifier);
     await settings.update(ref.read(appSettingsProvider).copyWith(lock: false));
+    _open();
+  }
+
+  /// Unlocks; a check that did not read the vault (no account, local_auth,
+  /// lock off) still ends its closed state, else every secret stays
+  /// [Locked] until a restart.
+  void _open() {
+    ref.read(secretStoreProvider).release();
     state = AppLockState.unlocked;
   }
 
