@@ -9,37 +9,49 @@ part of 'robot.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// The Robot webservice of an account; the login is read per request.
+/// Until Robot answered a login, one request with it goes out and the
+/// others wait for that answer: Robot blocks the address after three
+/// failed logins, so a changed password must not fail once per open list.
 /// When Robot refuses a request, `GET /server` is asked once with the
-/// same login: refused there too, the login is wrong and every request
-/// with it fails at once as [Unauthorized] (a password changed outside
-/// the app included). Accepted there, the refusal blocks only that path,
-/// a section the login may not use. Either way it is sent again only
-/// after the stored login changes or is saved again (ROB-002). A changed
-/// login or a removed account rebuilds the client.
+/// same login (one already in flight counts): refused there too, the
+/// login is wrong and every request with it fails at once as
+/// [robotLoginRejected] (a password changed outside the app included).
+/// Accepted there, the refusal blocks only that path, a section the login
+/// may not use. Either way it is sent again only after the stored login
+/// changes or is saved again (ROB-002). A changed login or a removed
+/// account rebuilds the client.
 
 @ProviderFor(robotApi)
 final robotApiProvider = RobotApiFamily._();
 
 /// The Robot webservice of an account; the login is read per request.
+/// Until Robot answered a login, one request with it goes out and the
+/// others wait for that answer: Robot blocks the address after three
+/// failed logins, so a changed password must not fail once per open list.
 /// When Robot refuses a request, `GET /server` is asked once with the
-/// same login: refused there too, the login is wrong and every request
-/// with it fails at once as [Unauthorized] (a password changed outside
-/// the app included). Accepted there, the refusal blocks only that path,
-/// a section the login may not use. Either way it is sent again only
-/// after the stored login changes or is saved again (ROB-002). A changed
-/// login or a removed account rebuilds the client.
+/// same login (one already in flight counts): refused there too, the
+/// login is wrong and every request with it fails at once as
+/// [robotLoginRejected] (a password changed outside the app included).
+/// Accepted there, the refusal blocks only that path, a section the login
+/// may not use. Either way it is sent again only after the stored login
+/// changes or is saved again (ROB-002). A changed login or a removed
+/// account rebuilds the client.
 
 final class RobotApiProvider
     extends $FunctionalProvider<RobotClient, RobotClient, RobotClient>
     with $Provider<RobotClient> {
   /// The Robot webservice of an account; the login is read per request.
+  /// Until Robot answered a login, one request with it goes out and the
+  /// others wait for that answer: Robot blocks the address after three
+  /// failed logins, so a changed password must not fail once per open list.
   /// When Robot refuses a request, `GET /server` is asked once with the
-  /// same login: refused there too, the login is wrong and every request
-  /// with it fails at once as [Unauthorized] (a password changed outside
-  /// the app included). Accepted there, the refusal blocks only that path,
-  /// a section the login may not use. Either way it is sent again only
-  /// after the stored login changes or is saved again (ROB-002). A changed
-  /// login or a removed account rebuilds the client.
+  /// same login (one already in flight counts): refused there too, the
+  /// login is wrong and every request with it fails at once as
+  /// [robotLoginRejected] (a password changed outside the app included).
+  /// Accepted there, the refusal blocks only that path, a section the login
+  /// may not use. Either way it is sent again only after the stored login
+  /// changes or is saved again (ROB-002). A changed login or a removed
+  /// account rebuilds the client.
   RobotApiProvider._({
     required RobotApiFamily super.from,
     required String super.argument,
@@ -91,16 +103,20 @@ final class RobotApiProvider
   }
 }
 
-String _$robotApiHash() => r'2ae496d3a13e1ecfeb191845720c9b11c63214f4';
+String _$robotApiHash() => r'e708961c9f3ccc9cf96e5e6f077a63c899db2a43';
 
 /// The Robot webservice of an account; the login is read per request.
+/// Until Robot answered a login, one request with it goes out and the
+/// others wait for that answer: Robot blocks the address after three
+/// failed logins, so a changed password must not fail once per open list.
 /// When Robot refuses a request, `GET /server` is asked once with the
-/// same login: refused there too, the login is wrong and every request
-/// with it fails at once as [Unauthorized] (a password changed outside
-/// the app included). Accepted there, the refusal blocks only that path,
-/// a section the login may not use. Either way it is sent again only
-/// after the stored login changes or is saved again (ROB-002). A changed
-/// login or a removed account rebuilds the client.
+/// same login (one already in flight counts): refused there too, the
+/// login is wrong and every request with it fails at once as
+/// [robotLoginRejected] (a password changed outside the app included).
+/// Accepted there, the refusal blocks only that path, a section the login
+/// may not use. Either way it is sent again only after the stored login
+/// changes or is saved again (ROB-002). A changed login or a removed
+/// account rebuilds the client.
 
 final class RobotApiFamily extends $Family
     with $FunctionalFamilyOverride<RobotClient, String> {
@@ -114,13 +130,17 @@ final class RobotApiFamily extends $Family
       );
 
   /// The Robot webservice of an account; the login is read per request.
+  /// Until Robot answered a login, one request with it goes out and the
+  /// others wait for that answer: Robot blocks the address after three
+  /// failed logins, so a changed password must not fail once per open list.
   /// When Robot refuses a request, `GET /server` is asked once with the
-  /// same login: refused there too, the login is wrong and every request
-  /// with it fails at once as [Unauthorized] (a password changed outside
-  /// the app included). Accepted there, the refusal blocks only that path,
-  /// a section the login may not use. Either way it is sent again only
-  /// after the stored login changes or is saved again (ROB-002). A changed
-  /// login or a removed account rebuilds the client.
+  /// same login (one already in flight counts): refused there too, the
+  /// login is wrong and every request with it fails at once as
+  /// [robotLoginRejected] (a password changed outside the app included).
+  /// Accepted there, the refusal blocks only that path, a section the login
+  /// may not use. Either way it is sent again only after the stored login
+  /// changes or is saved again (ROB-002). A changed login or a removed
+  /// account rebuilds the client.
 
   RobotApiProvider call(String accountId) =>
       RobotApiProvider._(argument: accountId, from: this);
