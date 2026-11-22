@@ -165,7 +165,8 @@ class SshKeySources extends ConsumerWidget {
     final PickedText? picked;
     try {
       picked = await ref.read(textFilesProvider).pick(maxBytes: 16 * 1024);
-    } on Exception catch (_) {
+    } on Exception catch (e) {
+      if (pickerBusy(e)) return;
       if (context.mounted) FalcoScaffold.showSnack(context, l10n.actionFailed);
       return;
     }

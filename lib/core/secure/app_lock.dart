@@ -7,8 +7,10 @@ import 'package:falco/core/secure/secret_store.dart';
 import 'package:falco/core/settings/settings.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show basicLocaleListResolution;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:local_auth_android/local_auth_android.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'app_lock.g.dart';
@@ -32,8 +34,16 @@ Future<bool?> Function(String reason) authenticator(Ref ref) {
         await secrets.verify();
         if (await secrets.bound) return true;
       }
+      final l10n = promptL10n(ref.read(appSettingsProvider).language);
       return await auth.authenticate(
         localizedReason: reason,
+        authMessages: [
+          AndroidAuthMessages(
+            signInTitle: l10n.lockUnlock,
+            signInHint: l10n.lockPromptSubtitle,
+            cancelButton: l10n.commonCancel,
+          ),
+        ],
         persistAcrossBackgrounding: true,
       );
     } on LocalAuthException {
@@ -55,6 +65,17 @@ void closeVaultAtStart(ProviderContainer container) {
   }
 }
 
+/// Texts for system prompts shown outside the widget tree: the app
+/// language, else the [system] languages (the device's) resolved like
+/// MaterialApp does, English when none is supported.
+AppLocalizations promptL10n(String? language, [List<Locale>? system]) =>
+    lookupAppLocalizations(
+      basicLocaleListResolution([
+        if (language != null) Locale(language),
+        ...system ?? PlatformDispatcher.instance.locales,
+      ], AppLocalizations.supportedLocales),
+    );
+
 /// Sets the Android vault prompt texts in the app language, falling back
 /// to the system language, before anything reads the vault: the plugin
 /// keeps the texts of its first use of a namespace for the process. Later
@@ -65,13 +86,7 @@ void localizeVaultPrompt(ProviderContainer container) {
     _,
     language,
   ) {
-    final code = language ?? PlatformDispatcher.instance.locale.languageCode;
-    final l10n = lookupAppLocalizations(
-      AppLocalizations.supportedLocales.firstWhere(
-        (l) => l.languageCode == code,
-        orElse: () => const Locale('en'),
-      ),
-    );
+    final l10n = promptL10n(language);
     secrets
       ..prompt = l10n.lockReason
       ..promptSubtitle = l10n.lockPromptSubtitle;

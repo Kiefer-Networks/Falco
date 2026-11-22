@@ -206,11 +206,11 @@ class _Index {
           ? null
           : SearchHit(
               group: SearchGroup.image,
-              name: i.description,
+              name: i.label,
               detail: (_) => [i.kind.name, ?i.source].join(' · '),
               where: where(i.projectId),
               route: route(i.projectId, CloudType.image, i.id),
-              terms: [i.id, i.name, i.source, ...labels(i.labels)],
+              terms: ['#${i.id}', i.name, i.source, ...labels(i.labels)],
             ),
     );
     add(

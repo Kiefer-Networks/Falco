@@ -277,8 +277,8 @@ void main() {
   test('SET-005 BUG-020 only complete languages: English and German, with '
       'the same keys', () {
     expect(AppLocalizations.supportedLocales, const [
-      Locale('de'),
       Locale('en'),
+      Locale('de'),
     ]);
     expect(
       Directory('lib/l10n')

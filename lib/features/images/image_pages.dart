@@ -50,7 +50,7 @@ class ImageList extends ConsumerWidget {
           : null,
       onRefresh: () => refreshQuietly(ref, provider.future),
       empty: EmptyHint(message: l10n.emptyImages),
-      searchText: (i) => '${i.description} ${i.source ?? ''}',
+      searchText: (i) => '${i.label} #${i.id} ${i.source ?? ''}',
       filters: [
         ResourceFilter(l10n.filterAll, (_) => true),
         ResourceFilter(l10n.imageSnapshot, (i) => i.kind == ImageKind.snapshot),
@@ -61,10 +61,7 @@ class ImageList extends ConsumerWidget {
           l10n.sortCreated,
           (a, b) => b.created.compareTo(a.created),
         ),
-        ResourceSort(
-          l10n.sortName,
-          (a, b) => a.description.compareTo(b.description),
-        ),
+        ResourceSort(l10n.sortName, (a, b) => a.label.compareTo(b.label)),
       ],
       itemBuilder: (context, i) => ResourceRow(
         status: i.status,
