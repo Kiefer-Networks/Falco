@@ -6,6 +6,7 @@ import 'package:background_downloader/background_downloader.dart';
 
 import 'package:falco/api/s3/s3.dart';
 import 'package:falco/core/errors/falco_error.dart';
+import 'package:falco/core/files/text_files.dart';
 import 'package:falco/core/scope/scope.dart';
 import 'package:falco/core/secure/app_lock.dart';
 import 'package:falco/features/storage/object_pages.dart';
@@ -130,6 +131,31 @@ void main() {
         );
       },
     );
+
+    test('a bucket whose location is refused stays listed', () async {
+      final cloud = storageCloud()..storage.forbidLocation = true;
+      cloud.storage.buckets['nbg1'] = {'media': FakeBucket()};
+      final c = await fakeContainer(cloud, s3: true);
+      final buckets = await c.read(
+        bucketsProvider(const ProjectScope('a1', 'p1')).future,
+      );
+      expect([
+        for (final b in buckets!) b.name,
+      ], containsAll(['media', 'logs']));
+      expect(buckets, isNot(isA<PartialList<Bucket>>()));
+    });
+
+    test('with a location failing, single seen buckets are asked', () async {
+      final cloud = storageCloud()..storage.failing.add('hel1');
+      final c = await fakeContainer(cloud, s3: true);
+      await c.read(bucketsProvider(const ProjectScope('a1', 'p1')).future);
+      expect(
+        s3Calls(cloud).where(
+          (c) => c.startsWith('GET fsn1 /media') && c.contains('location'),
+        ),
+        isNotEmpty,
+      );
+    });
 
     test('OBJ-019 one key pair of the project for every location', () async {
       final cloud = storageCloud();
@@ -705,6 +731,74 @@ void main() {
       },
     );
 
+    test('a parked join reports once and keeps no finished part', () async {
+      final cloud = storageCloud()..storage.forbidParts = 100;
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider);
+      final events = <TransferEvent>[];
+      transfers.events.listen(events.add);
+      final source = Directory.systemTemp.createTempSync(uploadCopyPrefix);
+      await transfers.upload(
+        projectId: 'p1',
+        location: 'fsn1',
+        bucket: 'media',
+        key: 'big.bin',
+        file: File('${source.path}/big.bin')..writeAsStringSync('x' * 20),
+        contentType: 'application/octet-stream',
+      );
+      await pumpEventQueue();
+      // Three part events, one failure.
+      expect(events, [(upload: true, ok: false, name: 'big.bin')]);
+      expect(
+        Directory(transfers.partsRoot)
+            .listSync(recursive: true)
+            .whereType<File>(),
+        isEmpty,
+      );
+      // The picked copy went once the parts were copied.
+      expect(source.existsSync(), isFalse);
+    });
+
+    test('a join refused for days is given up once', () async {
+      final cloud = storageCloud()..storage.forbidParts = 100;
+      final c = await fakeContainer(cloud, s3: true);
+      final transfers = c.read(transfersProvider);
+      final events = <TransferEvent>[];
+      transfers.events.listen(events.add);
+      final old = DateTime.now().subtract(
+        transferLinkExpiry + refusedJoinLimit + const Duration(hours: 1),
+      );
+      final file = await job(c, 'x1', {
+        'e': true,
+        't': old.millisecondsSinceEpoch,
+      });
+      final parts = Directory('${transfers.partsRoot}/x1')..createSync();
+      await transfers.retryJoins();
+      await transfers.retryJoins();
+      expect(events, [(upload: true, ok: false, name: 'x')]);
+      expect(file.existsSync(), isFalse);
+      expect(parts.existsSync(), isFalse);
+    });
+
+    test('a finished single upload drops the picked copy', () async {
+      final c = await fakeContainer(storageCloud(), s3: true);
+      final transfers = c.read(transfersProvider);
+      final done = transfers.events.first;
+      final source = Directory.systemTemp.createTempSync(uploadCopyPrefix);
+      await transfers.upload(
+        projectId: 'p1',
+        location: 'fsn1',
+        bucket: 'media',
+        key: 'a.txt',
+        file: File('${source.path}/a.txt')..writeAsStringSync('hi'),
+        contentType: 'text/plain',
+      );
+      expect(source.existsSync(), isTrue);
+      await done;
+      await pumpEventQueue();
+      expect(source.existsSync(), isFalse);
+    });
+
     test(
       'finished transfers wait for their bucket, unwatched ones for any',
       () async {
@@ -729,13 +823,23 @@ void main() {
           (upload: true, ok: true, name: 'a.txt'),
           (upload: true, ok: true, name: 'b.txt'),
         ]);
-        final sub = transfers.events.listen((_) {});
-        addTearDown(sub.cancel);
+        // Only another bucket open: still for any bucket.
+        transfers.openBucket('logs');
         await upload('c.txt');
-        expect(transfers.hasUnseen('logs'), isFalse);
-        expect(transfers.takeUnseen('media'), [
+        expect(transfers.takeUnseen('logs'), [
           (upload: true, ok: true, name: 'c.txt'),
         ]);
+        transfers.openBucket('media');
+        await upload('d.txt');
+        expect(transfers.hasUnseen('logs'), isFalse);
+        expect(transfers.takeUnseen('media'), [
+          (upload: true, ok: true, name: 'd.txt'),
+        ]);
+        transfers
+          ..closeBucket('media')
+          ..closeBucket('logs');
+        await upload('e.txt');
+        expect(transfers.hasUnseen('logs'), isTrue);
       },
     );
 
@@ -844,14 +948,18 @@ void main() {
       expect(Directory(await transfers.jobsRoot()).listSync(), isEmpty);
     });
 
-    test('a lost join is found with the device clock ahead', () async {
+    test('a lost join is found with the device clock off', () async {
       final cloud = storageCloud();
       final c = await fakeContainer(cloud, s3: true);
       final transfers = c.read(transfersProvider);
       final events = <TransferEvent>[];
       transfers.events.listen(events.add);
-      final ahead = DateTime.now().add(const Duration(hours: 2));
-      await job(c, 'x1', {'e': true, 't': ahead.millisecondsSinceEpoch});
+      final ahead = DateTime.now().add(const Duration(days: 3));
+      await job(c, 'x1', {
+        'e': true,
+        't': ahead.millisecondsSinceEpoch,
+        'pe': null,
+      });
       cloud.storage.uploads.clear();
       cloud.storage.buckets['fsn1']!['media']!.objects['x'] = FakeObject(1)
         ..etag = '"j-2"'
@@ -866,16 +974,28 @@ void main() {
       final transfers = c.read(transfersProvider);
       final events = <TransferEvent>[];
       transfers.events.listen(events.add);
-      await job(c, 'x1', {
-        'e': true,
-        't': DateTime.now().millisecondsSinceEpoch,
-      });
-      // The upload is gone; at the key is an object of an earlier one.
-      cloud.storage.uploads.clear();
-      cloud.storage.buckets['fsn1']!['media']!.objects['x'] = FakeObject(1)
-        ..etag = '"old-2"';
-      await transfers.retryJoins();
-      expect(events, [(upload: true, ok: false, name: 'x')]);
+      for (final before in [
+        {'pe': '"old-2"'},
+        // Unknown what the key held: not taken as joined.
+        <String, Object?>{},
+      ]) {
+        await job(c, 'x1', {
+          'e': true,
+          't': DateTime.now().millisecondsSinceEpoch,
+          ...before,
+        });
+        // The upload is gone; at the key is an object of an earlier one,
+        // written just now (a lifecycle rule may touch it).
+        cloud.storage.uploads.clear();
+        cloud.storage.buckets['fsn1']!['media']!.objects['x'] = FakeObject(1)
+          ..etag = '"old-2"'
+          ..modified = DateTime.now().toUtc();
+        await transfers.retryJoins();
+      }
+      expect(events, [
+        (upload: true, ok: false, name: 'x'),
+        (upload: true, ok: false, name: 'x'),
+      ]);
     });
 
     test('an unreadable job does not hold up the others', () async {

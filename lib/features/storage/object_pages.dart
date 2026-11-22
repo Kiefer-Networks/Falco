@@ -280,20 +280,21 @@ class _BucketPageState extends ConsumerState<BucketPage> {
     prefix: folder,
   ).push<void>(context);
 
+  late final ObjectTransfers _transferService;
   StreamSubscription<TransferEvent>? _transfers;
 
   @override
   void initState() {
     super.initState();
-    _transfers = ref
-        .read(transfersProvider)
-        .events
-        .listen((_) => _showTransfer());
+    // Open, so transfers of this bucket wait for it, not for any browser.
+    _transferService = ref.read(transfersProvider)..openBucket(_b);
+    _transfers = _transferService.events.listen((_) => _showTransfer());
   }
 
   @override
   void dispose() {
     unawaited(_transfers?.cancel());
+    _transferService.closeBucket(_b);
     super.dispose();
   }
 
@@ -456,16 +457,20 @@ class _BucketPageState extends ConsumerState<BucketPage> {
   Future<void> _upload() async {
     final l10n = AppLocalizations.of(context);
     final file = await ref.read(textFilesProvider).pickFile();
-    if (file == null || !mounted) return;
+    if (file == null) return;
+    // The picker's copy goes unless a transfer sends it; a finished
+    // single part upload or the part copies of a multipart one drop it.
+    void drop() => unawaited(dropUploadCopy(file.path));
+    if (!mounted) return drop();
     final name = file.uri.pathSegments.last;
     final key = '${widget.prefix}$name';
     final mime = mimeOf(name);
     if (!validKey(key) || !validMime(mime) || !validBucketName(_b)) {
       FalcoScaffold.showSnack(context, l10n.objectKeyInvalid);
-      return;
+      return drop();
     }
     final hint = await notificationHint(ref, l10n);
-    if (!mounted) return;
+    if (!mounted) return drop();
     try {
       await ref
           .read(transfersProvider)
@@ -481,6 +486,7 @@ class _BucketPageState extends ConsumerState<BucketPage> {
         FalcoScaffold.showSnack(context, '${l10n.uploadStarted(name)}$hint');
       }
     } on Object catch (e) {
+      drop();
       if (mounted) FalcoScaffold.showSnack(context, s3ErrorText(e, l10n));
     }
   }

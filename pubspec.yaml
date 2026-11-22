@@ -13,6 +13,8 @@ environment:
   flutter: 3.50.1
 
 dependencies:
+  # The Android side of file_picker, for picks lost to a process end.
+  android_file_picker: ^2.2.0
   background_downloader: ^9.6.6
   crypto: ^3.0.8
   cryptography: ^2.9.0

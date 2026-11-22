@@ -25,6 +25,12 @@ Future<void> main() async {
   // transfers that went on while Falco was closed.
   closeVaultAtStart(container);
   unawaited(container.read(transfersProvider).start());
+  unawaited(
+    container
+        .read(transfersProvider)
+        .dropStaleCopies()
+        .catchError((Object _) {}),
+  );
   runApp(
     UncontrolledProviderScope(container: container, child: const FalcoApp()),
   );
