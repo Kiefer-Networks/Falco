@@ -528,7 +528,8 @@ void main() {
       expect(find.text('The action failed.'), findsOneWidget);
       expect(cloud.files.saved, isEmpty);
       await tap(tester, 'Save to file');
-      final private = cloud.files.saved['id_ed25519']!;
+      // Tests run as Android: a name with an extension, no '.bin'.
+      final private = cloud.files.saved['id_ed25519.pem']!;
       expect(private, startsWith('-----BEGIN OPENSSH PRIVATE KEY-----\n'));
       await tap(tester, 'Close');
       expect(find.text('Private key'), findsNothing);
@@ -542,6 +543,30 @@ void main() {
       final bare = _rfcKey.split(' ').take(2).join(' ');
       expect(sameSshKey(_rfcKey, '$bare other\n'), isTrue);
       expect(sameSshKey(_rfcKey, _keyOf('ssh-ed25519')), isFalse);
+    });
+
+    test('CMP-071 a blob cut after a whole field is refused, so a wrapped '
+        'paste keeps joining', () {
+      // Type and exponent only: 18 bytes that fill whole fields.
+      const cut = 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB';
+      expect(publicKeyBlob(cut), isNull);
+      final n = [0, 0, 0, 65, 0, ...List.filled(64, 0xAB)];
+      final rest = base64.encode(n);
+      expect(normalizeSshKey('$cut\n$rest'), '$cut$rest');
+      expect(sshKeyProblem('$cut\n$rest'), isNull);
+      // An sk key without its application, an Ed25519 key of 31 bytes.
+      final sk = _keyOf('sk-ssh-ed25519@openssh.com').split(' ')[1];
+      final skBlob = base64.decode(sk);
+      expect(
+        publicKeyBlob(
+          'sk-ssh-ed25519@openssh.com '
+          '${base64.encode(skBlob.sublist(0, skBlob.length - 5))}',
+        ),
+        isNull,
+      );
+      final ed = base64.decode(_keyOf('ssh-ed25519').split(' ')[1]);
+      final short = [...ed.sublist(0, 15), 0, 0, 0, 31, ...ed.sublist(20)];
+      expect(publicKeyBlob('ssh-ed25519 ${base64.encode(short)}'), isNull);
     });
 
     test('CMP-071 a break between tokens is a space; several keys are '
@@ -798,17 +823,23 @@ const _rfcKey =
     'AAAAC3NzaC1lZDI1NTE5AAAAINdamAGCsQq31Uv+08lkBzoO4XLz2qYjJa8CGmj3B1Ea '
     'rfc8032';
 
-/// A public key line of [type] with a blob naming it.
+/// A public key line of [type] with a blob naming it and as many fields
+/// as the type has; the Ed25519 key is 32 bytes.
 String _keyOf(String type) {
-  final t = utf8.encode(type);
+  List<int> field(List<int> v) => [
+    ...(ByteData(4)..setUint32(0, v.length)).buffer.asUint8List(),
+    ...v,
+  ];
+  final more = switch (type) {
+    'ssh-dss' => 4,
+    'sk-ecdsa-sha2-nistp256@openssh.com' => 3,
+    'ssh-ed25519' => 1,
+    _ => 2,
+  };
   final blob = [
-    ...(ByteData(4)..setUint32(0, t.length)).buffer.asUint8List(),
-    ...t,
-    0,
-    0,
-    0,
-    1,
-    7,
+    ...field(utf8.encode(type)),
+    for (var i = 0; i < more; i++)
+      ...field(type.contains('ed25519') && i == 0 ? List.filled(32, 7) : [7]),
   ];
   return '$type ${base64.encode(blob)}';
 }

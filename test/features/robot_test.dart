@@ -533,7 +533,7 @@ void main() {
       expect(find.text('Private key'), findsWidgets);
       await tap(tester, 'Save to file');
       expect(
-        cloud.files.saved['id_ed25519'],
+        cloud.files.saved['id_ed25519.pem'],
         startsWith('-----BEGIN OPENSSH PRIVATE KEY-----'),
       );
       await tap(tester, 'Close');
