@@ -1,9 +1,8 @@
 # Falco — Dependabot configuration
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Two ecosystems:
-#  - Gradle (transitive + direct app deps via libs.versions.toml).
-#  - GitHub Actions (third-party Actions pinned by SHA in our workflows).
+# main (Falco 2): Gradle (libs.versions.toml) and GitHub Actions.
+# next (Falco 3): pub, Gradle under android/, GitHub Actions and Bundler.
 #
 # Rebase strategy: auto so updates always apply on top of latest main.
 # Cooldown: 7 days for version updates (security updates are immediate).
@@ -16,6 +15,10 @@
 # major.
 
 version: 2
+
+# Dependabot reads this file only from the default branch (main). Until
+# Falco 3 replaces main (docs/target/RELEASE.md, cutover), main keeps the
+# Falco 2 entries below and the Falco 3 entries target the next branch.
 
 updates:
   - package-ecosystem: gradle
@@ -100,3 +103,82 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+
+  # Falco 3 on next (same entries as next:.github/dependabot.yml)
+  - package-ecosystem: pub
+    directory: "/"
+    target-branch: next
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 7
+    labels: [dependencies, dart]
+    commit-message:
+      prefix: "build"
+      include: scope
+    groups:
+      pub-non-major:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: [patch, minor]
+
+  - package-ecosystem: gradle
+    directory: "/android"
+    target-branch: next
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    labels: [dependencies, gradle]
+    commit-message:
+      prefix: "build"
+      include: scope
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    target-branch: next
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    labels: [dependencies, github-actions]
+    commit-message:
+      prefix: "ci"
+      include: scope
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # fastlane for the store uploads in release.yml (Gemfile.lock)
+  - package-ecosystem: bundler
+    directory: "/"
+    target-branch: next
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    labels: [dependencies, ruby]
+    commit-message:
+      prefix: "build"
+      include: scope
+    groups:
+      bundler-non-major:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: [patch, minor]
