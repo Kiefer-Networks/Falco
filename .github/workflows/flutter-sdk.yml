@@ -2,7 +2,8 @@ name: Flutter SDK update
 
 # Opens a PR when a newer stable Flutter release exists than the one pinned in
 # pubspec.yaml (environment.flutter). PRs created with GITHUB_TOKEN start no
-# workflows: re-run CI on the PR (close and reopen it) before merging.
+# pull_request workflows, so the job starts CI on the update branch by
+# workflow_dispatch (its checks land on the PR head).
 
 on:
   schedule:
@@ -23,6 +24,7 @@ jobs:
     permissions:
       contents: write # create the update branch and commit
       pull-requests: write # open the PR
+      actions: write # start CI on the update branch
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -45,8 +47,8 @@ jobs:
           title="build(deps): Update Flutter to $latest"
           open_pr() {
             gh pr create --base "$BASE" --head "$branch" --title "$title" \
-              --body "Flutter $current to $latest. Close and reopen this PR to run CI. When squash merging, remove the Co-authored-by line of the bot from the message." \
-              && return
+              --body "Flutter $current to $latest. CI starts by itself on the update branch. When squash merging, remove the Co-authored-by line of the bot from the message." \
+              && { gh workflow run ci.yml --ref "$branch"; return; }
             gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
             exit 1
           }
