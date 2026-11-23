@@ -100,7 +100,9 @@ Secrets ersetzen.
   internen Test hochladen (aus der GitHub Release oder lokal gebaut). Erst
   danach funktioniert der Upload aus dem Workflow.
 - Solange die App im Entwurf ist, lehnt Play Releases mit Status
-  `completed` ab. Dann den ersten Release von Hand abschließen.
+  `completed` ab. Die Lane `internal` lädt den Release dann als Entwurf
+  hoch; ihn einmal in der Play Console (Interner Test) freigeben, danach
+  laufen Releases ohne Zutun.
 - App Inhalte ausfüllen: Datenschutzerklärung
   `https://github.com/Kiefer-Networks/Falco/blob/main/PRIVACY.md`,
   Datensicherheit (keine Daten erhoben oder geteilt, Übertragung
