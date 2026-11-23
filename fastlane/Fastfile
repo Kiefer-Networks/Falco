@@ -13,7 +13,7 @@ platform :android do
   # may still serve the previous app) and uploaded by promote to production.
   # Screenshots are uploaded by hand (docs/target/RELEASE.md).
   lane :internal do |options|
-    upload_to_play_store(
+    params = {
       package_name: PACKAGE,
       json_key_data: ENV.fetch("PLAY_SERVICE_ACCOUNT_JSON"),
       track: "internal",
@@ -23,7 +23,17 @@ platform :android do
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
-    )
+    }
+    begin
+      upload_to_play_store(**params)
+    rescue => e
+      raise unless e.message.include?("draft app")
+      # An app that was never published accepts only draft releases. The
+      # first release is rolled out by hand in the Play Console
+      # (docs/target/RELEASE.md); later releases complete on their own.
+      UI.important("Play app is still a draft: uploading the release as draft")
+      upload_to_play_store(**params, release_status: "draft")
+    end
   end
 
   # Promotes the internal release of version_code to another track. The
