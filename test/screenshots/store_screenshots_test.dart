@@ -8,14 +8,13 @@
 @Tags(['screenshots'])
 library;
 
-import 'package:falco/core/scope/scope.dart';
 import 'package:falco/l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../fake_cloud.dart';
 import '../steps.dart' hide setSurface;
-import '../storage_steps.dart';
+import 'demo_data.dart';
 
 typedef Steps = Future<void> Function(WidgetTester, AppLocalizations);
 
@@ -44,37 +43,44 @@ Future<void> _area(WidgetTester tester, String name, [String? tab]) async {
   if (tab != null) await openList(tester, tab);
 }
 
-final _screens = <String, (List<Account>, FakeCloud Function(), Steps)>{
-  '1_servers': (const [acme], FakeCloud.new, (_, _) async {}),
-  '2_server': (const [acme], FakeCloud.new, (t, _) => tap(t, 'web-1')),
-  '3_firewall': (
-    const [acme],
-    () => FakeCloud(
-      firewalls: [
-        firewallJson(id: 51, name: 'web', servers: [1]),
-      ],
-    ),
-    (t, l) async {
-      await _area(t, l.navNetwork, l.resourceFirewalls);
-      await tap(t, 'web');
-    },
-  ),
-  '4_storage_box': (
-    const [acme],
-    storageCloud,
-    (t, l) async {
-      await _area(t, l.navStorage);
-      await tap(t, 'backup');
-    },
-  ),
-  '5_robot': (
-    const [acmeRobot],
-    FakeCloud.new,
-    (t, l) async {
-      await _area(t, l.navRobot);
-      await tap(t, 'server1');
-    },
-  ),
+/// Scrolls section [title] of a detail page to the top on short phones,
+/// where it would start below the fold.
+Future<void> _section(WidgetTester tester, String title) async {
+  final view = tester.view;
+  if (view.physicalSize.height / view.devicePixelRatio > 700) return;
+  await Scrollable.ensureVisible(
+    tester.element(find.text(title.toUpperCase())),
+  );
+  await tester.pumpAndSettle();
+}
+
+final _screens = <String, Steps>{
+  // A wide layout shows a detail pane next to the overview: fill it.
+  '1_overview': (t, l) async {
+    if (find.text(l.detailPick).evaluate().isNotEmpty) await tap(t, 'db-1');
+  },
+  '2_server': (t, _) => tap(t, 'web-1'),
+  '3_firewall': (t, l) async {
+    await _area(t, l.navNetwork, l.resourceFirewalls);
+    await tap(t, 'web');
+  },
+  '4_dns_zone': (t, l) async {
+    await _area(t, l.navNetwork, l.resourceZones);
+    await tap(t, 'example.com');
+    await _section(t, l.sectionRecords);
+  },
+  '5_storage_box': (t, l) async {
+    await _area(t, l.navStorage, l.resourceStorageBoxes);
+    await tap(t, 'backup');
+  },
+  '6_robot': (t, l) async {
+    await _area(t, l.navRobot);
+    await tap(t, 'storage-1');
+  },
+  '7_load_balancer': (t, l) async {
+    await _area(t, l.navNetwork, l.resourceLoadBalancers);
+    await tap(t, 'lb-web');
+  },
 };
 
 void main() {
@@ -82,8 +88,7 @@ void main() {
     final l10n = lookupAppLocalizations(Locale(language));
     for (final MapEntry(key: device, value: (size, ratio, folder))
         in _devices.entries) {
-      for (final MapEntry(key: name, value: (accounts, cloud, open))
-          in _screens.entries) {
+      for (final MapEntry(key: name, value: open) in _screens.entries) {
         testWidgets('$locale $device $name', (tester) async {
           tester.view
             ..physicalSize = size * ratio
@@ -91,8 +96,8 @@ void main() {
           addTearDown(tester.view.reset);
           await pumpFalco(
             tester,
-            cloud(),
-            accounts: accounts,
+            demoCloud(),
+            accounts: const [acmeRobot],
             prefs: {'language': language},
           );
           await open(tester, l10n);
