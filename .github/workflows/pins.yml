@@ -2,8 +2,8 @@ name: Certificate pins
 
 # Recomputes the SPKI pins of all API hosts (tool/pins.dart) and opens a PR
 # when a chain changed. Pins no longer served stay 90 days as overlap.
-# PRs created with GITHUB_TOKEN start no workflows: re-run CI on the PR
-# (close and reopen it) before merging.
+# PRs created with GITHUB_TOKEN start no pull_request workflows, so the job
+# starts CI on the update branch by workflow_dispatch.
 
 on:
   schedule:
@@ -24,6 +24,7 @@ jobs:
     permissions:
       contents: write # create the update branch and commit
       pull-requests: write # open the PR
+      actions: write # start CI on the update branch
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -75,12 +76,12 @@ jobs:
             { git diff -- tool/pins.json | grep -v '"der"' || true; }
             echo '```'
             echo
-            echo "Close and reopen this PR to run CI. When squash merging,"
+            echo "CI starts by itself on the update branch. When squash merging,"
             echo "remove the Co-authored-by line of the bot from the message."
           } > "$RUNNER_TEMP/body.md"
           open_pr() {
             gh pr create --base "$BASE" --head "$branch" --title "$title" \
-              --body-file "$RUNNER_TEMP/body.md" && return
+              --body-file "$RUNNER_TEMP/body.md" && { gh workflow run ci.yml --ref "$branch"; return; }
             gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
             exit 1
           }
