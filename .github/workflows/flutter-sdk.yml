@@ -28,13 +28,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          ref: next # runs from main until Falco 3 replaces it
           persist-credentials: false # the commit goes through the API
 
       - name: Compare and open PR
         env:
           GH_TOKEN: ${{ github.token }}
-          BASE: next
+          BASE: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           latest=$(curl -fsSL https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json \

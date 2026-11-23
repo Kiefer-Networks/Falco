@@ -1,0 +1,20 @@
+[
+  {
+    "firewall_template": {
+      "id": 1,
+      "name": "My template",
+      "filter_ipv6": false,
+      "whitelist_hos": true,
+      "is_default": true
+    }
+  },
+  {
+    "firewall_template": {
+      "id": 2,
+      "name": "My second template",
+      "filter_ipv6": false,
+      "whitelist_hos": true,
+      "is_default": false
+    }
+  }
+]

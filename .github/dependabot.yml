@@ -1,110 +1,20 @@
 # Falco — Dependabot configuration
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# main (Falco 2): Gradle (libs.versions.toml) and GitHub Actions.
-# next (Falco 3): pub, Gradle under android/, GitHub Actions and Bundler.
+# Every dependency stays on its newest version:
+#  - pub (Dart / Flutter packages, pubspec.yaml + pubspec.lock)
+#  - Gradle (Android host project under android/)
+#  - GitHub Actions (pinned by SHA in the workflows)
+#  - Bundler (fastlane for the store uploads)
+# The Flutter SDK itself is kept current by .github/workflows/flutter-sdk.yml.
 #
-# Rebase strategy: auto so updates always apply on top of latest main.
 # Cooldown: 7 days for version updates (security updates are immediate).
-# Open-PR ceiling: 5 per ecosystem so a wave of bumps doesn't drown the inbox.
-#
-# Auto-merge policy lives in `.github/workflows/auto-merge-dependabot.yml`:
-# patch + minor go through with `--auto --squash` once required CI checks
-# pass; major bumps stay manual because Falco's stack (AGP, Kotlin, AndroidX
-# security, biometric, Compose BOM) regularly ships breaking changes inside a
-# major.
+# Auto-merge policy lives in auto-merge-dependabot.yml: patch + minor merge
+# after green CI, majors stay manual.
 
 version: 2
 
-# Dependabot reads this file only from the default branch (main). Until
-# Falco 3 replaces main (docs/target/RELEASE.md, cutover), main keeps the
-# Falco 2 entries below and the Falco 3 entries target the next branch.
-
 updates:
-  - package-ecosystem: gradle
-    directory: "/"
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: Europe/Berlin
-    open-pull-requests-limit: 5
-    rebase-strategy: auto
-    # Supply-chain buffer: only propose releases that are at least 7 days
-    # old, so hijacked or yanked versions surface before they land here.
-    # Security updates are not delayed.
-    cooldown:
-      default-days: 7
-    labels:
-      - dependencies
-      - gradle
-    commit-message:
-      prefix: "build"
-      include: scope
-    # Group routine, low-risk updates so the inbox doesn't bloat. Major bumps
-    # stay individual so they each get their own PR + CI signal.
-    groups:
-      androidx-non-major:
-        applies-to: version-updates
-        patterns:
-          - "androidx.*"
-          - "com.google.dagger:*"
-        update-types:
-          - "patch"
-          - "minor"
-      kotlin-non-major:
-        applies-to: version-updates
-        patterns:
-          - "org.jetbrains.kotlin*"
-          - "org.jetbrains.kotlinx:*"
-          - "com.google.devtools.ksp*"
-        update-types:
-          - "patch"
-          - "minor"
-      compose-bom:
-        applies-to: version-updates
-        patterns:
-          - "androidx.compose:compose-bom"
-        update-types:
-          - "patch"
-          - "minor"
-          - "major"
-    # Ignore artefacts where breakage shows up in subtle places (R8 keep
-    # rules, Tink keyset compat) — surface a single PR per major manually.
-    ignore:
-      # AGP majors require bespoke audit (R8 rule semantics); subscribe to
-      # patch + minor only.
-      - dependency-name: "com.android.application"
-        update-types: ["version-update:semver-major"]
-      # security-crypto is migration-only in v2.0; pinned at 1.1.0 until
-      # v2.1 drops the dependency.
-      - dependency-name: "androidx.security:security-crypto"
-
-  - package-ecosystem: github-actions
-    directory: "/"
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: Europe/Berlin
-    open-pull-requests-limit: 5
-    rebase-strategy: auto
-    # Supply-chain buffer: only propose releases that are at least 7 days
-    # old, so hijacked or yanked versions surface before they land here.
-    # Security updates are not delayed.
-    cooldown:
-      default-days: 7
-    labels:
-      - dependencies
-      - github-actions
-    commit-message:
-      prefix: "ci"
-      include: scope
-    groups:
-      actions:
-        patterns: ["*"]
-
-  # Falco 3 on next (same entries as next:.github/dependabot.yml)
   - package-ecosystem: pub
     directory: "/"
     target-branch: next

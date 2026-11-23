@@ -4,9 +4,13 @@
 #
 # Policy:
 #   * `version-update:semver-patch` and `version-update:semver-minor` ->
-#     `gh pr merge --auto --squash`. The merge fires only after every required
-#     status check in the main ruleset has passed, so a regression blocks the
-#     merge and the PR stays open for human triage.
+#     `gh pr merge --auto --squash` on the default branch. The merge fires
+#     only after every required status check in the main ruleset has passed,
+#     so a regression blocks the merge and the PR stays open for human triage.
+#     Other branches (next) have no ruleset, so `--auto` would merge at once:
+#     there the job waits for the CI checks of the PR head itself, merges only
+#     when all passed, and then starts CI on the branch (a merge through
+#     GITHUB_TOKEN starts no push workflow).
 #   * `version-update:semver-major` -> leave open, attach an `automerge-skipped`
 #     label, comment with the reason. Maintainer reviews manually.
 #
@@ -37,23 +41,62 @@ jobs:
       github.event.pull_request.user.login == 'dependabot[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Long enough for the iOS build on branches without a ruleset.
+    timeout-minutes: 75
     permissions:
       contents: write # merge
       pull-requests: write # label + comment
+      checks: read # wait for the CI checks of the head
+      actions: write # start CI on the branch after the merge
     steps:
       - name: Fetch Dependabot metadata
         id: meta
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98  # v3.1.0
 
-      - name: Enable auto-merge for patch + minor
+      - name: Merge patch + minor after green CI
         if: |
           steps.meta.outputs.update-type == 'version-update:semver-patch' ||
           steps.meta.outputs.update-type == 'version-update:semver-minor'
         env:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --auto --squash "$PR_URL"
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          if [ "$BASE" = "$DEFAULT_BRANCH" ]; then
+            gh pr merge --auto --squash "$PR_URL"
+            exit 0
+          fi
+          # The checks ci.yml and chore.yml report for a pull request.
+          required=("Check PR Title" "Dependency Review" "Lint & Unit Tests"
+            "Workflow Security (zizmor)" "Build Debug APK" "Build iOS")
+          while :; do
+            runs=$(gh api --paginate \
+              "repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/check-runs" \
+              --jq '.check_runs[] | [.name, .status, (.conclusion // "")] | @tsv')
+            pending=0
+            for name in "${required[@]}"; do
+              # The API lists only the latest run per name (filter=latest).
+              line=$(printf '%s\n' "$runs" | awk -F'\t' -v n="$name" '$1 == n' | head -n 1)
+              if [ -z "$line" ] || [ "$(cut -f2 <<<"$line")" != completed ]; then
+                pending=1
+                continue
+              fi
+              case "$(cut -f3 <<<"$line")" in
+                success | skipped | neutral) ;;
+                *)
+                  echo "Check '$name' did not pass; leaving the PR open."
+                  exit 0
+                  ;;
+              esac
+            done
+            [ "$pending" = 0 ] && break
+            sleep 30
+          done
+          gh pr merge --squash --match-head-commit "$HEAD_SHA" "$PR_URL"
+          gh workflow run ci.yml --ref "$BASE"
 
       - name: Skip + label majors
         if: steps.meta.outputs.update-type == 'version-update:semver-major'

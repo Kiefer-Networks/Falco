@@ -2,15 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, next]
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [main]
-  # Auto-merged Dependabot PRs are squashed by GITHUB_TOKEN, and pushes made
-  # with that token trigger no workflows. The daily run (and manual dispatch)
-  # guarantees main is still built and its dependency graph submitted.
+    branches: [main, next]
+  # Auto merges push with GITHUB_TOKEN, which starts no workflows; the daily
+  # run makes sure the default branches are built anyway.
   schedule:
-    - cron: '23 4 * * *'
+    - cron: "23 4 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -23,7 +22,7 @@ jobs:
   lint-and-test:
     name: Lint & Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -31,23 +30,47 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880  # v6.3.0
-        with:
-          distribution: temurin
-          java-version: '17'
+      # Flutter straight from the official repo at the exact version pinned
+      # in pubspec.yaml. No third-party setup action: subosito/flutter-action
+      # references actions/cache by tag, which the SHA pinning rule rejects.
+      - name: Install Flutter
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^  flutter: *//p' pubspec.yaml)
+          git clone --quiet --depth 1 --branch "$version" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/flutter/bin/flutter" --disable-analytics
+          "$RUNNER_TEMP/flutter/bin/flutter" --version
 
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c  # v6.4.1
-        with:
-          # Only main writes the cache, so a PR cannot poison it.
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      - name: Dependencies
+        run: flutter pub get --enforce-lockfile
 
-      - name: Lint
-        run: ./gradlew :app:lintDebug --no-daemon
+      # Riverpod and go_router code is committed; fail when it is stale.
+      - name: Generated code is current
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          # Untracked outputs count too: a new generated file must be committed.
+          changes=$(git status --porcelain -- lib)
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            git diff -- lib
+            exit 1
+          fi
 
-      - name: Unit tests
-        run: ./gradlew testDebugUnitTest --no-daemon
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed lib test integration_test tool
 
-  build:
+      # Every PARITY row is named by a test or deferred with a reason.
+      - name: Parity check
+        run: dart run tool/parity_check.dart
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Tests
+        run: flutter test --reporter expanded --exclude-tags golden
+
+  build-android:
     name: Build Debug APK
     needs: lint-and-test
     runs-on: ubuntu-latest
@@ -62,28 +85,67 @@ jobs:
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880  # v6.3.0
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "21"
 
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c  # v6.4.1
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      # Flutter straight from the official repo at the exact version pinned
+      # in pubspec.yaml. No third-party setup action: subosito/flutter-action
+      # references actions/cache by tag, which the SHA pinning rule rejects.
+      - name: Install Flutter
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^  flutter: *//p' pubspec.yaml)
+          git clone --quiet --depth 1 --branch "$version" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/flutter/bin/flutter" --disable-analytics
+          "$RUNNER_TEMP/flutter/bin/flutter" --version
 
-      - name: Assemble debug APK
-        run: ./gradlew :app:assembleDebug --no-daemon
+      - name: Build debug APK
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter build apk --debug
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/*.apk
+          name: falco-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 7
 
+  build-ios:
+    name: Build iOS
+    needs: lint-and-test
+    runs-on: macos-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Flutter straight from the official repo at the exact version pinned
+      # in pubspec.yaml. No third-party setup action: subosito/flutter-action
+      # references actions/cache by tag, which the SHA pinning rule rejects.
+      - name: Install Flutter
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^  flutter: *//p' pubspec.yaml)
+          git clone --quiet --depth 1 --branch "$version" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/flutter/bin/flutter" --disable-analytics
+          "$RUNNER_TEMP/flutter/bin/flutter" --version
+
+      - name: Build iOS without code signing
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter build ios --no-codesign --debug
+
+      - name: Golden tests
+        run: flutter test --tags golden
+
   dependency-review:
     name: Dependency Review
-    # Runs after the Gradle snapshot for the PR head was submitted, so the
-    # review sees Gradle dependencies, not only workflow actions.
-    needs: dependency-submission
-    if: github.event_name == 'pull_request' && !cancelled()
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -94,39 +156,9 @@ jobs:
         with:
           fail-on-severity: low
           comment-summary-in-pr: on-failure
-          retry-on-snapshot-warnings: true
-          # GPL-3.0-or-later app: block licences that cannot be combined with it.
-          deny-licenses: SSPL-1.0, BUSL-1.1, CC-BY-NC-4.0, CC-BY-NC-SA-4.0
-
-  dependency-submission:
-    name: Gradle Dependency Graph
-    # Feeds the resolved release runtime graph (incl. transitive deps) into
-    # GitHub so Dependabot alerts and dependency review see what ships.
-    # On PRs it runs too (same-repo branches only: forks get no write token)
-    # so Dependency Review has a snapshot for the PR head.
-    if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: write # dependency submission API
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880  # v6.3.0
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - uses: gradle/actions/dependency-submission@8da46b539cd8fe6ab27ca75128919a18d757604c  # v6.4.1
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-          # Only what ships in the APK; the AGP/lint build classpath would
-          # raise alerts for code that never reaches users.
-          dependency-graph-include-configurations: releaseRuntimeClasspath
+          # pub reports lower-case SPDX ids (apache-2.0), which this action
+          # rejects as invalid; licences are checked by a dedicated job later.
+          license-check: false
 
   zizmor:
     name: Workflow Security (zizmor)
@@ -142,8 +174,6 @@ jobs:
       - uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd  # v0.8.1
         with:
           persona: pedantic
-          # Pin the tool itself; "latest" can break the required check
-          # without any change in this repository.
           version: 1.32.0
           # Fail the job on findings instead of only uploading SARIF.
           advanced-security: false

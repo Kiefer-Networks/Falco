@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Hetzner red (foreground accent on launcher background). -->
-    <color name="ic_launcher_background">#FFFFFF</color>
-    <color name="hetzner_red">#D50C2D</color>
-</resources>

@@ -1,0 +1,101 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Store lanes for .github/workflows/release.yml. Credentials come only from
+# environment variables set by the workflow; nothing is read from disk.
+opt_out_usage
+skip_docs
+
+PACKAGE = "de.kiefer_networks.falco"
+BUNDLE_ID = "de.kiefer-networks.falco"
+
+platform :android do
+  # Uploads the signed AAB with its changelog to the internal track. The
+  # store listing is not per track, so it is left alone here (production
+  # may still serve the previous app) and uploaded by promote to production.
+  # Screenshots are uploaded by hand (docs/target/RELEASE.md).
+  lane :internal do |options|
+    params = {
+      package_name: PACKAGE,
+      json_key_data: ENV.fetch("PLAY_SERVICE_ACCOUNT_JSON"),
+      track: "internal",
+      aab: options.fetch(:aab),
+      metadata_path: "fastlane/metadata/android",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    }
+    begin
+      upload_to_play_store(**params)
+    rescue => e
+      raise unless e.message.include?("draft app")
+      # An app that was never published accepts only draft releases. The
+      # first release is rolled out by hand in the Play Console
+      # (docs/target/RELEASE.md); later releases complete on their own.
+      UI.important("Play app is still a draft: uploading the release as draft")
+      upload_to_play_store(**params, release_status: "draft")
+    end
+  end
+
+  # Promotes the internal release of version_code to another track. The
+  # listing texts go up only together with a production release.
+  lane :promote do |options|
+    track = options.fetch(:track)
+    upload_to_play_store(
+      package_name: PACKAGE,
+      json_key_data: ENV.fetch("PLAY_SERVICE_ACCOUNT_JSON"),
+      track: "internal",
+      track_promote_to: track,
+      version_code: options.fetch(:version_code).to_i,
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      metadata_path: "fastlane/metadata/android",
+      skip_upload_metadata: track != "production",
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+  end
+end
+
+platform :ios do
+  def asc_key
+    app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8_BASE64"),
+      is_key_content_base64: true,
+    )
+  end
+
+  lane :beta do |options|
+    upload_to_testflight(
+      api_key: asc_key,
+      app_identifier: BUNDLE_ID,
+      ipa: options.fetch(:ipa),
+      skip_waiting_for_build_processing: true,
+    )
+  end
+
+  # Submits an uploaded build with the listing texts for App Review.
+  # Screenshots and App Privacy answers are maintained in App Store Connect.
+  lane :submit do |options|
+    deliver(
+      api_key: asc_key,
+      app_identifier: BUNDLE_ID,
+      app_version: options.fetch(:version),
+      build_number: options.fetch(:build_number),
+      metadata_path: "fastlane/metadata/ios",
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      submit_for_review: true,
+      # Falco ships no third party content; without an answer App Store
+      # Connect refuses the submission.
+      submission_information: {
+        content_rights_contains_third_party_content: false,
+      },
+      automatic_release: false,
+      force: true,
+      precheck_include_in_app_purchases: false,
+    )
+  end
+end

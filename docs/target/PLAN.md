@@ -40,8 +40,10 @@ Radien) und genau diese Komponenten, jede mit Golden Test in Hell und Dunkel:
 | `FalcoScaffold` | Kopfzeile mit Scope Wechsler, Mehr Menü, Snackbar Host |
 | `ResourceList` | Liste mit Suche, Filter Chips, Sortierung, Pull to Refresh, Skeleton, Leer, Fehler |
 | `ResourceRow` | Status, Name, Mono Zeile, optionale Sparkline |
-| `DetailPage` | Kopf, Aktionskacheln, Abschnitte, Gefahrenzone |
-| `ActionTile`, `MoreMenu` | primäre und weitere Aktionen |
+| `AreaOverview` | Bereichsübersicht: Kachel pro Ressourcentyp mit Anzahl und Status |
+| `DetailPage` | Kopf, Abschnitte, Gefahrenzone |
+| `DetailActionBar` | alle Aktionen eines Details unten: drei Knöpfe plus Blatt "Mehr" |
+| `MoreMenu` | weitere Aktionen von Screens ohne Detail |
 | `CreateWizard` | Schritte, Zusammenfassung, Projekt Schritt bei "Alle Projekte" |
 | `EditSheet` | Bearbeiten als Bottom Sheet |
 | `ConfirmSheet` | Stufe 1 und Stufe 2 (Name eintippen) |
@@ -49,7 +51,7 @@ Radien) und genau diese Komponenten, jede mit Golden Test in Hell und Dunkel:
 | `Mono`, `CopyableValue` | IPs, IDs, kopieren per Tipp |
 | `SecretReveal` | Passwörter anzeigen und kopieren mit Ablauf |
 | `MetricChart` | mehrere Serien, Einheiten, Zeitraum |
-| `ErrorCard`, `EmptyHint`, `ErrorBanner` | Zustände |
+| `ErrorCard`, `EmptyHint`, `ActionHint`, `ErrorBanner` | Zustände (leer ohne Knopf, blockiert mit genau einem) |
 | `ScopeSwitcherSheet` | Accounts, Projekte, "Alle Projekte" |
 
 ## Absicherung: Funktionsgleichstand und Optik

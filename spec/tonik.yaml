@@ -1,0 +1,10 @@
+# tonik settings for both Hetzner specs, read from this directory by
+# tool/specs.sh.
+logLevel: warn
+transport:
+  backend: dio
+enums:
+  # Hetzner adds enum values without notice; an unknown value must not break
+  # parsing of a whole list.
+  generateUnknownCase: true
+  unknownCaseName: unknown

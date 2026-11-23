@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Background transfers run in the platform's HTTP stack, not in Dart, so
+     Object Storage gets its pins here too: every CA pin of tool/pins.json,
+     written by tool/pins.dart (pins.yml). No expiration, so a foreign CA
+     fails the transfer instead of passing silently. The pinned roots are
+     trust anchors too (res/raw, same tool): Android 7.0 lacks ISRG. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">your-objectstorage.com</domain>
+        <pin-set>
+            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
+            <pin digest="SHA-256">brzvtCELCIZUo4sD/qPX0ccRtPsd3DY6RfmxpOU9oB4=</pin>
+            <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
+            <pin digest="SHA-256">s/tdAOmUzd8syaTuqfgGvFcn6DzA5Cmb+Vby1ST+U3Y=</pin>
+            <pin digest="SHA-256">sCkq5UWXjg+7mKu9lMhhYF5bGLsy7VI/UNW3tccdR7w=</pin>
+        </pin-set>
+        <trust-anchors>
+            <certificates src="@raw/pin_0b9fa5a59eed715c" />
+            <certificates src="@raw/pin_762195c225586ee6" />
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

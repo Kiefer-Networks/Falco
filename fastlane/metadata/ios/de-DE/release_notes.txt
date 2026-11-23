@@ -1,0 +1,6 @@
+Falco 3 ist ein kompletter Neubau für iOS.
+• Alle Hetzner APIs in einer App: Cloud, DNS, Storage Boxen, Object Storage und Robot
+• Accounts mit mehreren Cloud Projekten, oder alle Projekte zugleich
+• Suche über alle Ressourcen, Aktivität pro Projekt
+• Tablet Layout, dunkles Design, Unterstützung für Screenreader
+Gespeicherte Zugangsdaten aus Falco 2 werden nicht übernommen. Bitte füge deine Accounts neu hinzu.

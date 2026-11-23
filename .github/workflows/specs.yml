@@ -29,7 +29,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          ref: next # runs from main until Falco 3 replaces it
           persist-credentials: false # the commit goes through the API
 
       # Same installation as ci.yml: the official repo at the pinned version.
@@ -63,7 +62,7 @@ jobs:
       - name: Open PR on change
         env:
           GH_TOKEN: ${{ github.token }}
-          BASE: next
+          BASE: ${{ github.ref_name }}
           ANALYZE: ${{ steps.check.outputs.analyze }}
           CONTRACT: ${{ steps.check.outputs.contract }}
         run: |

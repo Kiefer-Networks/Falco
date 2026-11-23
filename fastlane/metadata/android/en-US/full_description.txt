@@ -1,17 +1,28 @@
-Falco is a privacy-respecting Android client for Hetzner Online services.
+Falco manages your Hetzner infrastructure from your phone or tablet: Hetzner Cloud, DNS, Storage Boxes, Object Storage and dedicated servers through Robot, all in one app.
 
-Manage all four Hetzner APIs from a single secure app:
+Cloud
+• Servers: create, power, reboot, rebuild, rescue, ISO, resize, backups, snapshots, console, metrics and protection
+• Volumes, images, placement groups and SSH keys
+• Networks with subnets and routes, firewalls, floating and primary IPs with reverse DNS, load balancers and certificates
+• DNS zones and records, zone file import and export
+• Activity per project and per resource
 
-• Hetzner Cloud — power on/off, reboot, reset, snapshot and rescue your servers; manage volumes, networks, firewalls, floating IPs and load balancers.
-• Hetzner Robot — dedicated servers with reset, rescue and Wake-on-LAN; full Storage Box support including snapshots, sub-accounts and password reset; vSwitches and failover IPs.
-• Hetzner DNS Console — list zones, create and edit records, bulk import.
-• Hetzner Object Storage — browse buckets and objects, upload and download files, generate signed share links.
+Storage
+• Storage Boxes: snapshots and snapshot plans, subaccounts, folders, protection
+• Object Storage in every location: buckets, browsing, uploads and downloads in the background, share links, versioning
 
-Security
-• No tracking, no ads, no proprietary dependencies — 100% free software (GPL-3.0-or-later).
-• Credentials are stored in EncryptedSharedPreferences with the master key bound to the Android Keystore (StrongBox where available) and gated behind biometrics or your device credential.
-• TLS 1.3 only, with certificate pinning for every Hetzner endpoint.
-• FLAG_SECURE blocks tokens from leaking through screenshots and the Recent-Apps switcher.
-• Auto-backup is disabled — secrets never leave the device.
+Robot
+• Dedicated servers with reset, rescue, Wake on LAN, reverse DNS, failover IPs, vSwitches, SSH keys, traffic and cancellation
 
-Falco is community software and is not affiliated with Hetzner Online GmbH.
+Made for admins
+• Several accounts and Cloud projects, always visible which one you are working in, or all projects at once
+• Search across every resource and project
+• Phone and tablet layouts, light and dark, screen reader support
+
+Privacy and security
+• No tracking, no analytics, no ads, no third party services
+• Your tokens and passwords stay on your device, in the Keychain or Android Keystore, behind Face ID, fingerprint or device PIN
+• Falco talks only to the Hetzner APIs, with certificate pinning for every host
+• Free software under GPL 3.0 or later
+
+Falco is community software and not affiliated with Hetzner Online GmbH. Hetzner is a trademark of Hetzner Online GmbH.

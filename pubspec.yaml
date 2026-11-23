@@ -1,0 +1,76 @@
+name: falco
+description: "Hetzner Cloud, Robot, DNS and Storage manager"
+publish_to: "none"
+
+# Build number continues above Falco 2 (last Android versionCode 250) so
+# existing Android installs receive Falco 3 as an update.
+version: 3.0.0+300
+
+environment:
+  sdk: ^3.14.0
+  # Exact Flutter SDK for local builds and CI (read by subosito/flutter-action).
+  # Kept current by .github/workflows/flutter-sdk.yml.
+  flutter: 3.50.1
+
+dependencies:
+  # The Android side of file_picker, for picks lost to a process end.
+  android_file_picker: ^2.2.0
+  background_downloader: ^9.6.6
+  crypto: ^3.0.8
+  cryptography: ^2.9.0
+  dio: ^5.11.1
+  file_picker: ^13.4.0
+  fl_chart: ^1.3.1
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^3.5.0
+  flutter_secure_storage: ^11.2.0
+  go_router: ^18.1.4
+  hetzner_cloud_api:
+    path: packages/hetzner_cloud_api
+  hetzner_storage_box_api:
+    path: packages/hetzner_storage_box_api
+  intl: ^0.20.3
+  local_auth: ^3.0.2
+  local_auth_android: ^2.3.0
+  material_ui: ^1.11.1
+  riverpod_annotation: ^4.0.8
+  share_plus: ^13.3.1
+  shared_preferences: ^2.5.6
+  tonik_util: ^0.11.1
+  url_launcher: ^6.3.3
+  xml: ^7.1.0
+
+dev_dependencies:
+  build_runner: ^2.17.1
+  flutter_test:
+    sdk: flutter
+  go_router_builder: ^4.5.3
+  integration_test:
+    sdk: flutter
+  riverpod_generator: ^4.0.10
+  tonik: ^0.11.1
+  very_good_analysis: ^11.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/fonts/OFL.txt
+  fonts:
+    - family: IBMPlexSans
+      fonts:
+        - asset: assets/fonts/IBMPlexSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSans-SemiBold.ttf
+          weight: 600
+    - family: IBMPlexMono
+      fonts:
+        - asset: assets/fonts/IBMPlexMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexMono-Medium.ttf
+          weight: 500

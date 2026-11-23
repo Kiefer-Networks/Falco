@@ -1,0 +1,3 @@
+#include "Generated.xcconfig"
+// Written by release.yml (manual distribution signing); absent locally.
+#include? "Signing.xcconfig"

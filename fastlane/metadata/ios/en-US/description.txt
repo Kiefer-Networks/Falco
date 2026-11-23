@@ -1,0 +1,28 @@
+Falco manages your Hetzner infrastructure from your phone or tablet: Hetzner Cloud, DNS, Storage Boxes, Object Storage and dedicated servers through Robot, all in one app.
+
+Cloud
+• Servers: create, power, reboot, rebuild, rescue, ISO, resize, backups, snapshots, console, metrics and protection
+• Volumes, images, placement groups and SSH keys
+• Networks with subnets and routes, firewalls, floating and primary IPs with reverse DNS, load balancers and certificates
+• DNS zones and records, zone file import and export
+• Activity per project and per resource
+
+Storage
+• Storage Boxes: snapshots and snapshot plans, subaccounts, folders, protection
+• Object Storage in every location: buckets, browsing, uploads and downloads in the background, share links, versioning
+
+Robot
+• Dedicated servers with reset, rescue, Wake on LAN, reverse DNS, failover IPs, vSwitches, SSH keys, traffic and cancellation
+
+Made for admins
+• Several accounts and Cloud projects, always visible which one you are working in, or all projects at once
+• Search across every resource and project
+• Phone and tablet layouts, light and dark, screen reader support
+
+Privacy and security
+• No tracking, no analytics, no ads, no third party services
+• Your tokens and passwords stay on your device, in the iOS Keychain, behind Face ID, Touch ID or the device passcode
+• Falco talks only to the Hetzner APIs, with certificate pinning for every host
+• Free software under GPL 3.0 or later
+
+Falco is community software and not affiliated with Hetzner Online GmbH. Hetzner is a trademark of Hetzner Online GmbH.

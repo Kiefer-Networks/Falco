@@ -5,7 +5,7 @@ Status: Abnahmeliste für den Neubau. Grundlage: [README.md](README.md) (Zielbil
 ## Benutzung als Abnahmeliste
 
 1. Jede Zeile ist eine prüfbare Anforderung. Eine Phase ist erst abgenommen, wenn alle Zeilen mit ihrer Phasennummer erfüllt und durch den genannten Test abgedeckt sind.
-2. Der Test trägt die ID im Namen (z. B. `test('CMP-012 ...')`), damit `grep` die Abdeckung zeigt. Fehlt ein Test zur ID, gilt die Zeile als offen.
+2. Der Test trägt die ID im Namen (z. B. `test('CMP-012 ...')`), damit `grep` die Abdeckung zeigt. Fehlt ein Test zur ID, gilt die Zeile als offen. `dart run tool/parity_check.dart` prüft das in jeder CI; eine Zeile ohne Test steht nur mit Grund im Abschnitt [Zurückgestellt](#zurückgestellt).
 3. **Quelle** zeigt die Stelle im alten Code (Pfade relativ zu `app/src/main/kotlin/de/kiefer_networks/falco/`, `S/` = `ui/screens/`, `C/` = `ui/components/`, `D/` = `data/`). "API neu" heißt: die alte App kann das nicht, die API bietet es, der Neubau liefert es. "Alt nur Repository" heißt: Code existiert, aber keine Oberfläche.
 4. **API Endpunkt(e)**: Cloud Pfade relativ zu `https://api.hetzner.cloud/v1`, Storage Boxen zu `https://api.hetzner.com/v1`, Robot zu `https://robot-ws.your-server.de`, S3 als Operationsname.
 5. Regeln aus der alten App (Grenzen, Pflichtfelder) gelten weiter, außer sie stehen unter [Nicht übernehmen](#nicht-übernehmen). Bedienmuster (Bestätigungsstufen, Wizard, Edit Sheet) richten sich immer nach README Abschnitt 5, nicht nach der alten Umsetzung.
@@ -16,16 +16,16 @@ Status: Abnahmeliste für den Neubau. Grundlage: [README.md](README.md) (Zielbil
 | Bereich | Präfix | Zeilen | davon neu oder ohne alte UI |
 |---|---|---|---|
 | Onboarding & Accounts | ONB | 42 | 0 |
-| Einstellungen & Sicherheit | SET | 22 | 0 |
-| Compute | CMP | 99 | 20 |
+| Einstellungen & Sicherheit | SET | 26 | 4 |
+| Compute | CMP | 100 | 21 |
 | Netzwerk | NET | 94 | 18 |
 | DNS | DNS | 31 | 10 |
 | Storage Boxen | STB | 37 | 16 |
 | Object Storage | OBJ | 25 | 6 |
-| Robot | ROB | 60 | 24 |
+| Robot | ROB | 61 | 25 |
 | Suche & Aktivität | SUC | 40 | 28 |
-| Querschnitt | QRS | 28 | 0 |
-| **Summe** | | **478** | **122** |
+| Querschnitt | QRS | 30 | 0 |
+| **Summe** | | **486** | **128** |
 
 Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endpunkt-zuordnung-alte-app) und die Liste [Nicht übernehmen](#nicht-übernehmen) (Präfix BUG).
 
@@ -34,7 +34,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 
 | ID | Funktion | Details/Regeln | Quelle | API Endpunkt(e) | Phase | Test |
 |---|---|---|---|---|---|---|
-| ONB-001 | Onboarding Seitenfolge | 4 Seiten: Sprache, Was Falco kann, Sicherheit, Start; Punkte Indikator | `S/welcome/OnboardingScreen.kt:49` |  | 3 | Widget |
+| ONB-001 | Onboarding Seitenfolge | 5 Seiten: Sprache, Was Falco kann, Sicherheit, Berechtigungen (SET-024), Start; Punkte Indikator | `S/welcome/OnboardingScreen.kt:49` |  | 3 | Widget |
 | ONB-002 | Onboarding Navigation | Weiter, Zurück, Überspringen; letzte Seite "Account hinzufügen" | `S/welcome/OnboardingScreen.kt:102` |  | 3 | Widget |
 | ONB-003 | Onboarding Sprachwahl | Sprache wählen, sofort angewendet, später in Einstellungen änderbar | `S/welcome/OnboardingViewModel.kt:22` |  | 3 | Widget |
 | ONB-004 | Onboarding Funktionsseite | Kurzbeschreibung Cloud, Robot, DNS, Object Storage | `S/welcome/OnboardingScreen.kt:149` |  | 3 | Golden |
@@ -99,10 +99,14 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | SET-016 | TLS Pinning Info | Anzeige, dass Pinning für alle Hetzner Endpunkte aktiv ist | `S/settings/SettingsScreen.kt:302` |  | 3 | Widget |
 | SET-017 | Geheimnisspeicher | AEAD (Tink) mit Keystore Master Key; Neu: flutter_secure_storage Keychain/Keystore | `D/auth/CredentialStore.kt:257` |  | 2 | Unit |
 | SET-018 | Geheimnisfelder pro Account | Cloud Token pro Projekt, S3 Endpoint, Region, Keys, Robot Benutzer und Passwort | `D/auth/AccountManager.kt:200` |  | 2 | Unit |
-| SET-019 | Zwischenablage mit Ablauf | Kopierte Geheimnisse nach 60 s löschen | `ui/util/Clipboard.kt:23` |  | 2 | Unit |
+| SET-019 | Zwischenablage mit Ablauf | Kopierte Geheimnisse nach 60 s löschen. Android: ein im Hintergrund unlesbarer Clip wird trotzdem gelöscht (wie Falco 2, ein inzwischen kopierter fremder Clip kann dabei verloren gehen); ein lesbarer Clip nur bei passendem Label und Kopierzeitpunkt | `ui/util/Clipboard.kt:23` |  | 2 | Unit |
 | SET-020 | Zwischenablage sensibel markieren | Als sensibel markieren; Hinweis wenn System das nicht kann | `C/dialog/SecureRevealDialog.kt:50` |  | 2 | Widget |
 | SET-021 | Geheimnis anzeigen Sheet | Einmalige Anzeige von Passwörtern mit Kopieren und Schließen | `C/dialog/SecureRevealDialog.kt:77` |  | 2 | Widget |
 | SET-022 | Fehlertexte bereinigt | Keine Tokens oder URLs mit Geheimnissen in Fehlermeldungen | `D/util/Errors.kt:20` |  | 2 | Unit |
+| SET-023 | Kein Entsperren vor dem ersten Account | Solange kein Account gespeichert ist, fragt der Start nicht nach Biometrie oder PIN; danach gilt SET-007. Das erste Geheimnis landet mit der Prüfung der Plattform im gebundenen Speicher | API neu |  | 9 | Unit |
+| SET-024 | Berechtigungen beim ersten Start | Onboarding Seite erklärt Mitteilungen (Fortschritt der Hintergrund Übertragungen) und Biometrie; Weiter fragt die Mitteilungen an (Android 13+, iOS). Biometrie fragt das System beim ersten Gebrauch (iOS Face ID beim ersten Account), Android braucht keine Laufzeitfreigabe | API neu |  | 9 | Widget |
+| SET-025 | Berechtigung im Kontext | Jede Übertragung fragt Mitteilungen erneut an (das System zeigt den Dialog nur, solange nicht entschieden); ohne Freigabe läuft sie trotzdem und die Startmeldung sagt es. Android 9 und älter fragen Speicher beim Download | API neu |  | 9 | Widget |
+| SET-026 | Nutzungstexte vollständig | Info.plist hat Texte (en, de) für Face ID und Fotomediathek, die Plugins verlinken; Manifest deklariert Internet, Mitteilungen, Übertragungsjobs und Speicher bis API 28. Kein Absturz durch fehlenden Text | API neu |  | 9 | Unit |
 
 ## Compute
 
@@ -120,7 +124,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | CMP-010 | Server anlegen Typkarte | Name, Kerne, RAM, Disk; nur an Location verfügbare Typen | `S/cloud/CreateServerSheet.kt:140` | `GET /server_types` | 4 | Golden |
 | CMP-011 | Server anlegen SSH Schritt | Mehrfachauswahl; Hinweis wenn keine Keys, Schritt überspringbar | `S/cloud/CreateServerSheet.kt:167` | `GET /ssh_keys` | 4 | Widget |
 | CMP-012 | Server anlegen Details | Name Pflicht, cloud-init User Data optional, "Start after create" | `S/cloud/CreateServerSheet.kt:201` | `POST /servers` | 4 | Widget |
-| CMP-013 | Server anlegen Ausführung | Erstellt Server, Doppelklick gesperrt, Liste neu laden | `S/cloud/CloudViewModel.kt:87`<br>`D/repo/CloudRepo.kt:219` | `POST /servers` | 4 | Integration |
+| CMP-013 | Server anlegen Ausführung | Erstellt Server, Doppelklick gesperrt, Verlassen während des Anlegens gesperrt, Folgeaktionen verfolgt, Liste neu laden | `S/cloud/CloudViewModel.kt:87`<br>`D/repo/CloudRepo.kt:219` | `POST /servers` | 4 | Integration |
 | CMP-014 | Root Passwort nach Anlegen | Einmalig im Reveal Sheet wenn kein SSH Key gewählt | `S/cloud/CloudScreen.kt:159`<br>`S/cloud/CloudViewModel.kt:49` | `POST /servers` | 4 | Widget |
 | CMP-015 | Serverdetail Laden | Server, Metriken, Aktivität laden, Pull to Refresh | `S/cloud/CloudServerDetailViewModel.kt:91` | `GET /servers/{id}` | 4 | Unit |
 | CMP-016 | Serverdetail Kopf | Name, Status, Schutz Badge | `S/cloud/CloudServerDetailScreen.kt:205` | `GET /servers/{id}` | 4 | Golden |
@@ -137,7 +141,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | CMP-027 | Server Metriken | CPU %, Disk Durchsatz lesen/schreiben, Netzwerk ein/aus | `S/cloud/CloudServerDetailScreen.kt:288` | `GET /servers/{id}/metrics` | 4 | Golden |
 | CMP-028 | Metrik Zeiträume | 1h, 24h, 7d, 30d umschaltbar | `S/cloud/CloudServerDetailScreen.kt:1020`<br>`S/cloud/CloudServerDetailViewModel.kt:115` | `GET /servers/{id}/metrics` | 4 | Unit |
 | CMP-029 | Metrik Kennzahlen | Min, Max, Durchschnitt pro Serie, Einheit automatisch (B/s, KB/s, ...) | `S/cloud/CloudServerDetailScreen.kt:1118`<br>`D/repo/CloudRepo.kt:68` |  | 4 | Unit |
-| CMP-030 | Root Passwort zurücksetzen | Bestätigung, neues Passwort einmalig im Reveal Sheet | `S/cloud/CloudServerDetailScreen.kt:385`<br>`S/cloud/CloudServerDetailViewModel.kt:204` | `POST /servers/{id}/actions/reset_password` | 4 | Widget |
+| CMP-030 | Root Passwort zurücksetzen | Bestätigung, neues Passwort einmalig im Reveal Sheet, auch wenn die Seite inzwischen geschlossen wurde | `S/cloud/CloudServerDetailScreen.kt:385`<br>`S/cloud/CloudServerDetailViewModel.kt:204` | `POST /servers/{id}/actions/reset_password` | 4 | Widget |
 | CMP-031 | Server Neuaufsetzen | Image wählen (Reiter System oder Snapshot/Backup), veraltete markiert, Warnung Datenverlust; Neu: Stufe 2 | `S/cloud/RebuildDialog.kt:63`<br>`S/cloud/CloudServerDetailViewModel.kt:178` | `GET /images`<br>`POST /servers/{id}/actions/rebuild` | 4 | Integration |
 | CMP-032 | Neuaufsetzen Root Passwort | Rückgabe Root Passwort einmalig anzeigen | `S/cloud/CloudServerDetailScreen.kt:735` | `POST /servers/{id}/actions/rebuild` | 4 | Widget |
 | CMP-033 | Servertyp ändern | Liste mit aktuellem Typ markiert, Kerne, RAM, Disk; Server muss aus sein | `S/cloud/ChangeTypeDialog.kt:55`<br>`S/cloud/CloudServerDetailViewModel.kt:212` | `GET /server_types`<br>`POST /servers/{id}/actions/change_type` | 4 | Widget |
@@ -153,7 +157,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | CMP-043 | Placement Group zuordnen | Gruppe wählen; Hinweis wenn keine vorhanden | `S/cloud/CloudServerDetailScreen.kt:1350`<br>`S/cloud/CloudServerDetailViewModel.kt:276` | `GET /placement_groups`<br>`POST /servers/{id}/actions/add_to_placement_group` | 4 | Widget |
 | CMP-044 | Placement Group entfernen | Bestätigung mit Gruppenname | `S/cloud/CloudServerDetailScreen.kt:699`<br>`S/cloud/CloudServerDetailViewModel.kt:282` | `POST /servers/{id}/actions/remove_from_placement_group` | 4 | Unit |
 | CMP-045 | Server Aktivität | Letzte 30 Actions des Servers | `S/cloud/CloudServerDetailScreen.kt:476`<br>`S/cloud/CloudServerDetailViewModel.kt:323` | `GET /servers/{id}/actions` | 8 | Widget |
-| CMP-046 | Server Schutz | Lösch und Rebuild Schutz getrennt schaltbar | `S/cloud/CloudServerDetailScreen.kt:1225`<br>`S/cloud/CloudServerDetailViewModel.kt:216` | `POST /servers/{id}/actions/change_protection` | 4 | Widget |
+| CMP-046 | Server Schutz | Lösch und Rebuild Schutz gemeinsam schaltbar (die API lehnt verschiedene Werte ab) | `S/cloud/CloudServerDetailScreen.kt:1225`<br>`S/cloud/CloudServerDetailViewModel.kt:216` | `POST /servers/{id}/actions/change_protection` | 4 | Widget |
 | CMP-047 | Server umbenennen | Bottom Sheet mit Name | `S/cloud/CloudServerDetailScreen.kt:1202`<br>`S/cloud/CloudServerDetailViewModel.kt:185` | `PUT /servers/{id}` | 4 | Widget |
 | CMP-048 | Server löschen | Stufe 2: Servername eintippen; Hinweis nicht externe Volumes | `S/cloud/CloudServerDetailScreen.kt:586`<br>`S/cloud/CloudServerDetailViewModel.kt:220` | `DELETE /servers/{id}` | 4 | Integration |
 | CMP-049 | Server Gefahrenzone | Löschen ganz unten getrennt | `S/cloud/CloudServerDetailScreen.kt:503` |  | 4 | Golden |
@@ -178,9 +182,9 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | CMP-068 | Placement Group löschen | Alt nur im Repository, keine UI | `D/repo/CloudRepo.kt:915` | `DELETE /placement_groups/{id}` | 4 | Unit |
 | CMP-069 | Placement Group Detail | Alt nur im Repository; Neu: Detail mit Servern | `D/repo/CloudRepo.kt:898` | `GET /placement_groups/{id}` | 4 | Widget |
 | CMP-070 | SSH Key Liste Cloud | Name, Fingerprint | `S/cloud/CloudSshKeysTab.kt:98` | `GET /ssh_keys` | 4 | Golden |
-| CMP-071 | SSH Key hinzufügen | Aus Datei oder manuell; Name und Key Pflicht | `S/cloud/CloudSshKeysTab.kt:280`<br>`S/cloud/CloudSshKeysTab.kt:107` | `POST /ssh_keys` | 4 | Widget |
+| CMP-071 | SSH Key hinzufügen | Aus Datei (.pub), eingefügt oder erzeugt (CMP-100); Name und Key Pflicht | `S/cloud/CloudSshKeysTab.kt:280`<br>`S/cloud/CloudSshKeysTab.kt:107` | `POST /ssh_keys` | 4 | Widget |
 | CMP-072 | SSH Key Prüfung privat | Private Keys (PEM, OpenSSH, PuTTY, SSH2, Zertifikat) abgewiesen | `ui/util/SshKeyValidation.kt:12` |  | 4 | Unit |
-| CMP-073 | SSH Key Prüfung öffentlich | Nur bekannte Präfixe: ssh-rsa, ssh-ed25519, ssh-dss, ecdsa-sha2-nistp256/384/521, sk-ecdsa, sk-ssh-ed25519 | `ui/util/SshKeyValidation.kt:31` |  | 4 | Unit |
+| CMP-073 | SSH Key Prüfung öffentlich | Nur bekannte Typen: ssh-rsa, ssh-ed25519, ssh-dss, ecdsa-sha2-nistp256/384/521, sk-ecdsa, sk-ssh-ed25519; Base64 gültig und der Typ im Key Blob gleich dem Präfix. MD5 Fingerprint wie Hetzner und `ssh-keygen -E md5` | `ui/util/SshKeyValidation.kt:31` |  | 4 | Unit |
 | CMP-074 | SSH Key Projekt bei Aggregat | Projektwahl beim Anlegen | `S/cloud/CloudSshKeysTab.kt:235` | `POST /ssh_keys` | 4 | Widget |
 | CMP-075 | SSH Key löschen | Bestätigung | `S/cloud/CloudSshKeysTab.kt:245`<br>`S/cloud/CloudSshKeysTab.kt:117` | `DELETE /ssh_keys/{id}` | 4 | Unit |
 | CMP-076 | SSH Key umbenennen | Alt nur im Repository, keine UI | `D/repo/CloudRepo.kt:479` | `PUT /ssh_keys/{id}` | 4 | Widget |
@@ -207,6 +211,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | CMP-097 | Location einzeln | Location Details | API neu | `GET /locations/{id}` | 4 | Unit |
 | CMP-098 | Servertyp einzeln | Typdetails mit Preisen je Location | API neu | `GET /server_types/{id}` | 4 | Unit |
 | CMP-099 | SSH Key Detail | Name, Fingerprint, Key, Labels | API neu | `GET /ssh_keys/{id}` | 4 | Unit |
+| CMP-100 | SSH Schlüsselpaar erzeugen | Ed25519 im Gerät erzeugen (rein Dart, `cryptography`), öffentlichen Key hochladen; privaten Key als OpenSSH PEM einmal im Geheimnis Sheet zeigen, kopieren (sensibel) und als Datei speichern; nie gespeichert oder geloggt; unverschlüsselt, Hinweis auf `ssh-keygen -p`. RSA nicht (keine gepflegte reine Dart Implementierung mit vertretbarer Laufzeit) | API neu | `POST /ssh_keys` | 9 | Unit |
 
 ## Netzwerk
 
@@ -219,7 +224,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | NET-005 | Firewall Regel anlegen | Neue Regel Dialog | `S/cloud/FirewallRuleDialog.kt:92`<br>`S/cloud/CloudFirewallDetailViewModel.kt:83` | `POST /firewalls/{id}/actions/set_rules` | 5 | Widget |
 | NET-006 | Firewall Regel Richtung | Inbound (Quell IPs) oder Outbound (Ziel IPs) | `S/cloud/FirewallRuleDialog.kt:132` |  | 5 | Widget |
 | NET-007 | Firewall Regel Protokoll | tcp, udp, icmp, esp, gre; Port nur bei tcp/udp | `S/cloud/FirewallRuleDialog.kt:58` |  | 5 | Unit |
-| NET-008 | Firewall Regel Port | Einzelport oder Bereich "8000-9000" | `S/cloud/FirewallRuleDialog.kt:161` |  | 5 | Unit |
+| NET-008 | Firewall Regel Port | Einzelport, Bereich "8000-9000" oder "any" | `S/cloud/FirewallRuleDialog.kt:161` |  | 5 | Unit |
 | NET-009 | Firewall Regel IPs | CIDR Liste, Schnellwahl Any IPv4 (0.0.0.0/0) und Any IPv6 (::/0), mindestens eine IP | `S/cloud/FirewallRuleDialog.kt:184` |  | 5 | Unit |
 | NET-010 | Firewall Regel Beschreibung | Freitext optional | `S/cloud/FirewallRuleDialog.kt:174` |  | 5 | Widget |
 | NET-011 | Firewall Regel bearbeiten | Gleicher Dialog vorbefüllt | `S/cloud/FirewallRuleDialog.kt:94` | `POST /firewalls/{id}/actions/set_rules` | 5 | Widget |
@@ -274,11 +279,11 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | NET-060 | LB Service anlegen | Protokoll tcp/http/https, Listen und Ziel Port 1 bis 65535, PROXY protocol | `S/cloud/CloudLoadBalancerDetailScreen.kt:705`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:104` | `POST /load_balancers/{id}/actions/add_service` | 5 | Unit |
 | NET-061 | LB Service bearbeiten | Listen Port nicht änderbar | `S/cloud/CloudLoadBalancerDetailScreen.kt:746`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:108` | `POST /load_balancers/{id}/actions/update_service` | 5 | Widget |
 | NET-062 | LB Service löschen | Bestätigung | `S/cloud/CloudLoadBalancerDetailViewModel.kt:123` | `POST /load_balancers/{id}/actions/delete_service` | 5 | Unit |
-| NET-063 | LB Targets Liste | Server, Label Selector, IP; Leerhinweis | `S/cloud/CloudLoadBalancerDetailScreen.kt:221` | `GET /load_balancers/{id}` | 5 | Golden |
+| NET-063 | LB Targets Liste | Server mit IP, Label Selector, IP; Leerhinweis; Zustand eines Selectors aus seinen Servern | `S/cloud/CloudLoadBalancerDetailScreen.kt:221` | `GET /load_balancers/{id}` | 5 | Golden |
 | NET-064 | LB Target Server | Server ID, "Route via private network" | `S/cloud/CloudLoadBalancerDetailScreen.kt:841`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:127` | `POST /load_balancers/{id}/actions/add_target` | 5 | Widget |
 | NET-065 | LB Target Label Selector | Selector wie role=web,env=prod | `S/cloud/CloudLoadBalancerDetailScreen.kt:858`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:138` | `POST /load_balancers/{id}/actions/add_target` | 5 | Widget |
 | NET-066 | LB Target IP | IP Adresse | `S/cloud/CloudLoadBalancerDetailScreen.kt:872`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:148` | `POST /load_balancers/{id}/actions/add_target` | 5 | Widget |
-| NET-067 | LB Target entfernen | Bestätigung | `S/cloud/CloudLoadBalancerDetailViewModel.kt:161` | `POST /load_balancers/{id}/actions/remove_target` | 5 | Unit |
+| NET-067 | LB Target entfernen | Bestätigung; ein Server Target mit seiner IP | `S/cloud/CloudLoadBalancerDetailViewModel.kt:161` | `POST /load_balancers/{id}/actions/remove_target` | 5 | Unit |
 | NET-068 | LB Algorithmus | Round robin oder Least connections, Speichern nur bei Änderung | `S/cloud/CloudLoadBalancerDetailScreen.kt:586`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:96` | `POST /load_balancers/{id}/actions/change_algorithm` | 5 | Widget |
 | NET-069 | LB Typ ändern | Typliste mit aktuellem markiert, Grenzen max. Verbindungen, Services, Targets | `S/cloud/CloudLoadBalancerDetailScreen.kt:631`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:100` | `GET /load_balancer_types`<br>`POST /load_balancers/{id}/actions/change_type` | 5 | Widget |
 | NET-070 | LB Public Interface | Aktivieren oder deaktivieren | `S/cloud/CloudLoadBalancerDetailScreen.kt:290`<br>`S/cloud/CloudLoadBalancerDetailViewModel.kt:92` | `POST /load_balancers/{id}/actions/enable_public_interface`<br>`POST /load_balancers/{id}/actions/disable_public_interface` | 5 | Unit |
@@ -316,20 +321,20 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | DNS-003 | Zone bearbeiten | Name gesperrt, nur TTL | `S/dns/ZoneFormDialog.kt:60`<br>`S/dns/DnsScreen.kt:79` | `POST /zones/{id}/actions/change_ttl` | 5 | Widget |
 | DNS-004 | Zone löschen | Bestätigung, alle Records gelöscht; Neu: Stufe 2 | `S/dns/DnsScreen.kt:202`<br>`S/dns/DnsScreen.kt:86` | `DELETE /zones/{id}` | 5 | Unit |
 | DNS-005 | Zonendetail Übersicht | TTL, Status, Anzahl Records | `S/dns/ZoneDetailScreen.kt:422`<br>`S/dns/ZoneDetailViewModel.kt:69` | `GET /zones/{id}`<br>`GET /zones/{id}/rrsets` | 5 | Golden |
-| DNS-006 | Recordliste | Name, Typ, Wert, TTL pro Wert | `S/dns/ZoneDetailScreen.kt:473` | `GET /zones/{id}/rrsets` | 5 | Golden |
+| DNS-006 | Recordliste | Name, Typ, Wert, TTL pro Wert; Aktualisieren lädt die Records neu, ein Fehler zeigt "Erneut versuchen", Anlegen erst nach dem Laden | `S/dns/ZoneDetailScreen.kt:473` | `GET /zones/{id}/rrsets` | 5 | Golden |
 | DNS-007 | Record anlegen | Name, Typ, Wert Pflicht, TTL optional mindestens 60 | `S/dns/RecordDialog.kt:60`<br>`S/dns/ZoneDetailViewModel.kt:100` | `POST /zones/{id}/rrsets/{name}/{type}/actions/add_records`<br>`POST /zones/{id}/rrsets/{name}/{type}/actions/change_ttl` | 5 | Unit |
 | DNS-008 | Record Typen | A, AAAA, CNAME, MX, TXT, NS, SRV, CAA; Neu zusätzlich alle Typen der Spec (PTR, DS, TLSA, HINFO, RP) | `S/dns/RecordDialog.kt:43` |  | 5 | Unit |
-| DNS-009 | Record Wert Normalisierung | TXT Anführungszeichen, FQDN Punkt je Typ | `D/repo/DnsRepo.kt:118` |  | 5 | Unit |
+| DNS-009 | Record Wert Normalisierung | TXT Anführungszeichen, je String höchstens 255 Byte, FQDN Punkt je Typ | `D/repo/DnsRepo.kt:118` |  | 5 | Unit |
 | DNS-010 | Record bearbeiten | Ersetzt Wert im RRSet, TTL Änderung | `S/dns/ZoneDetailScreen.kt:620`<br>`S/dns/ZoneDetailViewModel.kt:102` | `POST /zones/{id}/rrsets/{name}/{type}/actions/set_records`<br>`POST /zones/{id}/rrsets/{name}/{type}/actions/change_ttl` | 5 | Unit |
 | DNS-011 | Record löschen | Entfernt einen Wert aus dem RRSet | `S/dns/ZoneDetailScreen.kt:627`<br>`S/dns/ZoneDetailViewModel.kt:105` | `POST /zones/{id}/rrsets/{name}/{type}/actions/remove_records` | 5 | Unit |
-| DNS-012 | Mehrfachauswahl Records | Auswahl, Alle wählen, Leeren, Zähler | `S/dns/ZoneDetailScreen.kt:460` |  | 5 | Widget |
-| DNS-013 | Sammelbearbeitung | Neuer Wert und/oder TTL (mind. eins), leer heißt behalten | `S/dns/BulkEditDialog.kt:46`<br>`S/dns/ZoneDetailViewModel.kt:113` | `POST /zones/{id}/rrsets/{name}/{type}/actions/set_records` | 5 | Unit |
+| DNS-012 | Mehrfachauswahl Records | Auswahl, Alle wählen (ohne SOA und Apex NS), Leeren, Zähler | `S/dns/ZoneDetailScreen.kt:460` |  | 5 | Widget |
+| DNS-013 | Sammelbearbeitung | Neuer Wert und/oder TTL (mind. eins), leer heißt behalten; neuer Wert nur bei einem Typ; Bestätigung mit den betroffenen Record Sets | `S/dns/BulkEditDialog.kt:46`<br>`S/dns/ZoneDetailViewModel.kt:113` | `POST /zones/{id}/rrsets/{name}/{type}/actions/set_records` | 5 | Unit |
 | DNS-014 | Sammelbearbeitung Ergebnis | "Records updated" oder Anzahl fehlgeschlagener | `S/dns/ZoneDetailScreen.kt:162` |  | 5 | Widget |
 | DNS-015 | Zonendatei importieren | Datei wählen, max. 1 MiB, Bestätigung "ersetzt alle Records"; Neu: Stufe 2 | `S/dns/ZoneDetailScreen.kt:338`<br>`S/dns/ZoneDetailViewModel.kt:125` | `POST /zones/{id}/actions/import_zonefile` | 5 | Integration |
 | DNS-016 | Zonendatei exportieren | BIND Datei über Dateidialog speichern | `S/dns/ZoneDetailScreen.kt:234`<br>`S/dns/ZoneDetailViewModel.kt:143` | `GET /zones/{id}/zonefile` | 5 | Integration |
-| DNS-017 | Primäre Nameserver Liste | Für sekundäre Zonen: Adresse und Port | `S/dns/ZoneDetailScreen.kt:512` | `GET /zones/{id}` | 5 | Golden |
-| DNS-018 | Primären Server hinzufügen | Adresse Pflicht, Port 1 bis 65535 (Standard 53) | `S/dns/PrimaryServerDialog.kt:35`<br>`S/dns/ZoneDetailViewModel.kt:164` | `POST /zones/{id}/actions/change_primary_nameservers` | 5 | Unit |
-| DNS-019 | Primären Server bearbeiten | Gleicher Dialog | `S/dns/PrimaryServerDialog.kt:37`<br>`S/dns/ZoneDetailViewModel.kt:167` | `POST /zones/{id}/actions/change_primary_nameservers` | 5 | Widget |
+| DNS-017 | Primäre Nameserver Liste | Für sekundäre Zonen: Adresse, Port und TSIG Algorithmus | `S/dns/ZoneDetailScreen.kt:512` | `GET /zones/{id}` | 5 | Golden |
+| DNS-018 | Primären Server hinzufügen | Adresse Pflicht, Port 1 bis 65535 (Standard 53), TSIG Algorithmus und Schlüssel optional | `S/dns/PrimaryServerDialog.kt:35`<br>`S/dns/ZoneDetailViewModel.kt:164` | `POST /zones/{id}/actions/change_primary_nameservers` | 5 | Unit |
+| DNS-019 | Primären Server bearbeiten | Gleicher Dialog; TSIG aller Server bleibt erhalten | `S/dns/PrimaryServerDialog.kt:37`<br>`S/dns/ZoneDetailViewModel.kt:167` | `POST /zones/{id}/actions/change_primary_nameservers` | 5 | Widget |
 | DNS-020 | Primären Server entfernen | Bestätigung mit Adresse:Port | `S/dns/ZoneDetailScreen.kt:370`<br>`S/dns/ZoneDetailViewModel.kt:170` | `POST /zones/{id}/actions/change_primary_nameservers` | 5 | Unit |
 | DNS-021 | DNS Action abwarten | Nach jeder Änderung Zone Action bis fertig verfolgen | `D/repo/DnsRepo.kt:61` | `GET /zones/actions/{id}` | 5 | Unit |
 | DNS-022 | Zone sekundär anlegen | Modus primary/secondary mit primären Nameservern beim Anlegen | API neu | `POST /zones` | 5 | Widget |
@@ -396,13 +401,13 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | OBJ-005 | Versionierung an/aussetzen | Aktivieren oder Aussetzen mit Erklärung | `S/s3/S3Screen.kt:389`<br>`S/s3/S3Screen.kt:127` | `S3 PutBucketVersioning` | 6 | Unit |
 | OBJ-006 | Objektbrowser | Ordner per Prefix, Navigation in Unterordner, Objektname, Größe | `S/s3/ObjectBrowserScreen.kt:277`<br>`S/s3/ObjectBrowserViewModel.kt:77` | `S3 ListObjectsV2` | 6 | Golden |
 | OBJ-007 | Objekt hochladen | Datei wählen, Upload im Vordergrunddienst mit Benachrichtigung | `S/s3/ObjectBrowserScreen.kt:351`<br>`D/s3/UploadService.kt:57` | `S3 PutObject` | 6 | Integration |
-| OBJ-008 | Upload Prüfung | Bucketname Regex, Key max. 1024 Zeichen, MIME Format | `D/s3/UploadService.kt:130` |  | 6 | Unit |
+| OBJ-008 | Upload Prüfung | Bucketname Regex, Key max. 1024 Zeichen ohne führendes `/` und ohne Segment `.` oder `..`, MIME Format | `D/s3/UploadService.kt:130` |  | 6 | Unit |
 | OBJ-009 | Upload Benachrichtigung | Kanal "falco_uploads", Fortschritt und Ergebnis | `D/s3/UploadService.kt:176` |  | 6 | Integration |
 | OBJ-010 | Objekt Info | Größe, zuletzt geändert, Content Type, ETag | `S/s3/ObjectInfoSheet.kt:45`<br>`S/s3/ObjectBrowserViewModel.kt:174` | `S3 HeadObject` | 6 | Widget |
 | OBJ-011 | Freigabelink | Ablauf 1 h, 24 h, 7 Tage; Link kopieren oder teilen | `S/s3/ShareLinkDialog.kt:37`<br>`S/s3/ObjectBrowserViewModel.kt:116` | `S3 presigned GET` | 6 | Unit |
 | OBJ-012 | Objekt herunterladen | Speichern in Downloads, Meldung "Download saved" | `S/s3/ObjectBrowserScreen.kt:576`<br>`S/s3/ObjectBrowserViewModel.kt:128`<br>`D/s3/S3DownloadHelper.kt` | `S3 GetObject` | 6 | Integration |
 | OBJ-013 | Objekt kopieren | Ziel Bucket, Prefix optional, Ziel Key | `S/s3/CopyMoveDialog.kt:74`<br>`S/s3/ObjectBrowserViewModel.kt:141` | `S3 CopyObject` | 6 | Unit |
-| OBJ-014 | Objekt verschieben | Kopieren und Quelle löschen | `S/s3/ObjectBrowserScreen.kt:584`<br>`S/s3/ObjectBrowserViewModel.kt:158` | `S3 CopyObject`<br>`S3 DeleteObject` | 6 | Unit |
+| OBJ-014 | Objekt verschieben | Kopieren und Quelle löschen, nur nach bestätigter Kopie; Ziel Key endet nicht auf `/` | `S/s3/ObjectBrowserScreen.kt:584`<br>`S/s3/ObjectBrowserViewModel.kt:158` | `S3 CopyObject`<br>`S3 DeleteObject` | 6 | Unit |
 | OBJ-015 | Objekt löschen | Bestätigung mit Name | `S/s3/ObjectBrowserScreen.kt:374`<br>`S/s3/ObjectBrowserViewModel.kt:92` | `S3 DeleteObject` | 6 | Unit |
 | OBJ-016 | Mehrfachauswahl Objekte | Auswahl, Zähler, Auswahl aufheben | `S/s3/ObjectBrowserScreen.kt:460` |  | 6 | Widget |
 | OBJ-017 | Mehrere Objekte löschen | Bestätigung mit Anzahl, Teilerfolg ausgewertet | `S/s3/ObjectBrowserScreen.kt:399`<br>`S/s3/ObjectBrowserViewModel.kt:103`<br>`D/api/S3Client.kt:244` | `S3 DeleteObjects` | 6 | Unit |
@@ -410,7 +415,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | OBJ-019 | S3 Zugang pro Projekt | S3 Daten am Cloud Projekt, ein Endpoint pro Projekt | `S/cloud/ProjectFormScreen.kt:124` |  | 6 | Unit |
 | OBJ-020 | Mehrere Standorte | Alle Standorte (fsn1, nbg1, hel1) eines Projekts gleichzeitig | API neu | `S3 ListBuckets` | 6 | Integration |
 | OBJ-021 | Hintergrund Download | Download über background_downloader mit Fortschritt | API neu | `S3 GetObject` | 6 | Integration |
-| OBJ-022 | Mehrteiliger Upload | Große Dateien in Teilen hochladen | API neu | `S3 CreateMultipartUpload` | 6 | Integration |
+| OBJ-022 | Mehrteiliger Upload | Große Dateien in Teilen hochladen; scheitert das Zusammenfügen, bleiben die Teile und es wird später erneut versucht, Aufgeben bricht den Upload ab | API neu | `S3 CreateMultipartUpload` | 6 | Integration |
 | OBJ-023 | Objektversionen | Versionen listen, alte Version laden oder wiederherstellen | API neu | `S3 ListObjectVersions` | 6 | Widget |
 | OBJ-024 | Ordner anlegen | Leeres Prefix Objekt anlegen | API neu | `S3 PutObject` | 6 | Unit |
 | OBJ-025 | Upload Link | Presigned PUT Link (alt nur Repository) | `D/repo/S3Repo.kt:35` | `S3 presigned PUT` | 6 | Unit |
@@ -420,7 +425,7 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | ID | Funktion | Details/Regeln | Quelle | API Endpunkt(e) | Phase | Test |
 |---|---|---|---|---|---|---|
 | ROB-001 | Robot Bereich Reiter | Dedicated Server, Failover IPs, vSwitches, Reverse DNS, SSH Keys | `S/robot/RobotScreen.kt:108` |  | 7 | Widget |
-| ROB-002 | Robot kein Zugriff Hinweis | Bei 401/403 pro Bereich: "Enable this section in Hetzner Robot" | `S/robot/FailoverTab.kt:114` |  | 7 | Widget |
+| ROB-002 | Robot kein Zugriff Hinweis | Bei 401/403 pro Bereich: "Enable this section in Hetzner Robot"; ein abgelehnter Login wird erst nach einer Änderung wieder gesendet | `S/robot/FailoverTab.kt:114` |  | 7 | Widget |
 | ROB-003 | Robot Ratenlimit | 429 oder 403 mit Retry-After als Drosselung melden, nie als Auth Fehler | `D/api/HttpClientFactory.kt:199` |  | 7 | Unit |
 | ROB-004 | Robot Serverliste | Name oder Nummer, gekündigt Badge, IPv4, IPv6 Netz, Datacenter, bezahlt bis | `S/robot/RobotScreen.kt:220`<br>`S/robot/RobotScreen.kt:97` | `GET /server` | 7 | Golden |
 | ROB-005 | Robot Liste Schnellaktionen | Reset, Wake-on-LAN aus der Zeile | `S/robot/RobotScreen.kt:311` | `POST /reset/{n}`<br>`POST /wol/{n}` | 7 | Widget |
@@ -475,9 +480,10 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | ROB-054 | Robot Subnetz Traffic Warnungen | Schwellen setzen | API neu | `POST /subnet/{ip}` | 7 | Widget |
 | ROB-055 | Robot Subnetz MAC | MAC anzeigen, setzen, löschen | API neu | `GET /subnet/{ip}/mac`<br>`PUT /subnet/{ip}/mac`<br>`DELETE /subnet/{ip}/mac` | 7 | Widget |
 | ROB-056 | Robot Subnetz Kündigung | Kündigung anzeigen, setzen, zurückziehen | API neu | `GET /subnet/{ip}/cancellation`<br>`POST /subnet/{ip}/cancellation`<br>`DELETE /subnet/{ip}/cancellation` | 7 | Widget |
-| ROB-057 | Robot Firewall | Server Firewall Status, Regeln, Filter IPv6, Hetzner Dienste | API neu | `GET /firewall/{n}`<br>`POST /firewall/{n}`<br>`DELETE /firewall/{n}` | 7 | Widget |
+| ROB-057 | Robot Firewall | Server Firewall Status, Regeln (mit TCP Flags), Filter IPv6, Hetzner Dienste | API neu | `GET /firewall/{n}`<br>`POST /firewall/{n}`<br>`DELETE /firewall/{n}` | 7 | Widget |
 | ROB-058 | Robot Firewall Vorlagen | Vorlagen listen, anlegen, ändern, löschen | API neu | `GET /firewall/template`<br>`POST /firewall/template`<br>`GET /firewall/template/{id}`<br>`POST /firewall/template/{id}`<br>`DELETE /firewall/template/{id}` | 7 | Widget |
 | ROB-059 | Robot Traffic Abfrage | Traffic frei wählbar nach Zeitraum (Tag, Monat, Jahr) pro IP/Subnetz | `D/repo/RobotRepo.kt:94` | `POST /traffic` | 7 | Golden |
+| ROB-061 | Robot SSH Schlüsselpaar erzeugen | Wie CMP-100, gleiche Komponente im Robot Wizard | API neu | `POST /key` | 9 | Widget |
 | ROB-060 | Robot Bestellung | Server, Serverbörse, Addons bestellen; nur nach Entscheidung, Kaufbestätigung Pflicht | API neu | `GET /order/server/product`<br>`POST /order/server/transaction`<br>`GET /order/server_market/product`<br>`POST /order/server_market/transaction`<br>`GET /order/server_addon/{n}/product`<br>`POST /order/server_addon/transaction` | 7 | Integration |
 
 ## Suche & Aktivität
@@ -536,11 +542,11 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | QRS-005 | Fehlerzustand | Fehlerkarte mit "Retry" | `C/ErrorState.kt:52` |  | 1 | Golden |
 | QRS-006 | Ladezustand | Ladeanzeige; Neu Skeleton | `C/LoadingState.kt:45` |  | 1 | Golden |
 | QRS-007 | Leerzustand | "Nothing here yet." plus Aktion | `C/EmptyState.kt` |  | 1 | Golden |
-| QRS-008 | Aktionssheet | Gruppierte Aktionen im Bottom Sheet | `C/dialog/ActionsBottomSheet.kt` |  | 1 | Golden |
+| QRS-008 | Aktionssheet | Gruppierte Aktionen im Bottom Sheet; Neu: jede Aktion trägt eine Gruppe (Energie, Zugang, Verwalten, Netzwerk, Backup und Images, Gefahrenzone), Gefahrenzone zuletzt und rot | `C/dialog/ActionsBottomSheet.kt` |  | 1 | Golden |
 | QRS-009 | Bestätigung einfach | "%s?" mit Folgen, Abbrechen | `C/dialog/ConfirmDestructiveDialog.kt:40` |  | 1 | Widget |
 | QRS-010 | Bestätigung Name eintippen | Löschen erst nach Eingabe des Namens | `C/dialog/TypeToConfirmDeleteDialog.kt:82` |  | 1 | Widget |
 | QRS-011 | Statuskomponente | Running, Off, Starting, Stopping, Initializing, Rebuilding, Migrating, Deleting | `C/Console.kt:77` |  | 1 | Golden |
-| QRS-012 | Detailbausteine | HeroCard, KpiStrip, ActionStrip, DetailSection | `C/detail/HeroCard.kt` |  | 1 | Golden |
+| QRS-012 | Detailbausteine | HeroCard, KpiStrip, ActionStrip, DetailSection; Neu: DetailHeader (Status, Name, kopierbare Kennungen), FactGrid, DetailSection nach Bedeutung, StatusChip für An und Aus, RelatedCard | `C/detail/HeroCard.kt` |  | 1 | Golden |
 | QRS-013 | Wizard Gerüst | Schritte, Zurück, Weiter, Erstellen, Auswahlkarten | `C/wizard/WizardScaffold.kt`<br>`C/wizard/PickCard.kt` |  | 1 | Golden |
 | QRS-014 | Liniendiagramm | Mehrere Serien, Achsen, Min/Max | `C/LineChart.kt:107` |  | 1 | Golden |
 | QRS-015 | Byte Formatierung | Einheitliche Bytes Ausgabe | `ui/util/ByteFormat.kt` |  | 2 | Unit |
@@ -548,15 +554,17 @@ Zusätzlich: 181 Endpunkte der alten App im Abschnitt [Endpunkt Zuordnung](#endp
 | QRS-017 | Zertifikat Pinning | api.hetzner.cloud, api.hetzner.com, robot-ws.your-server.de, fsn1/hel1/nbg1.your-objectstorage.com | `D/api/Pins.kt:52` |  | 2 | Integration |
 | QRS-018 | TLS Mindestversion | TLS 1.2 und 1.3, restriktive Cipher | `D/api/HttpClientFactory.kt:40` |  | 2 | Unit |
 | QRS-019 | Klartext verboten | http für S3 abgelehnt | `D/api/S3Client.kt:32` |  | 2 | Unit |
-| QRS-020 | Zeitlimits | Connect 15 s, Read/Write 30 s, kein automatischer Retry von POST | `D/api/HttpClientFactory.kt:58` |  | 2 | Unit |
+| QRS-020 | Zeitlimits | Connect 15 s, Read/Write 30 s, kein automatischer Retry von POST; Laden wiederholt nur Netzwerk, 5xx und 429 (nach Retry-After), nie 4xx | `D/api/HttpClientFactory.kt:58` |  | 2 | Unit |
 | QRS-021 | Rechtefehler | 403 Cloud als PermissionDenied klar gemeldet | `D/api/PermissionDeniedException.kt` |  | 2 | Unit |
-| QRS-022 | Aggregat Laden | Listen über alle Projekte parallel, Projekt ID pro Eintrag | `D/repo/CloudRepo.kt:193` |  | 3 | Unit |
+| QRS-022 | Aggregat Laden | Listen über alle Projekte parallel, Projekt ID pro Eintrag; ein fehlschlagendes Projekt lässt die übrigen stehen und wird im Banner genannt; neue oder gelöschte Projekte und S3 Schlüssel erreichen Listen und Suche sofort | `D/repo/CloudRepo.kt:193` |  | 3 | Unit |
 | QRS-023 | Benachrichtigungen | Nur Uploads (Kanal falco_uploads) | `D/s3/UploadService.kt:176` |  | 6 | Integration |
 | QRS-024 | Teilen | System Share Sheet für Freigabelinks | `S/s3/ShareLinkDialog.kt:176` |  | 6 | Widget |
 | QRS-025 | Dateiauswahl | SSH Key aus Datei, Zonendatei Import, Upload Quelle | `S/cloud/CloudSshKeysTab.kt:167` |  | 4 | Integration |
 | QRS-026 | Barrierefreiheit | Screenreader Labels, Kontraste, Schriftgrößen |  |  | 9 | Widget |
-| QRS-027 | Tablet Layout | Liste und Detail nebeneinander, Navigation Rail |  |  | 9 | Golden |
-| QRS-028 | Action Tracker | Laufende Actions bis Ende verfolgen, betroffene Ressource neu laden, Fortschritt am Objekt | `D/repo/DnsRepo.kt:61` | `GET /actions/{id}` | 2 | Unit |
+| QRS-027 | Tablet Layout | Liste und Detail nebeneinander, Navigation Rail; der Anlegen FAB gehört zur Liste und verdeckt nie die Aktionsleiste des Details |  |  | 9 | Golden |
+| QRS-028 | Action Tracker | Laufende Actions bis Ende verfolgen, betroffene Ressource neu laden, Fortschritt am Objekt; Netzwerk, 429 (mit Retry-After) und 5xx beim Abfragen überbrückt, erst nach mehreren Fehlern in Folge oder bei 401, 403, 404 Ende mit Fehler | `D/repo/DnsRepo.kt:61` | `GET /actions/{id}` | 2 | Unit |
+| QRS-029 | Bereichsübersicht | Jeder Bereich der unteren Navigation öffnet eine Übersicht: pro Ressourcentyp eine Kachel mit Anzahl und Status, Server mit ihren ersten Zeilen; keine scrollenden Tabs |  |  | 9 | Golden |
+| QRS-030 | Aktionsleiste im Detail | Alle Aktionen einer Ressource unten: höchstens drei als Knopf mit vollem Text, der Rest im Blatt "Mehr"; genau ein Anlegen pro Screen (FAB), leere Listen ohne Knopf |  |  | 9 | Golden |
 
 ## Endpunkt Zuordnung alte App
 
@@ -618,7 +626,7 @@ Jeder Endpunkt, den Falco 2.x deklariert, mit Fundstelle und den Zeilen, die ihn
 | cloud | `POST /firewalls/{id}/actions/apply_to_resources` | `D/api/CloudApi.kt:269` | `applyFirewall` | NET-003, NET-014, NET-089 |
 | cloud | `POST /firewalls/{id}/actions/remove_from_resources` | `D/api/CloudApi.kt:275` | `removeFirewall` | NET-015 |
 | cloud | `GET /ssh_keys` | `D/api/CloudApi.kt:283` | `listSshKeys` | CMP-008, CMP-009, CMP-011, CMP-070, SUC-002 |
-| cloud | `POST /ssh_keys` | `D/api/CloudApi.kt:286` | `createSshKey` | CMP-071, CMP-074 |
+| cloud | `POST /ssh_keys` | `D/api/CloudApi.kt:286` | `createSshKey` | CMP-071, CMP-074, CMP-100 |
 | cloud | `PUT /ssh_keys/{id}` | `D/api/CloudApi.kt:291` | `updateSshKey` | CMP-076 |
 | cloud | `DELETE /ssh_keys/{id}` | `D/api/CloudApi.kt:297` | `deleteSshKey` | CMP-075 |
 | cloud | `POST /floating_ips` | `D/api/CloudApi.kt:302` | `createFloatingIp` | NET-022, NET-023 |
@@ -743,7 +751,7 @@ Jeder Endpunkt, den Falco 2.x deklariert, mit Fundstelle und den Zeilen, die ihn
 | robot | `GET /traffic` | `D/api/RobotApi.kt:160` | `listTraffic` | keine Zeile |
 | robot | `POST /traffic` | `D/api/RobotApi.kt:170` | `queryTraffic` | ROB-008, ROB-059 |
 | robot | `GET /key` | `D/api/RobotApi.kt:178` | `listKeys` | ROB-011, ROB-032 |
-| robot | `POST /key` | `D/api/RobotApi.kt:182` | `createKey` | ROB-033 |
+| robot | `POST /key` | `D/api/RobotApi.kt:182` | `createKey` | ROB-033, ROB-061 |
 | robot | `DELETE /key/{fp}` | `D/api/RobotApi.kt:188` | `deleteKey` | ROB-034 |
 
 ## Nicht übernehmen
@@ -775,3 +783,13 @@ Bekannte Fehler und Einschränkungen von Falco 2.x. Der Neubau darf sie nicht na
 | BUG-021 | Code ohne Oberfläche (tot): u. a. `createLoadBalancer`, `deleteCertificate`, `renameSshKey`, `updateStorageBoxSubaccount`, `uploadLink`, `bootOptions` | `D/repo/CloudRepo.kt`<br>`D/repo/RobotRepo.kt`<br>`D/repo/S3Repo.kt` | Nur bauen, was eine Zeile in diesem Inventar hat |
 | BUG-022 | Aktivitätslimit fest 30 Einträge ohne Nachladen | `S/cloud/CloudServerDetailViewModel.kt:361` | Pagination wie alle Listen |
 | BUG-023 | Biometrie Sonderweg Android 9/10 | `D/auth/BiometricGate.kt:37` | local_auth Standardverhalten |
+
+## Zurückgestellt
+
+Zeilen ohne Test, jede mit Grund. `tool/parity_check.dart` akzeptiert eine Zeile ohne Test nur, wenn sie hier steht.
+
+| ID | Grund |
+|---|---|
+| ROB-060 | Bestellungen kosten Geld und brauchen eine Entscheidung zu Umfang und Kaufbestätigung; kommt nach Release 3.0 als eigene Phase. |
+| QRS-023 | Die Benachrichtigungen der Transfers zeigt background_downloader nativ; Tests ersetzen das Plugin durch FakeTransfers, geprüft wird es beim Gerätetest der Uploads (OBJ-007). |
+| BUG-021 | Regel für den Bau ("nur bauen, was eine Zeile hat"), kein Laufzeitverhalten; gesichert durch Review und diese Liste. |
