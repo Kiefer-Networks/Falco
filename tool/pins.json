@@ -70,8 +70,7 @@
     },
     "brzvtCELCIZUo4sD/qPX0ccRtPsd3DY6RfmxpOU9oB4=": {
       "kind": "intermediate",
-      "name": "C = US, O = Let's Encrypt, CN = YE1",
-      "retired": "2026-11-21"
+      "name": "C = US, O = Let's Encrypt, CN = YE1"
     },
     "diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=": {
       "kind": "root",
@@ -80,7 +79,8 @@
     },
     "s/tdAOmUzd8syaTuqfgGvFcn6DzA5Cmb+Vby1ST+U3Y=": {
       "kind": "intermediate",
-      "name": "C = US, O = Let's Encrypt, CN = YE2"
+      "name": "C = US, O = Let's Encrypt, CN = YE2",
+      "retired": "2026-11-23"
     },
     "sCkq5UWXjg+7mKu9lMhhYF5bGLsy7VI/UNW3tccdR7w=": {
       "kind": "intermediate",
@@ -95,7 +95,8 @@
     },
     "brzvtCELCIZUo4sD/qPX0ccRtPsd3DY6RfmxpOU9oB4=": {
       "kind": "intermediate",
-      "name": "C = US, O = Let's Encrypt, CN = YE1"
+      "name": "C = US, O = Let's Encrypt, CN = YE1",
+      "retired": "2026-11-23"
     },
     "diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=": {
       "kind": "root",
@@ -104,8 +105,7 @@
     },
     "s/tdAOmUzd8syaTuqfgGvFcn6DzA5Cmb+Vby1ST+U3Y=": {
       "kind": "intermediate",
-      "name": "C = US, O = Let's Encrypt, CN = YE2",
-      "retired": "2026-11-21"
+      "name": "C = US, O = Let's Encrypt, CN = YE2"
     },
     "sCkq5UWXjg+7mKu9lMhhYF5bGLsy7VI/UNW3tccdR7w=": {
       "kind": "intermediate",
